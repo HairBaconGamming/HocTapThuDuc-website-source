@@ -91,7 +91,7 @@ app.set("view engine", "ejs");
 app.set("trust proxy", 1);
 
 // Middleware
-const allowedOrigins = ['https://hoctap-9a3.glitch.me', 'https://hoctap-9a3-toan.glitch.me']; // Thêm URL frontend React của bạn vào đây
+const allowedOrigins = ['https://hoctapthuduc.onrender.com']; // Thêm URL frontend React của bạn vào đây
 
 const corsOptions = {
   origin: function (origin, callback) {
