@@ -42,13 +42,15 @@
                     <li class="nav-item <%= activePage === 'subjects' ? 'active' : '' %>">
                         <a class="nav-link loading-link" href="/subjects"> <i class="fa-solid fa-book-bookmark icon"></i> <span class="link-text">Các Môn học</span> </a>
                     </li>
-                  
-                    <li class="nav-item <%= activePage === 'forum' ? 'active' : '' %>"> <%# Added activePage check if needed %>
+
+                    <!--
+                    <li class="nav-item <%= activePage === 'forum' ? 'active' : '' %>"> 
                         <a class="nav-link" href="https://support-hoctap-9a3.glitch.me" target="_blank" rel="noopener noreferrer"> <%# Open in new tab %>
                             <i class="fa-solid fa-comments icon"></i> <%# Forum icon %>
                             <span class="link-text">Diễn Đàn</span>
                         </a>
                     </li>
+                    -->
 
                     <!-- News Dropdown -->
                     <li class="nav-item dropdown news-dropdown <%= ['news', 'newsPost'].includes(activePage) ? 'active' : '' %>">
@@ -112,12 +114,14 @@
                     <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
                         <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
                     </li>
-                    <li class="nav-item <%= activePage === 'forum' ? 'active' : '' %>"> <%# Added activePage check if needed %>
+                    <!--
+                    <li class="nav-item <%= activePage === 'forum' ? 'active' : '' %>"> 
                         <a class="nav-link" href="https://support-hoctap-9a3.glitch.me" target="_blank" rel="noopener noreferrer"> <%# Open in new tab %>
                             <i class="fa-solid fa-comments icon"></i> <%# Forum icon %>
                             <span class="link-text">Diễn Đàn</span>
                         </a>
                     </li>
+                    -->
                      <li class="nav-item <%= activePage === 'login' ? 'active' : '' %>">
                         <a class="nav-link loading-link" href="/login"> <i class="fa-solid fa-right-to-bracket icon"></i> <span class="link-text">Đăng nhập</span> </a>
                      </li>
