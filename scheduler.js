@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Use system user ID "67dc37c5333c73b751f94d19" for AI-generated lessons
-const systemUserId = mongoose.Types.ObjectId("67dc37c5333c73b751f94d19");
+const systemUserId = new mongoose.Types.ObjectId("67dc37c5333c73b751f94d19");
 
 // Use API key from environment
 const apiKey = process.env.GEMINI_API_KEY_DANGBAI;
