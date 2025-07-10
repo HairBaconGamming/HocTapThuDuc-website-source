@@ -1,0 +1,295 @@
+/* === Artistic Profile Edit Page CSS === */
+
+.profile-edit-page-section {
+    padding: 70px 20px 90px;
+    background: var(--bg-dark);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+}
+
+/* Background Elements (Similar to Register) */
+.profile-edit-background {
+    position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    background: linear-gradient(160deg, #1a1a2e 0%, var(--bg-dark) 60%);
+}
+/* Reuse .bg-shape, but change names if different animations desired */
+.edit-shape-1 { /* Primary */
+    position: absolute; border-radius: 70% 30% 45% 55% / 60% 40% 60% 40%;
+    width: 55vw; height: 55vw; min-width: 400px; min-height: 400px;
+    background: var(--primary-color); top: -10%; right: -15%;
+    filter: blur(90px); opacity: 0.12; mix-blend-mode: screen;
+    animation: floatShape 40s infinite ease-in-out alternate-reverse;
+}
+.edit-shape-2 { /* Secondary */
+    position: absolute; border-radius: 30% 70% 55% 45% / 40% 60% 40% 60%;
+    width: 45vw; height: 45vw; min-width: 300px; min-height: 300px;
+    background: var(--secondary-color); bottom: -15%; left: -10%;
+    filter: blur(80px); opacity: 0.1; mix-blend-mode: overlay;
+    animation: floatShape 50s infinite ease-in-out alternate;
+}
+/* @keyframes floatShape defined previously */
+
+.bg-grid-pattern-faint { /* Reused */
+    position: absolute; inset: -50px;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 50px 50px; opacity: 0.4;
+}
+
+/* Container */
+.profile-edit-container {
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 750px; /* Suitable width for a form */
+    margin: 30px auto; /* Vertical margin */
+    background: rgba(var(--bg-dark-rgb), 0.7);
+    backdrop-filter: blur(15px) saturate(130%);
+    -webkit-backdrop-filter: blur(15px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-large);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    padding: 0; /* Remove padding, apply to form */
+    overflow: hidden; /* Clip glow */
+}
+
+/* Form Styling */
+.profile-edit-form-v2 {
+    padding: 35px 45px;
+    display: flex; flex-direction: column;
+}
+
+/* Re-use composer header style */
+.composer-header { text-align: left; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); position: relative; }
+.composer-header::after { /* Accent line */ content: ''; position: absolute; bottom: -1px; left: 0; width: 60px; height: 2px; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); border-radius: 1px; /* Animation handled by JS data-animate */ }
+.composer-header h2 { font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 600; color: var(--text-light); margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; }
+.composer-header p { font-size: 0.95rem; color: var(--text-medium); margin: 0; }
+
+/* Flash Message */
+.composer-flash-message { /* Reuse style */ padding: 12px 20px; margin-bottom: 25px; border-radius: var(--border-radius-small); border: 1px solid; font-weight: 500; font-size: 0.95rem; }
+.alert-error { border-color: rgba(var(--danger-color), 0.5); background-color: rgba(var(--danger-color), 0.1); color: var(--danger-color); }
+/* Add other alert types if needed */
+
+
+/* Form Sections */
+.form-section {
+    border: none; /* Remove fieldset default border */
+    padding: 0; margin: 0;
+    margin-bottom: 30px;
+}
+.form-section:last-of-type { margin-bottom: 0; }
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border-color);
+    display: inline-block; /* Fit content */
+}
+
+/* Form Grid for Personal Info */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive columns */
+    gap: 25px;
+}
+.textarea-group {
+    grid-column: 1 / -1; /* Make textarea span full width */
+}
+
+/* Input Fields & Select (Reusing v2 styles) */
+.input-field-group, .select-group-styled { position: relative; }
+.form-input-v2, .form-select-v2 { /* Base styles from previous examples */ width: 100%; padding: 14px 18px 14px 50px; background-color: rgba(var(--bg-dark-rgb), 0.8); border: 1px solid var(--border-color); border-radius: var(--border-radius-medium); color: var(--text-light); font-size: 1rem; transition: all 0.3s ease; position: relative; z-index: 1; outline: none; }
+.form-select-v2 { /* Select specific styles */ appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 45px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23a0a0c0'%3E%3Cpath fill-rule='evenodd' d='M8 10.5a.5.5 0 0 1-.354-.146l-3-3a.5.5 0 0 1 .708-.708L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3A.5.5 0 0 1 8 10.5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 15px center; background-size: 12px 12px; cursor: pointer; }
+.form-select-v2 option { background: #2a2a4e; color: var(--text-light); }
+.form-select-v2:required:invalid { color: var(--text-medium); } /* Placeholder text color */
+
+.input-icon, .select-icon { /* Icon position */ position: absolute; top: 50%; transform: translateY(-50%); left: 18px; color: var(--text-medium); opacity: 0.6; transition: all 0.3s ease; z-index: 3; pointer-events: none; font-size: 1rem; }
+.select-arrow { position: absolute; top: 50%; transform: translateY(-50%); right: 18px; color: var(--text-medium); opacity: 0.7; pointer-events: none; z-index: 3; transition: transform 0.3s ease; }
+
+/* Label Styling */
+.form-label-v2, .form-label-select-v2 { position: absolute; top: 14px; left: 50px; color: var(--text-medium); opacity: 0.9; pointer-events: none; transition: all 0.3s ease; z-index: 0; font-size: 1rem; background-color: transparent; padding: 0 5px; }
+
+/* Focus / Filled State Styling */
+.form-input-v2:focus, .form-select-v2:focus { border-color: var(--primary-color); background-color: rgba(var(--bg-dark-rgb), 0.9); box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15); }
+.form-input-v2:focus ~ .input-icon, .select-group-styled:focus-within .select-icon { color: var(--primary-color); opacity: 1; }
+.select-group-styled:focus-within .select-arrow { transform: translateY(-50%) rotate(180deg); }
+/* Label animation */
+.form-input-v2:focus + .form-label-v2, .input-field-group.filled .form-label-v2,
+.form-select-v2:focus ~ .form-label-select-v2, .select-group-styled.filled .form-label-select-v2 {
+    transform: translateY(-25px) translateX(-50px) scale(0.85); /* Adjusted Y */
+    color: var(--primary-color); z-index: 2; background-color: rgba(var(--bg-dark-rgb), 0.9); /* Match focused bg */
+}
+
+/* Readonly Field Styling */
+.input-field-group.readonly-group .form-input-v2 {
+    background-color: rgba(var(--bg-dark-rgb), 0.5);
+    cursor: not-allowed; color: var(--text-medium);
+    border-color: rgba(var(--border-color), 0.5); /* Dimmer border */
+}
+.input-field-group.readonly-group .form-label-v2 { /* Keep label up */
+     transform: translateY(-25px) translateX(-50px) scale(0.85);
+     color: var(--text-medium); opacity: 0.7;
+     background-color: rgba(var(--bg-dark-rgb), 0.7); /* Match container bg */
+}
+.input-field-group.readonly-group .input-icon { opacity: 0.4; }
+.readonly-indicator {
+    position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+    font-size: 0.75rem; color: var(--text-medium); opacity: 0.6;
+    font-style: italic;
+}
+
+/* Textarea styling */
+.bio-textarea { min-height: 100px; resize: vertical; padding-top: 14px; } /* Ensure padding matches */
+.textarea-group .input-icon { top: 18px; transform: none; } /* Adjust icon pos */
+.textarea-group .form-label-v2 { top: 14px; } /* Align label */
+.bio-textarea:focus + .form-label-v2,
+.textarea-group.filled .form-label-v2 {
+     transform: translateY(-25px) translateX(-50px) scale(0.85);
+}
+
+/* Divider */
+.form-divider {
+    border: none; height: 1px; background-color: var(--border-color);
+    margin: 35px 0; opacity: 0.5;
+}
+
+/* Fancy Toggle Switch */
+.fancy-toggle-switch { display: flex; align-items: center; margin-bottom: 25px; cursor: pointer; }
+.fancy-toggle-switch input[type="checkbox"] { display: none; } /* Hide default checkbox */
+.fancy-toggle-switch .switch-label { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.fancy-toggle-switch .switch-rail {
+    width: 50px; height: 26px; background: rgba(255, 255, 255, 0.15);
+    border-radius: 13px; position: relative; transition: background-color 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.fancy-toggle-switch .switch-handle {
+    width: 20px; height: 20px; background: white; border-radius: 50%;
+    position: absolute; top: 2px; left: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy */
+}
+.fancy-toggle-switch input[type="checkbox"]:checked + .switch-label .switch-rail {
+    background: var(--primary-color); border-color: transparent;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+.fancy-toggle-switch input[type="checkbox"]:checked + .switch-label .switch-handle {
+    transform: translateX(24px); background: var(--text-light);
+}
+.fancy-toggle-switch .switch-text { color: var(--text-medium); font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; }
+.fancy-toggle-switch input[type="checkbox"]:checked + .switch-label .switch-text { color: var(--primary-color); }
+
+
+/* Password Fields Container */
+.password-fields-container {
+    /* Start hidden - JS controls height/opacity */
+    overflow: hidden;
+    display: none; /* Initial state managed by JS set */
+    opacity: 0;
+    margin-top: 0; /* Start with no margin */
+    /* Add styles for internal padding/structure if needed */
+    padding-top: 10px; /* Space below toggle */
+    display: flex; flex-direction: column; gap: 25px; /* Match form grid gap */
+}
+/* Reuse .input-field-group styles inside */
+.password-fields-container .input-field-group { margin-bottom: 0; } /* Remove default margin */
+.validation-hint { /* Keep styles from register */ font-size: 0.75rem; color: var(--text-medium); opacity: 0.7; padding-left: 15px; margin-top: 5px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, opacity 0.3s ease-out; }
+.password-fields-container .input-field-group:focus-within .validation-hint { max-height: 20px; opacity: 0.7; }
+.password-fields-container .form-input-v2:invalid:not(:placeholder-shown):not(:focus) { border-bottom-color: rgba(var(--danger-color), 0.5); }
+.password-fields-container .form-input-v2:invalid:not(:placeholder-shown):not(:focus) ~ .input-icon { color: var(--danger-color); opacity: 0.8; }
+.password-fields-container .form-input-v2:invalid:not(:placeholder-shown):not(:focus) + .form-label-v2 { color: var(--danger-color); }
+
+.turnstile-group { /* Keep existing style */ display: flex; justify-content: center; margin-top: 10px; }
+
+
+/* Form Actions */
+.profile-edit-actions {
+    margin-top: 35px; padding-top: 25px; border-top: 1px solid var(--border-color);
+    display: flex; justify-content: flex-end; align-items: center; gap: 15px;
+}
+.profile-submit-btn {
+     /* Use .btn-submit-v2 base */
+     padding: 11px 28px; font-size: 1rem;
+     background: linear-gradient(60deg, var(--success-color), #6fbf73); /* Green for save */
+     color: white;
+     box-shadow: 0 6px 18px -5px rgba(var(--success-color), 0.4);
+}
+.profile-submit-btn:hover:not(:disabled) {
+    background: linear-gradient(60deg, #6fbf73, var(--success-color));
+    box-shadow: 0 8px 25px -5px rgba(var(--success-color), 0.5);
+}
+.profile-submit-btn .profile-liquid { background-color: rgba(255, 255, 255, 0.3); } /* White liquid */
+.profile-submit-btn.submitting::after { border-color: rgba(255, 255, 255, 0.3); border-top-color: white; }
+
+/* === Add this to your Profile Edit / Auth CSS === */
+
+/* --- Password Toggle Button Styling --- */
+.password-toggle-btn {
+    position: absolute;
+    /* Position inside the input group, aligned with the right edge */
+    top: 50%;
+    right: 15px; /* Adjust spacing from the right edge */
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-medium); /* Match icon color */
+    opacity: 0.7; /* Slightly faded */
+    cursor: pointer;
+    padding: 5px; /* Clickable area */
+    z-index: 3; /* Above input field */
+    font-size: 1rem; /* Adjust icon size */
+    line-height: 1; /* Prevent extra height */
+    transition: color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+    outline: none; /* Remove focus outline */
+    -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
+}
+
+.password-toggle-btn:hover {
+    color: var(--text-light); /* Brighter on hover */
+    opacity: 1;
+    transform: translateY(-50%) scale(1.1); /* Slight scale */
+}
+
+/* Adjust position if input padding changes */
+/* Example: If .form-input-v2 padding-right was 45px for an icon, adjust right: */
+/* .password-toggle-btn { right: 45px; } */
+
+/* Style the icon directly if needed */
+.password-toggle-btn .fas {
+    display: block; /* Ensure proper sizing */
+    transition: inherit; /* Inherit transition from button */
+}
+
+/* Styling when input field group is focused */
+.input-field-group:focus-within .password-toggle-btn {
+    color: var(--primary-color); /* Match focused icon color */
+    opacity: 1;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .profile-edit-container { padding: 30px 25px; margin: 20px auto; }
+    .profile-edit-form-v2 { padding: 0; } /* Remove form padding */
+    .form-grid { grid-template-columns: 1fr; gap: 20px; } /* Stack fields */
+    .textarea-group { grid-column: auto; } /* Reset span */
+    .composer-header h2 { font-size: 1.6rem; }
+    .form-section-title { font-size: 1rem; margin-bottom: 15px; }
+    .profile-edit-actions { flex-direction: column-reverse; align-items: stretch; gap: 12px; margin-top: 30px; padding-top: 20px; }
+    .profile-edit-actions .btn { justify-content: center; }
+}
+@media (max-width: 480px) {
+    .profile-edit-container { padding: 25px 15px; margin: 15px auto; border-radius: var(--border-radius-medium);}
+    .composer-header h2 { font-size: 1.5rem; }
+    .composer-header p { font-size: 0.9rem; }
+    .form-input-v2, .form-select-v2 { padding: 12px 15px 12px 45px; font-size: 0.95rem;}
+    .form-label-v2, .form-label-select-v2 { left: 45px; top: 12px; font-size: 0.95rem; }
+    .form-input-v2:focus + .form-label-v2, .input-field-group.filled .form-label-v2,
+    .select-group-styled:focus-within .form-label-select-v2, .select-group-styled.filled .form-label-select-v2 {
+         transform: translateY(-23px) translateX(-45px) scale(0.8);
+    }
+    .input-icon, .select-icon { top: 50%; transform: translateY(-50%); left: 15px; }
+    .fancy-toggle-switch .switch-text { font-size: 0.9rem; }
+}

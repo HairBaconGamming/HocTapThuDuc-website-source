@@ -1,0 +1,184 @@
+/* === Artistic News Detail Page CSS === */
+
+/* Reading Progress Bar */
+.reading-progress-bar {
+    position: fixed;
+    top: var(--header-height-scrolled, 65px); /* Position below scrolled header */
+    left: 0;
+    width: 0%; /* Initial width */
+    height: 4px; /* Thickness */
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    z-index: 1001; /* Above header border, below dropdowns */
+    transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth transition if header height changes */
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.4);
+}
+body.header-scrolled .reading-progress-bar {
+     top: var(--header-height-scrolled, 65px); /* Ensure it stays below scrolled header */
+}
+body:not(.header-scrolled) .reading-progress-bar {
+    top: var(--header-height, 75px); /* Position below non-scrolled header */
+}
+
+
+/* Base Section */
+.news-detail-page-section {
+    padding: 0 20px 80px; /* Remove top padding, handled by container margin */
+    background: var(--bg-dark);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+/* Background Elements */
+.news-detail-background {
+    position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    background: linear-gradient(180deg, rgba(var(--bg-dark-rgb), 1) 0%, rgba(var(--bg-dark-rgb), 0.9) 30%, rgba(var(--primary-color-rgb), 0.05) 100%);
+}
+.bg-swirl { /* Use swirl shapes */
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.1;
+    mix-blend-mode: screen; animation: swirlAnim 45s infinite ease-in-out alternate; will-change: transform;
+}
+.swirl-news-1 { width: 60vw; height: 60vw; background: var(--secondary-color); top: 5%; right: -15%; animation-duration: 40s; }
+.swirl-news-2 { width: 50vw; height: 50vw; background: var(--primary-color); bottom: 0%; left: -10%; animation-duration: 55s; animation-direction: alternate-reverse; }
+/* @keyframes swirlAnim defined previously */
+
+#tsparticles-news-detail { /* tsparticles container */
+    position: absolute; inset: 0; z-index: 1;
+}
+
+/* Container */
+.news-detail-container {
+    position: relative; z-index: 2;
+    max-width: 850px; /* Optimal reading width */
+    margin: 50px auto 0; /* Add top margin */
+    background: rgba(var(--bg-dark-rgb), 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-medium); /* Slightly less rounded */
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    padding: 0; /* Remove container padding, apply to sections */
+    overflow: hidden; /* Clip content */
+}
+
+/* Article Masthead Header */
+.news-article-masthead {
+    padding: 40px 50px 30px; /* Generous padding */
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(160deg, rgba(var(--primary-color-rgb), 0.05), rgba(var(--bg-dark-rgb), 0.2));
+    overflow: hidden; /* For image overlay effects if used */
+}
+/* Optional Featured Image Styling */
+/* .masthead-image-wrapper { position: absolute; inset: 0; z-index: 0; } */
+/* .masthead-image { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.4) blur(3px); opacity: 0.5; } */
+/* .masthead-image-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 30%, rgba(var(--bg-dark-rgb), 0.8) 100%); } */
+
+.masthead-content { position: relative; z-index: 1; } /* Ensure content above image */
+
+.masthead-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 15px;
+    margin-bottom: 20px; font-size: 0.85rem; color: var(--text-medium);
+}
+.masthead-meta .news-badge { /* Reuse news badge styles */ padding: 3px 10px; font-size: 0.7rem; font-weight: 600; border-radius: var(--border-radius-pill); display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
+.masthead-meta .pro-badge-news { background: linear-gradient(45deg, var(--gold-color-start), var(--gold-color-end)); color: #5d4037; border-color: rgba(255, 255, 255, 0.2); }
+.masthead-meta .category-badge-news { background-color: rgba(var(--secondary-color-rgb), 0.15); color: var(--secondary-color); border-color: rgba(var(--secondary-color-rgb), 0.3); }
+/* Add specific .news-cat-xxx styles */
+.masthead-meta .masthead-date, .masthead-meta .masthead-author { display: inline-flex; align-items: center; gap: 6px; }
+.masthead-meta .far, .masthead-meta .fas { opacity: 0.8; }
+.masthead-meta .author-link { color: var(--accent-color); font-weight: 500; transition: color 0.2s ease; }
+.masthead-meta .author-link:hover { color: var(--text-light); }
+
+.news-article-headline {
+    font-size: clamp(2rem, 5vw, 3rem); /* Title size */
+    font-weight: 700; color: var(--text-light);
+    margin: 0; line-height: 1.25;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+/* Main Article Body */
+.news-article-body {
+    padding: 40px 50px; /* Content padding */
+    position: relative;
+    z-index: 1; /* Ensure above background */
+}
+
+/* Reusing prose-styling for common markdown elements */
+/* Ensure the .prose-styling class rules from lessonDetail CSS are available */
+.prose-styling h1, .prose-styling h2, .prose-styling h3, .prose-styling h4 {
+    color: var(--text-light); font-family: var(--font-heading);
+    margin-top: 2em; margin-bottom: 1em; line-height: 1.3;
+    border-bottom: 1px solid var(--border-color); padding-bottom: 0.4em;
+}
+.prose-styling h1 { font-size: 2rem; } /* Slightly smaller than page title */
+.prose-styling h2 { font-size: 1.7rem; }
+.prose-styling h3 { font-size: 1.4rem; border-bottom-style: dashed; }
+.prose-styling h4 { font-size: 1.15rem; border-bottom: none; font-weight: 600; color: var(--primary-color);}
+.prose-styling p { margin-bottom: 1.3em; color: var(--text-light); line-height: 1.8; font-size: 1.05rem; }
+.prose-styling a { color: var(--secondary-color); text-decoration: none; border-bottom: 1px dotted rgba(var(--secondary-color-rgb), 0.5); transition: color 0.2s, border-color 0.2s; }
+.prose-styling a:hover { color: var(--primary-color); border-bottom-color: var(--primary-color); border-bottom-style: solid; }
+.prose-styling strong { color: var(--accent-color); font-weight: 600; }
+.prose-styling em { color: var(--text-medium); }
+.prose-styling ul, .prose-styling ol { margin-left: 1.5em; margin-bottom: 1.3em; padding-left: 1.2em; line-height: 1.8; }
+.prose-styling li { margin-bottom: 0.6em; }
+.prose-styling ul li::marker { color: var(--primary-color); content: '✦ '; font-size: 0.9em; } /* Diamond marker */
+.prose-styling blockquote { border-left: 4px solid var(--primary-color); padding: 15px 25px; margin: 2em 0; background: rgba(var(--primary-color-rgb), 0.04); color: var(--text-medium); font-style: italic; border-radius: 0 6px 6px 0; font-size: 1.1rem; }
+.prose-styling code:not(pre > code) { background: rgba(var(--accent-color-rgb), 0.1); color: var(--accent-color); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.9em; border: 1px solid rgba(var(--accent-color-rgb), 0.2); }
+.prose-styling pre { background-color: #1a1a2e; /* Slightly different code bg */ color: #c5c8c6; /* Monokai-like text */ padding: 1.5em; border-radius: var(--border-radius-medium); overflow-x: auto; margin: 2em 0; border: 1px solid rgba(255, 255, 255, 0.1); font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; line-height: 1.7; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+.prose-styling pre code { background: none; color: inherit; padding: 0; border: none; font-size: inherit; }
+.prose-styling img { max-width: 100%; height: auto; border-radius: var(--border-radius-medium); margin: 2em auto; display: block; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 8px 25px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.prose-styling img:hover { transform: scale(1.03); box-shadow: 0 12px 35px rgba(0,0,0,0.4); }
+/* Add KaTeX specific styles if needed (usually handled by katex.min.css) */
+
+
+/* Article Footer */
+.news-article-footer {
+    padding: 30px 50px;
+    margin-top: 30px;
+    border-top: 1px solid var(--border-color);
+    text-align: center; /* Center back button */
+}
+
+.back-to-news-btn {
+    /* Use .btn-secondary-outline style */
+    padding: 10px 25px;
+    font-size: 0.95rem;
+    gap: 8px;
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--text-medium);
+}
+.back-to-news-btn:hover {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb), 0.1);
+    color: var(--primary-color);
+}
+
+
+/* Re-use Lightbox V2 Styles */
+/* (Styles for .lightbox-modal-v2, .lightbox-backdrop, etc., should be available globally or copied here) */
+
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .news-detail-page-section { padding: 50px 15px 60px; }
+    .news-detail-container { margin-top: 30px; padding: 0; border-radius: var(--border-radius-medium); }
+    .news-article-masthead { padding: 30px 25px 25px; }
+    .news-article-headline { font-size: 2.2rem; }
+    .masthead-meta { font-size: 0.8rem; gap: 10px; }
+    .news-article-body { padding: 30px 25px; }
+    .prose-styling { font-size: 1rem; }
+    .prose-styling h1 { font-size: 1.8rem; }
+    .prose-styling h2 { font-size: 1.5rem; }
+    .prose-styling h3 { font-size: 1.3rem; }
+    .news-article-footer { padding: 25px; }
+}
+@media (max-width: 480px) {
+    .news-detail-container { margin-top: 20px; border-radius: var(--border-radius-small); }
+    .news-article-masthead { padding: 25px 20px 20px; }
+    .news-article-headline { font-size: 1.8rem; }
+    .masthead-meta { font-size: 0.75rem; }
+    .news-article-body { padding: 25px 20px; }
+    .prose-styling { font-size: 0.95rem; }
+    .prose-styling blockquote { padding: 10px 15px; }
+    .prose-styling pre { padding: 1em; font-size: 0.85rem; }
+    .news-article-footer { padding: 20px; }
+    .back-to-news-btn { width: 100%; justify-content: center; }
+}

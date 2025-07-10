@@ -1,0 +1,327 @@
+<!-- views/editProfile.ejs -->
+<%- include('partials/header', { title: 'Chỉnh Sửa Hồ Sơ', user: user, activePage: 'profile' }) %> <%# Keep activePage as profile %>
+<link rel="stylesheet" href="/styleEditProfile.css"> 
+<section class="profile-edit-page-section"> 
+    <!-- Background Elements -->
+    <div class="profile-edit-background"> 
+        <div class="bg-shape edit-shape-1"></div>
+        <div class="bg-shape edit-shape-2"></div>
+        <div class="bg-grid-pattern-faint"></div>
+    </div>
+
+    <div class="container profile-edit-container">
+
+        <form action="/profile/edit?_method=PUT" method="POST" class="profile-edit-form-v2" id="profileEditForm"> 
+
+            <!-- Form Header -->
+            <div class="composer-header" data-animate="fade-down"> 
+                <h2><i class="fas fa-user-edit"></i> Chỉnh Sửa Hồ Sơ</h2>
+                <p>Cập nhật thông tin cá nhân và bảo mật của bạn.</p>
+            </div>
+
+            <!-- Flash Message Area -->
+             <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
+                <div class="composer-flash-message alert-<%= message.type || 'error' %>" data-animate="fade-in">
+                    <%= message.message %>
+                </div>
+            <% } %>
+
+            <!-- Personal Information Section -->
+            <fieldset class="form-section" data-animate="fade-up" data-anim-delay="0.1">
+                <legend class="form-section-title">Thông Tin Cá Nhân</legend>
+
+                <div class="form-grid">
+                    <!-- Username (Read-only) -->
+                    <div class="input-field-group readonly-group">
+                        <input type="text" id="username" name="username_display" class="form-input-v2" value="<%= user.username %>" readonly disabled> 
+                        <label for="username" class="form-label-v2">Tên đăng nhập</label>
+                        <span class="input-focus-line"></span>
+                        <i class="fas fa-user-check input-icon"></i>
+                        <span class="readonly-indicator">(Không thể thay đổi)</span>
+                    </div>
+
+                     <!-- Email -->
+                     <div class="input-field-group">
+                         <input type="email" id="email" name="email" class="form-input-v2" placeholder=" " value="<%= user.email || '' %>" autocomplete="email">
+                         <label for="email" class="form-label-v2">Địa chỉ Email</label>
+                         <span class="input-focus-line"></span>
+                         <i class="fas fa-envelope input-icon"></i>
+                     </div>
+
+                    <!-- Class -->
+                    <div class="input-field-group">
+                         <input type="text" id="class" name="class" class="form-input-v2" placeholder=" " value="<%= user.class || '' %>" autocomplete="off">
+                         <label for="class" class="form-label-v2">Lớp (ví dụ: 8A3)</label>
+                         <span class="input-focus-line"></span>
+                         <i class="fas fa-users input-icon"></i>
+                     </div>
+
+                    <!-- School Select -->
+                     <div class="input-field-group select-group-styled">
+                         <select name="school" id="school" class="form-select-v2">
+                             <option value="" <%= !user.school ? "selected" : "" %>>-- Chọn trường --</option>
+                             <% const schools = ["Trường THCS Lương Định Của", "Trường THCS Bình Thọ", "Trường THCS Hiệp Phú", "Trường THCS Trường Thọ", "Trường THCS An Phú", "Trường THCS Linh Trung", "Trường THCS Nguyễn Văn Bá", "Trường THCS Bình An", "Trường THCS Nguyễn Thị Định", "Trường TH, THCS, THPT Ngô Thời Nhiệm", "Trường THCS, THPT Nguyễn Khuyến", "Trường Tiểu học - THCS - THPT Hoa Sen", "Trường THCS Hoa Lư", "Trường THCS Trần Quốc Toản", "Trường THCS Phước Bình"]; %>
+                             <% schools.forEach(schoolName => { %>
+                                 <option value="<%= schoolName %>" <%= user.school === schoolName ? "selected" : "" %>><%= schoolName %></option>
+                             <% }); %>
+                         </select>
+                          <label for="school" class="form-label-select-v2">Trường THCS (TP Thủ Đức)</label>
+                          <i class="fas fa-school select-icon"></i>
+                          <i class="fas fa-chevron-down select-arrow"></i>
+                     </div>
+
+                    <!-- Bio Textarea -->
+                    <div class="input-field-group textarea-group"> 
+                         <textarea id="bio" name="bio" class="form-input-v2 bio-textarea" placeholder=" " rows="4"><%= user.bio || '' %></textarea>
+                         <label for="bio" class="form-label-v2">Giới thiệu bản thân</label>
+                         <span class="input-focus-line"></span>
+                         <i class="fas fa-info-circle input-icon"></i>
+                     </div>
+                 </div>
+            </fieldset>
+
+            <hr class="form-divider">
+
+            <!-- Password Change Section -->
+            <fieldset class="form-section" data-animate="fade-up" data-anim-delay="0.3">
+                <legend class="form-section-title">Thay Đổi Mật Khẩu</legend>
+
+                <!-- Toggle Switch -->
+                 <div class="fancy-toggle-switch">
+                     <input type="checkbox" id="passwordToggleSwitch">
+                     <label for="passwordToggleSwitch" class="switch-label">
+                         <span class="switch-rail">
+                             <span class="switch-handle"></span>
+                         </span>
+                         <span class="switch-text">Kích hoạt đổi mật khẩu</span>
+                     </label>
+                 </div>
+                 <input type="hidden" id="resetPasswordFlag" name="resetPassword" value="false">
+
+
+                <!-- Password Fields Container (Initially Hidden) -->
+                 <div class="password-fields-container" id="passwordChangeFieldsContainer">
+                    <!-- Current Password -->
+                    <div class="input-field-group">
+                        <input type="password" id="currentPassword" name="currentPassword" class="form-input-v2" placeholder=" " autocomplete="current-password">
+                        <label for="currentPassword" class="form-label-v2">Mật khẩu hiện tại</label>
+                        <span class="input-focus-line"></span>
+                         <i class="fas fa-key input-icon"></i>
+                         <button type="button" class="password-toggle-btn" aria-label="Hiển thị mật khẩu"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <!-- New Password -->
+                     <div class="input-field-group">
+                         <input type="password" id="newPassword" name="newPassword" class="form-input-v2" placeholder=" " autocomplete="new-password"
+                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                                title="Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.">
+                         <label for="newPassword" class="form-label-v2">Mật khẩu mới</label>
+                         <span class="input-focus-line"></span>
+                          <i class="fas fa-lock input-icon"></i>
+                          <button type="button" class="password-toggle-btn" aria-label="Hiển thị mật khẩu"><i class="fas fa-eye"></i></button>
+                          <div class="validation-hint">Ít nhất 8 ký tự (hoa, thường, số).</div>
+                     </div>
+                     <!-- Confirm New Password -->
+                      <div class="input-field-group">
+                          <input type="password" id="confirmNewPassword" name="confirmNewPassword" class="form-input-v2" placeholder=" " autocomplete="new-password">
+                          <label for="confirmNewPassword" class="form-label-v2">Xác nhận mật khẩu mới</label>
+                          <span class="input-focus-line"></span>
+                           <i class="fas fa-check-double input-icon"></i>
+                           <button type="button" class="password-toggle-btn" aria-label="Hiển thị mật khẩu"><i class="fas fa-eye"></i></button>
+                      </div>
+
+                    <!-- Cloudflare Turnstile -->
+                     <div class="form-group turnstile-group"> 
+                         <div class="cf-turnstile" data-sitekey="0x4AAAAAABBLlduN6HavujOQ" data-theme="light"></div>
+                     </div>
+                 </div>
+            </fieldset>
+
+             <!-- Form Actions -->
+             <div class="composer-actions profile-edit-actions" data-animate="fade-up" data-anim-delay="0.5">
+                  <a href="/profile" class="btn btn-secondary-outline cancel-link loading-link">
+                      <i class="fas fa-times"></i> Hủy bỏ
+                  </a>
+                  <button type="submit" class="btn-submit-v2 profile-submit-btn" id="profileSubmitBtn">
+                      <span class="btn-text"><i class="fas fa-save"></i> Lưu Thay Đổi</span>
+                      <span class="btn-liquid-effect profile-liquid"></span>
+                      <span class="btn-particles profile-particles"></span>
+                  </button>
+              </div>
+
+        </form>
+
+    </div> <!-- End .profile-edit-container -->
+</section>
+
+<%- include('partials/footer') %>
+
+<!-- JS Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="/js/alerts.js"></script>
+
+<!-- Page Specific JS -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Config & Refs ---
+    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const profileEditForm = document.getElementById('profileEditForm');
+    const submitButton = document.getElementById('profileSubmitBtn');
+    const passwordToggleSwitch = document.getElementById('passwordToggleSwitch');
+    const passwordFieldsContainer = document.getElementById('passwordChangeFieldsContainer');
+    const resetPasswordFlagInput = document.getElementById('resetPasswordFlag');
+    const passwordInputs = passwordFieldsContainer ? passwordFieldsContainer.querySelectorAll('input[type="password"]') : [];
+
+    // --- Initial Animations ---
+    if (!prefersReducedMotion) {
+        const tl = gsap.timeline({delay: 0.2});
+        tl.from('.composer-header', {duration: 0.8, y: -30, autoAlpha: 0, ease: 'power2.out'})
+          .from('.composer-flash-message', {duration: 0.5, autoAlpha: 0, ease: 'none'}, "-=0.4")
+          .from('.form-section', {duration: 0.8, autoAlpha: 0, y: 40, stagger: 0.2, ease: 'power3.out'}, "-=0.3")
+          .from('.profile-edit-actions > *', {duration: 0.7, autoAlpha: 0, y: 20, stagger: 0.1, ease: 'power2.out'}, "-=0.5");
+
+         // Initially hide password fields smoothly if toggle is off
+         if (passwordFieldsContainer && !passwordToggleSwitch.checked) {
+             gsap.set(passwordFieldsContainer, { height: 0, autoAlpha: 0, marginTop: 0 });
+         } else if (passwordFieldsContainer) {
+             gsap.set(passwordFieldsContainer, { autoAlpha: 1 }); // Ensure visible if checked initially
+         }
+
+    } else {
+        gsap.set('[data-animate="fade-down"], [data-animate="fade-in"], [data-animate="fade-up"]', {autoAlpha: 1});
+         // Set initial display based on checkbox for reduced motion
+         if (passwordFieldsContainer) {
+              passwordFieldsContainer.style.display = passwordToggleSwitch.checked ? 'block' : 'none';
+         }
+    }
+
+
+    // --- Input Field/Select Styling Logic (Reuse from previous) ---
+    document.querySelectorAll('.form-input-v2').forEach(input => {
+         const group = input.closest('.input-field-group');
+         if(!group) return;
+         const checkFilled = () => { group.classList.toggle('filled', input.value !== ""); };
+         input.addEventListener('focus', () => group.classList.add('focused'));
+         input.addEventListener('blur', () => { group.classList.remove('focused'); checkFilled(); });
+         checkFilled();
+     });
+     document.querySelectorAll('.form-select-v2').forEach(select => {
+          const group = select.closest('.select-group-styled');
+          if(!group) return;
+          const checkSelected = () => { group.classList.toggle('filled', select.value !== ""); };
+          select.addEventListener('focus', () => group.classList.add('focused'));
+          select.addEventListener('blur', () => { group.classList.remove('focused'); checkSelected(); });
+          select.addEventListener('change', checkSelected);
+          checkSelected();
+     });
+
+
+    // --- Password Toggle Switch Logic ---
+    passwordToggleSwitch?.addEventListener('change', function() {
+        const shouldShow = this.checked;
+        resetPasswordFlagInput.value = shouldShow ? 'true' : 'false'; // Update hidden input
+
+        // Set required attribute dynamically ONLY when fields are visible
+        passwordInputs.forEach(input => {
+             input.required = shouldShow;
+             if (!shouldShow) {
+                 input.value = ''; // Clear passwords when hiding
+                 input.closest('.input-field-group')?.classList.remove('filled'); // Reset filled state
+             }
+         });
+         // Ensure Turnstile is required only when needed (if using client-side check)
+         // const turnstileWidget = document.querySelector('.cf-turnstile'); // Get widget if needed
+
+        if (!prefersReducedMotion) {
+            // Animate showing/hiding
+            if (shouldShow) {
+                 gsap.set(passwordFieldsContainer, { display: 'block', height: 'auto' }); // Set height auto first
+                 const height = passwordFieldsContainer.scrollHeight; // Get natural height
+                 gsap.fromTo(passwordFieldsContainer,
+                     { height: 0, autoAlpha: 0, marginTop: 0 },
+                     { height: height, autoAlpha: 1, marginTop: '25px', duration: 0.5, ease: 'power2.out' } // Animate height & margin
+                 );
+            } else {
+                gsap.to(passwordFieldsContainer, {
+                    height: 0, autoAlpha: 0, marginTop: 0, duration: 0.4, ease: 'power1.in',
+                    onComplete: () => passwordFieldsContainer.style.display = 'none' // Hide after animation
+                });
+            }
+        } else {
+             // Instant show/hide for reduced motion
+             passwordFieldsContainer.style.display = shouldShow ? 'block' : 'none';
+        }
+    });
+
+     // --- Password Toggle Visibility Buttons ---
+     document.querySelectorAll('.password-toggle-btn').forEach(toggleButton => {
+         const inputField = toggleButton.previousElementSibling; // Assumes icon is immediately after input
+         const icon = toggleButton.querySelector('i');
+         if(inputField && inputField.type === 'password' && icon){
+             toggleButton.addEventListener('click', () => {
+                 const isPassword = inputField.type === 'password';
+                 inputField.type = isPassword ? 'text' : 'password';
+                 icon.classList.toggle('fa-eye', !isPassword);
+                 icon.classList.toggle('fa-eye-slash', isPassword);
+                 toggleButton.setAttribute('aria-label', isPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu');
+                 gsap.fromTo(icon, { scale: 0.8, rotation: isPassword ? 0: -90 }, { scale: 1, rotation: 0, duration: 0.3, ease: 'back.out(2)' });
+             });
+         }
+     });
+
+
+    // --- Form Submission & Loading State ---
+    profileEditForm?.addEventListener('submit', function(e) {
+        let formIsValid = true;
+
+         // Basic HTML5 validation check first
+         if (!profileEditForm.checkValidity()) {
+             formIsValid = false;
+             // Trigger native browser validation messages or custom ones
+             // Shake invalid fields
+              profileEditForm.querySelectorAll(':invalid').forEach(field => {
+                  const group = field.closest('.input-field-group') || field.closest('.select-group-styled');
+                  if (group) gsap.fromTo(group, { x: 0 }, { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' });
+              });
+         }
+
+        // Check if passwords match only if reset is toggled
+        if (passwordToggleSwitch.checked) {
+            const newPass = document.getElementById('newPassword');
+            const confirmPass = document.getElementById('confirmNewPassword');
+            if (newPass.value !== confirmPass.value) {
+                 showAlert('Mật khẩu mới và xác nhận mật khẩu không khớp.', 'error');
+                 // Optional: Add error state/shake to confirm password field
+                 const group = confirmPass.closest('.input-field-group');
+                 if (group) gsap.fromTo(group, { x: 0 }, { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' });
+                 formIsValid = false;
+            }
+            // Add Turnstile validation if needed (client-side check)
+             // const turnstileResponse = turnstile.getResponse();
+             // if (!turnstileResponse) { formIsValid = false; showAlert('Vui lòng xác minh CAPTCHA.', 'error'); }
+        }
+
+        if (formIsValid && submitButton) {
+            submitButton.classList.add('submitting');
+            submitButton.disabled = true;
+            document.getElementById("loading-overlay")?.classList.add("active");
+            // Form submission will proceed
+        } else {
+            e.preventDefault(); // Prevent submission if invalid
+        }
+    });
+
+    // --- Flash Message Handling ---
+     const flashData = document.querySelector('.composer-flash-message'); // Reuse class or change if needed
+     if (flashData && typeof showAlert === 'function') {
+         const message = flashData.textContent.trim();
+         let type = 'info';
+         if (flashData.classList.contains('alert-error')) type = 'error';
+         showAlert(message, null, type, 5000); // Use default title based on type
+         flashData.style.display = 'none';
+     } else if (flashData) { console.error("showAlert function not found."); }
+
+
+}); // End DOMContentLoaded
+</script>

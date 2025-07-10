@@ -1,0 +1,370 @@
+/* --- Artistic Login Page Redesign --- */
+
+/* Remove default padding/background from auth-section if used */
+/* .auth-section { padding: 0; background: none; min-height: 0; } */
+
+.login-page-section {
+    min-height: 100vh; /* Full viewport height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative; /* For background elements */
+    overflow: hidden; /* Prevent background overflow */
+}
+
+/* --- Layer 1: Animated Background --- */
+.login-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background-color: var(--bg-dark); /* Base dark color */
+}
+
+.aurora {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.25; /* Subtle */
+    filter: blur(100px); /* Very strong blur */
+    will-change: transform, opacity;
+    mix-blend-mode: screen; /* Blend auroras */
+}
+.aurora-1 {
+    width: 80vmax; height: 80vmax; /* Large */
+    background: radial-gradient(circle, var(--primary-color) 0%, transparent 60%);
+    top: -20%; left: -20%;
+    animation: driftAurora 45s infinite linear alternate;
+}
+.aurora-2 {
+     width: 70vmax; height: 70vmax;
+     background: radial-gradient(circle, var(--secondary-color) 0%, transparent 65%);
+     bottom: -25%; right: -25%;
+     animation: driftAurora 55s infinite linear alternate-reverse; /* Different timing/direction */
+}
+
+@keyframes driftAurora {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    100% { transform: translate(15vw, -10vh) rotate(45deg) scale(1.2); }
+}
+
+.starfield {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+                      radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+                      radial-gradient(1px 1px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                      radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                      radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                      radial-gradient(1px 1px at 160px 120px, #ddd, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    opacity: 0;
+    animation: twinkleStars 5s infinite linear alternate, fadeInStars 3s 0.5s ease forwards;
+}
+@keyframes twinkleStars {
+  0% { opacity: 0.1; }
+  100% { opacity: 0.4; }
+}
+@keyframes fadeInStars {
+  to { opacity: 0.3; } /* Fade in initially */
+}
+
+/* --- Layer 2: Login Form --- */
+.login-form-container-wrapper {
+    perspective: 1500px; /* For subtle 3D tilt */
+    z-index: 1;
+}
+
+.login-form-container {
+    width: 100%;
+    max-width: 420px; /* Adjust width */
+    background: rgba(var(--bg-dark-rgb), 0.6); /* Glassy background */
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-large);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden; /* Contain glow */
+    /* Initial state for entrance animation */
+    opacity: 0;
+    visibility: hidden;
+    transform-style: preserve-3d; /* For potential 3d elements inside */
+}
+
+.form-border-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: conic-gradient(
+        from var(--angle, 0deg),
+        rgba(var(--primary-color-rgb), 0) 20%,
+        rgba(var(--primary-color-rgb), 0.8),
+        rgba(var(--secondary-color-rgb), 0.8),
+        rgba(var(--primary-color-rgb), 0) 80%
+    );
+    filter: blur(15px);
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    animation: rotateGradient 8s linear infinite paused;
+}
+.login-form-container:hover .form-border-glow {
+    opacity: 0.6; /* Subtle glow on hover */
+    animation-play-state: running;
+}
+/* Ensure @property --angle and @keyframes rotateGradient exist */
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes rotateGradient { to { --angle: 360deg; } }
+
+.form-content {
+    padding: 40px 45px; /* Generous padding */
+    position: relative; /* Above border glow */
+    z-index: 1;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+.form-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+     /* Ensure visibility for SplitType */
+     opacity: 1; visibility: visible;
+}
+.form-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-medium);
+}
+
+/* Input Fields - Enhanced */
+.input-field-group {
+    position: relative;
+    margin-bottom: 30px; /* More spacing */
+}
+
+.form-input-v2 {
+    width: 100%;
+    padding: 12px 15px 12px 45px; /* Padding for icon */
+    background-color: transparent; /* Transparent background */
+    border: none; /* Remove default border */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Underline only */
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    position: relative;
+    z-index: 2; /* Above label */
+    outline: none;
+}
+.form-input-v2::placeholder { /* Style placeholder-shown state */
+   color: transparent; /* Hide default placeholder initially */
+}
+
+.form-label-v2 {
+    position: absolute;
+    top: 12px; /* Align with input text */
+    left: 45px; /* Position after icon */
+    color: var(--text-medium);
+    opacity: 0.8;
+    pointer-events: none;
+    transition: transform 0.3s ease, color 0.3s ease, font-size 0.3s ease;
+    z-index: 1; /* Below input */
+    font-size: 1rem;
+}
+
+/* Input Focus/Filled States */
+.form-input-v2:focus + .form-label-v2,
+.input-field-group.filled .form-label-v2 { /* Use .filled class */
+    transform: translateY(-22px) translateX(-45px) scale(0.8); /* Move label up and left */
+    color: var(--primary-color);
+    font-size: 0.8rem; /* Make label smaller */
+}
+
+.input-focus-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 3; /* Above border-bottom */
+}
+.form-input-v2:focus ~ .input-focus-line {
+    transform: scaleX(1);
+}
+
+.input-icon {
+    position: absolute;
+    top: 14px;
+    left: 15px;
+    color: var(--text-medium);
+    opacity: 0.5;
+    transition: color 0.3s ease, opacity 0.3s ease;
+    z-index: 3;
+    font-size: 1rem;
+}
+.form-input-v2:focus ~ .input-icon {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Password Toggle Button */
+.password-toggle-btn {
+    position: absolute;
+    top: 10px; /* Adjust vertical alignment */
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-medium);
+    opacity: 0.7;
+    cursor: pointer;
+    padding: 5px;
+    z-index: 3;
+    font-size: 1rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+.password-toggle-btn:hover {
+    color: var(--text-light);
+    transform: scale(1.1);
+}
+
+/* Form Options (Forgot Password) */
+.form-options {
+    text-align: right;
+    margin: -15px 0 25px 0; /* Adjust spacing */
+}
+.forgot-password-link {
+    font-size: 0.85rem;
+    color: var(--text-medium);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+.forgot-password-link:hover {
+    color: var(--primary-color);
+}
+
+/* Submit Button - Enhanced */
+.btn-submit-v2 {
+    /* Inherit base .btn styles if defined, or style from scratch */
+    display: block; /* Full width */
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--border-radius-medium); /* Match inputs */
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden; /* Contain effects */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    z-index: 1;
+    box-shadow: 0 5px 15px rgba(var(--primary-color-rgb), 0.25);
+}
+.btn-submit-v2:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.35);
+    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color)); /* Swap gradient */
+}
+.btn-submit-v2:active:not(:disabled) {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 2px 5px rgba(var(--primary-color-rgb), 0.2);
+}
+.btn-submit-v2:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-submit-v2 .btn-text {
+    position: relative;
+    z-index: 2;
+}
+
+/* Liquid Fill Effect */
+.btn-submit-v2 .btn-liquid-effect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px; /* Start small */
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.8s ease; /* Smooth elastic expansion */
+    opacity: 0;
+    z-index: 1;
+}
+.btn-submit-v2:hover:not(:disabled) .btn-liquid-effect {
+    transform: translate(-50%, -50%) scale(25); /* Expand massively */
+    opacity: 1;
+    transition-duration: 0.6s, 0.4s; /* Faster fade out */
+}
+
+/* Loading State Spinner (Replaces text) */
+.btn-submit-v2.submitting .btn-text {
+    opacity: 0;
+    visibility: hidden;
+}
+.btn-submit-v2.submitting::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    top: calc(50% - 12px);
+    left: calc(50% - 12px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: buttonSpinner 0.8s linear infinite;
+    z-index: 3;
+}
+@keyframes buttonSpinner {
+    to { transform: rotate(360deg); }
+}
+
+/* Switch Auth Link */
+.switch-auth-link {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: var(--text-medium);
+}
+.switch-auth-link a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.switch-auth-link a:hover {
+    text-decoration: underline;
+    color: var(--secondary-color);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .login-page-section { padding: 20px 15px; }
+    .login-form-container { max-width: 100%; }
+    .form-content { padding: 30px 25px; }
+    .form-title { font-size: 1.8rem; }
+    .form-subtitle { font-size: 0.9rem; }
+    .input-field-group { margin-bottom: 25px; }
+    .form-input-v2 { padding: 10px 10px 10px 40px; }
+    .form-label-v2 { left: 40px; top: 10px; font-size: 0.95rem; }
+    .form-input-v2:focus + .form-label-v2,
+    .input-field-group.filled .form-label-v2 {
+        transform: translateY(-20px) translateX(-40px) scale(0.75);
+    }
+    .input-icon { top: 12px; left: 12px; }
+    .password-toggle-btn { top: 8px; right: 5px; }
+    .btn-submit-v2 { padding: 12px 15px; font-size: 1rem; }
+    .switch-auth-link { font-size: 0.85rem; }
+}

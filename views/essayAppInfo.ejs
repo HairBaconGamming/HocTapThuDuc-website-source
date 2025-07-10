@@ -1,0 +1,191 @@
+<%- include('partials/header', { user: user, activePage: activePage }) %>
+
+<style>
+    /* Basic styles for this specific page */
+    .essay-app-info-page {
+        padding: 40px 20px;
+        max-width: 900px; /* Slightly wider for more features */
+        margin: 40px auto;
+        background: rgba(var(--bg-dark-rgb), 0.7);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-medium);
+        color: var(--text-light);
+    }
+    .essay-app-info-page h1 {
+        color: var(--primary-color);
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.2rem;
+    }
+    .essay-app-info-page h2 {
+        color: var(--secondary-color);
+        border-bottom: 1px dashed var(--border-color-light);
+        padding-bottom: 8px;
+        margin-top: 35px;
+        margin-bottom: 20px;
+        font-size: 1.6rem;
+    }
+    .essay-app-info-page ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    .essay-app-info-page li {
+        margin-bottom: 15px;
+        padding-left: 25px;
+        position: relative;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--text-medium);
+    }
+    .essay-app-info-page li::before {
+        content: '✨'; /* Or other icons like 💡, 🎯, 📚 */
+        position: absolute;
+        left: 0;
+        top: 2px;
+        color: var(--accent-color);
+        font-size: 1rem;
+    }
+    .essay-app-info-page ul ul {
+        margin-top: 10px;
+        margin-left: 15px;
+    }
+    .essay-app-info-page ul ul li::before {
+        content: '➤';
+        font-size: 0.9rem;
+        color: var(--primary-color);
+    }
+    .essay-app-info-page p {
+        color: var(--text-medium);
+        line-height: 1.8;
+        margin-bottom: 20px;
+        font-size: 1.05rem;
+    }
+    .essay-app-info-page strong {
+        color: var(--accent-color);
+        font-weight: 600;
+    }
+    .essay-app-info-page code { /* Style for hierarchical markers */
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color-light);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        font-size: 0.95em;
+    }
+    .highlight-feature {
+        background-color: rgba(var(--accent-rgb), 0.15);
+        color: var(--accent-color-light);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: 500;
+    }
+    .version-tag {
+        font-size: 0.8em;
+        color: var(--secondary-color);
+        background-color: rgba(var(--secondary-rgb), 0.1);
+        padding: 2px 5px;
+        border-radius: 3px;
+        margin-left: 5px;
+        vertical-align: middle;
+    }
+    .comparison-example {
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        font-size: 0.95em;
+    }
+    .comparison-example .added { background-color: rgba(40, 167, 69, 0.2); color: #9fefb5; text-decoration: none; }
+    .comparison-example .removed { background-color: rgba(220, 53, 69, 0.2); color: #f5c2c7; text-decoration: line-through; }
+    .new-badge { /* Style for NEW badge */
+        font-size: 0.75em;
+        color: #fff;
+        background-color: #dc3545; /* Red badge */
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        vertical-align: middle;
+        font-weight: bold;
+    }
+    .game-icon { /* Style for game icons */
+        margin-right: 8px;
+        color: var(--accent-color); /* Match feature bullet */
+        width: 18px; /* Ensure consistent width */
+        text-align: center;
+        display: inline-block;
+    }
+
+    .download-button-section { text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--border-color); }
+    .btn-download-app { display: inline-flex; align-items: center; gap: 10px; padding: 12px 30px; font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: var(--border-radius-pill); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: white; box-shadow: 0 0 15px -3px var(--glow-color-primary), 0 4px 8px rgba(0,0,0,0.2); transition: all 0.3s ease; }
+    .btn-download-app:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 0 25px -2px var(--glow-color-primary), 0 6px 12px rgba(0,0,0,0.3); }
+    .platform-note { display: block; margin-top: 15px; font-size: 0.9rem; color: var(--text-medium); opacity: 0.8; }
+</style>
+
+<main class="container essay-app-info-page">
+
+    <h1><i class="fas fa-feather-alt"></i> Giới thiệu Học tập Tự luận Pro+</h1>
+
+    <p>
+        Chào mừng bạn đến với <strong>Học tập Tự luận Pro+</strong> - công cụ đồng hành toàn diện giúp bạn chinh phục các bài tự luận và ghi nhớ kiến thức sâu sắc!
+    </p>
+    <p>
+        Ứng dụng được phát triển với mục tiêu hỗ trợ học sinh, sinh viên tối ưu hóa quá trình ôn tập các môn học đòi hỏi khả năng viết và ghi nhớ logic, từ Ngữ Văn, Lịch Sử, Địa Lý, Giáo dục Công dân đến các môn chuyên ngành. Phiên bản Pro+ mang đến nhiều nâng cấp và tính năng mới mạnh mẽ.
+    </p>
+
+    <h2>Tính năng cốt lõi:</h2>
+    <ul>
+        <li><strong>Quản lý Tập trung:</strong> Tổ chức câu hỏi, câu trả lời, flashcards theo từng <strong>Chủ đề</strong>. Dễ dàng thêm, sửa, xóa, <strong>tìm kiếm</strong> và <strong>lọc theo thẻ (Tag)</strong> <span class="version-tag">v7+</span>.</li>
+        <li><strong>Soạn thảo Nâng cao:</strong>
+            <ul>
+                <li>Sử dụng <strong>Định dạng Văn bản</strong> (<span class="highlight-feature">Bold</span>, <span class="highlight-feature">Italic</span>, <span class="highlight-feature">Underline</span>, <span class="highlight-feature">Lists</span>) để trình bày câu hỏi và câu trả lời rõ ràng, đẹp mắt. <span class="new-badge">MỚI</span></li>
+                <li>Cấu trúc bài viết logic với <strong>Markers Phân cấp</strong> (<code>#</code> Tiêu đề chính, <code>##</code> Luận điểm, <code>###</code> Ý nhỏ...), thay thế cho marker dạng <code>[...]</code> cũ. <span class="new-badge">MỚI</span></li>
+            </ul>
+        </li>
+        <li><strong>Flashcards Đa phương tiện:</strong> Tạo flashcards thủ công hoặc <strong>tự động từ luận điểm</strong>. Hỗ trợ thêm <strong>ảnh minh họa cho cả mặt trước và mặt sau</strong>.</li>
+        <li><strong>Highlight Trực quan</strong> <span class="version-tag">v5+</span>: Tô màu các phần quan trọng với nhiều màu sắc (Vàng, Xanh lá, Xanh dương, Hồng, Cam).</li>
+        <li><strong>Ghi Âm & Nghe Lại (TTS):</strong> Ghi âm giọng đọc hoặc sử dụng tính năng <strong>Text-to-Speech</strong> <span class="new-badge">MỚI</span> để nghe đọc câu hỏi/câu trả lời (hỗ trợ giọng hệ thống và gTTS Tiếng Việt online). Có thể tùy chỉnh giọng đọc, tốc độ, cao độ, âm lượng.</li>
+         <li><strong>Checklist Phân cấp & Tương tác</strong> <span class="new-badge">MỚI</span>: Checklist được tạo tự động hoặc thủ công dưới dạng cây, cho phép <strong>thêm/sửa/xóa mục</strong>, tạo <strong>mục con</strong>, và <strong>sắp xếp lại thứ tự</strong> bằng kéo thả.</li>
+         <li><strong>Sơ đồ Dàn Ý (Outline View)</strong> <span class="new-badge">Nâng cấp</span>: Tự động hiển thị cấu trúc dàn ý dạng cây từ markers phân cấp (<code>#</code>, <code>##</code>,...), giúp bao quát bố cục bài viết tốt hơn.</li>
+         <li><strong>Lịch sử Thực hành</strong> <span class="version-tag">v6+</span>: Lưu lại các phiên bản trả lời bạn đã viết trong quá trình luyện tập.</li>
+         <li><strong>Liên kết Kiến thức (Linking)</strong> <span class.version-tag>v8+</span>: Tạo <strong>liên kết hai chiều</strong> giữa các câu hỏi và flashcards liên quan, giúp bạn dễ dàng chuyển đổi và khám phá các mối liên hệ kiến thức.</li>
+         <li><strong>Import/Export Chủ đề</strong> <span class="new-badge">MỚI</span>: Dễ dàng chia sẻ hoặc sao lưu toàn bộ nội dung (câu hỏi, flashcards, meta, checklist, links...) của một chủ đề dưới dạng file <code>.htl</code>. Tự động đăng ký kiểu file trên Windows.</li>
+    </ul>
+
+    <h2>Phương pháp Học tập & Gamification:</h2>
+    <ul>
+        <li><strong>Lặp lại Ngắt quãng (SRS):</strong> Tính năng cốt lõi giúp bạn ôn tập đúng thời điểm để ghi nhớ dài hạn. Tự động lên lịch dựa trên đánh giá Khó/Ổn/Dễ.</li>
+        <li><strong>Các Chế độ Thực hành Chủ động:</strong> Học Toàn Bộ, Học Theo Đoạn, Điền Từ Khóa (Cloze), Đọc-Tóm tắt-Kiểm tra, Viết Lại Từ Nhớ (Hẹn giờ), Ôn Flashcard, Chỉ Đọc.</li>
+        <li><strong>So sánh Thông minh (Inline Diff)</strong> <span class="version-tag">v6+</span>: Chỉ rõ <strong>từng từ khác biệt</strong> giữa bài làm và đáp án (bỏ qua markers). <span class="comparison-example">Ví dụ: <span class="removed">từ sai</span><span class="added">từ đúng</span> này.</span></li>
+        <li><strong>Thống kê & Phân tích</strong> <span class="new-badge">MỚI</span>: Theo dõi tiến độ học tập qua <strong>biểu đồ trực quan</strong> (lượt ôn theo ngày, tỷ lệ đánh giá dạng tròn) và các <strong>nhận xét, tóm tắt</strong> số liệu trong khoảng thời gian tùy chọn.</li>
+        <li>
+            <strong>Gamification - Học mà chơi</strong> <span class="new-badge">MỚI</span>:
+            <ul>
+                <li><span class="game-icon"><i class="fas fa-question-circle"></i></span><strong>Trắc nghiệm (Quiz):</strong> Ôn tập nhanh flashcards dưới dạng câu hỏi nhiều lựa chọn có tính giờ và điểm số.</li>
+                <li><span class="game-icon"><i class="fas fa-random"></i></span><strong>Xếp Chữ (Word Scramble):</strong> Sắp xếp lại các chữ cái bị xáo trộn để tạo thành từ khóa đúng (lấy từ tags, flashcards).</li>
+                <li><span class="game-icon"><i class="fas fa-hand-pointer"></i></span><strong>Kéo Thả (Drag & Drop):</strong> Ghép nối các cặp thông tin (ví dụ: mặt trước và mặt sau flashcard) bằng cách kéo thả.</li>
+                 <li><span class="game-icon"><i class="fas fa-user-secret"></i></span><strong>Hangman (Đoán chữ):</strong> Đoán từng chữ cái để tìm ra từ bí mật (lấy từ tags, flashcards).</li>
+                <li><span class="game-icon"><i class="fas fa-puzzle-piece"></i></span><strong>Ghép Tranh (Jigsaw):</strong> Giải đố bằng cách ghép các mảnh cắt từ ảnh flashcard lại thành hình hoàn chỉnh.</li>
+                <li><span class="game-icon"><i class="fas fa-chart-line"></i></span><strong>Mô phỏng SRS:</strong> "Chơi" với thuật toán SRS, xem lịch ôn tập thay đổi thế nào khi bạn giả lập các đánh giá khác nhau.</li>
+                <li><i>(Các game khác như Phiêu lưu, Mô phỏng chuyên sâu đang được xem xét cho các bản cập nhật tương lai!)</i></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Tiện ích Khác:</h2>
+    <ul>
+        <li><strong>Xuất dữ liệu cho Anki/Quizlet:</strong> Tạo file text dễ dàng (kèm thẻ ảnh mặt trước/sau).</li>
+        <li><strong>Giao diện Tùy biến:</strong> Hỗ trợ <strong>Theme Sáng/Tối/Tùy chỉnh</strong> (qua file QSS).</li>
+        <li><strong>Lưu trữ An toàn & Offline:</strong> Dữ liệu lưu trên máy tính, có sao lưu tự động.</li>
+        <li><strong>Kiểm tra Cập nhật:</strong> Tự động hoặc thủ công kiểm tra phiên bản mới.</li>
+    </ul>
+
+    <div class="download-button-section">
+        <a href="https://www.dropbox.com/scl/fi/psaq4d6s6cqz6cslqvskv/InstallerV2.exe?rlkey=igbokx6syapb4ekmu061ze7pw&st=8af3i5g8&dl=1" {# Luôn trỏ đến latest release #}
+           class="btn-download-app"
+           target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-download"></i>
+            Tải Phiên Bản Mới Nhất
+        </a>
+        <span class="platform-note">(Hiện tại chủ yếu hỗ trợ Windows qua file EXE. Các nền tảng khác cần chạy từ mã nguồn Python.)</span>
+    </div>
+
+</main>
+
+<%- include('partials/footer') %>

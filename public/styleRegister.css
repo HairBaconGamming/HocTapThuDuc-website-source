@@ -1,0 +1,415 @@
+/* --- Artistic Registration Page Redesign --- */
+
+.register-page-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 20px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-dark); /* Base */
+}
+
+/* Layer 1: Background */
+.register-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(160deg, #1a1a2e 0%, var(--bg-dark) 60%); /* Slightly lighter base */
+}
+
+.bg-shape { /* Reused class */
+    position: absolute;
+    border-radius: 30% 70% 55% 45% / 40% 30% 70% 60%; /* Different organic shape */
+    filter: blur(90px);
+    will-change: transform;
+    mix-blend-mode: plus-lighter; /* Different blend mode for brighter feel */
+    opacity: 0.15;
+}
+.shape-reg-1 { /* Primary color */
+    width: 60vw; height: 60vw; min-width: 400px; min-height: 400px;
+    background: var(--primary-color);
+    top: -15%; left: -20%;
+    animation: floatShape 35s infinite ease-in-out alternate;
+}
+.shape-reg-2 { /* Accent color */
+    width: 50vw; height: 50vw; min-width: 350px; min-height: 350px;
+    background: var(--accent-color);
+    bottom: -20%; right: -15%;
+    animation: floatShape 45s infinite ease-in-out alternate-reverse;
+}
+.shape-reg-3 { /* Secondary color */
+     width: 40vw; height: 40vw; min-width: 300px; min-height: 300px;
+     background: var(--secondary-color);
+     bottom: 10%; left: 5%;
+     animation: floatShape 40s infinite ease-in-out;
+}
+@keyframes floatShape { /* Slightly different animation */
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    50% { transform: translate(10vw, 5vh) rotate(20deg) scale(1.05); }
+    100% { transform: translate(-5vw, -10vh) rotate(-15deg) scale(0.95); }
+}
+
+.grid-pattern-light { /* Lighter grid */
+    position: absolute;
+    inset: -50px;
+    background-image: linear-gradient(rgba(var(--primary-color-rgb), 0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.04) 1px, transparent 1px);
+    background-size: 60px 60px; /* Larger grid */
+    opacity: 0.3;
+    animation: panGrid 50s linear infinite reverse; /* Different direction */
+}
+/* @keyframes panGrid defined previously */
+
+
+/* Layer 2: Form Container */
+.register-form-container-wrapper {
+    perspective: 1600px; /* Slightly deeper perspective */
+    z-index: 1;
+}
+
+.register-form-container {
+    width: 100%;
+    max-width: 480px; /* Slightly wider */
+    background: rgba(var(--bg-dark-rgb), 0.7);
+    backdrop-filter: blur(15px) saturate(140%);
+    -webkit-backdrop-filter: blur(15px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-large);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+    opacity: 0; visibility: hidden; /* Initial state for GSAP */
+    transform-style: preserve-3d;
+}
+
+.form-border-glow-register { /* Slightly different glow */
+    position: absolute; inset: -2px; border-radius: inherit;
+    background: conic-gradient(
+        from var(--angle, 0deg),
+        rgba(var(--accent-color-rgb), 0) 10%, /* Use accent color */
+        rgba(var(--accent-color-rgb), 0.7),
+        rgba(var(--secondary-color-rgb), 0.6),
+        rgba(var(--accent-color-rgb), 0) 70%
+    );
+    filter: blur(18px); /* Softer blur */
+    z-index: 0; opacity: 0;
+    transition: opacity 0.6s ease;
+    animation: rotateGradient 7s linear infinite paused;
+}
+.register-form-container:hover .form-border-glow-register {
+    opacity: 0.5; animation-play-state: running;
+}
+/* Ensure @property --angle and @keyframes rotateGradient exist */
+
+
+.form-content { padding: 40px 45px; position: relative; z-index: 1; }
+.form-header { text-align: center; margin-bottom: 30px; }
+.form-title { font-size: 2.1rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px; opacity: 1; visibility: visible; }
+.form-subtitle { font-size: 1rem; color: var(--text-medium); }
+
+/* Form Progress Indicator (Optional Styling) */
+.form-progress { display: flex; align-items: center; justify-content: center; margin: 20px 0; gap: 5px;}
+.progress-step { color: var(--text-medium); font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
+.progress-step.active { color: var(--primary-color); border-color: var(--primary-color); background-color: rgba(var(--primary-color-rgb), 0.1); font-weight: 500; }
+.progress-line { height: 1px; flex-grow: 1; background-color: var(--border-color); max-width: 50px; }
+
+/* Input Fields (Reuse login styles, potentially override focus color) */
+.input-field-group { position: relative; margin-bottom: 25px; }
+.form-input-v2 { /* Base styles from login */ width: 100%; padding: 12px 15px 12px 45px; background-color: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.2); color: var(--text-light); font-size: 1rem; transition: border-color 0.3s ease; position: relative; z-index: 2; outline: none; }
+.form-input-v2::placeholder { color: transparent; }
+.form-label-v2 { position: absolute; top: 12px; left: 45px; color: var(--text-medium); opacity: 0.8; pointer-events: none; transition: all 0.3s ease; z-index: 1; font-size: 1rem; }
+.form-input-v2:focus + .form-label-v2,
+.input-field-group.filled .form-label-v2 { transform: translateY(-22px) translateX(-45px) scale(0.8); color: var(--secondary-color); /* Use secondary color for register focus */ font-size: 0.8rem; }
+.input-focus-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--secondary-color), var(--accent-color)); /* Register gradient */ transform: scaleX(0); transform-origin: center; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 3; }
+.form-input-v2:focus ~ .input-focus-line { transform: scaleX(1); }
+.input-icon { position: absolute; top: 14px; left: 15px; color: var(--text-medium); opacity: 0.5; transition: all 0.3s ease; z-index: 3; font-size: 1rem; }
+.form-input-v2:focus ~ .input-icon { color: var(--secondary-color); /* Secondary color */ opacity: 1; }
+.password-toggle-btn { /* Styles from login */ position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-medium); opacity: 0.7; cursor: pointer; padding: 5px; z-index: 3; font-size: 1rem; transition: all 0.3s ease; }
+.password-toggle-btn:hover { color: var(--text-light); transform: scale(1.1); }
+
+/* Validation Hint Styling */
+.validation-hint {
+    font-size: 0.75rem;
+    color: var(--text-medium);
+    opacity: 0.7;
+    padding-left: 15px;
+    margin-top: 5px;
+    max-height: 0; /* Hidden initially */
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+}
+.input-field-group:focus-within .validation-hint {
+    max-height: 20px; /* Reveal on focus */
+    opacity: 0.7;
+}
+/* Style for :invalid state */
+.form-input-v2:invalid:not(:placeholder-shown):not(:focus) { /* Show invalid when not focused and has input */
+    border-bottom-color: rgba(var(--danger-color), 0.5);
+}
+.form-input-v2:invalid:not(:placeholder-shown):not(:focus) ~ .input-icon {
+    color: var(--danger-color);
+    opacity: 0.8;
+}
+.form-input-v2:invalid:not(:placeholder-shown):not(:focus) + .form-label-v2 {
+     color: var(--danger-color); /* Label turns red */
+}
+
+
+/* Styled Select Box */
+.select-group-styled {
+    position: relative;
+    background: rgba(var(--bg-dark-rgb), 0.8);
+    border-radius: var(--border-radius-medium); /* Match inputs */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.select-group-styled:focus-within,
+.select-group-styled:hover {
+     border-color: rgba(var(--secondary-color-rgb), 0.5);
+     box-shadow: 0 0 0 3px rgba(var(--secondary-color-rgb), 0.15);
+}
+
+.form-select-v2 {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    width: 100%;
+    padding: 12px 40px 12px 45px; /* Adjust padding */
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 1rem;
+    cursor: pointer;
+    outline: none;
+    position: relative; z-index: 2; /* Above label */
+    border-radius: inherit; /* Take parent's radius */
+}
+/* Style the placeholder option */
+.form-select-v2 option[value=""] {
+    color: var(--text-medium);
+    opacity: 0.8;
+}
+.form-select-v2:required:invalid { /* Style if required and no value selected */
+  color: var(--text-medium);
+}
+.form-select-v2 option { /* Style dropdown options */
+    background: var(--bg-dark);
+    color: var(--text-light);
+}
+
+.form-label-select-v2 { /* Label for select */
+    position: absolute;
+    top: 12px; left: 45px; color: var(--text-medium); opacity: 0.8;
+    pointer-events: none; transition: all 0.3s ease; z-index: 1; font-size: 1rem;
+}
+/* Move label up when an option is selected */
+.select-group-styled.filled .form-label-select-v2 {
+    transform: translateY(-22px) translateX(-45px) scale(0.8);
+    color: var(--secondary-color);
+    font-size: 0.8rem;
+}
+.select-group-styled:focus-within .form-label-select-v2 { /* Also move on focus */
+    transform: translateY(-22px) translateX(-45px) scale(0.8);
+    color: var(--secondary-color);
+    font-size: 0.8rem;
+}
+
+
+.select-icon { /* Icon for select */
+    position: absolute; top: 14px; left: 15px; color: var(--text-medium);
+    opacity: 0.5; transition: all 0.3s ease; z-index: 3; font-size: 1rem;
+}
+.select-arrow { /* Dropdown arrow for select */
+    position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+    color: var(--text-medium); opacity: 0.7; pointer-events: none; z-index: 3;
+    transition: transform 0.3s ease;
+}
+.select-group-styled:focus-within .select-icon { color: var(--secondary-color); opacity: 1; }
+.select-group-styled:focus-within .select-arrow { transform: translateY(-50%) rotate(180deg); }
+
+/* Turnstile Group */
+.turnstile-group {
+    display: flex;
+    justify-content: center; /* Center the widget */
+    margin-bottom: 25px;
+}
+
+/* === Add this to your Register Page CSS === */
+
+/* --- Submit Button v2 - Enhanced --- */
+.btn-submit-v2 {
+    /* Core Button Layout & Typography */
+    display: block; /* Full width */
+    width: 100%;
+    padding: 14px 25px; /* Adjust padding as needed */
+    border: none;
+    border-radius: var(--border-radius-medium); /* Or --border-radius-pill */
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    position: relative; /* Crucial for pseudo-elements and effects */
+    overflow: hidden; /* Contain effects */
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                background 0.4s ease; /* Transition background */
+    z-index: 1; /* Base stacking context */
+    will-change: transform, box-shadow; /* Performance hint */
+    outline: none; /* Remove default outline */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    text-align: center; /* Ensure text is centered */
+}
+
+/* Specific Gradient/Colors for Register Button */
+.register-submit-btn {
+    background: linear-gradient(60deg, var(--secondary-color), var(--accent-color)); /* Default gradient */
+    color: #333; /* Dark text for contrast on yellow/pink */
+    box-shadow: 0 6px 18px -5px rgba(var(--secondary-color-rgb), 0.4); /* Softer shadow */
+}
+
+/* Hover State (Non-Disabled) */
+.btn-submit-v2:hover:not(:disabled) {
+    transform: translateY(-4px) scale(1.02); /* More lift */
+    box-shadow: 0 10px 25px -5px rgba(var(--secondary-color-rgb), 0.5);
+}
+.register-submit-btn:hover:not(:disabled) {
+     background: linear-gradient(60deg, var(--accent-color), var(--secondary-color)); /* Swap gradient */
+}
+
+/* Active State (Non-Disabled) */
+.btn-submit-v2:active:not(:disabled) {
+    transform: translateY(0px) scale(0.97); /* Push down slightly */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 2px 5px rgba(var(--secondary-color-rgb), 0.2);
+}
+
+/* Disabled State */
+.btn-submit-v2:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none; /* Remove shadow when disabled */
+}
+
+/* Button Text Wrapper */
+.btn-submit-v2 .btn-text {
+    position: relative; /* To stay above effects */
+    z-index: 2;
+    display: inline-block; /* Needed for potential text animations */
+    transition: opacity 0.2s ease, visibility 0.2s ease; /* For loading state */
+    color: inherit; /* Inherit color */
+}
+.btn-submit-v2 .btn-text .fas { /* Icon inside text span */
+    margin-right: 8px;
+    font-size: 0.9em;
+}
+
+
+/* Liquid Fill Effect */
+.btn-submit-v2 .btn-liquid-effect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px; /* Start small */
+    height: 20px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    z-index: 1; /* Behind text */
+    pointer-events: none; /* Don't interfere with clicks */
+    /* Specific liquid color for register */
+}
+.register-submit-btn .register-liquid {
+     background-color: rgba(255, 255, 255, 0.35); /* Semi-transparent white */
+}
+/* Animate liquid on hover */
+.btn-submit-v2:hover:not(:disabled) .btn-liquid-effect {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(30); /* Expand large */
+    transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.9s ease-out; /* Smooth, slightly longer expansion */
+}
+/* Fade out liquid after hover animation (can be done with JS on mouseleave if preferred) */
+.btn-submit-v2:not(:hover) .btn-liquid-effect {
+    opacity: 0;
+    transition: opacity 0.4s ease-in;
+}
+
+
+/* Placeholder for Particle Effect */
+.btn-submit-v2 .btn-particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden; /* Contain particles */
+    z-index: 0; /* Furthest back */
+    pointer-events: none;
+    /* Styles for particle elements (if created by JS) would go here */
+    /* Example:
+    .btn-particles .particle {
+        position: absolute;
+        width: 3px; height: 3px;
+        border-radius: 50%;
+        background-color: white;
+        opacity: 0;
+    }
+    */
+}
+
+/* Loading State Spinner (Replaces text) */
+.btn-submit-v2.submitting .btn-text {
+    opacity: 0;
+    visibility: hidden;
+    transition-delay: 0s; /* Hide text immediately */
+}
+.btn-submit-v2.submitting::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    top: calc(50% - 12px); left: calc(50% - 12px);
+    border: 3px solid transparent; /* Start transparent */
+    border-top-color: currentColor; /* Use button text color */
+    border-radius: 50%;
+    animation: buttonSpinner 0.8s linear infinite;
+    z-index: 3; /* Above effects */
+    opacity: 0; /* Fade in */
+    animation: fadeInSpinner 0.3s 0.1s forwards; /* Fade spinner in after text hides */
+}
+/* Specific Spinner Color for Register */
+.register-submit-btn.submitting::after {
+    border-color: rgba(51, 51, 51, 0.3); /* Darker transparent border */
+    border-top-color: #333; /* Dark top border */
+}
+
+
+@keyframes buttonSpinner {
+    to { transform: rotate(360deg); }
+}
+@keyframes fadeInSpinner {
+    to { opacity: 1; }
+}
+
+/* Switch Auth Link */
+.switch-auth-link { /* Styles from login */ text-align: center; margin-top: 30px; font-size: 0.9rem; color: var(--text-medium); }
+.switch-auth-link a { color: var(--secondary-color); font-weight: 600; text-decoration: none; } /* Use secondary color */
+.switch-auth-link a:hover { text-decoration: underline; color: var(--accent-color); }
+
+/* Responsive */
+@media (max-width: 480px) {
+    .register-page-section { padding: 30px 15px; }
+    .register-form-container { max-width: 100%; }
+    .form-content { padding: 30px 20px; }
+    .form-title { font-size: 1.9rem; }
+    .form-subtitle { font-size: 0.9rem; }
+    .input-field-group { margin-bottom: 20px; }
+    .form-input-v2, .form-select-v2 { padding: 11px 10px 11px 40px; font-size: 0.95rem;}
+    .form-label-v2, .form-label-select-v2 { left: 40px; top: 11px; font-size: 0.95rem; }
+    .form-input-v2:focus + .form-label-v2, .input-field-group.filled .form-label-v2,
+    .select-group-styled.filled .form-label-select-v2, .select-group-styled:focus-within .form-label-select-v2 {
+        transform: translateY(-20px) translateX(-40px) scale(0.75);
+    }
+    .input-icon, .select-icon { top: 13px; left: 12px; font-size: 0.9rem;}
+    .password-toggle-btn { top: 9px; }
+    .select-arrow { right: 12px; }
+    .register-submit-btn { padding: 13px 15px; font-size: 1rem; }
+    .switch-auth-link { font-size: 0.85rem; }
+    .turnstile-group { transform: scale(0.9); transform-origin: center; } /* Scale down Turnstile */
+}

@@ -1,0 +1,273 @@
+<!-- views/newsPost.ejs -->
+<%- include('partials/header', { title: editMode ? 'Chỉnh sửa Tin Tức' : 'Soạn Tin Tức Mới', user: user, activePage: 'newsPost' }) %> <%# Updated activePage %>
+<link rel="stylesheet" href="/styleNewsPost.css"> 
+<%# Include necessary CSS/JS in header or footer %>
+<%# Toast UI Editor CSS %>
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+<%# KaTeX CSS %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css"> <%# Use consistent KaTeX version %>
+
+<section class="news-composer-page-section"> <%# Unique Class %>
+
+    <!-- Background Elements -->
+    <div class="composer-background">
+        <div class="bg-gradient-soft"></div>
+        <div class="bg-grid-pattern-faint"></div>
+    </div>
+
+    <div class="container composer-container">
+
+        <form action="<%= editMode ? ('/news/' + newsItem._id + '/edit') : '/news/post' %>" method="POST" class="news-composer-form" id="newsPostForm"> <%# Add ID, use PUT for edit %>
+            <% if (editMode) { %>
+                <%# Method Override for PUT request %>
+                <!-- <input type="hidden" name="_method" value="PUT"> --> <%# If using method-override package %>
+            <% } %>
+
+            <!-- Form Header -->
+            <div class="composer-header" data-animate="fade-down">
+                <h2><%= editMode ? 'Chỉnh sửa Tin Tức' : 'Soạn Tin Tức Mới' %></h2>
+                <p><%= editMode ? 'Cập nhật nội dung và chi tiết.' : 'Chia sẻ thông tin quan trọng với cộng đồng.' %></p>
+            </div>
+
+             <!-- Flash Message Area -->
+             <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
+                <div class="composer-flash-message alert-<%= message.type || 'error' %>" data-animate="fade-in">
+                    <%= message.message %>
+                </div>
+            <% } %>
+
+            <!-- Form Fields -->
+            <div class="composer-fields">
+                <!-- Title Input -->
+                <div class="input-field-group composer-input-group" data-animate="fade-up" data-anim-delay="0.1">
+                    <input type="text" name="title" id="newsTitle" class="form-input-v2" placeholder=" " required value="<%= editMode ? (newsItem.title || '') : '' %>" autocomplete="off">
+                    <label for="newsTitle" class="form-label-v2">Tiêu đề Tin tức</label>
+                    <span class="input-focus-line"></span>
+                    <i class="fas fa-heading input-icon"></i>
+                </div>
+
+                <!-- Category Select -->
+                <div class="input-field-group composer-input-group select-group-styled" data-animate="fade-up" data-anim-delay="0.2">
+                     <select name="category" id="newsCategory" class="form-select-v2" required>
+                         <% const currentCategory = editMode ? (newsItem.category || 'Học tập') : 'Học tập'; %>
+                         <option value="" disabled <%= !currentCategory ? 'selected' : '' %>>Chọn Thể loại</option>
+                         <option value="Học tập" <%= currentCategory === 'Học tập' ? 'selected' : '' %>>Học tập</option>
+                         <option value="Tuyển sinh" <%= currentCategory === 'Tuyển sinh' ? 'selected' : '' %>>Tuyển sinh</option>
+                         <option value="Thông báo" <%= currentCategory === 'Thông báo' ? 'selected' : '' %>>Thông báo</option>
+                         <option value="Tài khoản PRO" <%= currentCategory === 'Tài khoản PRO' ? 'selected' : '' %>>Tài khoản PRO</option>
+                     </select>
+                      <label for="newsCategory" class="form-label-select-v2">Thể loại</label>
+                      <i class="fas fa-tags select-icon"></i>
+                      <i class="fas fa-chevron-down select-arrow"></i>
+                 </div>
+
+
+                <!-- Toast UI Editor Container -->
+                 <div class="form-group composer-editor-group" data-animate="fade-up" data-anim-delay="0.3">
+                    <label for="editor" class="editor-label">Nội dung Chi tiết</label>
+                    <div class="editor-wrapper"> <%# Wrapper for styling %>
+                        <div id="editor"><%- editMode ? (newsItem.content || '') : '' %></div>
+                    </div>
+                    <!-- Hidden input to store Markdown content -->
+                    <input type="hidden" name="content" id="newsContent">
+                </div>
+
+            </div> <!-- End .composer-fields -->
+
+            <!-- Form Actions -->
+            <div class="composer-actions" data-animate="fade-up" data-anim-delay="0.4">
+                <a href="/news" class="btn btn-secondary-outline cancel-link loading-link">
+                    <i class="fas fa-times"></i> Hủy bỏ
+                </a>
+                 <button type="submit" class="btn-submit-v2 composer-submit-btn" id="newsSubmitBtn">
+                     <span class="btn-text">
+                         <% if (editMode) { %>
+                             <i class="fas fa-save"></i> Cập nhật Tin
+                         <% } else { %>
+                              <i class="fas fa-paper-plane"></i> Đăng Tin
+                         <% } %>
+                     </span>
+                     <span class="btn-liquid-effect composer-liquid"></span>
+                     <span class="btn-particles composer-particles"></span>
+                 </button>
+            </div>
+
+        </form>
+
+    </div> <!-- End .composer-container -->
+</section>
+
+<%- include('partials/footer') %>
+
+<!-- JS Libraries (Ensure they are loaded correctly, usually in footer) -->
+<!-- MathLive (If needed by mathEditorPlugin) -->
+<!-- <link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive.core.css" /> -->
+<!-- <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script> -->
+<!-- KaTeX -->
+<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script> -->
+<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script> -->
+<!-- Toast UI Editor JS -->
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<!-- Your custom math plugin -->
+<script type="module" src="/js/plugins/mathEditorPlugin.js"></script> <%# Ensure path is correct %>
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<!-- Your custom JS -->
+<script src="/js/alerts.js"></script>
+
+<!-- Page Specific JS -->
+<script type="module">
+  // Ensure plugin is loaded before initializing editor
+  import mathEditorPlugin from '/js/plugins/mathEditorPlugin.js'; // Assuming this path works
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- Config & Refs ---
+    if (typeof toastui === 'undefined' || typeof toastui.Editor === 'undefined') {
+        console.error("Toast UI Editor not loaded!"); return;
+    }
+    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const newsPostForm = document.getElementById('newsPostForm');
+    const submitButton = document.getElementById('newsSubmitBtn');
+    const editorEl = document.querySelector("#editor");
+    const contentInput = document.querySelector('#newsContent');
+
+    // --- Initialize Toast UI Editor ---
+    let editorInstance;
+    try {
+        editorInstance = new toastui.Editor({
+            el: editorEl,
+            initialEditType: "markdown",
+            previewStyle: "vertical",
+            height: "500px", // Increased height
+            initialValue: editorEl.textContent.trim(), // Get initial value from hidden div content
+             usageStatistics: false, // Disable statistics
+             // Use custom toolbar items if desired
+             toolbarItems: [
+                 ['heading', 'bold', 'italic', 'strike'],
+                 ['hr', 'quote'],
+                 ['ul', 'ol', 'task'], // Removed 'indent', 'outdent' if not needed
+                 ['table', 'image', 'link'],
+                 ['code', 'codeblock'],
+                 // Add custom math button if plugin provides one or handle differently
+             ],
+             hideModeSwitch: false, // Show mode switch (MD/WYSIWYG)
+            plugins: typeof mathEditorPlugin !== 'undefined' ? [[mathEditorPlugin, { /* plugin options if any */ }]] : [],
+            // Add custom buttons or hooks here if needed
+        });
+         console.log("Toast UI Editor Initialized");
+    } catch (error) {
+         console.error("Error initializing Toast UI Editor:", error);
+          editorEl.innerHTML = '<p style="color: var(--danger-color);">Lỗi tải trình soạn thảo. Vui lòng thử lại.</p>';
+          return; // Stop script if editor fails
+    }
+
+
+    // --- KaTeX Rendering Hook (If needed - depends on math plugin) ---
+    // It's often better if the plugin handles rendering internally
+    /*
+    editorInstance.addHook("afterPreviewRender", () => {
+        let previewEl = editorInstance.getPreviewEl();
+        if (!previewEl) return;
+        // ... (KaTeX rendering logic as before) ...
+         if (typeof renderMathInElement === 'function') {
+              renderMathInElement(previewEl, { /* KaTeX options * / });
+         }
+    });
+    */
+
+
+    // --- Update Hidden Input Before Submit ---
+    newsPostForm?.addEventListener('submit', function(e) {
+         if (!editorInstance) {
+             console.error("Editor instance not available on submit.");
+             e.preventDefault(); // Prevent submission if editor failed
+             showAlert("Lỗi trình soạn thảo, không thể gửi bài.", "error");
+             return;
+         }
+         contentInput.value = editorInstance.getMarkdown(); // Get Markdown content
+
+         // Add submitting state to button
+          if (newsPostForm.checkValidity() && submitButton) {
+             submitButton.classList.add('submitting');
+             submitButton.disabled = true;
+             document.getElementById("loading-overlay")?.classList.add("active"); // Show global overlay
+          } else if (submitButton) {
+             // Optional: Shake invalid fields (excluding editor for simplicity)
+              newsPostForm.querySelectorAll('input:invalid, select:invalid').forEach(field => {
+                  const group = field.closest('.input-field-group') || field.closest('.select-group-styled');
+                  if(group) gsap.fromTo(group, { x: 0 }, { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' });
+              });
+          }
+    });
+
+     // --- Input Field/Select Styling ---
+     // (Reuse JS logic from register/login for .input-field-group and .select-group-styled)
+     document.querySelectorAll('.form-input-v2').forEach(input => { /* ... focus/blur/filled logic ... */ });
+     document.querySelectorAll('.form-select-v2').forEach(select => { /* ... focus/blur/filled/change logic ... */ });
+
+     // --- Initial Page Animations ---
+     if (!prefersReducedMotion) {
+         const tl = gsap.timeline({ delay: 0.2 });
+         tl.from('[data-animate="fade-down"]', { duration: 0.8, y: -30, autoAlpha: 0, ease: 'power2.out' })
+           .from('.composer-flash-message', { duration: 0.5, autoAlpha: 0, ease: 'none'}, "-=0.3") // Fade flash quickly if present
+           .from('.composer-fields > .composer-input-group', { // Stagger Title and Category
+               duration: 0.7, autoAlpha: 0, y: 25, stagger: 0.1, ease: 'power2.out'
+           }, "-=0.3")
+            .from('.composer-editor-group', { // Fade/slide editor section
+                duration: 0.9, autoAlpha: 0, y: 30, ease: 'power3.out'
+            }, "-=0.4")
+           .from('.composer-actions > *', { // Stagger action buttons
+               duration: 0.7, autoAlpha: 0, y: 20, stagger: 0.1, ease: 'power2.out'
+           }, "-=0.5");
+     } else {
+         gsap.set('[data-animate="fade-down"], [data-animate="fade-in"], .composer-fields > *, .composer-actions > *', { autoAlpha: 1 });
+     }
+
+     // --- Loading Link Script ---
+     document.querySelectorAll(".loading-link").forEach(anchor => { /* ... Keep as before ... */ });
+
+      // --- Flash Message via JS Alert ---
+      const flashData = document.querySelector('.composer-flash-message');
+      if (flashData && typeof showAlert === 'function') {
+          const message = flashData.textContent.trim();
+          let type = 'info'; // Default
+          if (flashData.classList.contains('alert-error')) type = 'error';
+          if (flashData.classList.contains('alert-success')) type = 'success';
+          if (flashData.classList.contains('alert-warning')) type = 'warning';
+          showAlert(message, type, 5000);
+           flashData.style.display = 'none'; // Hide original flash div
+      } else if (flashData) {
+           console.error("showAlert function not found.");
+      }
+    
+      const inputs = document.querySelectorAll('.form-input-v2');
+      inputs.forEach(input => {
+          const group = input.closest('.input-field-group'); // Find parent group
+
+          // Function to check and set filled state
+          const checkFilled = () => {
+              if (input.value && input.value.trim() !== "") { // Check for non-empty value
+                  group?.classList.add('filled');
+              } else {
+                  group?.classList.remove('filled');
+              }
+          };
+
+          // Listener for focus
+          input.addEventListener('focus', () => {
+              group?.classList.add('focused');
+          });
+
+          // Listener for blur
+          input.addEventListener('blur', () => {
+              group?.classList.remove('focused');
+              checkFilled(); // Check filled state on blur
+          });
+
+          // Initial check on page load (for edit mode pre-fill or browser autofill)
+          checkFilled(); // <<< THIS IS THE IMPORTANT PART for the fix
+      });
+
+  }); // End DOMContentLoaded
+</script>

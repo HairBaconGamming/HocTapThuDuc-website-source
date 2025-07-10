@@ -1,0 +1,623 @@
+/* public/styleHeader.css - MASTERPIECE REDESIGN */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); /* Changed font */
+
+/* --- Enhanced CSS Variables --- */
+:root {
+  --primary-color: #8a7ffb; /* Slightly softer purple */
+  --primary-color-rgb: 138, 127, 251;
+  --secondary-color: #ff7eb9; /* Slightly softer pink */
+  --secondary-color-rgb: 255, 126, 185;
+  --accent-color: #ffde7d; /* Softer yellow */
+  --accent-color-rgb: 255, 222, 125;
+  --glow-color-primary: rgba(var(--primary-color-rgb), 0.5);
+  --glow-color-secondary: rgba(var(--secondary-color-rgb), 0.3);
+
+  --text-light: #e8eaf6; /* Off-white, softer */
+  --text-medium: #a0a0c0;
+  --text-dark: #1a1a2e; /* Deep blue-black */
+  --bg-dark: #0f0f1e; /* Even deeper blue-black */
+  --bg-dark-rgb: 15, 15, 30;
+  --bg-glass-light: rgba(var(--bg-dark-rgb), 0.5); /* Lighter glass */
+  --bg-glass-dark: rgba(var(--bg-dark-rgb), 0.8); /* Darker glass on scroll */
+  --bg-dropdown: rgba(20, 20, 40, 0.85); /* Slightly different dropdown bg */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(var(--primary-color-rgb), 0.3);
+
+  --font-main: 'Inter', sans-serif; /* New Font */
+  --font-heading: 'Inter', sans-serif; /* Consistent font */
+
+  --header-height: 125px;
+  --header-height-scrolled: 65px;
+
+  /* Refined Transitions */
+  --transition-snap: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy */
+  --transition-fluid: 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth & long */
+  --transition-swift: 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Quick */
+}
+
+/* --- Reset and Body Basics --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  font-family: var(--font-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+  /* Subtle animated gradient background */
+  background: linear-gradient(170deg, var(--bg-dark) 30%, #1a1a2e 70%, #2a2a4e 100%);
+  background-size: 100% 150%; /* Allow gradient shift */
+  animation: subtleGradientShift 30s ease infinite alternate;
+}
+
+@keyframes subtleGradientShift {
+  from { background-position: 0% 0%; }
+  to { background-position: 0% 100%; }
+}
+
+main {
+  padding-top: var(--header-height);
+  transition: padding-top var(--transition-fluid); /* Smooth content shift */
+}
+
+body.header-scrolled main {
+    padding-top: var(--header-height-scrolled);
+}
+
+
+a {
+  color: var(--secondary-color);
+  text-decoration: none;
+  transition: color var(--transition-swift);
+}
+a:hover {
+  color: var(--primary-color);
+}
+
+ul { list-style: none; }
+
+/* --- Header - The Centerpiece --- */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  z-index: 1000;
+
+  /* Base Glass Effect */
+  background: var(--bg-glass-light);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border-bottom: 1px solid var(--border-color);
+
+  /* Smooth Transitions for Multiple Properties */
+  transition:
+    height var(--transition-fluid),
+    background var(--transition-fluid),
+    backdrop-filter var(--transition-fluid),
+    box-shadow var(--transition-fluid);
+
+  will-change: height, background, backdrop-filter, box-shadow; /* Perf hint */
+}
+
+/* Header Scrolled State */
+.header.scrolled {
+  height: var(--header-height-scrolled);
+  background: var(--bg-glass-dark);
+  backdrop-filter: blur(16px) saturate(150%); /* Enhance effect */
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.4);
+  border-bottom-color: transparent; /* Hide border when shadow appears */
+}
+
+/* Thin Accent Line at the Top */
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color), var(--accent-color));
+    background-size: 200% 100%;
+    animation: headerAccentFlow 5s linear infinite;
+    opacity: 0;
+    transition: opacity var(--transition-fluid);
+}
+.header.scrolled::before {
+    opacity: 0.8; /* Show accent line when scrolled */
+}
+
+@keyframes headerAccentFlow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  max-width: 1350px; /* Wider container */
+  margin: 0 auto;
+  padding: 0 25px;
+}
+
+/* --- Logo - Enhanced Interaction --- */
+.logo {
+  display: flex;
+  align-items: center;
+  color: var(--text-light) !important;
+  font-family: var(--font-heading);
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  font-weight: 600; /* Slightly less heavy */
+  letter-spacing: 0.5px;
+  transition: transform var(--transition-fluid);
+  transform-origin: left center;
+  position: relative; /* For pseudo elements */
+}
+
+.logo-img {
+  height: clamp(35px, 5vw, 45px);
+  width: auto;
+  margin-right: 12px;
+  transition: transform 0.6s var(--transition-snap), filter 0.3s ease; /* Combine transitions */
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+}
+
+.logo-text strong {
+  color: var(--primary-color);
+  font-weight: 700; /* Bold strong tag */
+}
+
+/* Logo Hover Effect - Complex */
+.logo:hover {
+  transform: scale(1.02); /* Slight overall scale */
+}
+.logo:hover .logo-img {
+   transform: rotate(-15deg) scale(1.15); /* More rotation + scale */
+   filter: drop-shadow(0 4px 10px rgba(var(--primary-color-rgb), 0.4)); /* Primary glow */
+}
+/* Add a subtle pulsing glow behind logo on hover */
+.logo::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 20px; /* Adjust based on logo size */
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, var(--glow-color-primary) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    z-index: -1;
+    transition: transform 0.5s ease, opacity 0.4s ease;
+}
+.logo:hover::after {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.7;
+    animation: pulseGlow 2s infinite alternate ease-in-out;
+}
+@keyframes pulseGlow {
+    from { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+    to { transform: translate(-50%, -50%) scale(1.4); opacity: 0.5; }
+}
+
+/* --- Navigation Menu - Fluid & Interactive --- */
+.nav-menu {
+  display: flex;
+  align-items: center;
+}
+
+.nav-item {
+  position: relative;
+  margin: 0 2px; /* Very small margin */
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 18px; /* More padding */
+  color: var(--text-medium);
+  font-size: 0.9rem; /* Slightly smaller base */
+  font-weight: 500;
+  position: relative;
+  overflow: visible; /* Allow pseudo-elements to extend */
+  transition: color var(--transition-swift);
+  border-radius: 8px; /* Rounded corners for background effect */
+  letter-spacing: 0.3px;
+}
+.nav-link .icon {
+  margin-right: 9px;
+  font-size: 1.15em;
+  transition: transform 0.4s var(--transition-snap), color var(--transition-swift); /* Icon transition */
+  z-index: 2; /* Above background */
+}
+.nav-link .link-text {
+  transition: transform var(--transition-swift);
+  z-index: 2; /* Above background */
+}
+.nav-link .news-icon { /* Specific styling for GIF */
+    width: 22px; height: 22px;
+    object-fit: contain;
+    margin-right: 7px;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    vertical-align: middle;
+    border-radius: 4px;
+    display: inline-block;
+    z-index: 2;
+}
+
+
+/* Hover/Active Effect - Background Pill */
+.nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 0; /* Cover the entire link area */
+  background: linear-gradient(120deg, rgba(var(--primary-color-rgb), 0.15), rgba(var(--secondary-color-rgb), 0.15));
+  border-radius: inherit; /* Match parent's border-radius */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity var(--transition-swift), transform var(--transition-swift);
+  z-index: 1; /* Behind text/icon */
+  box-shadow: 0 0 15px 5px rgba(var(--primary-color-rgb), 0.1); /* Subtle glow */
+}
+
+.nav-link:hover {
+  color: var(--text-light);
+}
+.nav-link:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+.nav-link:hover .icon {
+  transform: translateY(-1px) scale(1.1) rotate(-5deg); /* More dynamic icon hover */
+  color: var(--accent-color); /* Icon color change */
+}
+.nav-link:hover .link-text {
+   transform: translateX(2px);
+}
+.nav-link:hover .news-icon {
+  transform: scale(1.2) rotate(-10deg);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+}
+
+
+/* Active State - Stronger Effect */
+.nav-item.active > .nav-link {
+  color: var(--text-light);
+  font-weight: 600;
+}
+.nav-item.active > .nav-link::before {
+  opacity: 1;
+  transform: scale(1);
+  background: linear-gradient(120deg, rgba(var(--primary-color-rgb), 0.25), rgba(var(--secondary-color-rgb), 0.25)); /* Stronger background */
+  box-shadow: 0 0 20px 8px rgba(var(--primary-color-rgb), 0.15); /* Stronger glow */
+}
+.nav-item.active > .nav-link .icon {
+  color: var(--accent-color);
+  transform: scale(1.05); /* Subtle scale when active */
+}
+
+/* Special Links (Register/Logout) */
+.nav-link.register-link {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: var(--text-light) !important;
+    border-radius: 50px; /* Pill shape */
+    padding: 8px 20px;
+    margin-left: 10px;
+    box-shadow: 0 4px 15px -3px rgba(var(--primary-color-rgb), 0.4);
+    transition: transform var(--transition-snap), box-shadow var(--transition-swift), background var(--transition-swift);
+}
+.nav-link.register-link:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px -3px rgba(var(--primary-color-rgb), 0.5);
+    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color)); /* Swap gradient */
+}
+.nav-link.register-link::before { display: none; } /* No background pill needed */
+
+.nav-link.logout-link { color: #ff8a8a; } /* Softer red */
+.nav-link.logout-link:hover { color: #ff6b6b; }
+.nav-link.logout-link:hover .icon { color: #ff6b6b; }
+.nav-item.active > .nav-link.logout-link::before { /* Make active background redish */
+    background: linear-gradient(120deg, rgba(255, 107, 107, 0.2), rgba(255, 138, 138, 0.15));
+    box-shadow: 0 0 15px 5px rgba(255, 107, 107, 0.15);
+}
+
+
+/* --- Dropdown Styling - Artistry & Animation --- */
+.dropdown { position: relative; }
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 15px); /* More spacing */
+  left: 50%; /* Start from center */
+  transform: translateX(-50%); /* Center align */
+  z-index: 1010;
+  min-width: 230px;
+  padding: 10px 0;
+  list-style: none;
+  background: var(--bg-dropdown); /* Specific background */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 12px; /* More rounded */
+  border: 1px solid var(--border-color);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+
+  /* GSAP will control visibility/opacity/transform */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform-origin: top center; /* Animate from top center */
+  /* Remove default CSS transform/transition, GSAP handles it */
+}
+
+/* Dropdown Indicator Arrow */
+.dropdown-indicator {
+    font-size: 0.7em;
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: transform var(--transition-swift);
+}
+/* Rotate arrow when parent link is hovered OR when dropdown is active */
+.nav-link:hover .dropdown-indicator,
+.dropdown.active > .has-dropdown .dropdown-indicator {
+    transform: rotate(180deg);
+}
+
+/* Submenu Indicator */
+.dropdown-indicator-right {
+    margin-left: auto;
+    font-size: 0.7em;
+    opacity: 0.7;
+    transition: transform var(--transition-swift);
+}
+.dropdown-submenu.active > .has-dropdown .dropdown-indicator-right,
+.tool-dropdown-link:hover .dropdown-indicator-right {
+     transform: translateX(3px); /* Slight shift right */
+}
+
+/* Styling for links within dropdown */
+.tool-dropdown-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: var(--text-medium) !important;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  transition: color var(--transition-swift), background-color var(--transition-swift);
+}
+.tool-dropdown-link .icon {
+  margin-right: 12px;
+  width: 18px;
+  text-align: center;
+  opacity: 0.8;
+  transition: transform var(--transition-snap), opacity var(--transition-swift), color var(--transition-swift);
+}
+.tool-dropdown-link span {
+  transition: transform var(--transition-swift);
+}
+
+/* Hover effect for dropdown links */
+.tool-dropdown-link:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--text-light) !important;
+}
+.tool-dropdown-link:hover .icon {
+  opacity: 1;
+  transform: scale(1.15) rotate(-8deg);
+  color: var(--accent-color); /* Icon highlights */
+}
+.tool-dropdown-link:hover span {
+   transform: translateX(4px);
+}
+
+/* Active state for dropdown links */
+.tool-dropdown-link.active,
+li.active > .tool-dropdown-link {
+    background: linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.2), rgba(var(--secondary-color-rgb), 0.2));
+    color: var(--text-light) !important;
+    font-weight: 500;
+}
+.tool-dropdown-link.active .icon,
+li.active > .tool-dropdown-link .icon {
+  color: var(--accent-color);
+  opacity: 1;
+}
+
+/* News dropdown specific icons (keep animations) */
+.news-item-icon { width: 20px; height: 20px; margin-right: 10px; vertical-align: middle; object-fit: contain; border-radius: 3px; transition: transform 0.2s ease; }
+.tool-dropdown-link:hover .news-item-icon { transform: scale(1.1) rotate(5deg); }
+.dropdown-animated-icon { width: 18px; height: 18px; margin-right: 10px; display: inline-flex; justify-content: center; align-items: center; position: relative; color: inherit; vertical-align: middle; animation: iconWobbleAndShine 3s infinite ease-in-out; }
+.dropdown-animated-icon::before { content: ''; position: absolute; top: 50%; left: 50%; width: 120%; height: 120%; transform: translate(-50%, -50%) scale(0); border-radius: 50%; background: radial-gradient(circle, rgba(224, 224, 224, 0.15) 0%, rgba(224, 224, 224, 0) 70%); opacity: 0; z-index: -1; animation: iconBackgroundGlowPulse 3s infinite ease-in-out; }
+/* Keyframes (keep from previous version) */
+@keyframes iconWobbleAndShine { /* ... */ }
+@keyframes iconBackgroundGlowPulse { /* ... */ }
+
+/* PRO Upgrade item */
+.pro-upgrade-item { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color); }
+.pro-upgrade-link { background: linear-gradient(45deg, var(--accent-color), #fbc531); color: var(--text-dark) !important; font-weight: 600; border-radius: 6px; margin: 5px 10px; padding: 10px 18px !important; display: flex; transition: transform var(--transition-snap), box-shadow var(--transition-swift); }
+.pro-upgrade-link .icon { color: var(--text-dark) !important; }
+.pro-upgrade-link:hover { transform: scale(1.04); box-shadow: 0 4px 15px rgba(var(--accent-color-rgb), 0.3); background: linear-gradient(45deg, #fdd060, #fbc531); }
+
+/* --- Submenu Styling --- */
+.dropdown-submenu { position: relative; }
+.dropdown-submenu > .submenu {
+    position: absolute;
+    top: -11px; /* Align top edge */
+    left: 100%;
+    margin-left: 5px; /* Small gap */
+    /* Inherit base dropdown styles (background, border, shadow, etc.) */
+    min-width: 200px;
+    padding: 10px 0;
+    list-style: none;
+    background: var(--bg-dropdown);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.4); /* Offset shadow */
+    /* GSAP Controlled */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform-origin: left center; /* Animate from left center */
+}
+
+/* --- Mobile Navigation --- */
+.mobile-nav-toggle {
+  display: none; /* Hidden on desktop */
+  background: none;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  z-index: 1001;
+  position: relative; /* Positioning context */
+  width: 40px; /* Fixed size */
+  height: 40px;
+}
+.hamburger-icon {
+  display: block;
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background-color: var(--text-light);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background-color 0.1s 0.2s ease-out;
+}
+.hamburger-icon::before,
+.hamburger-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--text-light);
+  transform-origin: center;
+  transition: transform 0.3s ease-out, top 0.3s 0.3s ease-out, bottom 0.3s 0.3s ease-out; /* Separate top/bottom delay */
+}
+.hamburger-icon::before { top: -7px; }
+.hamburger-icon::after { bottom: -7px; top: auto; } /* Use bottom for after */
+
+/* Mobile Nav Active State (X shape) */
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-icon {
+  background-color: transparent;
+  transition: background-color 0.1s ease-out;
+}
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-icon::before {
+  top: 0;
+  transform: rotate(45deg);
+  transition: top 0.3s ease-out, transform 0.3s 0.3s ease-out; /* Reverse delay */
+}
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-icon::after {
+  bottom: 0;
+  transform: rotate(-45deg);
+  transition: bottom 0.3s ease-out, transform 0.3s 0.3s ease-out; /* Reverse delay */
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 1024px) {
+  .navbar { padding: 0 15px; }
+  .logo { /* Adjust logo size if needed */ }
+
+  .nav-menu {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Start off-screen */
+    width: min(85vw, 320px); /* Responsive width, max 320px */
+    height: 100%; /* Full height */
+    height: 100dvh; /* Dynamic viewport height */
+    flex-direction: column;
+    align-items: stretch; /* Stretch items */
+    padding: var(--header-height-scrolled) 20px 30px; /* Adjust padding */
+    background: var(--bg-dark); /* Solid dark background */
+    box-shadow: -5px 0 25px rgba(0,0,0,0.3);
+    transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    border-left: 1px solid var(--border-color);
+  }
+  .nav-menu.active {
+    right: 0;
+  }
+  .nav-item {
+    margin: 0; /* Remove horizontal margin */
+    border-bottom: 1px solid var(--border-color); /* Separator */
+  }
+  .nav-item:last-child {
+      border-bottom: none;
+  }
+  .nav-link {
+    padding: 15px 10px; /* More vertical padding */
+    justify-content: space-between; /* Space out text/icon and indicator */
+    width: 100%;
+    font-size: 1rem;
+  }
+  .nav-link::before { display: none; } /* Disable background pill on mobile */
+  .nav-item.active > .nav-link { /* Simple active style */
+      color: var(--primary-color);
+      font-weight: 600;
+  }
+   .nav-link:hover { /* Less dramatic hover on mobile */
+      background-color: rgba(255, 255, 255, 0.03);
+   }
+
+  .mobile-nav-toggle {
+    display: block;
+  }
+
+  /* Mobile Dropdown Behavior */
+  .dropdown-menu, .submenu {
+      position: static;
+      width: 100%;
+      background: transparent;
+      backdrop-filter: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+      margin-top: 0;
+      /* Controlled by JS/GSAP - initially hidden */
+      height: 0;
+      overflow: hidden;
+      opacity: 1; /* Opacity handled by height/overflow */
+      visibility: visible;
+      pointer-events: auto; /* Events handled by container */
+      transform: none !important; /* Override transform */
+  }
+  /* JS will add .active to .dropdown/.dropdown-submenu */
+  /* CSS below provides fallback if JS fails, but GSAP preferred */
+   .dropdown.active > .dropdown-menu,
+   .dropdown-submenu.active > .submenu {
+       /* GSAP will animate height */
+       /* Fallback: */
+       /* height: auto; */
+       /* overflow: visible; */
+   }
+  .tool-dropdown-link {
+      padding: 12px 10px 12px 30px; /* Indented */
+      border-top: 1px solid var(--border-color);
+  }
+  .submenu .tool-dropdown-link {
+       padding-left: 45px; /* Further indent */
+  }
+  .pro-upgrade-item { margin: 0; border-top: 1px solid var(--border-color); padding: 0; }
+  .pro-upgrade-link { margin: 0; border-radius: 0; padding: 15px 10px !important; }
+
+  /* Hide hover effects for dropdowns on touch */
+  .dropdown:hover > .dropdown-menu,
+  .dropdown-submenu:hover > .submenu {
+      /* No automatic hover display */
+  }
+}

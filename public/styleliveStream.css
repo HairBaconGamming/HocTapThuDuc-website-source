@@ -1,0 +1,380 @@
+/* === Artistic Create Live Stream Page CSS === */
+
+.create-live-page-section {
+    min-height: calc(100vh - var(--header-height-scrolled, 65px));
+    padding: 60px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-dark);
+}
+
+/* Layer 1: Background */
+.create-live-background {
+    position: absolute; inset: 0; z-index: 0;
+    overflow: hidden; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.05) 0%, transparent 70%),
+                var(--bg-dark);
+}
+.scan-line {
+    position: absolute;
+    top: 0; left: -10%; /* Start off-screen */
+    width: 5px; height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(var(--primary-color-rgb), 0.4), transparent);
+    box-shadow: 0 0 15px 3px rgba(var(--primary-color-rgb), 0.3);
+    opacity: 0.6;
+    animation: scan 6s linear infinite;
+    will-change: transform;
+}
+@keyframes scan {
+  to { transform: translateX(120vw); } /* Move across screen */
+}
+
+.signal-wave {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(var(--secondary-color-rgb), 0.1);
+    opacity: 0; /* Handled by GSAP */
+    transform: scale(0); /* Handled by GSAP */
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+.wave-1 { width: 300px; height: 300px; bottom: 10%; left: 10%; border-color: rgba(var(--primary-color-rgb), 0.15); }
+.wave-2 { width: 250px; height: 250px; top: 15%; right: 15%; border-color: rgba(var(--secondary-color-rgb), 0.1); }
+
+.grid-overlay {
+    position: absolute; inset: 0;
+    background-image:
+         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.5;
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+/* Layer 2: Content Container */
+.create-live-container {
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 650px; /* Optimal width for this form */
+    text-align: center;
+}
+
+/* Header */
+.create-live-header {
+    margin-bottom: 45px;
+}
+.create-live-header .main-title {
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 700;
+    color: var(--text-light);
+    margin: 0 0 10px 0;
+    letter-spacing: -1px;
+     text-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.3);
+}
+.create-live-header .page-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-medium);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* Form Area */
+.create-live-form-area {
+    background: rgba(var(--bg-dark-rgb), 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-medium);
+    padding: 40px 50px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+
+.live-stream-creation-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items */
+    gap: 30px; /* Spacing between input and button */
+}
+
+/* Input Field V3 - Broadcast Themed */
+.input-field-group.broadcast-input {
+    position: relative;
+    width: 100%;
+    max-width: 450px; /* Limit input width */
+    margin: 0 auto; /* Center input group */
+}
+.form-input-v3 {
+    width: 100%;
+    padding: 14px 20px 14px 50px; /* Padding for icon */
+    background: rgba(var(--bg-dark-rgb), 0.5); /* Darker input bg */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-pill); /* Pill shape input */
+    color: var(--text-light);
+    font-size: 1.05rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    z-index: 1;
+    outline: none;
+}
+.form-input-v3::placeholder { color: transparent; }
+
+.form-label-v3 {
+    position: absolute;
+    top: 15px; /* Adjust vertical align */
+    left: 50px; /* Align with text start */
+    color: var(--text-medium);
+    opacity: 0.9;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 0;
+    font-size: 1.05rem; /* Match input */
+    background: none; /* Ensure no bg covers input text */
+    padding: 0 5px; /* Small padding for when it moves up */
+}
+
+.input-field-group.focused .form-label-v3,
+.input-field-group.filled .form-label-v3 {
+    transform: translateY(-26px) translateX(-35px) scale(0.8);
+    color: var(--primary-color);
+    opacity: 1;
+    /* Use background matching the container to mask the border */
+    background: rgba(var(--bg-dark-rgb), 0.6); /* Match form area bg */
+     z-index: 2; /* Above input border */
+}
+
+
+.broadcast-input .input-icon {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    left: 20px;
+    color: var(--text-medium);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    z-index: 2;
+    font-size: 1rem;
+}
+.input-field-group.focused .input-icon,
+.input-field-group.filled .input-icon {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Animated Focus Border */
+.input-focus-border {
+    position: absolute;
+    inset: -1px; /* Slightly outside */
+    border-radius: inherit; /* Match input */
+    border: 1px solid transparent; /* Placeholder */
+    background: conic-gradient(from var(--angle, 0deg), transparent 50%, var(--primary-color) 70%, var(--secondary-color) 90%, transparent);
+    -webkit-mask: /* Mask to create border effect */
+       linear-gradient(#fff 0 0) content-box,
+       linear-gradient(#fff 0 0);
+    mask:
+       linear-gradient(#fff 0 0) content-box,
+       linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: rotateGradient 4s linear infinite paused; /* Rotate on focus */
+    pointer-events: none;
+    z-index: 0;
+}
+.input-field-group.focused .input-focus-border {
+    opacity: 0.8;
+    animation-play-state: running;
+}
+
+
+/* Create Button */
+.btn-create-live {
+    /* Base styles */
+    padding: 12px 35px 12px 30px; /* More padding right for icon */
+    border: none;
+    border-radius: var(--border-radius-pill);
+    background: linear-gradient(60deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 6px 20px -5px rgba(var(--primary-color-rgb), 0.4);
+}
+.btn-create-live .btn-icon-wrapper {
+    margin-right: 10px;
+    display: inline-block;
+    animation: broadcastIconWave 2s infinite ease-in-out;
+}
+@keyframes broadcastIconWave {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.btn-create-live .btn-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: auto; /* Adjust width based on text */
+    min-width: 120px; /* Ensure minimum width */
+    text-align: center;
+}
+.btn-text-default, .btn-text-submitting {
+    display: block;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+}
+.btn-text-submitting {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.btn-create-live:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(var(--primary-color-rgb), 0.5);
+}
+.btn-create-live:active:not(:disabled) {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 3px 10px -3px rgba(var(--primary-color-rgb), 0.3);
+}
+.btn-create-live:disabled {
+    opacity: 0.7; cursor: not-allowed;
+}
+
+/* Shine Effect on Hover */
+.btn-shine-effect {
+    position: absolute;
+    top: 0; left: -150%; /* Start off screen left */
+    width: 80%; height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-25deg);
+    transition: left 0.8s ease;
+    z-index: 2;
+}
+.btn-create-live:hover:not(:disabled) .btn-shine-effect {
+    left: 150%; /* Sweep across */
+}
+
+/* Submitting State */
+.btn-create-live.submitting .btn-icon-wrapper {
+    animation: none; /* Stop wave animation */
+     /* Replace icon with spinner? */
+}
+/* Hide default text, show submitting text */
+.btn-create-live.submitting .btn-text-default { opacity: 0; transform: translateY(-10px); }
+.btn-create-live.submitting .btn-text-submitting { opacity: 1; transform: translateY(0px); }
+
+
+/* Result Area */
+.result-area {
+    margin-top: 30px;
+    min-height: 60px; /* Reserve space */
+    width: 100%;
+    max-width: 450px; /* Match input width */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.status-indicator {
+    padding: 15px 20px;
+    border-radius: var(--border-radius-medium);
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+    
+    transform: translateY(10px);
+}
+.animate-fade-in { /* Simple fade/slide for results */
+    animation: resultFadeIn 0.5s ease forwards;
+}
+@keyframes resultFadeIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-indicator.loading {
+    border-color: var(--border-color);
+    color: var(--text-medium);
+}
+.status-indicator.success {
+    background-color: rgba(var(--success-color), 0.1);
+    border-color: rgba(var(--success-color), 0.4);
+    color: var(--success-color);
+}
+.status-indicator.warning {
+    background-color: rgba(var(--warning-color), 0.1);
+    border-color: rgba(var(--warning-color), 0.4);
+    color: var(--warning-color);
+}
+.status-indicator.error {
+    background-color: rgba(var(--danger-color), 0.1);
+    border-color: rgba(var(--danger-color), 0.4);
+    color: var(--danger-color);
+}
+
+.status-indicator .icon { font-size: 1.2em; margin-right: 5px; }
+.status-indicator span { flex-grow: 1; text-align: left; }
+.result-link {
+    color: inherit !important; /* Use status color */
+    font-weight: 600;
+    text-decoration: underline;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+.result-link:hover { opacity: 0.8; }
+.result-link .fas { font-size: 0.9em; margin-left: 4px; }
+
+/* Loading Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  margin-right: 8px;
+}
+.spinner .dot1, .spinner .dot2 {
+  width: 60%; height: 60%;
+  display: inline-block; position: absolute; top: 0;
+  background-color: var(--primary-color);
+  border-radius: 100%;
+  animation: sk-bounce 2.0s infinite ease-in-out;
+}
+.spinner .dot2 { top: auto; bottom: 0; animation-delay: -1.0s; background-color: var(--secondary-color); }
+@keyframes sk-bounce {
+  0%, 100% { transform: scale(0.0); }
+  50% { transform: scale(1.0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .create-live-form-area { padding: 30px 25px; }
+}
+@media (max-width: 480px) {
+    .create-live-page-section { padding: 40px 15px; }
+    .create-live-header .main-title { font-size: 1.8rem; }
+    .create-live-header .page-subtitle { font-size: 1rem; }
+    .create-live-form-area { padding: 30px 20px; }
+    .form-input-v3 { font-size: 1rem; padding: 12px 15px 12px 45px; }
+    .form-label-v3 { left: 45px; top: 13px; font-size: 1rem; }
+    .input-field-group.focused .form-label-v3,
+    .input-field-group.filled .form-label-v3 { transform: translateY(-23px) translateX(-40px) scale(0.75); }
+    .broadcast-input .input-icon { left: 15px; }
+    .btn-create-live { font-size: 1rem; padding: 12px 25px; }
+    .status-indicator { font-size: 0.9rem; flex-direction: column; gap: 8px; text-align: center; padding: 12px; }
+    .status-indicator span { text-align: center; }
+    .result-link { margin-left: 0; margin-top: 5px; display: block;}
+}

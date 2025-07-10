@@ -1,0 +1,144 @@
+<!-- views/lessons.ejs -->
+<%- include('partials/header', { title: subject.name, user: user, activePage: 'subjects' }) %> <%# Updated activePage %>
+<link rel="stylesheet" href="/styleLessons.css"
+<section class="lessons-section">
+  <div class="container">
+    <h2 class="section-title"><%= subject.name %> - Danh sách bài học</h2>
+
+    <!-- Filter Bar Redesign -->
+    <div class="lessons-filter-bar">
+      <!-- Left: Category Pills -->
+      <div class="category-pills">
+        <a href="/subjects/<%= subject._id %>" class="pill-btn <%= (!currentCategory || currentCategory === '') ? 'active' : '' %> loading-link">Tất cả</a>
+        <% if(subject.name.toLowerCase() === 'anh') { %>
+          <a href="/subjects/<%= subject._id %>?category=grammar" class="pill-btn <%= (currentCategory === 'grammar') ? 'active' : '' %> loading-link">Ngữ pháp</a>
+          <a href="/subjects/<%= subject._id %>?category=vocabulary" class="pill-btn <%= (currentCategory === 'vocabulary') ? 'active' : '' %> loading-link">Từ vựng</a>
+          <a href="/subjects/<%= subject._id %>?category=exercise" class="pill-btn <%= (currentCategory === 'exercise') ? 'active' : '' %> loading-link">Bài tập</a>
+        <% } else { %>
+          <a href="/subjects/<%= subject._id %>?category=exercise" class="pill-btn <%= (currentCategory === 'exercise') ? 'active' : '' %> loading-link">Bài tập</a>
+          <a href="/subjects/<%= subject._id %>?category=theory" class="pill-btn <%= (currentCategory === 'theory') ? 'active' : '' %> loading-link">Lí thuyết</a>
+        <% } %>
+      </div>
+
+      <!-- Right: Search & Sort Form -->
+      <form method="GET" action="/subjects/<%= subject._id %>" class="filter-controls-form">
+        <input type="hidden" name="category" value="<%= currentCategory || '' %>">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" name="q" class="filter-search-input" placeholder="Tìm kiếm bài học..." value="<%= currentQuery || '' %>">
+        </div>
+        <div class="select-wrapper">
+          <select name="sort" class="filter-select-input">
+            <option value="desc" <%= (currentSort === 'desc') ? 'selected' : '' %>>Mới nhất</option>
+            <option value="asc" <%= (currentSort === 'asc') ? 'selected' : '' %>>Cũ nhất</option>
+          </select>
+          <i class="fas fa-chevron-down select-arrow"></i>
+        </div>
+        <button type="submit" class="btn btn-primary filter-submit-btn loading-link">
+          <i class="fas fa-filter icon"></i> Lọc
+        </button>
+      </form>
+    </div>
+
+    <!-- Lessons List -->
+    <div class="lessons-grid"> <%# Changed class name %>
+      <% if(lessons.length > 0){ %>
+        <% lessons.forEach(function(lesson) { %>
+          <div class="lesson-card-v2"> <%# Changed class name %>
+            <div class="card-header">
+              <div class="badges">
+                <% if (lesson.isProOnly) { %>
+                  <span class="badge pro-badge"><i class="fas fa-crown"></i> PRO</span>
+                <% } %>
+                <% if (lesson.isAIGenerated) { %>
+                  <span class="badge ai-badge"><i class="fas fa-robot"></i> AI</span>
+                <% } %>
+                 <span class="badge category-badge"><%= lesson.category %></span>
+                 <span class="badge type-badge"><%= lesson.type %></span>
+              </div>
+              <span class="lesson-date"><%= lesson.createdAt.toLocaleDateString('vi-VN') %></span> <%# Only date %>
+            </div>
+
+            <div class="card-body">
+              <h3 class="lesson-title"><%= lesson.title %></h3>
+              <% /* Optional: Add short description preview here if available */ %>
+              <% /* <p class="lesson-description"> A short preview... </p> */ %>
+            </div>
+
+            <div class="card-footer">
+              <div class="author-info">
+                <!--<img src="<%= lesson.createdBy.avatar || '/default-avatar.png' %>" alt="Avatar" class="author-avatar">-->
+                <a href="/profile/<%= lesson.createdBy._id %>" class="author-link loading-link">
+                  <%= lesson.createdBy.username %>
+                </a>
+              </div>
+              <a href="/lesson/<%= lesson._id %>" class="btn btn-secondary detail-button loading-link">
+                Xem chi tiết <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div class="card-glow"></div> <%# Added for hover effect %>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="no-lessons-message">
+           <i class="fas fa-folder-open"></i>
+           <p>Không tìm thấy bài học nào phù hợp với bộ lọc của bạn.</p>
+           <% if (currentCategory || currentQuery) { %>
+            <a href="/subjects/<%= subject._id %>" class="btn btn-primary loading-link">Hiển thị tất cả</a>
+           <% } else { %>
+            <%# Optionally suggest creating a lesson if logged in user %>
+             <% if (user) { %>
+                <a href="/lesson/add?subject=<%= subject._id %>" class="btn btn-primary loading-link">Tạo bài học mới</a>
+             <% } %>
+           <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+<%- include('partials/footer') %>
+
+<script>
+  // Existing script for loading overlay remains the same
+  document.querySelectorAll(".loading-link").forEach(anchor => {
+    anchor.addEventListener("click", function(e) {
+      // Prevent multiple rapid clicks triggering overlay multiple times
+      const overlay = document.getElementById("loading-overlay");
+      if (this.target !== "_blank" && overlay && !overlay.classList.contains('active')) {
+        overlay.classList.add("active");
+      }
+    });
+  });
+
+   // Optional: Add slight delay to form submission to allow overlay to show
+   document.querySelectorAll(".filter-controls-form").forEach(form => {
+      form.addEventListener('submit', function(e) {
+          const overlay = document.getElementById("loading-overlay");
+          if (overlay && !overlay.classList.contains('active')) {
+              overlay.classList.add("active");
+              // Optional: Delay form submission slightly (e.g., 100ms)
+              // e.preventDefault();
+              // setTimeout(() => {
+              //     form.submit();
+              // }, 100);
+          }
+      });
+   });
+  
+  document.querySelectorAll('.lesson-card-v2').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left; // x position within the element.
+      const y = e.clientY - rect.top;  // y position within the element.
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    });
+     // Reset position when mouse leaves
+     card.addEventListener('mouseleave', () => {
+         card.style.setProperty('--mouse-x', `50%`);
+         card.style.setProperty('--mouse-y', `50%`);
+     });
+  });
+
+</script>

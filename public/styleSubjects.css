@@ -1,0 +1,233 @@
+/* --- Subjects Section Redesign --- */
+
+.subjects-section {
+  padding: 70px 20px 90px;
+  background: var(--bg-dark); /* Keep dark background */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Enhance section title/subtitle */
+.subjects-section .section-title { /* Reuse existing title style if defined globally */
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  color: var(--text-light);
+  text-align: center;
+  margin-bottom: 15px; /* Reduced margin */
+  font-weight: 700;
+  position: relative;
+  padding-bottom: 15px;
+}
+.subjects-section .section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 80px; height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: 3px;
+}
+.subjects-section .section-subtitle {
+  text-align: center;
+  color: var(--text-medium);
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  max-width: 600px;
+  margin: 0 auto 50px auto; /* Center and add bottom margin */
+  line-height: 1.7;
+}
+
+
+/* Subjects Grid - Apply Perspective */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); /* Adjust minmax */
+  gap: 40px; /* Increase gap */
+  perspective: 1500px; /* Set perspective for 3D tilt */
+  perspective-origin: center center;
+}
+
+/* Subject Card V2 - The Artistic Element */
+.subject-card-v2 {
+  position: relative;
+  border-radius: var(--border-radius-large);
+  overflow: hidden; /* Important for border-radius on children */
+  background: linear-gradient(160deg, rgba(var(--bg-dark-rgb), 0.6), rgba(var(--bg-dark-rgb), 0.9));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Base shadow */
+  /* Default transform state - JS will override on hover */
+  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1);
+  transform-style: preserve-3d; /* Crucial for 3D effects */
+  transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 0.5s ease-out; /* Smooth reset transition */
+  will-change: transform, box-shadow; /* Performance hint */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Subtle border */
+  min-height: 380px; /* Ensure minimum height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card Image Container */
+.card-image-container {
+  position: relative;
+  height: 200px; /* Fixed height for image area */
+  overflow: hidden;
+  transform-style: preserve-3d; /* Important for overlays */
+}
+
+.card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.05); /* Slightly zoomed in by default */
+  transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth zoom transition */
+  will-change: transform;
+  z-index: 1;
+}
+.subject-card-v2:hover .card-image {
+  transform: scale(1.15); /* Zoom more on hover */
+}
+
+/* Image Placeholder */
+.card-image-placeholder {
+    width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(160deg, rgba(var(--primary-color-rgb), 0.1), rgba(var(--secondary-color-rgb), 0.1));
+    color: var(--primary-color);
+    font-size: 4rem; /* Large icon */
+    opacity: 0.5;
+}
+
+
+/* Image Overlay */
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(var(--bg-dark-rgb), 0.9) 0%, rgba(var(--bg-dark-rgb), 0.1) 60%, transparent 100%);
+  z-index: 2; /* Above image, below title */
+  transition: background 0.5s ease;
+}
+.subject-card-v2:hover .image-overlay {
+     background: linear-gradient(to top, rgba(var(--bg-dark-rgb), 0.7) 0%, transparent 80%); /* Lighten overlay slightly on hover */
+}
+
+/* Title Overlaid on Image */
+.card-title-overlay {
+  position: absolute;
+  bottom: 15px;
+  left: 20px;
+  right: 20px;
+  font-family: var(--font-heading);
+  font-size: clamp(1.4rem, 3vw, 1.7rem);
+  font-weight: 700;
+  color: var(--text-light);
+  line-height: 1.2;
+  z-index: 3; /* Above overlay */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  transform: translateZ(20px); /* Bring title forward slightly in 3D space */
+  transition: color 0.3s ease;
+}
+.subject-card-v2:hover .card-title-overlay {
+   color: var(--accent-color); /* Change title color on hover */
+}
+
+/* Card Content Area */
+.card-content {
+  padding: 25px;
+  flex-grow: 1; /* Take remaining space */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Push button to bottom */
+  transform: translateZ(10px); /* Bring content forward */
+  background: rgba(var(--bg-dark-rgb), 0.2); /* Slightly different bg for content */
+}
+
+.card-description {
+  font-size: 0.9rem;
+  color: var(--text-medium);
+  line-height: 1.65;
+  margin-bottom: 20px;
+  /* Limit lines shown */
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Show max 3 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: calc(1.65em * 3); /* Reserve space for 3 lines */
+}
+
+/* Card Button */
+.card-button {
+  /* Inherit .btn .btn-primary */
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius-pill);
+  display: inline-flex; /* Align icon */
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start; /* Align button left */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.card-button:hover {
+  /* Hover styles defined in .btn-primary:hover */
+   transform: translateY(-2px) scale(1.03); /* Ensure consistent hover */
+}
+.card-button .fas {
+   font-size: 0.9em;
+   transition: transform 0.3s ease;
+}
+.card-button:hover .fas {
+   transform: translateX(4px);
+}
+
+/* Animated Border Glow Element */
+.card-border-glow {
+  content: '';
+  position: absolute;
+  inset: -1px; /* Slightly outside the card border */
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 20%,
+    var(--primary-color),
+    var(--secondary-color),
+    transparent 80%
+  );
+  filter: blur(10px); /* Soft blur */
+  z-index: -1; /* Behind the card */
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  animation: rotateGradient 6s linear infinite paused; /* Use existing animation */
+  will-change: opacity;
+}
+
+.subject-card-v2:hover .card-border-glow {
+  opacity: 0.5; /* Show subtle glow on hover */
+  animation-play-state: running;
+}
+/* Ensure @property --angle and @keyframes rotateGradient exist (from previous styles) */
+/* @property --angle { ... } */
+/* @keyframes rotateGradient { ... } */
+
+
+
+/* Responsive adjustments for Subjects */
+@media (max-width: 768px) {
+    .subjects-section { padding-top: 50px; padding-bottom: 70px; }
+    .subjects-grid { gap: 30px; }
+    .subject-card-v2 { min-height: 350px; }
+    .card-image-container { height: 180px; }
+    .card-title-overlay { font-size: 1.4rem; bottom: 10px; left: 15px; right: 15px; }
+    .card-content { padding: 20px; }
+    .card-description { font-size: 0.85rem; -webkit-line-clamp: 2; min-height: calc(1.6em * 2); margin-bottom: 15px; }
+    .card-button { padding: 9px 18px; font-size: 0.85rem; }
+}
+
+@media (max-width: 480px) {
+     .subjects-grid { gap: 25px; grid-template-columns: 1fr; /* Single column */ }
+     .subject-card-v2 { min-height: 320px; }
+     .card-image-container { height: 160px; }
+     .card-title-overlay { font-size: 1.3rem; }
+     .card-content { padding: 15px; }
+     .card-button { width: 100%; } /* Full width button */
+}

@@ -1,0 +1,153 @@
+<%# Set default title if none is passed %>
+<% const pageTitle = typeof title !== 'undefined' ? title : '500 - Lỗi Hệ Thống'; %>
+<% const pageErrorCode = typeof errorCode !== 'undefined' ? errorCode : '500'; %> <%# Allow passing specific code %>
+<% const pageMessage = typeof message !== 'undefined' ? message : 'Rất tiếc, đã có sự cố xảy ra với máy chủ hoặc hệ thống.'; %>
+<% const pageDescription = typeof description !== 'undefined' ? description : 'Chúng tôi đang khắc phục sự cố này. Vui lòng thử lại sau ít phút hoặc quay về trang chủ.'; %>
+
+<%- include('partials/header', { title: pageTitle, user: typeof user !== 'undefined' ? user : null, activePage: 'error' }) %>
+<%# Link error CSS - ensure path is correct %>
+<link rel="stylesheet" href="/error-pages.css">
+
+<section class="error-page-section error-500-section"> <%# Use generic + specific class %>
+
+    <!-- Background Particles (Digital Rain/Glitches) -->
+    <div id="tsparticles-error" class="error-particles"></div> <%# Unique ID for particles %>
+    <div class="scanline-overlay"></div> <%# Scanline effect %>
+
+    <div class="error-container">
+        <div class="error-code-container glitch-container" data-animate="glitch-effect">
+            <%# Split error code for individual animation/styling %>
+            <% pageErrorCode.toString().split('').forEach(digit => { %>
+                <span class="digit-500 glitch" data-text="<%= digit %>"><%= digit %></span>
+            <% }) %>
+        </div>
+
+        <div class="error-message-content" data-animate="message-fade-in">
+            <%# Use data-text for glitch title effect %>
+            <h2 class="error-title glitch-title" data-text="LỖI HỆ THỐNG">LỖI HỆ THỐNG</h2>
+            <p class="error-description">
+                <%= pageMessage %> <br> <%= pageDescription %>
+            </p>
+
+            <%# Optionally show error details in development %>
+            <% if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && typeof error !== 'undefined' && error) { %>
+                <pre class="error-details"><code><%- JSON.stringify(error.stack || error.message || error, null, 2) %></code></pre> <%# Use JSON stringify for better formatting %>
+            <% } %>
+
+            <div class="error-actions">
+                 <button onclick="window.location.reload();" class="btn btn-secondary-outline error-action-btn">
+                     <i class="fas fa-sync-alt"></i> Tải lại trang
+                 </button>
+                 <a href="/" class="btn btn-primary-glow error-action-btn loading-link">
+                     <i class="fas fa-home"></i> Về Trang Chủ
+                 </a>
+            </div>
+        </div>
+    </div>
+
+</section>
+              
+              <%- include('partials/footer') %>
+
+<!-- JS Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
+<!-- Loading link script (if included in footer, remove here) -->
+<!-- <script src="/js/loadingLinks.js"></script> -->
+
+<script>
+// --- 500/Error Page Animations ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof gsap === 'undefined' || typeof tsParticles === 'undefined') {
+        console.error("GSAP or tsParticles not loaded!"); return;
+    }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // --- Particles (Digital Rain/Glitch style) ---
+    if (!prefersReducedMotion) {
+        const particleTarget = document.getElementById('tsparticles-error');
+        if (particleTarget) {
+            tsParticles.load("tsparticles-error", {
+                fpsLimit: 60,
+                particles: {
+                    number: { value: 120, density: { enable: true, value_area: 800 } }, // More particles
+                    color: { value: ["#00ffea", "#7873F5", "#cccccc", "#ffffff"] }, // Cyan, Purple, Grey, White
+                    shape: { type: "line" }, // Lines for digital rain
+                    opacity: { value: {min: 0.1, max: 0.5}, random: { enable: true } },
+                    size: { value: {min: 10, max: 30}, random: { enable: true } }, // Longer lines
+                    links: { enable: false },
+                    move: {
+                        enable: true, speed: 6, // Faster speed
+                        direction: "bottom", random: false, straight: true, // Straight down
+                        outModes: { default: "out", top: "out"}, // Destroy when out
+                        attract: { enable: false },
+                        angle: {value: 90, offset: 0},
+                        gravity: {enable: false} // No gravity pulling them
+                    }
+                },
+                interactivity: { enabled: false }, // No interaction
+                detectRetina: true,
+                background: { color: "transparent" },
+                fullScreen: {enable: false} // Important for container target
+            }).catch(e => console.error("Error Page Particles Error:", e));
+        }
+    }
+
+    // --- Entrance Animations ---
+    if (!prefersReducedMotion) {
+         const tl = gsap.timeline({ delay: 0.3 });
+
+         // Animate 500 digits with glitch effect timing
+         tl.from('.glitch-container .digit-500', {
+             duration: 0.6, // Faster appearance
+             autoAlpha: 0,
+             y: -40, // Come from top
+             scale: 1.2, // Start slightly larger
+             skewY: gsap.utils.random(-10, 10, true), // Random skew
+             stagger: 0.1,
+             ease: 'power2.out'
+         });
+         // Trigger CSS glitch animation after digits appear
+          // Give elements time to render fully before glitching
+         tl.add(() => {
+             document.querySelectorAll('.glitch, .glitch-title').forEach(el => {
+                 // Ensure data-text attribute is set for CSS glitch
+                 if (!el.dataset.text) el.dataset.text = el.textContent;
+                 el.classList.add('glitch-active');
+                 // Set initial opacity after delay if needed
+                 gsap.set(el, {autoAlpha: 1}); // Ensure visibility for glitch
+             });
+         }, "+=0.1"); // Short delay after digits land
+
+         // Fade in message content
+         tl.from('[data-animate="message-fade-in"] > *', {
+             duration: 0.8,
+             autoAlpha: 0,
+             y: 25, // Slide up slightly
+             ease: 'power2.out',
+             stagger: 0.15
+         }, "-=0.5"); // Overlap with glitch start slightly
+
+         // Ensure title is visible for its glitch effect
+         gsap.set('.glitch-title', {autoAlpha: 1});
+
+
+    } else { // Reduced Motion
+        gsap.set('.error-container, .error-container > *, .glitch, .glitch-title', {autoAlpha: 1});
+        // Optionally remove glitch class if you don't want static glitch effect
+        // document.querySelectorAll('.glitch, .glitch-title').forEach(el => el.classList.remove('glitch-active'));
+    }
+
+     // --- Loading Link Script (if not global) ---
+     document.querySelectorAll(".loading-link").forEach(anchor => {
+         anchor.addEventListener("click", function(e) {
+             const overlay = document.getElementById("loading-overlay");
+             if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
+                  if (this.href !== window.location.href + '#' && this.href !== window.location.href) {
+                       overlay.classList.add("active");
+                  }
+             }
+         });
+     });
+});
+</script>

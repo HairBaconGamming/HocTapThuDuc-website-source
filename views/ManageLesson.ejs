@@ -1,0 +1,494 @@
+<%# ========================================================================= %>
+<%# EJS Template for Creating/Editing Lessons (V3 - Preview/Fullscreen)     %>
+<%# ========================================================================= %>
+
+<%# Determine the mode, defaulting to 'add' if not provided by the server %>
+<% const currentMode = typeof mode !== 'undefined' ? mode : 'add'; %>
+
+<%# Set the page title based on the determined mode %>
+<% const pageTitle = currentMode === 'edit' ? 'Chỉnh sửa Bài học' : 'Tạo Bài học Mới'; %>
+
+<%# Now use 'currentMode' consistently throughout the rest of this EJS file %>
+
+<%# Include Header: Pass title, user data, and active page identifier %>
+<%- include('partials/header', {
+    title: pageTitle,
+    user: typeof user !== 'undefined' ? user : null,
+    activePage: 'lessonAdd' // Adjust as needed, e.g., 'dashboard' if accessed from there
+}) %>
+
+<%# Link to the NEW CSS file for V3 styles %>
+<link rel="stylesheet" href="/styleManageLessonV3.css">
+
+<%# Essential JS Libraries (Load these early in <head> or defer/async if possible, but ensure they are loaded before your script) %>
+<%# GSAP Core & Flip Plugin are CRITICAL - Consider loading non-render-blocking %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js" defer></script>
+<%# Optional but useful, load deferred %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+
+<%# Toast UI Editor CSS & JS - Load deferred %>
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js" defer></script>
+
+<%# Marked.js (for Markdown Preview rendering) - Load deferred %>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+
+<%# KaTeX (for Math formula rendering) - Optional, Load deferred %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload="console.log('KaTeX auto-render loaded.')"></script>
+
+<%# MathLive (Alternative/Additional Math Input/Rendering) - Optional, Load deferred %>
+<link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive-static.css" />
+<script src="https://unpkg.com/mathlive/dist/mathlive.min.js" defer></script>
+
+<%# Cloudflare Turnstile Script (Load async/defer) %>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<%# ------------------------------------------------------------------------- %>
+
+
+<%# Main content section with unique class %>
+<section class="manage-lesson-section">
+
+    <%# Optional Animated Background Elements %>
+    <div class="manage-lesson-background">
+        <div class="bg-element element-1"></div>
+        <div class="bg-element element-2"></div>
+    </div>
+
+    <%# Main content container with backdrop blur and styling %>
+    <div class="container manage-lesson-container">
+
+        <%# Step Indicator (Visual progress tracker) %>
+        <div class="step-indicator" data-animate="fade-in">
+            <div class="step active" data-step="1">
+                <span class="step-number">1</span>
+                <span class="step-label">Thông tin</span>
+                <div class="step-connector"></div>
+            </div>
+            <div class="step" data-step="2">
+                <span class="step-number">2</span>
+                <span class="step-label">Nội dung</span>
+                <div class="step-connector"></div>
+            </div>
+            <div class="step" data-step="3">
+                <span class="step-number">3</span>
+                <span class="step-label">Hoàn tất</span>
+            </div>
+        </div>
+
+        <%# Main Title: Dynamically changes based on mode %>
+        <h2 class="main-title" data-animate="fade-in" data-anim-delay="0.1">
+            <%= pageTitle %> <%# Use the variable defined at the top %>
+        </h2>
+
+        <%# The Main Form: Action and method depend on mode %>
+        <%# Pass lesson ID via data-attribute for JS key generation if needed %>
+        <form action="<%= (currentMode === 'edit' && typeof lesson !== 'undefined') ? '/lesson/' + lesson._id + '/edit' : '/lesson/add' %>"
+              method="POST"
+              id="lessonForm"
+              class="manage-lesson-form"
+              data-lesson-id="<%= (currentMode === 'edit' && typeof lesson !== 'undefined') ? lesson._id : 'new' %>"
+              novalidate> <%# novalidate added, JS handles validation %>
+
+            <%# Method Override for PUT request in edit mode %>
+            <% if (currentMode === 'edit') { %>
+                <input type="hidden" name="_method" value="PUT">
+            <% } %>
+
+            <%# Wrapper for all form steps (Height animated by JS/GSAP) %>
+            <div class="form-steps-wrapper">
+
+                <%# ===================================================== %>
+                <%# STEP 1: Basic Lesson Information                      %>
+                <%# ===================================================== %>
+                <div class="form-step active" data-step-content="1">
+                    <h3 class="step-title">Thông tin Cơ bản</h3>
+
+                    <div class="form-grid two-columns">
+                        <%# Subject Selection %>
+                        <div class="input-field-group fancy-input">
+                            <label for="subjectId" class="form-label-v2 static">Môn học</label>
+                            <div class="custom-select-wrapper-v2">
+                                <i class="fas fa-book select-icon"></i>
+                                <select name="subjectId" id="subjectId" class="form-input-v2 custom-select-v2" required>
+                                    <option value="" disabled <%= (currentMode === 'add' || !lesson?.subject) ? 'selected' : '' %>>-- Chọn môn học --</option>
+                                    <% if (typeof subjects !== 'undefined' && Array.isArray(subjects)) { %>
+                                        <% subjects.forEach(function(subject) { %>
+                                            <% const isSelected = (currentMode === 'edit' && lesson?.subject && lesson.subject.toString() === subject._id.toString()); %>
+                                            <option value="<%= subject._id %>" <%= isSelected ? 'selected' : '' %>>
+                                                <%= subject.name %>
+                                            </option>
+                                        <% }); %>
+                                    <% } else { %>
+                                         <option value="" disabled>Lỗi tải môn học</option>
+                                    <% } %>
+                                </select>
+                                <i class="fas fa-chevron-down select-arrow"></i>
+                            </div>
+                            <div class="validation-error" data-for="subjectId">Vui lòng chọn môn học.</div>
+                        </div>
+
+                        <%# Category Selection %>
+                        <div class="input-field-group fancy-input">
+                             <label for="category" class="form-label-v2 static">Thể loại</label>
+                             <div class="custom-select-wrapper-v2">
+                                  <i class="fas fa-tags select-icon"></i>
+                                  <select name="category" id="category" class="form-input-v2 custom-select-v2" required>
+                                     <% const currentCategoryValue = (currentMode === 'edit' && lesson?.category) ? lesson.category : ''; %>
+                                     <option value="" disabled <%= !currentCategoryValue ? 'selected' : '' %>>-- Chọn thể loại --</option>
+                                     <option value="grammar" <%= currentCategoryValue === 'grammar' ? 'selected' : '' %>>Ngữ pháp</option>
+                                     <option value="vocabulary" <%= currentCategoryValue === 'vocabulary' ? 'selected' : '' %>>Từ vựng</option>
+                                     <option value="exercise" <%= currentCategoryValue === 'exercise' ? 'selected' : '' %>>Bài tập</option>
+                                     <option value="theory" <%= currentCategoryValue === 'theory' ? 'selected' : '' %>>Lí thuyết</option>
+                                     <option value="reading" <%= currentCategoryValue === 'reading' ? 'selected' : '' %>>Đọc hiểu</option>
+                                     <option value="listening" <%= currentCategoryValue === 'listening' ? 'selected' : '' %>>Nghe hiểu</option>
+                                     <option value="other" <%= currentCategoryValue === 'other' ? 'selected' : '' %>>Khác</option>
+                                  </select>
+                                  <i class="fas fa-chevron-down select-arrow"></i>
+                              </div>
+                              <div class="validation-error" data-for="category">Vui lòng chọn thể loại.</div>
+                        </div>
+                    </div> <%# End form-grid %>
+
+                    <%# Lesson Title Input %>
+                    <div class="input-field-group fancy-input">
+                        <input type="text" name="title" id="title" class="form-input-v2" placeholder=" " value="<%= (currentMode === 'edit' && lesson?.title) ? lesson.title.trim() : '' %>" required minlength="3" maxlength="150">
+                        <label for="title" class="form-label-v2">Tiêu đề Bài học</label>
+                        <span class="input-focus-line"></span>
+                        <i class="fas fa-heading input-icon"></i>
+                         <div class="validation-error" data-for="title">Tiêu đề phải có từ 3 đến 150 ký tự.</div>
+                    </div>
+
+                    <%# PRO Only Toggle (Only shown to PRO users or if lesson IS PRO) %>
+                    <% const canSetPro = (typeof user !== 'undefined' && user && user.isPro); %>
+                    <% const isCurrentlyPro = (currentMode === 'edit' && lesson?.isProOnly); %>
+                    <% if (canSetPro || isCurrentlyPro) { %>
+                        <div class="fancy-toggle-group">
+                            <label class="switch-v2">
+                                <input type="checkbox" name="isProOnly" value="true" <%= isCurrentlyPro ? 'checked' : '' %> <%= !canSetPro ? 'disabled' : '' %>>
+                                <span class="slider-v2 round">
+                                    <span class="icon-on"><i class="fas fa-crown"></i></span>
+                                    <span class="icon-off"><i class="fas fa-lock-open"></i></span>
+                                </span>
+                            </label>
+                            <span class="toggle-label-v2">
+                                Bài học chỉ dành cho <span class="pro-text-inline">PRO</span>
+                                <% if (!canSetPro && isCurrentlyPro) { %>
+                                     (Bạn không thể thay đổi cài đặt này)
+                                <% } else if (!canSetPro && !isCurrentlyPro) { %>
+                                     (Nâng cấp PRO để tạo bài học PRO)
+                                <% } %>
+                            </span>
+                        </div>
+                     <% } else { %>
+                         <%# If user cannot set PRO and lesson is not PRO, ensure false is submitted %>
+                         <input type="hidden" name="isProOnly" value="false">
+                     <% } %>
+
+
+                    <%# Step 1 Navigation Button %>
+                    <div class="step-navigation">
+                        <span></span> <%# Spacer %>
+                        <button type="button" class="btn btn-primary next-step-btn" data-next-step="2">
+                            Tiếp tục <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div> <%# End Step 1 %>
+
+                <%# ===================================================== %>
+                <%# STEP 2: Lesson Type & Content (PREVIEW BASED)       %>
+                <%# ===================================================== %>
+                <div class="form-step" data-step-content="2">
+                    <h3 class="step-title">Loại & Nội dung Bài học</h3>
+
+                    <%# Lesson Type Selector Tabs %>
+                    <% const initialType = (currentMode === 'edit' && lesson?.type) ? lesson.type : 'markdown'; %>
+                    <div class="lesson-type-selector-v2">
+                        <button type="button" class="type-tab-btn <%= initialType === 'markdown' ? 'active' : '' %>" data-type="markdown" title="Văn bản Markdown">
+                            <i class="fab fa-markdown"></i> <span>Markdown</span>
+                        </button>
+                        <button type="button" class="type-tab-btn <%= initialType === 'quiz' ? 'active' : '' %>" data-type="quiz" title="Trắc nghiệm">
+                            <i class="fas fa-tasks"></i> <span>Trắc nghiệm</span>
+                        </button>
+                        <button type="button" class="type-tab-btn <%= initialType === 'video' ? 'active' : '' %>" data-type="video" title="Video">
+                            <i class="fas fa-video"></i> <span>Video</span>
+                        </button>
+                        <button type="button" class="type-tab-btn <%= initialType === 'essay' ? 'active' : '' %>" data-type="essay" title="Tự luận">
+                            <i class="fas fa-pen-alt"></i> <span>Tự luận</span>
+                        </button>
+                    </div>
+                    <%# Hidden input to store the selected lesson type %>
+                    <input type="hidden" id="lessonType" name="type" value="<%= initialType %>">
+
+                    <%# Container for editor panels (JS shows/hides based on type) %>
+                    <div class="editor-area">
+
+                        <%# --- Markdown Panel --- %>
+                        <div class="editor-panel" data-editor-type="markdown" style="<%= initialType === 'markdown' ? 'display: block;' : 'display: none;' %>">
+                            <label class="editor-label" for="markdownData_preview"><i class="fab fa-markdown"></i> Nội dung Markdown</label>
+                            <div id="markdownData_preview" class="editor-preview-container interactive-preview"
+                                 data-editor-target="markdownData"
+                                 data-editor-type="markdown"
+                                 data-editor-context="Nội dung chính Markdown"
+                                 role="button" tabindex="0" aria-label="Chỉnh sửa nội dung Markdown">
+                                <div class="preview-content">
+                                    <%# JS will render preview here based on markdownData value %>
+                                    <p class="text-muted initial-placeholder">Click để chỉnh sửa...</p>
+                                </div>
+                                <div class="edit-overlay" aria-hidden="true">
+                                    <i class="fas fa-pencil-alt"></i> Chỉnh sửa
+                                </div>
+                            </div>
+                            <textarea name="editorData[markdown]" id="markdownData" class="hidden-data" aria-hidden="true"><%= lesson?.editorData?.markdown ?? '' %></textarea>
+                        </div>
+
+                        <%# --- Quiz Panel --- %>
+                        <div class="editor-panel" data-editor-type="quiz" style="<%= initialType === 'quiz' ? 'display: block;' : 'display: none;' %>">
+                            <label class="editor-label"><i class="fas fa-tasks"></i> Soạn thảo Quiz</label>
+                            <% if (typeof user !== 'undefined' && user && user.isPro) { %>
+                                <div class="ai-feature-box">
+                                    <label for="docxFile" class="ai-label"><i class="fas fa-wand-magic-sparkles"></i> Tạo Quiz nhanh từ DOCX/PDF (PRO)</label>
+                                    <div class="ai-controls">
+                                        <input type="file" id="docxFile" name="docxFile" accept=".docx,.pdf" class="ai-file-input">
+                                        <button type="button" id="generateQuizBtn" class="btn btn-secondary btn-ai-generate"><i class="fas fa-cogs me-1"></i> Tạo Quiz</button>
+                                    </div>
+                                    <small class="form-text text-muted">Tải lên file bài tập để AI tự động tạo câu hỏi trắc nghiệm.</small>
+                                </div>
+                             <% } else { %>
+                                <p class="pro-notice"><i class="fas fa-lock"></i> Tính năng tạo Quiz từ file chỉ dành cho tài khoản <a href="/pro" class="pro-text-inline">PRO</a>.</p>
+                             <% } %>
+                             <div id="quizContainer" class="quiz-editor-container">
+                                 <p class="text-center text-muted initial-placeholder">Đang tải câu hỏi...</p>
+                             </div>
+                             <button type="button" id="addQuestionBtn" class="btn btn-secondary add-item-btn"><i class="fas fa-plus"></i> Thêm Câu Hỏi</button>
+                             <%
+                                  let quizJsonString = "[]"; // Default empty array as string
+                                  if (currentMode === 'edit' && lesson?.editorData?.quiz) {
+                                      try {
+                                          // Ensure it's treated as an object/array before stringifying
+                                          const quizDataObject = lesson.editorData.quiz;
+                                          if (typeof quizDataObject === 'string') {
+                                              // If it's already a string, try parsing first to ensure validity? Risky.
+                                              // Assume it should be an array/object from the controller.
+                                              // For safety, just use the string if it's already one, but log warning.
+                                              console.warn("Quiz data in EJS was already a string. Using as is.");
+                                              quizJsonString = quizDataObject;
+                                          } else if (typeof quizDataObject === 'object' && quizDataObject !== null) {
+                                              quizJsonString = JSON.stringify(quizDataObject);
+                                          }
+                                      } catch (e) {
+                                          console.error("Error stringifying quiz data in EJS:", e);
+                                          quizJsonString = "[]"; // Fallback to empty array
+                                      }
+                                  }
+                              %>
+                              <input type="hidden" name="editorData[quiz]" id="quizData" class="hidden-data" value='<%- quizJsonString %>'>
+                        </div>
+
+                        <%# --- Video Panel --- %>
+                        <div class="editor-panel" data-editor-type="video" style="<%= initialType === 'video' ? 'display: block;' : 'display: none;' %>">
+                            <label class="editor-label" for="videoUrl"><i class="fas fa-video"></i> Liên kết Video</label>
+                            <div class="input-field-group fancy-input">
+                               <input type="url" name="editorData[video]" id="videoUrl" class="form-input-v2" placeholder=" " value="<%= lesson?.editorData?.video ?? '' %>" pattern="https?://.+">
+                               <label for="videoUrl" class="form-label-v2">URL Video (YouTube, Vimeo...)</label>
+                               <span class="input-focus-line"></span>
+                               <i class="fas fa-link input-icon"></i>
+                               <div class="validation-error" data-for="videoUrl">Vui lòng nhập URL hợp lệ (bắt đầu bằng http:// hoặc https://).</div>
+                            </div>
+                            <div id="videoPreview" class="video-preview-area">
+                                <p class="text-muted text-center initial-placeholder">Dán URL video vào ô trên để xem trước.</p>
+                            </div>
+                        </div>
+
+                        <%# --- Essay Panel --- %>
+                         <div class="editor-panel" data-editor-type="essay" style="<%= initialType === 'essay' ? 'display: block;' : 'display: none;' %>">
+                            <label class="editor-label"><i class="fas fa-pen-alt"></i> Soạn thảo Tự luận</label>
+
+                            <div class="essay-section">
+                                <h4><i class="fas fa-file-alt"></i> Đề bài chung (Tùy chọn)</h4>
+                                <div id="essayPromptData_preview" class="editor-preview-container interactive-preview"
+                                     data-editor-target="essayPromptData"
+                                     data-editor-type="essayPrompt"
+                                     data-editor-context="Đề bài Tự luận"
+                                     role="button" tabindex="0" aria-label="Chỉnh sửa đề bài chung">
+                                    <div class="preview-content">
+                                         <p class="text-muted initial-placeholder">Click để chỉnh sửa...</p>
+                                    </div>
+                                     <div class="edit-overlay" aria-hidden="true">
+                                        <i class="fas fa-pencil-alt"></i> Chỉnh sửa
+                                    </div>
+                                </div>
+                                <textarea name="editorData[essayPrompt]" id="essayPromptData" class="hidden-data" aria-hidden="true"><%= lesson?.editorData?.essayPrompt ?? '' %></textarea>
+                             </div>
+
+                            <div class="essay-section">
+                                <h4><i class="fas fa-cogs"></i> Cấu hình Chấm điểm</h4>
+                                <div class="input-field-group fancy-input">
+                                    <label for="essayGrading" class="form-label-v2 static">Phương pháp chấm</label>
+                                    <div class="custom-select-wrapper-v2">
+                                        <i class="fas fa-check-double select-icon"></i>
+                                        <% const currentGradingValue = lesson?.editorData?.essayGrading ?? 'simple'; %>
+                                        <select name="editorData[essayGrading]" id="essayGrading" class="form-input-v2 custom-select-v2">
+                                            <% const isProUser = typeof user !== 'undefined' && user && user.isPro; %>
+                                            <option value="ai" <%= !isProUser ? 'disabled' : '' %> <%= currentGradingValue ==='ai' ? 'selected' : '' %>>
+                                                🤖 Chấm AI (Gemini) <%= !isProUser ? '[Yêu cầu PRO]' : '' %>
+                                            </option>
+                                            <option value="absolute" <%= !isProUser ? 'disabled' : '' %> <%= currentGradingValue ==='absolute' ? 'selected' : '' %>>
+                                                💯 Chấm Tuyệt đối (Số lỗi) <%= !isProUser ? '[Yêu cầu PRO]' : '' %>
+                                            </option>
+                                            <option value="smart" <%= !isProUser ? 'disabled' : '' %> <%= currentGradingValue ==='smart' ? 'selected' : '' %>>
+                                                💡 Chấm Thông minh (BERT) <%= !isProUser ? '[Yêu cầu PRO]' : '' %>
+                                            </option>
+                                            <option value="simple" <%= currentGradingValue ==='simple' ? 'selected' : '' %>>
+                                                🔎 Chấm So sánh (Từ khóa)
+                                            </option>
+                                        </select>
+                                        <i class="fas fa-chevron-down select-arrow"></i>
+                                    </div>
+                                    <small class="form-text text-muted">Chọn cách hệ thống sẽ gợi ý chấm điểm cho bài làm.</small>
+                                </div>
+                                <div class="input-field-group fancy-input" id="absoluteSettings" style="<%= currentGradingValue === 'absolute' ? '' : 'display: none; opacity: 0;' %>">
+                                    <input type="number" name="editorData[absoluteTolerance]" id="absoluteTolerance" class="form-input-v2" placeholder=" " value="<%= lesson?.editorData?.absoluteTolerance ?? '2' %>" min="0" max="100" step="1">
+                                    <label for="absoluteTolerance" class="form-label-v2">Số lỗi tối đa cho phép</label>
+                                    <span class="input-focus-line"></span>
+                                    <i class="fas fa-exclamation-circle input-icon"></i>
+                                    <div class="validation-error" data-for="absoluteTolerance">Vui lòng nhập số nguyên không âm.</div>
+                                </div>
+                            </div>
+
+                            <div class="essay-section">
+                                <h4><i class="fas fa-question-circle"></i> Câu hỏi & Đáp án mẫu</h4>
+                                <div id="essayContainer" class="essay-editor-container">
+                                     <p class="text-center text-muted initial-placeholder">Đang tải câu hỏi...</p>
+                                </div>
+                                <button type="button" id="addEssayQuestionBtn" class="btn btn-secondary add-item-btn"><i class="fas fa-plus"></i> Thêm Câu Hỏi Tự Luận</button>
+                            </div>
+                             <%
+                                let essayJsonString = "[]"; // Default empty array as string
+                                if (currentMode === 'edit' && lesson?.editorData?.essay) {
+                                    try {
+                                          const essayDataObject = lesson.editorData.essay;
+                                          if (typeof essayDataObject === 'string') {
+                                              console.warn("Essay data in EJS was already a string. Using as is.");
+                                              essayJsonString = essayDataObject;
+                                          } else if (typeof essayDataObject === 'object' && essayDataObject !== null) {
+                                               essayJsonString = JSON.stringify(essayDataObject);
+                                          }
+                                    } catch (e) {
+                                        console.error("Error stringifying essay data in EJS:", e);
+                                        essayJsonString = "[]";
+                                    }
+                                }
+                            %>
+                            <input type="hidden" name="editorData[essay]" id="essayData" class="hidden-data" value='<%- essayJsonString %>'>
+                        </div> <%# End essay-panel %>
+
+                    </div><!-- End .editor-area -->
+
+                    <%# Step 2 Navigation Buttons %>
+                    <div class="step-navigation">
+                        <button type="button" class="btn btn-secondary-outline back-step-btn" data-prev-step="1">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </button>
+                        <button type="button" class="btn btn-primary next-step-btn" data-next-step="3">
+                            Xem lại & Hoàn tất <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div> <%# End Step 2 %>
+
+                <%# ===================================================== %>
+                <%# STEP 3: Review & Submit                             %>
+                <%# ===================================================== %>
+                <div class="form-step" data-step-content="3">
+                    <h3 class="step-title">Xem lại và Gửi</h3>
+                    <p class="review-prompt">Vui lòng kiểm tra lại thông tin bài học trước khi gửi đi.</p>
+
+                    <%# Summary of Lesson Information (JS populates spans) %>
+                    <div class="review-summary card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Tóm tắt Bài học</h5>
+                            <p><strong>Môn học:</strong> <span id="reviewSubject" class="text-primary">N/A</span></p>
+                            <p><strong>Tiêu đề:</strong> <span id="reviewTitle" class="fw-bold">N/A</span></p>
+                            <p><strong>Thể loại:</strong> <span id="reviewCategory">N/A</span></p>
+                            <p><strong>Dạng bài học:</strong> <span id="reviewType">N/A</span></p>
+                            <p><strong>Nội dung:</strong> <span id="reviewContentPreview" class="text-muted fst-italic">N/A</span></p>
+                            <%# Only show PRO status if relevant %>
+                            <% if (canSetPro || isCurrentlyPro) { %>
+                                <p><strong>Chế độ PRO:</strong> <span id="reviewProOnly" class="badge bg-warning text-dark">Không</span></p>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <%# Cloudflare Turnstile Widget Placeholder %>
+                    <div class="turnstile-container my-4 d-flex justify-content-center">
+                         <%# Replace YOUR_SITE_KEY with your actual key %>
+                        <div class="cf-turnstile" data-sitekey="0x4AAAAAABBLlduN6HavujOQ" data-theme="light"></div>
+                    </div>
+
+                    <%# Save Progress Button (Only shown in 'add' mode) %>
+                    <% if (currentMode === 'add') { %>
+                       <div class="save-progress-container text-center mb-3">
+                           <button type="button" id="saveProgressBtn" class="btn btn-secondary-outline btn-save-progress">
+                               <i class="fas fa-save me-1"></i> Lưu Nháp Tạm Thời
+                           </button>
+                           <span class="save-status-indicator ms-2"></span> <%# Optional: For JS feedback %>
+                           <small class="d-block text-muted mt-1">Lưu lại tiến trình vào trình duyệt nếu bạn muốn hoàn thành sau.</small>
+                       </div>
+                    <% } %>
+
+                    <%# Step 3 Navigation (Final Step) %>
+                    <div class="step-navigation final-step-nav">
+                         <button type="button" class="btn btn-secondary-outline back-step-btn" data-prev-step="2">
+                             <i class="fas fa-arrow-left me-1"></i> Sửa Nội dung
+                         </button>
+                         <button type="submit" id="finalSubmitBtn" class="btn btn-submit-v2 final-submit-btn">
+                             <span class="btn-text">
+                                <i class="fas fa-check-circle me-1"></i> <%= currentMode === 'edit' ? 'Cập nhật Bài học' : 'Hoàn tất & Thêm' %>
+                             </span>
+                         </button>
+                     </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section> 
+                      
+<%# ===================================================== %>
+<%# Fullscreen Editor Modal (Initially Hidden)          %>
+<%# ===================================================== %>
+<div id="fullscreen-editor-modal" class="fullscreen-editor-modal" role="dialog" aria-modal="true" aria-labelledby="fullscreen-editor-context" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" role="document">
+        <div class="modal-header">
+            <h3 id="fullscreen-editor-context" class="modal-title-context">Đang chỉnh sửa...</h3>
+            <button type="button" class="btn-icon close-fullscreen-editor" title="Đóng (ESC)" aria-label="Đóng trình soạn thảo">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="fullscreen-editor-container">
+                <div class="editor-loading-placeholder">
+                    <i class="fas fa-spinner fa-spin fa-3x"></i>
+                    <p>Đang tải trình soạn thảo...</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="save-and-close-editor" class="btn btn-primary">
+                <i class="fas fa-check me-1"></i> Lưu & Đóng
+            </button>
+        </div>
+    </div>
+</div>
+<%# ===================================================== %>
+
+
+<%# Include Footer %>
+<%- include('partials/footer') %>
+
+<%# ========================================================================= %>
+<%# Load Your Custom JS file (MUST be AFTER the HTML content and libraries) %>
+<%# ========================================================================= %>
+<script type="module" src="/js/lessonEditorV3.js"></script>

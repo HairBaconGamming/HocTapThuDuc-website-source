@@ -1,0 +1,271 @@
+<!-- views/liveStream.ejs -->
+<%- include('partials/header', { title: 'Khởi tạo Luồng Live', user: user, activePage: 'liveCreate' }) %> <%# Correct activePage %>
+
+<link rel="stylesheet" href="/styleliveStream.css">
+
+<section class="create-live-page-section"> <%# Unique class %>
+
+    <!-- Layer 1: Animated Background -->
+    <div class="create-live-background">
+        <div class="scan-line"></div>
+        <div class="signal-wave wave-1"></div>
+        <div class="signal-wave wave-2"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Layer 2: Content Container -->
+    <div class="container create-live-container">
+
+        <!-- Header -->
+        <div class="create-live-header" data-animate="header-entrance">
+            <h2 class="main-title">Khởi Tạo Luồng Live</h2>
+            <p class="page-subtitle">Đặt tên cho buổi phát sóng trực tiếp của bạn và bắt đầu chia sẻ kiến thức!</p>
+        </div>
+
+        <!-- Form Area -->
+        <div class="create-live-form-area" data-animate="form-entrance">
+            <form id="liveStreamForm" class="live-stream-creation-form">
+                <div class="input-field-group broadcast-input">
+                     <i class="fas fa-satellite-dish input-icon"></i>
+                     <input type="text" id="liveTitle" name="title" class="form-input-v3" placeholder=" " required minlength="3" maxlength="100">
+                     <label for="liveTitle" class="form-label-v3">Tiêu đề Buổi Phát Sóng</label>
+                     <span class="input-focus-border"></span>
+                </div>
+
+                <button type="submit" class="btn-create-live" id="createLiveBtn">
+                    <span class="btn-icon-wrapper"><i class="fas fa-broadcast-tower"></i></span>
+                    <span class="btn-text-wrapper">
+                        <span class="btn-text-default">Bắt đầu Phát Sóng</span>
+                         <span class="btn-text-submitting">Đang khởi tạo...</span>
+                    </span>
+                    <span class="btn-shine-effect"></span>
+                </button>
+            </form>
+
+            <!-- Result/Status Area -->
+            <div id="liveStreamResultArea" class="result-area">
+                 <%# Content dynamically added by JS %>
+                 <!-- Example structure for JS -->
+                 <!-- <div class="status-indicator loading">
+                     <div class="spinner"></div>
+                     <span>Đang kết nối...</span>
+                 </div> -->
+                 <!-- <div class="status-indicator success">
+                     <i class="fas fa-check-circle"></i>
+                     <span>Thành công!</span>
+                     <a href="..." target="_blank">Vào phòng Live</a>
+                 </div> -->
+                 <!-- <div class="status-indicator error">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      <span>Lỗi: [Message]</span>
+                      <a href="..." target="_blank">Vào phòng hiện có</a> // Optional
+                 </div> -->
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<%- include('partials/footer') %>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- GSAP & Config ---
+    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // --- DOM Refs ---
+    const getEl = id => document.getElementById(id);
+    const liveStreamForm = getEl('liveStreamForm');
+    const titleInput = getEl('liveTitle');
+    const createBtn = getEl('createLiveBtn');
+    const resultArea = getEl('liveStreamResultArea');
+    const btnTextDefault = createBtn?.querySelector('.btn-text-default');
+    const btnTextSubmitting = createBtn?.querySelector('.btn-text-submitting');
+
+    if (!liveStreamForm || !titleInput || !createBtn || !resultArea || !btnTextDefault || !btnTextSubmitting) {
+        console.error("One or more essential elements not found for Create Live page.");
+        return;
+    }
+
+    // --- Initial Animations ---
+    if (!prefersReducedMotion) {
+         const tl = gsap.timeline({ delay: 0.2 });
+         tl.from('.create-live-header > *', { duration: 0.8, y: -30, autoAlpha: 0, stagger: 0.15, ease: 'power3.out' })
+           .from('.create-live-form-area', { duration: 1, y: 50, autoAlpha: 0, ease: 'power3.out' }, "-=0.6")
+           .from('.broadcast-input', { duration: 0.7, scaleX: 0.8, autoAlpha: 0, transformOrigin: 'center center', ease: 'back.out(1.4)' }, "-=0.5")
+           .from(createBtn, { duration: 0.7, scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)' }, "-=0.4");
+
+           // Background element animations (can be CSS only too)
+           gsap.to('.scan-line', { duration: 5, x: '100vw', ease: 'none', repeat: -1 });
+           gsap.to('.signal-wave.wave-1', { duration: 8, scale: 1.5, opacity: 0, ease: 'power1.out', repeat: -1, repeatDelay: 1 });
+           gsap.to('.signal-wave.wave-2', { duration: 10, scale: 1.8, opacity: 0, ease: 'power1.out', repeat: -1, delay: 1.5, repeatDelay: 1 });
+    }
+
+     // --- Input Field Focus/Blur & Placeholder Interaction (V3) ---
+     const inputGroup = titleInput.closest('.input-field-group');
+     if (inputGroup) {
+         const checkInputFilled = () => {
+             inputGroup.classList.toggle('filled', titleInput.value.trim() !== "");
+         };
+         titleInput.addEventListener('focus', () => inputGroup.classList.add('focused'));
+         titleInput.addEventListener('blur', () => {
+             inputGroup.classList.remove('focused');
+             checkInputFilled();
+         });
+         checkInputFilled(); // Initial check
+     }
+
+
+    // --- Form Submission Handler ---
+    liveStreamForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (createBtn.classList.contains('submitting')) return; // Prevent double submit
+        resultArea.innerHTML = ''; // Clear previous results
+        createBtn.classList.add('submitting');
+        createBtn.disabled = true;
+        gsap.to(btnTextDefault, { duration: 0.2, autoAlpha: 0, y: -10, ease: 'power1.in' });
+        gsap.fromTo(btnTextSubmitting, { autoAlpha: 0, y: 10 }, { duration: 0.3, autoAlpha: 1, y: 0, ease: 'power1.out', delay: 0.1 });
+
+
+        // Show loading indicator in result area
+        resultArea.innerHTML = `
+            <div class="status-indicator loading animate-fade-in">
+                <div class="spinner">
+                    <div class="dot1"></div><div class="dot2"></div>
+                </div>
+                <span>Đang thiết lập kết nối...</span>
+            </div>`;
+
+
+        const title = titleInput.value.trim();
+        if (!title || title.length < 3) {
+            showResult('error', 'Tiêu đề phải có ít nhất 3 ký tự.');
+            return;
+        }
+
+        try {
+            const res = await fetch("/live/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title })
+            });
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                 // Handle specific error for existing room
+                 if (data.existingRoomUrl) {
+                     showResult('warning', `⚠️ Bạn đã có phòng live đang hoạt động.`, data.existingRoomUrl);
+                 } else {
+                     throw new Error(data.error || `Lỗi máy chủ (${res.status})`);
+                 }
+            } else {
+                // Success!
+                showResult('success', `✅ Tạo luồng thành công!`, data.liveStreamUrl);
+                // Optionally clear the input on success
+                 titleInput.value = '';
+                 inputGroup?.classList.remove('filled');
+            }
+
+        } catch (err) {
+            console.error("❌ Lỗi tạo Live Stream:", err);
+             showResult('error', err.message || "Lỗi kết nối. Vui lòng thử lại.");
+        }
+    });
+
+    function showResult(type, message, link) {
+        // 1. Reset button state FIRST
+        createBtn.classList.remove('submitting');
+        createBtn.disabled = false;
+        // Use clearProps to ensure previous transform/opacity are removed before resetting text
+        gsap.set(btnTextSubmitting, { clearProps: "all" });
+        gsap.set(btnTextDefault, { clearProps: "all" });
+        // Instantly set correct text visibility after clearProps
+        gsap.set(btnTextSubmitting, { autoAlpha: 0 });
+        gsap.set(btnTextDefault, { autoAlpha: 1 });
+
+
+        // 2. Prepare content
+        console.log(`showResult called - Type: ${type}, Message: ${message}, Link: ${link}`); // Debug log
+        let iconHtml = '';
+        let linkHtml = '';
+        let statusClass = '';
+        const displayMessage = typeof message === 'string' ? message : 'Đã xảy ra lỗi không mong muốn.'; // Provide a more informative default
+
+        switch (type) {
+            case 'success':
+                iconHtml = '<i class="fas fa-check-circle icon"></i>'; statusClass = 'success';
+                if (link) linkHtml = `<a href="${link}" target="_blank" class="result-link loading-link">Vào phòng Live <i class="fas fa-arrow-right"></i></a>`;
+                break;
+            case 'warning':
+                 iconHtml = '<i class="fas fa-exclamation-circle icon"></i>'; statusClass = 'warning';
+                 if (link) linkHtml = `<a href="${link}" target="_blank" class="result-link loading-link">Truy cập phòng hiện có <i class="fas fa-arrow-right"></i></a>`;
+                 break;
+            case 'error': default:
+                iconHtml = '<i class="fas fa-times-circle icon"></i>'; statusClass = 'error';
+                break;
+        }
+
+        // 3. Update DOM (Clear previous content reliably)
+        resultArea.innerHTML = ''; // Clear first
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `status-indicator ${statusClass}`;
+        statusDiv.innerHTML = `
+            ${iconHtml}
+            <span>${escapeHtml(displayMessage)}</span>
+            ${linkHtml}
+        `;
+        resultArea.appendChild(statusDiv); // Append the new element
+
+         // 4. Animate the NEW element
+         console.log("Animating result element:", statusDiv);
+         if (!prefersReducedMotion) {
+             gsap.from(statusDiv, { // Target the newly added div
+                 duration: 0.5,
+                 y: 20,
+                 autoAlpha: 0, // Start invisible
+                 ease: 'power2.out',
+                 onComplete: () => { // Ensure final state is correct
+                      gsap.set(statusDiv, { clearProps: "transform,opacity,visibility" }); // Remove GSAP inline styles
+                 }
+             });
+              if (type === 'error' || type === 'warning') {
+                  gsap.fromTo(statusDiv, { x: 0 }, {
+                      duration: 0.6,
+                      x: gsap.utils.wrap([0, -8, 8, -5, 5, -2, 2, 0]), // Shake
+                      ease: 'elastic.out(1, 0.4)',
+                      delay: 0.1 // Slight delay after fade-in starts
+                  });
+              }
+         } else {
+              gsap.set(statusDiv, { autoAlpha: 1, y: 0 }); // Set instantly if reduced motion
+         }
+
+         // 5. Re-attach loading link handler if necessary
+         if (link) {
+             statusDiv.querySelectorAll(".loading-link").forEach(anchor => {
+                anchor.addEventListener("click", handleLoadingLinkClick);
+            });
+         }
+    }
+
+    // --- Helper to escape HTML ---
+    function escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // --- Loading Link Handler ---
+    function handleLoadingLinkClick(e) { /* ... keep implementation ... */ }
+    // Attach initially if any loading links are present outside dynamic content
+     document.querySelectorAll(".loading-link").forEach(anchor => {
+         anchor.addEventListener("click", handleLoadingLinkClick);
+     });
+
+}); // End DOMContentLoaded
+</script>

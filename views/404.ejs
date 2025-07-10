@@ -1,0 +1,90 @@
+<!-- views/404.ejs -->
+<%- include('partials/header', { title: '404 - Lạc Lối Giữa Các Vì Sao', user: typeof user !== 'undefined' ? user : null, activePage: '404' }) %>
+<link rel="stylesheet" href="/error-pages.css"> 
+<section class="error-page-section error-404-section">
+
+    <!-- Background Particles (Cosmic Dust) -->
+    <div id="tsparticles-404" class="error-particles"></div>
+
+    <div class="error-container">
+        <div class="error-code-container" data-animate="error-code-float">
+            <span class="digit d4a">4</span>
+             <span class="digit d0">
+                 <i class="fas fa-compass lost-icon"></i> <%# Compass instead of 0 %>
+                 <div class="zero-orbit">
+                     <div class="orbit-planet"></div>
+                 </div>
+             </span>
+            <span class="digit d4b">4</span>
+            <div class="code-shadow">404</div>
+        </div>
+
+        <div class="error-message-content" data-animate="message-fade-in">
+            <h2 class="error-title">Ôi không! Lạc Lối Trong Không Gian Số?</h2>
+            <p class="error-description">
+                Trang bạn đang tìm kiếm dường như đã trôi dạt vào một chiều không gian khác hoặc chưa từng tồn tại.
+                Đừng lo lắng, hãy thử quay lại hoặc khám phá các khu vực khác.
+            </p>
+            <div class="error-actions">
+                <a href="javascript:history.back()" class="btn btn-secondary-outline error-action-btn">
+                    <i class="fas fa-arrow-left"></i> Quay lại Trang Trước
+                </a>
+                <a href="/" class="btn btn-primary-glow error-action-btn loading-link">
+                    <i class="fas fa-home"></i> Về Trang Chủ
+                </a>
+            </div>
+        </div>
+    </div>
+
+</section>
+  
+  <%- include('partials/footer') %>
+
+<!-- JS Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
+<script>
+// --- 404 Page Animations ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof gsap === 'undefined' || typeof tsParticles === 'undefined') {
+        console.error("GSAP or tsParticles not loaded!"); return;
+    }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // --- Particles ---
+    if (!prefersReducedMotion) {
+        tsParticles.load("tsparticles-404", {
+             fpsLimit: 60, particles: { number: { value: 150, density: { enable: true, value_area: 800 } }, color: { value: ["#FFFFFF", "#a0a0c0", "#ccaaff"] }, shape: { type: "circle" }, opacity: { value: {min: 0.1, max: 0.5}, random: true }, size: { value: {min: 0.5, max: 1.5}, random: true }, links: { enable: false }, move: { enable: true, speed: 0.3, direction: "none", random: true, straight: false, outModes: { default: "out" } } }, interactivity: { enabled: false }, background: { color: "transparent" }
+        }).catch(e => console.error("404 Particles Error:", e));
+    }
+
+    // --- Entrance Animations ---
+    if (!prefersReducedMotion) {
+        const tl = gsap.timeline({delay: 0.3});
+        // Animate 404 digits floating/drifting
+        tl.from('.error-code-container .digit', {
+                duration: 1.5, autoAlpha: 0, y: () => gsap.utils.random(-40, 40), x: () => gsap.utils.random(-30, 30), rotation: () => gsap.utils.random(-15, 15), scale: 0.8, ease: 'power2.out', stagger: 0.1
+            })
+          .from('.lost-icon', { duration: 0.8, scale: 0, rotation: -180, ease: 'back.out(1.7)'}, "-=1.2") // Animate icon within 0
+          .from('.code-shadow', { duration: 1, autoAlpha: 0, scale: 1.2, ease: 'power1.out'}, "-=1.0") // Fade in shadow
+          .from('[data-animate="message-fade-in"] > *', { // Animate message content
+                duration: 0.8, autoAlpha: 0, y: 20, ease: 'power2.out', stagger: 0.15
+           }, "-=0.6"); // Overlap slightly
+
+         // Continuous subtle floating for digits
+          gsap.to('.error-code-container .digit', {
+               duration: 8, y: "+=10", rotation: "+=5", repeat: -1, yoyo: true, ease: "sine.inOut", stagger: { each: 0.3, from: "random"}
+           });
+         // Orbiting planet
+          gsap.to('.orbit-planet', { duration: 10, rotation: 360, repeat: -1, ease: 'none', svgOrigin: "15px 15px"}); // Center orbit on the zero's center
+
+    } else {
+        gsap.set('.error-container > *', {autoAlpha: 1}); // Show instantly
+    }
+
+     // --- Loading Link Script ---
+     document.querySelectorAll(".loading-link").forEach(anchor => {
+         anchor.addEventListener("click", function(e) { /* ... standard loading logic ... */ });
+     });
+});
+</script>
