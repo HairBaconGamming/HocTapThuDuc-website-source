@@ -114,7 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="stat-card"><div class="stat-title"><i class="fas fa-chart-line stat-icon"></i>Total Visits</div><div class="stat-value">${data.totalVisits}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day stat-icon"></i>Visits Today</div><div class="stat-value">${data.dailyVisits}</div></div>
         `;
-        renderUserChart(data.userRegistrationData);
+        if(typeof Chart !== 'undefined' && data.userRegistrationData) {
+            renderUserChart(data.userRegistrationData);
+        }
     }
 
     async function loadUsers(page = 1) {
@@ -227,17 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
         logViewer.scrollTop = logViewer.scrollHeight;
     }
     
-    // --- Chart.js ---
     function renderUserChart(registrationData) {
+        if (typeof Chart === 'undefined' || !registrationData) return;
         const ctx = document.getElementById('user-registration-chart').getContext('2d');
-        const labels = [];
-        const dateMap = new Map();
-        for (let i = 6; i >= 0; i--) {
-            const date = moment().subtract(i, 'days').format('YYYY-MM-DD');
-            labels.push(date);
-            dateMap.set(date, 0);
-        }
-        registrationData.forEach(item => dateMap.set(item._id, item.count));
+        const labels = registrationData.map(d => d._id);
+        const data = registrationData.map(d => d.count);
         
         if (userChart) userChart.destroy();
         userChart = new Chart(ctx, {
@@ -246,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: labels,
                 datasets: [{
                     label: 'New Users',
-                    data: Array.from(dateMap.values()),
+                    data: data,
                     backgroundColor: 'rgba(99, 102, 241, 0.5)',
                     borderColor: 'rgba(99, 102, 241, 1)',
                     borderWidth: 1,
@@ -278,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('trigger-ai-btn').addEventListener('click', async () => {
+    document.getElementById('trigger-ai-btn')?.addEventListener('click', async () => {
         if(confirm('Trigger AI content generation?')) await apiFetch('/api/trigger-ai-post', { method: 'POST' });
     });
 
@@ -287,11 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
         user: document.getElementById('user-edit-modal'),
         subject: document.getElementById('subject-edit-modal')
     };
-    const openModal = (modal) => modal.classList.add('active');
-    const closeModal = (modal) => modal.classList.remove('active');
+    const openModal = (modal) => modal?.classList.add('active');
+    const closeModal = (modal) => modal?.classList.remove('active');
     Object.values(modals).forEach(modal => {
         if (!modal) return;
-        modal.querySelector('.modal-close-btn').onclick = () => closeModal(modal);
+        modal.querySelector('.modal-close-btn')?.addEventListener('click', () => closeModal(modal));
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
     });
     
@@ -304,7 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         form.querySelector('#modal-growthPoints').value = user.growthPoints;
         openModal(modals.user);
     }
-    document.getElementById('add-subject-btn').onclick = () => openSubjectEditModal();
+    const addSubjectBtn = document.getElementById('add-subject-btn');
+    if(addSubjectBtn) addSubjectBtn.onclick = () => openSubjectEditModal();
+
     function openSubjectEditModal(subject = null) {
         const form = modals.subject.querySelector('form');
         form.reset();
@@ -318,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(modals.subject);
     }
     
-    document.getElementById('user-edit-form').onsubmit = async (e) => {
+    document.getElementById('user-edit-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = e.target.querySelector('#modal-userid').value;
         const data = {
@@ -329,9 +327,9 @@ document.addEventListener('DOMContentLoaded', () => {
         await apiFetch(`/api/users/${id}/update`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         closeModal(modals.user);
         loadUsers(1);
-    };
+    });
 
-    document.getElementById('subject-edit-form').onsubmit = async (e) => {
+    document.getElementById('subject-edit-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = e.target.querySelector('#modal-subject-id').value;
         const data = {
@@ -339,17 +337,57 @@ document.addEventListener('DOMContentLoaded', () => {
             description: e.target.querySelector('#modal-subject-description').value,
             image: e.target.querySelector('#modal-subject-image').value
         };
-        // This example only implements Add, but a real app would check for ID to do a PUT request
         await apiFetch('/api/subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         closeModal(modals.subject);
         loadSubjects();
-    };
+    });
 
-    // --- Initial Load ---
+    // --- Tab Navigation & Initial Load ---
+    const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+    const tabContents = document.querySelectorAll('.main-content .tab-content');
+
+    function switchTab(tabId, pushState = true) {
+        if (!tabId || !tabLoadFunctions[tabId]) {
+            tabId = 'dashboard';
+        }
+
+        sidebarLinks.forEach(link => {
+            link.classList.toggle('active', link.dataset.tab === tabId);
+        });
+        
+        tabContents.forEach(tab => {
+            tab.classList.toggle('active', tab.id === tabId);
+        });
+
+        const loadFunction = tabLoadFunctions[tabId];
+        if (loadFunction) {
+            loadFunction();
+        }
+
+        if (pushState) {
+            history.pushState(null, '', `#${tabId}`);
+        }
+    }
+
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabId = link.dataset.tab;
+            if (tabId) {
+                switchTab(tabId);
+            }
+        });
+    });
+
+    window.addEventListener('popstate', () => {
+        const hash = window.location.hash.substring(1) || 'dashboard';
+        switchTab(hash, false);
+    });
+    
     const initialTab = window.location.hash.substring(1) || 'dashboard';
     if(tabLoadFunctions[initialTab]) {
-        switchTab(initialTab);
+        switchTab(initialTab, false);
     } else {
-        switchTab('dashboard');
+        switchTab('dashboard', false);
     }
 });
