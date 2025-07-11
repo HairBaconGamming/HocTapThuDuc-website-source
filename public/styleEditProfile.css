@@ -269,6 +269,124 @@
     opacity: 1;
 }
 
+.avatar-upload-container {
+    background: rgba(var(--bg-dark-rgb), 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-large);
+    padding: 30px;
+    margin-top: 30px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.avatar-upload-container h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-light);
+    margin: 0 0 5px 0;
+}
+
+.avatar-upload-container p {
+    font-size: 0.95rem;
+    color: var(--text-medium);
+    margin: 0 0 20px 0;
+    max-width: 400px;
+}
+
+.avatar-preview-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid var(--border-color);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2), inset 0 0 8px rgba(0,0,0,0.4);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+    background-color: var(--bg-dark-primary); /* Fallback bg */
+}
+
+.avatar-preview-wrapper.drag-over {
+    border-color: var(--primary-accent);
+    transform: scale(1.05);
+}
+
+#avatar-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.upload-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: rgba(var(--bg-dark-rgb), 0.7);
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.avatar-preview-wrapper:hover .upload-overlay {
+    opacity: 1;
+}
+
+.upload-overlay .fas {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.upload-overlay span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.file-input-hidden {
+    display: none;
+}
+
+.upload-instructions {
+    color: var(--text-medium);
+    font-size: 0.9rem;
+}
+
+#file-name-display {
+    display: block;
+    font-weight: 500;
+    color: var(--primary-accent-light);
+    margin-bottom: 5px;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upload-instructions small {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.action-buttons {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 15px;
+}
+
+/* Re-using existing button styles but ensuring width and margins */
+#upload-avatar-btn {
+    width: 100%;
+    margin: 0;
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
     .profile-edit-container { padding: 30px 25px; margin: 20px auto; }
