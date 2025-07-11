@@ -8,7 +8,11 @@ const { isPro } = require("../middlewares/auth");
 
 const router = express.Router();
 
+// URI kết nối MongoDB từ biến môi trường
 const mongoURI = process.env.IMAGE_MONGO_URI;
+
+// Tạo kết nối tới MongoDB
+// Các tùy chọn useNewUrlParser và useUnifiedTopology không còn cần thiết
 const conn = mongoose.createConnection(mongoURI);
 
 let bucket;
@@ -16,33 +20,35 @@ conn.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(conn.db, {
     bucketName: "pro-images",
   });
-  console.log("GridFS Bucket initialized.");
+  console.log("GridFS connection is ready.");
 });
 
-// Hàm để sanitize tên file: chỉ cho phép chữ và số
+/**
+ * Hàm để tạo tên file an toàn: giữ lại phần mở rộng của file.
+ * @param {string} originalName - Tên file gốc.
+ * @returns {string} Tên file mới an toàn.
+ */
 function sanitizeFilename(originalName) {
-  // Generate a unique filename using timestamp and a random string
-  return `img_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const fileExt = path.extname(originalName);
+  // Tạo tên file duy nhất bằng timestamp và một chuỗi ngẫu nhiên
+  const randomString = Math.random().toString(36).substring(2, 8);
+  return `${Date.now()}-${randomString}${fileExt}`;
 }
 
 // Cấu hình Multer với memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // Limit to 10MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // Giới hạn 50MB
   fileFilter: function (req, file, cb) {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "image/bmp",
-      "image/tiff",
-      "image/svg+xml",
-    ];
-    if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error("Chỉ cho phép upload ảnh (JPEG, PNG, GIF, WEBP, BMP, TIFF, SVG)!"));
+    const allowedTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|svg/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Chỉ cho phép upload file ảnh!"));
     }
-    cb(null, true);
   },
 });
 
@@ -51,22 +57,20 @@ router.post("/upload", isPro, upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "Không có file được upload!" });
   }
-  
+
   if (!bucket) {
     return res.status(500).json({ error: "Kết nối tới DB chưa sẵn sàng." });
   }
 
-  // Sinh tên file URL an toàn
   const sanitizedFilename = sanitizeFilename(req.file.originalname);
 
-  // Tạo readableStream từ buffer của file
   const readableStream = Readable.from(req.file.buffer);
 
   const uploadStream = bucket.openUploadStream(sanitizedFilename, {
     contentType: req.file.mimetype,
     metadata: {
-      user: req.user._id.toString(), // Ensure user ID is stored as string
-      displayName: req.file.originalname,
+      user: req.user._id.toString(),
+      displayName: req.file.originalname, // Lưu tên gốc của file
     },
   });
 
@@ -77,130 +81,91 @@ router.post("/upload", isPro, upload.single("image"), (req, res) => {
       return res.status(500).json({ error: "Lỗi khi upload file." });
     })
     .on("finish", () => {
-      const imageUrl = `${req.protocol}://${req.get("host")}/api/pro-images/${
-        uploadStream.filename
-      }`;
-      res.json({ url: imageUrl, fileId: uploadStream.id });
+      const imageUrl = `${req.protocol}://${req.get("host")}/api/pro-images/${uploadStream.filename}`;
+      res.status(201).json({ url: imageUrl, fileId: uploadStream.id });
     });
 });
 
-// GET /api/pro-images/list - Lấy danh sách ảnh của user hiện tại từ GridFS files
+// GET /api/pro-images/list - Lấy danh sách ảnh của user hiện tại
 router.get("/list", isPro, async (req, res) => {
-  if (!conn || !conn.db) {
-    return res.status(500).json({ error: "Kết nối cơ sở dữ liệu chưa sẵn sàng" });
+  if (!bucket) {
+    return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
   }
-  
-  // Ensure req.user and req.user._id are present
-  if (!req.user || !req.user._id) {
-    return res.status(401).json({ error: "Người dùng chưa xác thực." });
-  }
-
-  const userIdString = req.user._id.toString(); // Always work with the string representation
 
   try {
-    const filesCollection = conn.db.collection("pro-images.files");
-    
-    // Querying based on metadata.user string
-    const files = await filesCollection
-      .find({ "metadata.user": userIdString })
-      .sort({ uploadDate: -1 }) // Sort by upload date descending
-      .toArray();
+    const files = await bucket.find({ "metadata.user": req.user._id.toString() }).toArray();
 
-    if (files.length === 0) {
-      // This is a normal situation if the user hasn't uploaded anything yet.
-      // console.log(`Không tìm thấy ảnh nào cho user ID: ${userIdString}`);
+    if (!files || files.length === 0) {
       return res.json([]);
     }
 
-    // Map thêm thuộc tính displayName và URL vào mỗi file
-    const filesWithDetails = files.map((file) => ({
-      _id: file._id,
-      filename: file.filename,
+    const filesWithDisplay = files.map((file) => ({
+      ...file,
+      url: `${req.protocol}://${req.get("host")}/api/pro-images/${file.filename}`,
       displayName: file.metadata?.displayName || file.filename,
-      size: file.length,
-      uploadDate: file.uploadDate,
-      contentType: file.contentType,
-      url: `${req.protocol}://${req.get("host")}/api/pro-images/${file.filename}`
     }));
 
-    res.json(filesWithDetails);
+    res.json(filesWithDisplay);
   } catch (err) {
     console.error("Lỗi truy vấn danh sách ảnh:", err);
-    res.status(500).json({ error: "Lỗi truy vấn ảnh!" });
+    res.status(500).json({ error: "Lỗi máy chủ khi truy vấn ảnh." });
   }
 });
 
 // GET /api/pro-images/:filename - Lấy file ảnh theo filename
-router.get("/:filename", (req, res) => {
+router.get("/:filename", async (req, res) => {
   if (!bucket) {
-    return res.status(500).send("Server error: GridFS Bucket not ready.");
+    return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
   }
-  
-  const filename = req.params.filename;
 
-  bucket.find({ filename: filename }).toArray((err, files) => {
-    if (err) {
-      console.error("Lỗi truy xuất file:", err);
-      return res.status(500).send("Error retrieving file.");
-    }
-    
+  try {
+    const files = await bucket.find({ filename: req.params.filename }).toArray();
+
     if (!files || files.length === 0) {
-      return res.status(404).send("Image not found.");
+      return res.status(404).json({ error: "Ảnh không tồn tại!" });
     }
-    
+
     const file = files[0];
-    
-    // Set Cache-Control headers for better performance
-    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
     res.set("Content-Type", file.contentType);
-    
-    const downloadStream = bucket.openDownloadStreamByName(filename);
-    
-    downloadStream.on('error', (error) => {
-        console.error('Stream error:', error);
-        if (!res.headersSent) {
-            res.status(500).send('Error streaming file.');
-        }
-    });
-    
+    res.set("Content-Disposition", `inline; filename="${file.metadata?.displayName || file.filename}"`);
+
+    const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
     downloadStream.pipe(res);
-  });
+  } catch (err) {
+    console.error("Lỗi truy xuất file:", err);
+    res.status(500).json({ error: "Lỗi máy chủ khi truy xuất file." });
+  }
 });
 
-// DELETE /api/pro-images/:id - Xóa ảnh theo _id (chỉ chủ sở hữu được xóa)
+// DELETE /api/pro-images/:id - Xóa ảnh theo _id
 router.delete("/:id", isPro, async (req, res) => {
   if (!bucket) {
     return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
   }
 
   try {
+    // Kiểm tra xem ID có hợp lệ không
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ error: "ID file không hợp lệ." });
+    }
+
     const fileId = new mongoose.Types.ObjectId(req.params.id);
-    
-    // Find the file metadata first to verify ownership
-    const filesCollection = conn.db.collection("pro-images.files");
-    const file = await filesCollection.findOne({ _id: fileId });
+
+    // Tùy chọn: Kiểm tra xem user có phải là chủ sở hữu của ảnh không
+    const file = await conn.db.collection("pro-images.files").findOne({
+        _id: fileId,
+        "metadata.user": req.user._id.toString()
+    });
 
     if (!file) {
-      return res.status(404).json({ error: "File not found." });
+        return res.status(404).json({ error: "Ảnh không tồn tại hoặc bạn không có quyền xóa." });
     }
 
-    // Check ownership
-    if (file.metadata?.user !== req.user._id.toString()) {
-      return res.status(403).json({ error: "Bạn không có quyền xóa file này." });
-    }
-
-    // Delete the file using GridFSBucket
-    bucket.delete(fileId, (err) => {
-      if (err) {
-        console.error("Lỗi xóa file từ GridFS:", err);
-        return res.status(500).json({ error: "Lỗi xóa ảnh." });
-      }
-      res.json({ success: true, message: "Xóa ảnh thành công!" });
-    });
-    
+    await bucket.delete(fileId);
+    res.status(200).json({ message: "Xóa ảnh thành công!" });
   } catch (err) {
-    console.error("Lỗi xử lý yêu cầu xóa:", err);
-    res.status(500).json({ error: "Lỗi xử lý yêu cầu xóa ảnh." });
+    console.error("Lỗi xóa file:", err);
+    res.status(500).json({ error: "Lỗi máy chủ khi xóa ảnh." });
   }
 });
 
