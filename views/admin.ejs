@@ -17,6 +17,7 @@
             <nav class="sidebar-nav">
                 <a href="#dashboard" class="nav-link active" data-tab="dashboard"><i class="fas fa-tachometer-alt nav-icon"></i> Dashboard</a>
                 <a href="#users" class="nav-link" data-tab="users"><i class="fas fa-users nav-icon"></i> User Management</a>
+                <a href="#pro-keys" class="nav-link" data-tab="pro-keys"><i class="fas fa-key nav-icon"></i> PRO Keys</a>
                 <a href="#subjects" class="nav-link" data-tab="subjects"><i class="fas fa-book nav-icon"></i> Subject Management</a>
                 <a href="#system" class="nav-link" data-tab="system"><i class="fas fa-cogs nav-icon"></i> System Actions</a>
                 <a href="/" class="nav-link nav-link-bottom"><i class="fas fa-home nav-icon"></i> Back to Main Site</a>
@@ -26,9 +27,7 @@
         <main class="main-content">
             <div id="dashboard" class="tab-content active">
                 <h2><i class="fas fa-tachometer-alt"></i> System Overview</h2>
-                <div id="stats-grid" class="stats-grid">
-                    <!-- Stat cards will be injected by JS -->
-                </div>
+                <div id="stats-grid" class="stats-grid"></div>
                 <div class="recent-activity-container">
                     <div class="activity-list">
                         <h3><i class="fas fa-user-plus"></i> Recent Registrations</h3>
@@ -45,12 +44,24 @@
                 <h2><i class="fas fa-users"></i> User Management</h2>
                 <div class="controls-bar">
                     <input type="text" id="user-search-input" class="search-input" placeholder="Search by username or email...">
+                    <!-- ADDED MISSING FILTERS -->
+                    <select id="user-pro-filter" class="filter-select">
+                        <option value="">All PRO Status</option>
+                        <option value="true">PRO Only</option>
+                        <option value="false">Standard Only</option>
+                    </select>
+                    <select id="user-banned-filter" class="filter-select">
+                        <option value="">All Ban Status</option>
+                        <option value="true">Banned Only</option>
+                        <option value="false">Not Banned</option>
+                    </select>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Username</th>
+                                <th>Avatar</th>
                                 <th>Email</th>
                                 <th>PRO</th>
                                 <th>Points</th>
@@ -59,14 +70,32 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="users-table-body">
-                            <!-- User rows will be injected by JS -->
-                        </tbody>
+                        <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
                 <div class="pagination-controls" id="users-pagination"></div>
             </div>
             
+            <div id="pro-keys" class="tab-content">
+                <h2><i class="fas fa-key"></i> PRO Secret Keys</h2>
+                <div class="controls-bar">
+                    <input type="text" id="pro-keys-search-input" class="search-input" placeholder="Search by username...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Secret Key</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pro-keys-table-body"></tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="pro-keys-pagination"></div>
+            </div>
+
             <div id="subjects" class="tab-content">
                 <h2><i class="fas fa-book"></i> Subject Management</h2>
                 <div class="controls-bar">
@@ -82,9 +111,7 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="subjects-table-body">
-                           <!-- Subject rows injected by JS -->
-                        </tbody>
+                        <tbody id="subjects-table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -115,6 +142,10 @@
             <h3>Edit User: <span id="modal-username"></span></h3>
             <form id="user-edit-form">
                 <input type="hidden" id="modal-userid">
+                <div class="form-group">
+                    <label for="modal-avatar">Avatar URL:</label>
+                    <input type="url" id="modal-avatar">
+                </div>
                 <div class="form-group">
                     <label for="modal-isPro">PRO Status:</label>
                     <select id="modal-isPro">
@@ -161,7 +192,10 @@
             </form>
         </div>
     </div>
-
+    
+    <div id="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="/js/admin.js"></script>
 </body>
 </html>

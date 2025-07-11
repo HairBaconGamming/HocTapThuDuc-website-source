@@ -1,367 +1,409 @@
+// public/js/animations.js
+
+// Register ScrollTrigger with GSAP
+gsap.registerPlugin(ScrollTrigger);
+
 /**
- * @file animations.js
- * @description Master script for all site-wide GSAP and dynamic animations.
- * @version 2.0.0
- * @author Your Name
+ * Animate elements with a staggered entrance when they enter the viewport.
+ * @param {string} selector - CSS selector for the elements.
+ * @param {object} options - Optional animation parameters.
  */
+function animateStagger(selector, options = {}) {
+  const defaults = {
+    y: 50,
+    opacity: 0,
+    duration: 1,
+    ease: "power3.out",
+    stagger: 0.2,
+    scrollTrigger: {
+      trigger: selector,
+      start: "top 80%",
+    },
+  };
+  const config = { ...defaults, ...options };
+  gsap.fromTo(
+    selector,
+    { y: config.y, opacity: config.opacity },
+    {
+      y: 0,
+      opacity: 1,
+      duration: config.duration,
+      ease: config.ease,
+      stagger: config.stagger,
+      scrollTrigger: config.scrollTrigger,
+    }
+  );
+}
 
-(function() {
-    "use strict";
+/**
+ * Apply a parallax effect to elements as the user scrolls.
+ * @param {string|Element} selector - CSS selector or element reference.
+ * @param {object} options - Optional parallax parameters.
+ */
+function parallaxEffect(selector, options = {}) {
+  const defaults = {
+    y: 100, // the element will move 100px when fully scrolled
+    ease: "none",
+    scrollTrigger: {
+      trigger: selector,
+      scrub: true,
+      start: "top bottom",
+      end: "bottom top",
+    },
+  };
+  const config = { ...defaults, ...options };
+  gsap.to(selector, {
+    y: config.y,
+    ease: config.ease,
+    scrollTrigger: config.scrollTrigger,
+  });
+}
 
-    // --- UTILITY AND STATE ---
+/**
+ * Attach a hover flourish effect to an element using GSAP.
+ * @param {Element} el - The element to animate.
+ * @param {number} scaleOnHover - The scale factor on hover.
+ */
+function attachHoverFlourish(el, scaleOnHover = 1.05) {
+  el.addEventListener("mouseenter", () => {
+    gsap.to(el, { scale: scaleOnHover, duration: 0.3, ease: "power3.out" });
+  });
+  el.addEventListener("mouseleave", () => {
+    gsap.to(el, { scale: 1, duration: 0.3, ease: "power3.out" });
+  });
+}
 
-    /**
-     * Checks if the GSAP library and required plugins are loaded.
-     * @returns {boolean} True if all necessary GSAP components are available.
-     */
-    const areLibsLoaded = () => {
-        if (typeof gsap === 'undefined') {
-            console.error("GSAP core is not loaded. Animations will be disabled.");
-            return false;
+/**
+ * Initialize advanced animations:
+ * - Staggered entrance for elements with .animate-stagger.
+ * - Parallax scrolling for elements with .parallax.
+ * - Hover effects for elements with data-hover-effect.
+ */
+function initAdvancedAnimations() {
+  // Stagger entrance
+  const staggerElements = document.querySelectorAll(".animate-stagger");
+  if (staggerElements.length > 0) {
+    animateStagger(".animate-stagger");
+  }
+  
+  // Parallax effect: For each element with class "parallax", check for a data attribute
+  const parallaxEls = document.querySelectorAll(".parallax");
+  parallaxEls.forEach((el) => {
+    const parallaxY = el.getAttribute("data-parallax-y") || 100;
+    parallaxEffect(el, { y: parallaxY });
+  });
+  
+  // Hover flourish
+  const hoverEls = document.querySelectorAll("[data-hover-effect]");
+  hoverEls.forEach((el) => attachHoverFlourish(el));
+}
+
+// Initialize animations on DOMContentLoaded
+document.addEventListener("DOMContentLoaded", initAdvancedAnimations);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const header = document.getElementById('mainHeader');
+    const navMenu = document.getElementById('navMenu');
+    const mobileToggle = document.querySelector('.mobile-nav-toggle');
+
+    // --- MODIFIED: Select all dropdowns including the new Live Stream item ---
+    // Standard dropdowns (e.g., "Công cụ")
+    const standardDropdowns = document.querySelectorAll('.header .dropdown:not(.live-item)'); 
+    // Specific Live Stream item
+    const liveStreamItem = document.querySelector('.nav-item.live-item'); // Ensure .live-item is on the <li>
+
+    const allDropdowns = [...standardDropdowns];
+    if (liveStreamItem) {
+        allDropdowns.push(liveStreamItem);
+        // Optionally, add the 'dropdown' class if it's not already there and your CSS relies on it
+        // For this script's logic, it's not strictly necessary if structure is consistent
+        if (!liveStreamItem.classList.contains('dropdown')) {
+            // liveStreamItem.classList.add('dropdown'); 
         }
-        if (typeof ScrollTrigger === 'undefined') {
-            console.error("GSAP ScrollTrigger plugin is not loaded. Scroll-based animations will fail.");
-            return false;
-        }
-        return true;
-    };
+    }
+    // --- END MODIFICATION ---
 
-    /**
-     * Checks if the user prefers reduced motion.
-     * @type {boolean}
-     */
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const allSubmenus = document.querySelectorAll('.header .dropdown-submenu');
 
-    /**
-     * Checks if the current view is mobile-sized.
-     * @param {number} breakpoint - The width in pixels to consider as mobile.
-     * @returns {boolean} True if the window width is at or below the breakpoint.
-     */
-    const isMobile = (breakpoint = 1024) => window.innerWidth <= breakpoint;
+    // --- Register GSAP Plugins ---
+    gsap.registerPlugin(ScrollTrigger);
 
+    // --- Initial State Hiding (Dropdowns) ---
+    gsap.set('.dropdown-menu, .submenu', { autoAlpha: 0, y: -10, scale: 0.98 });
 
-    // --- CORE ANIMATION FUNCTIONS ---
-
-    /**
-     * Animates elements with a staggered fade-and-slide entrance when they enter the viewport.
-     * @param {string} selector - The CSS selector for the elements to animate.
-     * @param {object} [options={}] - Optional GSAP parameters to override defaults.
-     * @param {gsap.StaggerVars} [staggerOptions={}] - Optional GSAP stagger parameters.
-     */
-    function animateStagger(selector, options = {}, staggerOptions = {}) {
-        const elements = document.querySelectorAll(selector);
-        if (elements.length === 0) return;
-
-        if (prefersReducedMotion) {
-            gsap.set(elements, { autoAlpha: 1 });
-            return;
-        }
-
-        const defaults = {
+    // --- GSAP Load Animations ---
+    const tlLoad = gsap.timeline({ delay: 0.2 });
+    tlLoad
+        .from('.logo', { duration: 0.8, x: -50, autoAlpha: 0, ease: "power3.out" })
+        .from('.nav-item', {
+            duration: 0.6,
+            y: -30,
             autoAlpha: 0,
-            y: 50,
-            duration: 0.8,
-            ease: "power3.out",
-            scrollTrigger: {
-                trigger: elements[0].parentNode,
-                start: "top 85%",
-                end: "bottom top",
-                toggleActions: "play none none none",
-            },
-            ...options
-        };
+            stagger: 0.07,
+            ease: "power2.out"
+        }, "-=0.5");
 
-        const staggerDefaults = {
-            amount: 0.4,
-            from: "start",
-            ...staggerOptions
-        };
-
-        gsap.from(elements, { ...defaults, stagger: staggerDefaults });
-    }
-
-    /**
-     * Applies a vertical parallax effect to an element as the user scrolls.
-     * @param {string|Element} selector - The CSS selector or element reference.
-     * @param {object} [options={}] - Optional GSAP and ScrollTrigger parameters.
-     */
-    function parallaxEffect(selector, options = {}) {
-        const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
-        if (!element || prefersReducedMotion) return;
-
-        const defaults = {
-            yPercent: -20, // Move element up by 20% of its height
-            ease: "none",
-            scrollTrigger: {
-                trigger: element,
-                scrub: 1.5, // Adds a bit of smoothing (higher number = more delay)
-                start: "top bottom",
-                end: "bottom top",
-            },
-            ...options
-        };
-
-        gsap.to(element, defaults);
-    }
-
-    /**
-     * Attaches an interactive hover effect to an element.
-     * @param {string|Element} selector - The CSS selector or element(s) reference.
-     * @param {object} [options={}] - Animation options on hover.
-     */
-    function attachHoverFlourish(selector, options = {}) {
-        const elements = gsap.utils.toArray(selector);
-        if (elements.length === 0 || prefersReducedMotion) return;
-
-        const defaults = {
-            scale: 1.05,
-            duration: 0.4,
-            ease: "power2.out",
-            ...options
-        };
-
-        elements.forEach(el => {
-            el.addEventListener("mouseenter", () => gsap.to(el, defaults));
-            el.addEventListener("mouseleave", () => gsap.to(el, { scale: 1, duration: 0.3 }));
-        });
-    }
-
-
-    // --- PAGE-SPECIFIC INITIALIZATION MODULES ---
-
-    /**
-     * Initializes all animations related to the main site header.
-     */
-    function initHeaderAnims() {
-        const header = document.getElementById('mainHeader');
-        const navMenu = document.getElementById('navMenu');
-        const mobileToggle = document.querySelector('.mobile-nav-toggle');
-        const allDropdowns = document.querySelectorAll('.header .dropdown');
-        const allSubmenus = document.querySelectorAll('.header .dropdown-submenu');
-
-        if (!header) return;
-
-        // Animate header load
-        if (!prefersReducedMotion) {
-            gsap.from(header, {
-                y: '-100%',
-                duration: 1,
-                ease: 'power3.out',
-                delay: 0.2
-            });
+    // --- Header Scroll Interaction ---
+    ScrollTrigger.create({
+        start: 'top -80',
+        onEnter: () => {
+            header.classList.add('scrolled');
+            document.body.classList.add('header-scrolled');
+        },
+        onLeaveBack: () => {
+            header.classList.remove('scrolled');
+            document.body.classList.remove('header-scrolled');
         }
+    });
 
-        // Header scroll interaction
-        ScrollTrigger.create({
-            start: 'top -80',
-            onEnter: () => header.classList.add('scrolled'),
-            onLeaveBack: () => header.classList.remove('scrolled'),
-        });
-        
-        // --- Dropdown and Submenu Logic ---
-        function createDropdownLogic(dropdownElement, isSubmenu = false) {
-            const menu = dropdownElement.querySelector(isSubmenu ? '.submenu' : '.dropdown-menu');
+    // --- Helper: Check if Mobile View ---
+    const isMobile = () => window.innerWidth <= 1024;
+
+    // --- Enhanced Dropdown/Submenu Logic (Desktop Hover + Mobile Click) ---
+    allDropdowns.forEach(dropdown => {
+        const menu = dropdown.querySelector('.dropdown-menu'); // This will now also find .live-stream-dropdown-menu
+        const links = menu ? menu.querySelectorAll('.tool-dropdown-link') : [];
+        let openTimeline = null;
+        let closeTimeline = null;
+        let hoverTimeout;
+
+        const openMenu = () => {
             if (!menu) return;
+            if (closeTimeline) closeTimeline.kill();
+            openTimeline = gsap.timeline({ defaults: { duration: 0.4, ease: "power2.out" } })
+                .set(menu, { pointerEvents: 'auto' })
+                .to(menu, { autoAlpha: 1, y: 0, scale: 1 }, 0)
+                .fromTo(links,
+                    { autoAlpha: 0, x: 10, rotationX: -30, transformOrigin: "top right" },
+                    { autoAlpha: 1, x: 0, rotationX: 0, stagger: 0.05 },
+                    0.1);
+        };
 
-            const links = menu.querySelectorAll('.tool-dropdown-link');
-            let openTimeline, closeTimeline, hoverTimeout;
+        const closeMenu = (immediate = false) => {
+            if (!menu) return;
+            if (openTimeline) openTimeline.kill();
+            const duration = immediate ? 0 : 0.3;
+            closeTimeline = gsap.timeline({ defaults: { duration: duration, ease: "power1.in" } })
+                .set(menu, { pointerEvents: 'none' })
+                .to(links, { autoAlpha: 0, x: -5, stagger: 0.03 }, 0)
+                .to(menu, { autoAlpha: 0, y: -10, scale: 0.98 }, 0.1);
+        };
 
-            const animationProps = {
-                duration: 0.35,
-                ease: "power2.out",
-                y: isSubmenu ? 0 : 10,
-                x: isSubmenu ? 10 : 0,
-            };
+        // DESKTOP HOVER LOGIC
+        if (!isMobile()) {
+             dropdown.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                 allDropdowns.forEach(otherDd => {
+                    if (otherDd !== dropdown && otherDd.classList.contains('active')) {
+                        otherDd.classList.remove('active');
+                        const otherMenuElement = otherDd.querySelector('.dropdown-menu');
+                        const otherLinks = otherMenuElement ? otherMenuElement.querySelectorAll('.tool-dropdown-link') : [];
+                        // Explicitly pass menu and links for context
+                        closeMenu.call({ menu: otherMenuElement, links: otherLinks }, true);
+                    }
+                 });
+                openMenu();
+             });
 
-            const openMenu = () => {
-                if (closeTimeline) closeTimeline.kill();
-                gsap.set(menu, { pointerEvents: 'auto' });
-                openTimeline = gsap.timeline()
-                    .to(menu, { autoAlpha: 1, y: 0, x: 0, duration: animationProps.duration, ease: animationProps.ease })
-                    .from(links, { autoAlpha: 0, x: animationProps.x / 2, stagger: 0.05, duration: 0.2 }, "-=0.2");
-            };
+             dropdown.addEventListener('mouseleave', () => {
+                 hoverTimeout = setTimeout(() => {
+                    closeMenu();
+                 }, 150);
+             });
+        }
 
-            const closeMenu = () => {
-                if (openTimeline) openTimeline.kill();
-                closeTimeline = gsap.timeline({ defaults: { duration: 0.2, ease: "power1.in" } })
-                    .to(menu, { autoAlpha: 0, y: animationProps.y, x: animationProps.x })
-                    .set(menu, { pointerEvents: 'none' });
-            };
-
-            // Desktop hover logic
-            if (!isMobile()) {
-                dropdownElement.addEventListener('mouseenter', () => {
-                    clearTimeout(hoverTimeout);
-                    openMenu();
-                });
-                dropdownElement.addEventListener('mouseleave', () => {
-                    hoverTimeout = setTimeout(closeMenu, 150);
-                });
-            }
-
-            // Click logic for mobile and specified toggles
-            const toggleButton = dropdownElement.querySelector('.has-dropdown');
-            if (toggleButton) {
-                toggleButton.addEventListener('click', (e) => {
-                    if (!isMobile() && !dropdownElement.classList.contains('user-dropdown')) return;
+         // MOBILE CLICK LOGIC (Also used for specific desktop toggles if needed)
+         const toggleButton = dropdown.querySelector('.has-dropdown'); // The link itself acts as toggle
+         if (toggleButton) {
+            toggleButton.addEventListener('click', (e) => {
+                // Allow click for "More Tools" on desktop, AND for all dropdowns on mobile
+                if (isMobile() || dropdown.id === 'moreToolsDropdown' || dropdown.classList.contains('live-item')) { 
                     e.preventDefault();
-                    
-                    const isActive = dropdownElement.classList.toggle('active');
-                    if (isActive) {
-                        openMenu();
-                    } else {
-                        closeMenu();
-                    }
-                });
-            }
-        }
+                    const isActive = dropdown.classList.toggle('active');
 
-        allDropdowns.forEach(dd => createDropdownLogic(dd, false));
-        allSubmenus.forEach(sm => createDropdownLogic(sm, true));
-
-        // --- Mobile Navigation Toggle ---
-        if (mobileToggle && navMenu) {
-            const mobileMenuTimeline = gsap.timeline({ paused: true, reversed: true })
-                .to(navMenu, { right: 0, duration: 0.5, ease: 'power3.inOut' })
-                .from('.nav-menu.active .nav-item', {
-                    autoAlpha: 0,
-                    x: -30,
-                    duration: 0.4,
-                    stagger: 0.05,
-                    ease: 'power2.out'
-                }, "-=0.2");
-
-            mobileToggle.addEventListener('click', () => {
-                const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
-                mobileToggle.setAttribute('aria-expanded', !isExpanded);
-                navMenu.classList.toggle('active');
-                document.body.classList.toggle('overflow-hidden', !isExpanded);
-                mobileMenuTimeline.reversed(!mobileMenuTimeline.reversed());
-            });
-        }
-    }
-
-    /**
-     * Initializes animations specific to the homepage.
-     */
-    function initHomePageAnims() {
-        // Animated Stats Counter
-        const statNumbers = document.querySelectorAll('.stat-number');
-        statNumbers.forEach(counter => {
-            if (!counter) return;
-            const target = +counter.dataset.target;
-            ScrollTrigger.create({
-                trigger: counter,
-                start: 'top 90%',
-                once: true,
-                onEnter: () => {
-                    gsap.to(counter, {
-                        duration: 2.5,
-                        innerText: target,
-                        roundProps: "innerText",
-                        ease: "power2.out",
+                    allDropdowns.forEach(otherDd => {
+                        if (otherDd !== dropdown && otherDd.classList.contains('active')) {
+                            otherDd.classList.remove('active');
+                            const otherMenuElement = otherDd.querySelector('.dropdown-menu');
+                            const otherLinks = otherMenuElement ? otherMenuElement.querySelectorAll('.tool-dropdown-link') : [];
+                            if(isMobile()){
+                                if(otherMenuElement) gsap.to(otherMenuElement, { height: 0, duration: 0.3, ease: 'power1.inOut' });
+                            } else {
+                                // Explicitly pass menu and links for context
+                                closeMenu.call({ menu: otherMenuElement, links: otherLinks });
+                            }
+                        }
                     });
-                },
-            });
-        });
 
-        // Hero Section Text Reveal
-        const heroTitle = document.querySelector('.hero-title-v2');
-        if (heroTitle && !prefersReducedMotion) {
-            const lines = heroTitle.querySelectorAll('.line span');
-            gsap.set(lines, { yPercent: 110, autoAlpha: 0 });
-            gsap.to(lines, {
-                yPercent: 0,
-                autoAlpha: 1,
-                duration: 1,
-                ease: 'power4.out',
-                stagger: 0.1,
-                delay: 0.3
-            });
-        }
-
-        // Other homepage entrance animations
-        animateStagger('.stat-item', { y: 30, duration: 0.7, stagger: 0.1 });
-        animateStagger('.feature-card-v2');
-        animateStagger('.content-column');
-        
-        parallaxEffect('.hero-aurora.aurora-1', {yPercent: 30});
-        parallaxEffect('.hero-aurora.aurora-2', {yPercent: -20});
-    }
-
-    /**
-     * Handles page transitions for a smoother SPA-like feel.
-     */
-    function initPageTransitions() {
-        const loadingLinks = document.querySelectorAll('.loading-link');
-        const loadingOverlay = document.getElementById('loading-overlay'); // Assume it exists in HTML
-
-        if (!loadingOverlay) return;
-
-        // Fade out on link click
-        loadingLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                // Don't prevent default for external links or anchor links
-                if (!href || href.startsWith('#') || link.getAttribute('target') === '_blank') {
-                    return;
-                }
-                e.preventDefault();
-                gsap.to(loadingOverlay, {
-                    autoAlpha: 1,
-                    duration: 0.4,
-                    onComplete: () => {
-                        window.location.href = href;
+                    if (isActive) {
+                         if(isMobile()){
+                            gsap.set(menu, { height: 'auto', autoAlpha: 1});
+                            const height = menu.scrollHeight;
+                            gsap.fromTo(menu, { height: 0, autoAlpha: 1 }, { height: height, duration: 0.4, ease: 'power2.out' });
+                             gsap.fromTo(links,
+                                { autoAlpha: 0, x: -10 },
+                                { delay: 0.1, autoAlpha: 1, x: 0, stagger: 0.05, duration: 0.3, ease: 'power1.out' });
+                         } else {
+                             openMenu();
+                         }
+                    } else {
+                        if(isMobile()){
+                            gsap.to(menu, { height: 0, duration: 0.3, ease: 'power1.inOut' });
+                        } else {
+                            closeMenu();
+                        }
                     }
-                });
+                }
             });
-        });
+         }
+    });
 
-        // Fade in on page load
-        gsap.set(loadingOverlay, { autoAlpha: 1 });
-        window.addEventListener('load', () => {
-            gsap.to(loadingOverlay, { autoAlpha: 0, duration: 0.5, delay: 0.2 });
-        });
-    }
+    // SUBMENU LOGIC (Remains the same)
+     allSubmenus.forEach(submenuContainer => {
+        const submenu = submenuContainer.querySelector('.submenu');
+        const subLinks = submenu ? submenu.querySelectorAll('.tool-dropdown-link') : [];
+        let subOpenTimeline = null;
+        let subCloseTimeline = null;
+        let subHoverTimeout;
 
+        const openSubMenu = () => {
+            if(!submenu) return;
+            if (subCloseTimeline) subCloseTimeline.kill();
+            subOpenTimeline = gsap.timeline({ defaults: { duration: 0.35, ease: "power2.out" } })
+                .set(submenu, { pointerEvents: 'auto' })
+                .to(submenu, { autoAlpha: 1, x: 0, scale: 1 }, 0)
+                .fromTo(subLinks,
+                    { autoAlpha: 0, x: 10 },
+                    { autoAlpha: 1, x: 0, stagger: 0.04 },
+                    0.08);
+        };
+        const closeSubMenu = (immediate = false) => {
+             if(!submenu) return;
+             if (subOpenTimeline) subOpenTimeline.kill();
+             const duration = immediate ? 0 : 0.25;
+             subCloseTimeline = gsap.timeline({ defaults: { duration: duration, ease: "power1.in" } })
+                 .set(submenu, { pointerEvents: 'none' })
+                 .to(subLinks, { autoAlpha: 0, x: -5, stagger: 0.02 }, 0)
+                 .to(submenu, { autoAlpha: 0, x: 10, scale: 0.98 }, 0.05);
+        };
 
-    // --- MAIN INITIALIZATION LOGIC ---
-    
-    /**
-     * The main function to run on DOMContentLoaded.
-     */
-    function onDomReady() {
-        console.log("DOM ready. Initializing animations...");
-
-        if (!areLibsLoaded()) return;
-
-        // Initialize components
-        initHeaderAnims();
-        // initPageTransitions(); // Uncomment if you have a #loading-overlay element
-
-        // Initialize page-specific animations
-        const pageId = document.body.dataset.page;
-        switch (pageId) {
-            case 'home':
-                initHomePageAnims();
-                break;
-            case 'dashboard':
-                // initDashboardAnims(); // Example for another page
-                break;
-            // Add cases for other pages as needed
-            default:
-                // Generic animations for other pages
-                animateStagger('.animate-stagger');
-                break;
+        if (!isMobile()) {
+            submenuContainer.addEventListener('mouseenter', () => {
+                 clearTimeout(subHoverTimeout);
+                 allSubmenus.forEach(otherSm => {
+                     if (otherSm !== submenuContainer && otherSm.classList.contains('active')) {
+                         otherSm.classList.remove('active');
+                         const otherSubmenuElement = otherSm.querySelector('.submenu');
+                         const otherSubLinks = otherSubmenuElement ? otherSubmenuElement.querySelectorAll('.tool-dropdown-link') : [];
+                         closeSubMenu.call({ submenu: otherSubmenuElement, subLinks: otherSubLinks }, true);
+                     }
+                 });
+                 openSubMenu();
+             });
+            submenuContainer.addEventListener('mouseleave', () => {
+                 subHoverTimeout = setTimeout(() => {
+                     closeSubMenu();
+                 }, 150);
+             });
         }
 
-        console.log("Animations initialized.");
+        const subToggleButton = submenuContainer.querySelector('.has-dropdown');
+        if (subToggleButton) {
+             subToggleButton.addEventListener('click', (e) => {
+                 if(isMobile()){
+                     e.preventDefault();
+                     const isActive = submenuContainer.classList.toggle('active');
+                     allSubmenus.forEach(otherSm => {
+                        if (otherSm !== submenuContainer && otherSm.classList.contains('active')) {
+                            otherSm.classList.remove('active');
+                            gsap.to(otherSm.querySelector('.submenu'), { height: 0, duration: 0.3, ease: 'power1.inOut' });
+                        }
+                     });
+                     if (isActive) {
+                         gsap.set(submenu, { height: 'auto', autoAlpha: 1 });
+                         const height = submenu.scrollHeight;
+                         gsap.fromTo(submenu, { height: 0, autoAlpha: 1 }, { height: height, duration: 0.4, ease: 'power2.out' });
+                         gsap.fromTo(subLinks,
+                            { autoAlpha: 0, x: -10 },
+                            { delay: 0.1, autoAlpha: 1, x: 0, stagger: 0.05, duration: 0.3, ease: 'power1.out' });
+                     } else {
+                         gsap.to(submenu, { height: 0, duration: 0.3, ease: 'power1.inOut' });
+                     }
+                 }
+             });
+         }
+    });
+
+    // ----- Mobile Navigation Toggle -----
+    if (mobileToggle && navMenu) {
+        mobileToggle.addEventListener('click', () => {
+            const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+            mobileToggle.setAttribute('aria-expanded', !isExpanded);
+            navMenu.classList.toggle('active');
+            document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
+            if (navMenu.classList.contains('active')) {
+                gsap.fromTo('.nav-menu.active .nav-item',
+                    { autoAlpha: 0, x: -30 },
+                    { duration: 0.4, autoAlpha: 1, x: 0, stagger: 0.05, ease: 'power2.out', delay: 0.2 }
+                );
+            } else {
+                 gsap.set('.nav-menu .nav-item', { autoAlpha: 0 });
+            }
+        });
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", onDomReady);
-    } else {
-        onDomReady();
-    }
+    // ----- Close Mobile Menu/Dropdowns on Outside Click -----
+    document.addEventListener('click', (e) => {
+        if (navMenu.classList.contains('active') && !navMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+            mobileToggle.setAttribute('aria-expanded', 'false');
+            navMenu.classList.remove('active');
+            document.body.style.overflow = '';
+             gsap.set('.nav-menu .nav-item', { autoAlpha: 0 });
+        }
+        if (!isMobile()) {
+            allDropdowns.forEach(dropdown => {
+                if (dropdown.classList.contains('active') && !dropdown.contains(e.target)) {
+                     dropdown.classList.remove('active');
+                     const menuElement = dropdown.querySelector('.dropdown-menu');
+                     const linksElements = menuElement ? menuElement.querySelectorAll('.tool-dropdown-link') : [];
+                     closeMenu.call({ menu: menuElement, links: linksElements });
+                }
+            });
+             allSubmenus.forEach(submenuContainer => {
+                 if (submenuContainer.classList.contains('active') && !submenuContainer.contains(e.target)) {
+                     submenuContainer.classList.remove('active');
+                     const submenuElement = submenuContainer.querySelector('.submenu');
+                     const subLinksElements = submenuElement ? submenuElement.querySelectorAll('.tool-dropdown-link') : [];
+                     closeSubMenu.call({ submenu: submenuElement, subLinks: subLinksElements });
+                 }
+            });
+        }
+    });
 
-})();
+
+    // Animated Stats Counter
+const statNumbers = document.querySelectorAll('.stat-number');
+statNumbers.forEach(counter => {
+    // Ensure the counter element exists
+    if (!counter) return;
+    
+    // Get the target number from the data-target attribute
+    const target = +counter.dataset.target;
+
+    // Use ScrollTrigger to start the animation when the element is in view
+    ScrollTrigger.create({
+        trigger: counter,
+        start: 'top 90%', // Start animation when 90% of the element is visible
+        once: true, // Only run the animation once
+        onEnter: () => {
+            // Use GSAP to animate the innerText property
+            gsap.to(counter, {
+                duration: 2, // Animation duration in seconds
+                innerText: target,
+                roundProps: "innerText", // Round the numbers to whole integers
+                ease: "power2.out", // Easing function for a smooth effect
+            });
+        },
+    });
+});
+}); // End DOMContentLoaded

@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    let userChart = null; // To hold the Chart.js instance
+    // --- Chart.js and Moment.js are loaded via CDN in the EJS file ---
+    let userChart = null; 
 
     // --- State and Configuration ---
     const searchInputs = {
@@ -17,22 +18,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabLoadFunctions = {
         dashboard: loadDashboard,
         users: () => loadUsers(1),
-        lessons: () => loadLessons(1),
-        news: () => loadNews(1),
         proKeys: () => loadProKeys(1),
         subjects: loadSubjects,
-        bans: loadBans,
-        'system-actions': () => {}, // No initial load needed
-        'system-logs': loadLogs
+        system: () => {}, // No initial load needed
     };
-
+    
     // --- Toast & API Utilities ---
     function showToast(message, type = 'success') {
-        const toastContainer = document.body;
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            const tempContainer = document.createElement('div');
+            tempContainer.id = 'toast-container';
+            document.body.appendChild(tempContainer);
+        }
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
-        toastContainer.appendChild(toast);
+        document.getElementById('toast-container').appendChild(toast);
         setTimeout(() => {
             toast.classList.add('show');
             setTimeout(() => {
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Generic UI Helpers ---
     const createTableLoader = (tbody) => {
+        if (!tbody) return;
         const cols = tbody.previousElementSibling?.firstElementChild?.childElementCount || 5;
         tbody.innerHTML = `<tr><td colspan="${cols}" class="loader-cell"><div class="loader"></div></td></tr>`;
     };
@@ -82,9 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Pagination Renderer ---
     function renderPagination(containerId, currentPage, totalPages, onPageClick) {
         const container = document.getElementById(containerId);
+        if(!container) return;
         container.innerHTML = '';
         if (totalPages <= 1) return;
-
         const createBtn = (text, page, isDisabled = false) => {
             const btn = document.createElement('button');
             btn.innerHTML = text;
@@ -94,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = () => onPageClick(page);
             return btn;
         };
-        
         container.appendChild(createBtn('«', currentPage - 1, currentPage === 1));
         for (let i = 1; i <= totalPages; i++) container.appendChild(createBtn(i, i));
         container.appendChild(createBtn('»', currentPage + 1, currentPage === totalPages));
@@ -102,21 +104,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Data Loading Functions ---
     async function loadDashboard() {
-        const grid = document.getElementById('stats-grid');
-        grid.innerHTML = Array(7).fill(0).map(() => `<div class="stat-card loader"></div>`).join('');
-        const data = await apiFetch('/api/stats');
-        grid.innerHTML = `
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-users stat-icon"></i>Total Users</div><div class="stat-value">${data.totalUsers}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-crown stat-icon"></i>PRO Users</div><div class="stat-value">${data.proUsers}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-user-slash stat-icon"></i>Banned</div><div class="stat-value">${data.bannedUsers}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-book-open stat-icon"></i>Lessons</div><div class="stat-value">${data.totalLessons}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-newspaper stat-icon"></i>News</div><div class="stat-value">${data.totalNews}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-chart-line stat-icon"></i>Total Visits</div><div class="stat-value">${data.totalVisits}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day stat-icon"></i>Visits Today</div><div class="stat-value">${data.dailyVisits}</div></div>
-        `;
-        if(typeof Chart !== 'undefined' && data.userRegistrationData) {
-            renderUserChart(data.userRegistrationData);
-        }
+        try {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = Array(8).fill(0).map(() => `<div class="stat-card loader"></div>`).join('');
+            const data = await apiFetch('/api/stats');
+            grid.innerHTML = `
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-users stat-icon"></i>Total Users</div><div class="stat-value">${data.totalUsers}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-crown stat-icon"></i>PRO Users</div><div class="stat-value">${data.proUsers}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-user-slash stat-icon"></i>Banned</div><div class="stat-value">${data.bannedUsers}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-book-open stat-icon"></i>Lessons</div><div class="stat-value">${data.totalLessons}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-newspaper stat-icon"></i>News</div><div class="stat-value">${data.totalNews}</div></div>
+                 <div class="stat-card"><div class="stat-title"><i class="fas fa-shapes stat-icon"></i>Subjects</div><div class="stat-value">${data.totalSubjects}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-chart-line stat-icon"></i>Total Visits</div><div class="stat-value">${data.totalVisits}</div></div>
+                <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day stat-icon"></i>Visits Today</div><div class="stat-value">${data.dailyVisits}</div></div>
+            `;
+            const recentUsersList = document.getElementById('recent-users-list');
+            recentUsersList.innerHTML = data.recentUsers.map(u => `<li><span>${u.isPro ? '👑' : ''} ${u.username}</span> <span class="time-since">${timeAgo(u.createdAt)}</span></li>`).join('');
+            const recentLessonsList = document.getElementById('recent-lessons-list');
+            recentLessonsList.innerHTML = data.recentLessons.map(l => `<li><span>${l.title}</span> <span class="time-since">by ${l.createdBy?.username || 'N/A'}</span></li>`).join('');
+        } catch(e) {}
     }
 
     async function loadUsers(page = 1) {
@@ -126,10 +132,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const isPro = filterSelects.users.isPro.value;
         const isBanned = filterSelects.users.isBanned.value;
         const data = await apiFetch(`/api/users?page=${page}&search=${search}&isPro=${isPro}&isBanned=${isBanned}`);
-        
         tbody.innerHTML = data.users.map(u => `
             <tr data-id="${u._id}" data-info='${JSON.stringify(u)}'>
                 <td><strong>${u.username}</strong></td>
+                <td><img src="${u.avatar || 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191'}" alt="avatar" class="table-avatar"></td>
+                <td>${u.email || 'N/A'}</td>
                 <td><span class="status-tag pro">${u.isPro ? 'Yes' : 'No'}</span></td>
                 <td>${u.points}</td>
                 <td><span class="status-tag ${u.isBanned ? 'banned' : 'active'}">${u.isBanned ? 'Banned' : 'Active'}</span></td>
@@ -139,57 +146,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${u.isBanned ? `<button class="action-btn success unban-user-btn" title="Unban"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn danger ban-user-btn" title="Ban"><i class="fas fa-gavel"></i></button>`}
                 </td>
             </tr>`).join('');
-        renderPagination('users-pagination', data.page, data.pages, loadUsers);
-    }
-    
-    async function loadLessons(page = 1) {
-        const tbody = document.getElementById('lessons-table-body');
-        createTableLoader(tbody);
-        const search = searchInputs.lessons.value;
-        const data = await apiFetch(`/api/lessons?page=${page}&search=${search}`);
-        tbody.innerHTML = data.lessons.map(l => `
-            <tr data-id="${l._id}">
-                <td>${l.title}</td>
-                <td>${l.subject?.name || 'N/A'}</td>
-                <td>${l.type}</td>
-                <td>${l.createdBy?.username || 'N/A'}</td>
-                <td>${new Date(l.createdAt).toLocaleDateString()}</td>
-                <td><button class="action-btn danger delete-lesson-btn" title="Delete"><i class="fas fa-trash"></i></button></td>
-            </tr>`).join('');
-        renderPagination('lessons-pagination', data.page, data.pages, loadLessons);
-    }
-
-    async function loadNews(page = 1) {
-        const tbody = document.getElementById('news-table-body');
-        createTableLoader(tbody);
-        const search = searchInputs.news.value;
-        const data = await apiFetch(`/api/news?page=${page}&search=${search}`);
-        tbody.innerHTML = data.newsItems.map(n => `
-            <tr data-id="${n._id}">
-                <td>${n.title}</td>
-                <td>${n.category}</td>
-                <td>${n.postedBy?.username || 'N/A'}</td>
-                <td>${new Date(n.createdAt).toLocaleDateString()}</td>
-                <td><button class="action-btn danger delete-news-btn" title="Delete"><i class="fas fa-trash"></i></button></td>
-            </tr>`).join('');
-        renderPagination('news-pagination', data.page, data.pages, loadNews);
+        renderPagination('users-pagination', data.page, data.pages, (p) => loadUsers(p));
     }
 
     async function loadProKeys(page = 1) {
         const tbody = document.getElementById('pro-keys-table-body');
         createTableLoader(tbody);
         const search = searchInputs.proKeys.value;
-        const data = await apiFetch(`/api/pro-keys?page=${page}&search=${search}`);
+        const data = await apiFetch(`/api/users/pro-keys?page=${page}&search=${search}`);
         tbody.innerHTML = data.users.map(u => `
-            <tr>
+            <tr data-id="${u._id}" data-username="${u.username}">
                 <td><strong>${u.username}</strong></td>
-                <td><span class="status-tag pro">${u.isPro ? 'Yes' : 'No'}</span></td>
                 <td><code class="secret-key-code">${u.proSecretKey || 'N/A'}</code></td>
-                <td><button class="action-btn copy-key-btn" data-key="${u.proSecretKey || ''}" title="Copy"><i class="fas fa-copy"></i></button></td>
+                <td>
+                    <button class="action-btn copy-key-btn" data-key="${u.proSecretKey || ''}" title="Copy"><i class="fas fa-copy"></i></button>
+                    <button class="action-btn warning regenerate-key-btn" title="Regenerate Key"><i class="fas fa-sync-alt"></i></button>
+                </td>
             </tr>`).join('');
-        renderPagination('pro-keys-pagination', data.page, data.pages, loadProKeys);
+        renderPagination('pro-keys-pagination', data.page, data.pages, (p) => loadProKeys(p));
     }
-
+    
     async function loadSubjects() {
         const tbody = document.getElementById('subjects-table-body');
         createTableLoader(tbody);
@@ -203,135 +179,78 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr>`).join('');
     }
 
-    async function loadBans() {
-        const tbody = document.getElementById('bans-table-body');
-        createTableLoader(tbody);
-        const bans = await apiFetch('/api/bans');
-        tbody.innerHTML = bans.map(b => `
-            <tr data-id="${b._id}">
-                <td>${b.ip}</td>
-                <td>${b.userAgent}</td>
-                <td>${new Date(b.bannedAt).toLocaleString()}</td>
-                <td><button class="action-btn danger delete-ban-btn" title="Remove Ban"><i class="fas fa-trash"></i></button></td>
-            </tr>`).join('');
-    }
-
-    async function loadLogs() {
-        const logViewer = document.getElementById('log-viewer');
-        logViewer.innerHTML = '<div class="loader-cell"><div class="loader"></div></div>';
-        const logs = await apiFetch('/api/logs');
-        logViewer.innerHTML = logs.map(l => `
-            <div class="log-entry">
-                <span class="log-timestamp">${new Date(l.timestamp).toLocaleString()}</span>
-                <span class="log-level ${l.level}">${l.level}</span>
-                <span class="log-message">${l.message}</span>
-            </div>`).join('');
-        logViewer.scrollTop = logViewer.scrollHeight;
-    }
-    
-    function renderUserChart(registrationData) {
-        if (typeof Chart === 'undefined' || !registrationData) return;
-        const ctx = document.getElementById('user-registration-chart').getContext('2d');
-        const labels = registrationData.map(d => d._id);
-        const data = registrationData.map(d => d.count);
-        
-        if (userChart) userChart.destroy();
-        userChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'New Users',
-                    data: data,
-                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                }]
-            },
-            options: { scales: { y: { beginAtZero: true, ticks: { color: '#9CA3AF' }}, x: { ticks: { color: '#9CA3AF' }}}, plugins: { legend: { display: false } } }
-        });
-    }
-
-    // --- Event Delegation ---
+    // --- Main Event Delegation for Actions ---
     document.querySelector('.main-content').addEventListener('click', async (e) => {
         const btn = e.target.closest('.action-btn');
         if (!btn) return;
-
         const row = e.target.closest('tr');
         const id = row?.dataset.id;
         
         if (btn.classList.contains('edit-user-btn')) openUserEditModal(JSON.parse(row.dataset.info));
-        else if (btn.classList.contains('ban-user-btn') && confirm('Ban this user?')) await apiFetch(`/api/users/${id}/ban`, { method: 'POST' }).then(() => loadUsers(1));
-        else if (btn.classList.contains('unban-user-btn')) await apiFetch(`/api/users/${id}/unban`, { method: 'POST' }).then(() => loadUsers(1));
-        else if (btn.classList.contains('delete-lesson-btn') && confirm('Delete this lesson?')) await apiFetch(`/api/lessons/${id}`, { method: 'DELETE' }).then(() => loadLessons(1));
-        else if (btn.classList.contains('delete-news-btn') && confirm('Delete this news article?')) await apiFetch(`/api/news/${id}`, { method: 'DELETE' }).then(() => loadNews(1));
-        else if (btn.classList.contains('delete-subject-btn') && confirm('Delete subject?')) await apiFetch(`/api/subjects/${id}`, { method: 'DELETE' }).then(() => loadSubjects());
-        else if (btn.classList.contains('delete-ban-btn') && confirm('Remove this ban entry?')) await apiFetch(`/api/bans/${id}`, { method: 'DELETE' }).then(() => loadBans());
-        else if (btn.classList.contains('copy-key-btn')) {
-            const key = btn.dataset.key;
-            if (key) navigator.clipboard.writeText(key).then(() => showToast('Key copied!'));
-        }
+        else if (btn.classList.contains('ban-user-btn') && confirm('Ban this user?')) await apiFetch(`/api/users/${id}/ban`, { method: 'POST' }).then(() => loadUsers(1, searchInputs.users.value));
+        else if (btn.classList.contains('unban-user-btn')) await apiFetch(`/api/users/${id}/unban`, { method: 'POST' }).then(() => loadUsers(1, searchInputs.users.value));
+        else if (btn.classList.contains('delete-subject-btn') && confirm('Delete subject?')) await apiFetch(`/api/subjects/${id}`, { method: 'DELETE' }).then(loadSubjects);
+        else if (btn.classList.contains('copy-key-btn')) navigator.clipboard.writeText(btn.dataset.key).then(() => showToast('Key copied!'));
+        else if (btn.classList.contains('regenerate-key-btn') && confirm(`Generate new key for ${row.dataset.username}?`)) await apiFetch(`/api/users/${id}/regenerate-key`, { method: 'POST' }).then(() => loadProKeys(1, searchInputs.proKeys.value));
     });
 
     document.getElementById('trigger-ai-btn')?.addEventListener('click', async () => {
-        if(confirm('Trigger AI content generation?')) await apiFetch('/api/trigger-ai-post', { method: 'POST' });
+        if(confirm('Trigger AI content generation job?')) await apiFetch('/api/trigger-ai-post', { method: 'POST' });
     });
 
     // --- Modal Logic ---
-    const modals = {
-        user: document.getElementById('user-edit-modal'),
-        subject: document.getElementById('subject-edit-modal')
-    };
+    const modals = { user: document.getElementById('user-edit-modal'), subject: document.getElementById('subject-edit-modal') };
     const openModal = (modal) => modal?.classList.add('active');
     const closeModal = (modal) => modal?.classList.remove('active');
     Object.values(modals).forEach(modal => {
         if (!modal) return;
-        modal.querySelector('.modal-close-btn')?.addEventListener('click', () => closeModal(modal));
+        modal.querySelector('.modal-close-btn').onclick = () => closeModal(modal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
     });
     
     function openUserEditModal(user) {
-        const form = modals.user.querySelector('form');
-        form.querySelector('#modal-userid').value = user._id;
-        form.querySelector('#modal-username').textContent = user.username;
-        form.querySelector('#modal-isPro').value = user.isPro;
-        form.querySelector('#modal-points').value = user.points;
-        form.querySelector('#modal-growthPoints').value = user.growthPoints;
-        openModal(modals.user);
+        const modal = modals.user;
+        modal.querySelector('#modal-userid').value = user._id;
+        modal.querySelector('#modal-username').textContent = user.username;
+        modal.querySelector('#modal-avatar').value = user.avatar || '';
+        modal.querySelector('#modal-isPro').value = user.isPro.toString();
+        modal.querySelector('#modal-points').value = user.points || 0;
+        modal.querySelector('#modal-growthPoints').value = user.growthPoints || 0;
+        openModal(modal);
     }
-    const addSubjectBtn = document.getElementById('add-subject-btn');
-    if(addSubjectBtn) addSubjectBtn.onclick = () => openSubjectEditModal();
+    document.getElementById('add-subject-btn').onclick = () => openSubjectEditModal();
 
     function openSubjectEditModal(subject = null) {
-        const form = modals.subject.querySelector('form');
+        const modal = modals.subject;
+        const form = modal.querySelector('form');
         form.reset();
-        form.querySelector('#modal-subject-title').textContent = subject ? 'Edit Subject' : 'Add New Subject';
+        // CORRECTED: Use modal.querySelector instead of form.querySelector for the title
+        modal.querySelector('#modal-subject-title').textContent = subject ? 'Edit Subject' : 'Add New Subject';
         form.querySelector('#modal-subject-id').value = subject ? subject._id : '';
         if (subject) {
             form.querySelector('#modal-subject-name').value = subject.name;
             form.querySelector('#modal-subject-description').value = subject.description;
             form.querySelector('#modal-subject-image').value = subject.image;
         }
-        openModal(modals.subject);
+        openModal(modal);
     }
     
-    document.getElementById('user-edit-form')?.addEventListener('submit', async (e) => {
+    document.getElementById('user-edit-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = e.target.querySelector('#modal-userid').value;
         const data = {
+            avatar: e.target.querySelector('#modal-avatar').value,
             isPro: e.target.querySelector('#modal-isPro').value,
             points: e.target.querySelector('#modal-points').value,
             growthPoints: e.target.querySelector('#modal-growthPoints').value
         };
         await apiFetch(`/api/users/${id}/update`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         closeModal(modals.user);
-        loadUsers(1);
-    });
+        loadUsers(1, searchInputs.users.value);
+    };
 
-    document.getElementById('subject-edit-form')?.addEventListener('submit', async (e) => {
+    document.getElementById('subject-edit-form').onsubmit = async (e) => {
         e.preventDefault();
-        const id = e.target.querySelector('#modal-subject-id').value;
         const data = {
             name: e.target.querySelector('#modal-subject-name').value,
             description: e.target.querySelector('#modal-subject-description').value,
@@ -340,54 +259,44 @@ document.addEventListener('DOMContentLoaded', () => {
         await apiFetch('/api/subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         closeModal(modals.subject);
         loadSubjects();
-    });
+    };
 
     // --- Tab Navigation & Initial Load ---
     const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const tabContents = document.querySelectorAll('.main-content .tab-content');
 
     function switchTab(tabId, pushState = true) {
-        if (!tabId || !tabLoadFunctions[tabId]) {
-            tabId = 'dashboard';
-        }
-
-        sidebarLinks.forEach(link => {
-            link.classList.toggle('active', link.dataset.tab === tabId);
-        });
-        
-        tabContents.forEach(tab => {
-            tab.classList.toggle('active', tab.id === tabId);
-        });
-
-        const loadFunction = tabLoadFunctions[tabId];
-        if (loadFunction) {
-            loadFunction();
-        }
-
-        if (pushState) {
-            history.pushState(null, '', `#${tabId}`);
-        }
+        if (!tabId || !tabLoadFunctions[tabId]) tabId = 'dashboard';
+        sidebarLinks.forEach(link => link.classList.toggle('active', link.dataset.tab === tabId));
+        tabContents.forEach(tab => tab.classList.toggle('active', tab.id === tabId));
+        if (tabLoadFunctions[tabId]) tabLoadFunctions[tabId]();
+        if (pushState) history.pushState({ tab: tabId }, '', `#${tabId}`);
     }
 
-    sidebarLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const tabId = link.dataset.tab;
-            if (tabId) {
-                switchTab(tabId);
-            }
-        });
-    });
-
-    window.addEventListener('popstate', () => {
-        const hash = window.location.hash.substring(1) || 'dashboard';
-        switchTab(hash, false);
-    });
+    sidebarLinks.forEach(link => link.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchTab(link.dataset.tab);
+    }));
+    window.addEventListener('popstate', () => switchTab(window.location.hash.substring(1) || 'dashboard', false));
     
-    const initialTab = window.location.hash.substring(1) || 'dashboard';
-    if(tabLoadFunctions[initialTab]) {
-        switchTab(initialTab, false);
-    } else {
-        switchTab('dashboard', false);
-    }
+    // --- Attaching Search and Filter Listeners ---
+    let debounceTimeout;
+    Object.values(searchInputs).forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => {
+                    const activeTab = document.querySelector('.tab-content.active').id;
+                    if(tabLoadFunctions[activeTab]) tabLoadFunctions[activeTab](1);
+                }, 400);
+            });
+        }
+    });
+
+    Object.values(filterSelects.users).forEach(select => {
+        if (select) select.addEventListener('change', () => loadUsers(1));
+    });
+
+    // --- Initial Load ---
+    switchTab(window.location.hash.substring(1) || 'dashboard', false);
 });
