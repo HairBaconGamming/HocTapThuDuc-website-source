@@ -3,7 +3,7 @@ const User = require('../models/User'); // Thay đổi theo model của bạn
 const Post = require('../models/Post'); // Thay đổi theo model của bạn
 // Thêm các model khác nếu cần
 
-const MONGODB_URI = 'mongodb://localhost:27017/ten_database'; // Thay đổi URI phù hợp
+const MONGODB_URI = process.env.MONGO_URI; // Thay đổi URI phù hợp
 
 async function clearDatabase() {
   await User.deleteMany({});
