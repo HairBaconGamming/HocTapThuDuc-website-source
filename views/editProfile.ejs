@@ -1,20 +1,11 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chỉnh Sửa Hồ Sơ - <%= user.username %></title>
-    <!-- Main Stylesheets -->
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/public/styleEditProfile.css">
+
+    <%- include('partials/header', { user: user, activePage: 'profile' }) %>
+        <link rel="stylesheet" href="/styleEditProfile.css">
     
     <!-- New Avatar Stylesheet -->
     <link rel="stylesheet" href="/css/styleAvatarUpload.css"> 
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-</head>
-<body>
-    <%- include('partials/header', { user: user, activePage: 'profile' }) %>
 
     <main class="profile-edit-page-section">
         <div class="profile-edit-background">
