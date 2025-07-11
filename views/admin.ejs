@@ -1,0 +1,22 @@
+<!-- filepath: d:\hoctapthptthuduc\HocTapThuDuc-website-source\views\admin.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - truonghoangnam</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Admin Panel</h1>
+        <h2>Welcome, <%= user.username %></h2>
+        <div id="admin-actions">
+            <button id="refresh-seeds">Refresh Seeds</button>
+            <button id="add-seed">Add Seed</button>
+        </div>
+        <div id="seeds-list">
+            <!-- Seeds will be loaded here -->
+        </div>
+    </div>
+    <script src="/js/admin.js"></script>
+</body>

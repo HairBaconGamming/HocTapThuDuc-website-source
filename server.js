@@ -217,6 +217,10 @@ const moment = require("moment-timezone");
 const liveRouter = require("./routes/live");
 app.use("/live", liveRouter);
 
+// Thêm dòng này để sử dụng admin panel
+const adminRouter = require("./routes/admin");
+app.use("/admin", adminRouter);
+
 // Middleware cập nhật lượt truy cập
 async function updateVisitStats(req, res, next) {
   try {
