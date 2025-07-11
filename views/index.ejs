@@ -1,289 +1,402 @@
-<%- include('partials/header', { user: user, activePage: 'home' }) %>
+<%- include('partials/header', { title: 'Trang Chủ - Học Sinh Thủ Đức', user: user, activePage: "home" }) %>
+<style>body {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  font-family: var(--font-main);
+  margin: 0;
+  overflow-x: hidden; /* Ngăn cuộn ngang */
+}</style>
+<link rel="stylesheet" href="/poster.css"> 
+<body data-mode="home">
 
-<main>
-    <% if (user) { %>
-        <!-- ============================================= -->
-        <!-- LOGGED-IN VIEW: DASHBOARD-STYLE HERO          -->
-        <!-- ============================================= -->
-        <section class="hero logged-in-dashboard" id="hero-section">
-            <div id="particles-js"></div>
-            <div class="hero-overlay"></div>
-            <div class="hero-container">
-                <div class="hero-content logged-in">
-                    <div class="hero-grid">
-                        <!-- Statistics Card -->
-                        <div class="stat-card interactive-card" data-tilt>
-                            <div class="card-glow"></div>
-                            <div class="card-content">
-                                <h2 class="card-title"><i class="fas fa-chart-bar"></i> Thống Kê</h2>
-                                <p><i class="fas fa-users card-icon"></i> Tổng tài khoản: <strong><%= totalUsers.toLocaleString('vi-VN') %></strong></p>
-                                <p><i class="fas fa-eye card-icon"></i> Lượt truy cập hôm nay: <strong><%= dailyVisits.toLocaleString('vi-VN') %></strong></p>
-                                <p><i class="fas fa-globe-asia card-icon"></i> Tổng lượt truy cập: <strong><%= totalVisits.toLocaleString('vi-VN') %></strong></p>
-                            </div>
-                        </div>
+  <div id="particles-js"></div>
 
-                        <!-- Latest Lessons Card -->
-                        <div class="latest-card interactive-card lessons-card" data-tilt>
-                            <div class="card-glow"></div>
-                            <div class="card-content">
-                                <h2 class="card-title"><i class="fas fa-graduation-cap"></i> Bài Học Mới Nhất</h2>
-                                <% if (latestLessons && latestLessons.length > 0) { %>
-                                  <ul class="content-list">
-                                    <% latestLessons.forEach(function(lesson) { %>
-                                      <li class="list-item">
-                                        <a href="/lesson/<%= lesson._id %>" class="item-link">
-                                          <h3 class="item-title"><%= lesson.title %></h3>
-                                          <span class="item-date"><%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                                        </a>
-                                      </li>
-                                    <% }); %>
-                                  </ul>
-                                <% } else { %>
-                                  <p class="no-content">Chưa có bài học mới.</p>
-                                <% } %>
-                            </div>
-                        </div>
+  <section class="hero" id="hero-section">
+    <div class="hero-overlay"></div>
 
-                        <!-- Latest News Card -->
-                        <div class="latest-card interactive-card news-card" data-tilt>
-                            <div class="card-glow"></div>
-                            <div class="card-content">
-                              <h2 class="card-title"><i class="fas fa-newspaper"></i> Tin Tức Mới Nhất</h2>
-                              <% if (latestNews && latestNews.length > 0) { %>
-                                <ul class="content-list">
-                                  <% latestNews.forEach(function(news) { %>
-                                    <li class="list-item">
-                                      <a href="/news/<%= news._id %>" class="item-link">
-                                        <h3 class="item-title"><%= news.title %></h3>
-                                        <span class="item-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
-                                      </a>
-                                    </li>
-                                  <% }); %>
-                                </ul>
-                              <% } else { %>
-                                <p class="no-content">Chưa có tin tức mới.</p>
-                              <% } %>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Live Activity Feed -->
-                    <div id="liveFeedContainer">
-                        <div id="liveFeed"></div>
-                    </div>
-                </div>
+    <div class="hero-container">
+      <% if (!user) { %>
+        <div class="hero-content guest">
+          <div class="hero-inner">
+            <h1 class="hero-title">
+              <span class="line"><span class="word">Chào</span> <span class="word">mừng</span> <span class="word">đến</span> <span class="word">với</span></span>
+              <span class="line">
+                <span class="word accent-word">CỘNG</span> 
+                <span class="word accent-word">ĐỒNG</span> 
+                <span class="word accent-word">HỌC</span> 
+                <span class="word accent-word">TẬP</span>
+              </span>
+              <span class="big-text-wrapper">
+                <span class="big-text">THỦ ĐỨC</span>
+              </span>
+            </h1>
+            <p class="hero-subtitle">
+              <span class="char">N</span><span class="char">ơ</span><span class="char">i</span> <span class="char">k</span><span class="char">ế</span><span class="char">t</span> <span class="char">n</span><span class="char">ố</span><span class="char">i</span><span class="char">,</span> <span class="char">c</span><span class="char">h</span><span class="char">i</span><span class="char">a</span> <span class="char">s</span><span class="char">ẻ</span> <span class="char">v</span><span class="char">à</span> <span class="char">c</span><span class="char">ù</span><span class="char">n</span><span class="char">g</span> <span class="char">n</span><span class="char">h</span><span class="char">a</span><span class="char">u</span> <span class="char">p</span><span class="char">h</span><span class="char">á</span><span class="char">t</span> <span class="char">t</span><span class="char">r</span><span class="char">i</span><span class="char">ể</span><span class="char">n</span><span class="char">.</span>
+            </p>
+            <a href="/register"
+               class="btn btn-primary btn-glow stagger-in"
+               style="animation-delay: 1s;">
+              <span class="btn-text">Tham gia ngay</span>
+              <span class="btn-liquid"></span>
+            </a>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="hero-content logged-in">
+          <div class="hero-grid">
+            <div class="stat-card interactive-card" data-tilt>
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <h2 class="card-title">Thống Kê Cộng Đồng</h2>
+                <p><i class="fas fa-users card-icon"></i> Tổng thành viên: <strong><%= totalUsers.toLocaleString('vi-VN') %></strong></p>
+                <p><i class="fas fa-eye card-icon"></i> Lượt truy cập hôm nay: <strong><%= dailyVisits.toLocaleString('vi-VN') %></strong></p>
+                <p><i class="fas fa-chart-line card-icon"></i> Tổng lượt truy cập: <strong><%= totalVisits.toLocaleString('vi-VN') %></strong></p>
+              </div>
             </div>
-        </section>
 
-    <% } else { %>
-
-        <!-- ============================================= -->
-        <!-- GUEST VIEW: FULL LANDING PAGE                 -->
-        <!-- ============================================= -->
-        
-        <!-- Hero Section for Guests -->
-        <section class="hero-section-v2">
-            <div id="particles-js" style="position: absolute; inset: 0; z-index: 0;"></div>
-            <div class="hero-background-elements">
-                <div class="hero-aurora aurora-1"></div>
-                <div class="hero-aurora aurora-2"></div>
-                <div class="hero-aurora aurora-3"></div>
-            </div>
-            <div class="hero-content-v2">
-                <div class="hero-text-content">
-                    <div class="hero-badge">
-                        <i class="fas fa-school"></i> Dành Riêng cho Học Sinh THPT Thủ Đức
-                    </div>
-                    <h1 class="hero-title-v2">
-                        <span class="line"><span>Nền Tảng</span></span>
-                        <span class="line"><span><span class="highlight">Dẫn Đầu</span> Tương Lai</span></span>
-                    </h1>
-                    <p class="hero-subtitle-v2">
-                        Chinh phục mọi kỳ thi với hệ thống bài giảng, đề thi và công cụ AI độc quyền được thiết kế cho học sinh THPT tại TP. Thủ Đức.
-                    </p>
-                    <div class="hero-cta-buttons">
-                        <a href="/register" class="btn btn-primary-glow">
-                            <i class="fas fa-user-plus"></i> Đăng Ký Miễn Phí
+            <div class="latest-card interactive-card lessons-card" data-tilt>
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <h2 class="card-title">Bài Học Mới Nhất</h2>
+                <% if (latestLessons && latestLessons.length > 0) { %>
+                  <ul class="content-list">
+                    <% latestLessons.forEach(function(lesson) { %>
+                      <li class="list-item">
+                        <a href="/lesson/<%= lesson._id %>" class="item-link">
+                          <h3 class="item-title"><%= lesson.title %></h3>
+                          <span class="item-date"><%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
                         </a>
-                         <a href="/login" class="btn btn-secondary-outline">
-                            <i class="fas fa-sign-in-alt"></i> Đăng Nhập
-                        </a>
-                    </div>
-                </div>
+                      </li>
+                    <% }); %>
+                  </ul>
+                <% } else { %>
+                  <p class="no-content">Chưa có bài học nào được đăng.</p>
+                <% } %>
+              </div>
             </div>
-        </section>
 
-        <!-- Stats Section -->
-        <section class="stats-section">
-            <div class="container">
-                <div class="stats-grid">
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-users stat-icon"></i>
-                        <div class="stat-number" data-target="<%= totalUsers %>">0</div>
-                        <div class="stat-label">Học Viên</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-book-reader stat-icon"></i>
-                        <div class="stat-number" data-target="<%= latestLessons.length %>">0</div>
-                        <div class="stat-label">Bài Giảng</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-eye stat-icon"></i>
-                        <div class="stat-number" data-target="<%= dailyVisits %>">0</div>
-                        <div class="stat-label">Truy Cập Hôm Nay</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-globe-asia stat-icon"></i>
-                        <div class="stat-number" data-target="<%= totalVisits %>">0</div>
-                        <div class="stat-label">Tổng Truy Cập</div>
-                    </div>
+             <div class="latest-card interactive-card news-card" data-tilt>
+                <div class="card-glow"></div>
+                <div class="card-content">
+                  <h2 class="card-title">Thông Báo & Tin Tức</h2>
+                  <% if (latestNews && latestNews.length > 0) { %>
+                    <ul class="content-list">
+                      <% latestNews.forEach(function(news) { %>
+                        <li class="list-item">
+                          <a href="/news/<%= news._id %>" class="item-link">
+                            <h3 class="item-title"><%= news.title %></h3>
+                            <span class="item-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
+                          </a>
+                        </li>
+                      <% }); %>
+                    </ul>
+                  <% } else { %>
+                    <p class="no-content">Chưa có tin tức mới.</p>
+                  <% } %>
                 </div>
-            </div>
-        </section>
+              </div>
+          </div>
 
-        <!-- Features Section -->
-        <section class="features-section">
-            <div class="container">
-                <div class="section-header">
-                    <span class="section-tagline">Tại Sao Chọn Chúng Tôi?</span>
-                    <h2 class="section-title">Công Cụ Ưu Việt Cho Tương Lai Rạng Rỡ</h2>
-                    <p class="section-description">
-                        Chúng tôi không chỉ cung cấp bài học, mà còn mang đến một hệ sinh thái học tập toàn diện.
-                    </p>
-                </div>
-                <div class="features-grid-v2">
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <h3 class="feature-card-title">Nội Dung Địa Phương Hóa</h3>
-                        <p class="feature-card-desc">Chương trình học và đề thi được biên soạn riêng, bám sát định hướng của các trường THPT tại TP. Thủ Đức.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-gamepad"></i></div>
-                        <h3 class="feature-card-title">Học Tập Gamification</h3>
-                        <p class="feature-card-desc">Tích lũy điểm, thăng hạng trên leaderboard và nhận thành tích để hành trình học tập luôn đầy hứng khởi.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-robot"></i></div>
-                        <h3 class="feature-card-title">Công Cụ AI Thông Minh</h3>
-                        <p class="feature-card-desc">Tự động tạo bài trắc nghiệm từ tài liệu và chấm điểm bài luận chính xác, tiết kiệm thời gian và nâng cao hiệu quả.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-users-cog"></i></div>
-                        <h3 class="feature-card-title">Cộng Đồng Năng Động</h3>
-                        <p class="feature-card-desc">Tham gia cùng hàng ngàn học viên khác, trao đổi kiến thức, và cùng nhau tiến bộ mỗi ngày.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-    <% } %>
-</main>
+          <div id="liveFeedContainer">
+            <div id="liveFeed">
+              </div>
+          </div>
+        </div>
+      <% } %>
+    </div> <div class="decorative-elements">
+        </div>
 
-<%- include('partials/footer') %>
-
-<!-- SCRIPTS -->
-<script src="/socket.io/socket.io.js"></script>           
-<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.7.2/vanilla-tilt.min.js"></script>
-<script src="/js/animations.js"></script>
-    
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof gsap === 'undefined') return;
-
-        const isGuest = !!document.querySelector('.hero-section-v2');
-        const isLoggedIn = !!document.querySelector('.logged-in-dashboard');
-
-        // --- tsParticles Background ---
-        tsParticles.load("particles-js", {
-            preset: "links",
-            background: { color: "transparent" },
-            particles: {
-                number: { value: 60, density: { enable: true, value_area: 800 } },
-                color: { value: ["#ff6ec4", "#7873f5", "#ffffff", "#ffdd57"] },
-                opacity: { value: { min: 0.1, max: 0.5 } },
-                size: { value: { min: 1, max: 3 } },
-                links: { enable: true, distance: 150, color: "#ffffff", opacity: 0.2, width: 1 },
-                move: { enable: true, speed: 1.5, direction: "none", random: true, straight: false, out_mode: "out" }
+  </section>
+  
+  <script src="/socket.io/socket.io.js"></script>           
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.7.2/vanilla-tilt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/MotionPathPlugin.min.js"></script>
+  
+  <script>
+    // ----- Khởi tạo tsParticles -----
+    tsParticles.load("particles-js", {
+        preset: "links",
+        background: {
+            color: "transparent",
+        },
+        particles: {
+            number: {
+                value: 80,
+                density: {
+                    enable: true,
+                    value_area: 800
+                }
             },
-            interactivity: { events: { onhover: { enable: true, mode: "repulse" } } },
-            detectRetina: true,
+            color: {
+                value: ["#ff6ec4", "#7873f5", "#ffffff", "#ffdd57"]
+            },
+            shape: {
+                type: "circle",
+            },
+            opacity: {
+                value: { min: 0.1, max: 0.6 },
+                animation: {
+                  enable: true,
+                  speed: 1,
+                  minimumValue: 0.1,
+                  sync: false
+                }
+            },
+            size: {
+                value: { min: 1, max: 4 },
+                 animation: {
+                    enable: true,
+                    speed: 3,
+                    minimumValue: 0.5,
+                    sync: false
+                 }
+            },
+            links: {
+                enable: true,
+                distance: 150,
+                color: "#ffffff",
+                opacity: 0.4,
+                width: 1
+            },
+            move: {
+                enable: true,
+                speed: 2,
+                direction: "none",
+                random: true,
+                straight: false,
+                out_mode: "out",
+                bounce: false,
+                attract: {
+                    enable: true,
+                    rotateX: 600,
+                    rotateY: 1200
+                }
+            }
+        },
+        interactivity: {
+            detect_on: "canvas",
+            events: {
+                onhover: {
+                    enable: true,
+                    mode: "repulse"
+                },
+                onclick: {
+                    enable: true,
+                    mode: "push"
+                },
+                resize: true
+            },
+            modes: {
+                repulse: {
+                    distance: 150,
+                    duration: 0.4
+                },
+                push: {
+                    particles_nb: 4
+                },
+            }
+        },
+        detectRetina: true,
+    });
+
+    // ----- GSAP Animations -----
+    document.addEventListener("DOMContentLoaded", () => {
+      const isGuest = document.querySelector('.hero-content.guest');
+      const isLoggedIn = document.querySelector('.hero-content.logged-in');
+
+      // --- Animation cho Khách ---
+      if (isGuest) {
+        const tlGuest = gsap.timeline({ delay: 0.5 });
+
+        tlGuest
+          .from(".hero-title .line .word", {
+            yPercent: 110,
+            opacity: 0,
+            rotationX: -90,
+            stagger: 0.1,
+            duration: 0.8,
+            ease: "power3.out"
+          })
+          .from(".big-text", {
+            scale: 0.5,
+            opacity: 0,
+            rotation: -30,
+            duration: 1,
+            ease: "elastic.out(1, 0.5)"
+          }, "-=0.5")
+          .from(".hero-subtitle .char", {
+              y: 50,
+              opacity: 0,
+              stagger: 0.03, // Tăng tốc độ một chút cho câu dài hơn
+              duration: 0.5,
+              ease: "back.out(1.7)"
+          }, "-=0.7")
+          .from(".btn-glow", {
+            scale: 0.8,
+            opacity: 0,
+            duration: 1,
+            ease: "power4.out"
+          }, "-=0.5");
+      }
+
+      // --- Animation cho Người dùng đã đăng nhập ---
+      if (isLoggedIn) {
+          const tlLoggedIn = gsap.timeline({ delay: 0.3 });
+          
+          // Sử dụng `querySelectorAll` và `forEach` để stagger hoạt động chính xác
+          const cards = gsap.utils.toArray('.hero-grid .interactive-card');
+          tlLoggedIn
+              .from(cards, {
+                  y: 100,
+                  opacity: 0,
+                  scale: 0.9,
+                  rotationX: -45,
+                  duration: 0.8,
+                  ease: "power3.out",
+                  stagger: 0.2 // Xuất hiện lần lượt
+              })
+              .from("#liveFeedContainer", {
+                  y: 50,
+                  opacity: 0,
+                  duration: 0.6,
+                  ease: "power2.out"
+              }, "-=0.4");
+
+          // Khởi tạo hiệu ứng Tilt cho card
+          if (typeof VanillaTilt !== 'undefined') {
+              VanillaTilt.init(document.querySelectorAll('[data-tilt]'), {
+                  max: 15,
+                  speed: 400,
+                  glare: true,
+                  "max-glare": 0.3
+              });
+          }
+      }
+    });
+
+    // ----- Socket.IO cho Live Feed -----
+    const socket = io();
+    const liveFeed = document.getElementById("liveFeed");
+    const liveFeedContainer = document.getElementById("liveFeedContainer");
+
+    if (liveFeedContainer) {
+      liveFeedContainer.style.opacity = 0; // Ẩn ban đầu
+      liveFeedContainer.hideTimeout = null;
+    }
+
+    socket.on("liveAccess", (data) => {
+        if (!liveFeed || !liveFeedContainer) return;
+
+        let message = "";
+        let iconClass = "";
+        if (data.type === "login") {
+            message = `<strong>${data.username}</strong> vừa truy cập.`;
+            iconClass = "fas fa-sign-in-alt";
+        } else if (data.type === "register") {
+            message = `Chào mừng thành viên mới <strong>${data.username}</strong>!`;
+            iconClass = "fas fa-user-plus";
+        }
+
+        const liveItem = document.createElement("div");
+        liveItem.className = "live-item";
+        liveItem.innerHTML = `<i class="${iconClass} live-icon"></i> ${message} <span class="time">${data.time}</span>`;
+
+        liveFeed.insertBefore(liveItem, liveFeed.firstChild);
+
+        gsap.from(liveItem, {
+            opacity: 0,
+            x: -50,
+            duration: 0.5,
+            ease: "power3.out"
         });
 
-        // --- Animations for GUESTS ---
-        if (isGuest) {
-            const heroTitle = document.querySelector('.hero-title-v2');
-            if (heroTitle) {
-                const words = heroTitle.querySelectorAll('.line span');
-                gsap.set(words, { y: '110%', opacity: 0 });
-                gsap.to(words, { y: '0%', opacity: 1, duration: 1.2, ease: 'power4.out', stagger: 0.1, delay: 0.3 });
-            }
-            gsap.from('.hero-badge', { duration: 0.8, scale: 0.5, autoAlpha: 0, ease: 'back.out(1.7)', delay: 0.1 });
-            gsap.from('.hero-subtitle-v2', { duration: 1, y: 20, autoAlpha: 0, ease: 'power3.out', delay: 0.8 });
-            gsap.from('.hero-cta-buttons > *', { duration: 0.8, y: 20, autoAlpha: 0, ease: 'power3.out', stagger: 0.1, delay: 1 });
-            
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers.forEach(counter => {
-                const target = +counter.dataset.target;
-                ScrollTrigger.create({
-                    trigger: counter,
-                    start: 'top 90%',
-                    once: true,
-                    onEnter: () => {
-                        gsap.to(counter, { duration: 2, innerText: target, roundProps: "innerText", ease: "power2.out" });
-                    },
-                });
+        const maxItems = 5;
+        while (liveFeed.children.length > maxItems) {
+            const oldItem = liveFeed.lastChild;
+            gsap.to(oldItem, {
+                opacity: 0, height: 0, padding: 0, margin: 0,
+                duration: 0.4,
+                ease: "power2.in",
+                onComplete: () => oldItem.remove()
             });
         }
         
-        // --- Animations for LOGGED-IN USERS ---
-        if (isLoggedIn) {
-            gsap.from(".interactive-card", {
-                y: 100, opacity: 0, scale: 0.9, rotationX: -45,
-                duration: 0.8, ease: "power3.out", stagger: 0.2
-            });
-            gsap.from("#liveFeedContainer", {
-                y: 50, opacity: 0, duration: 0.6, ease: "power2.out", delay: 0.5
-            });
+        // Hiển thị và đặt hẹn giờ để ẩn
+        clearTimeout(liveFeedContainer.hideTimeout);
+        gsap.to(liveFeedContainer, { opacity: 1, duration: 0.5 });
+        liveFeedContainer.hideTimeout = setTimeout(() => {
+            gsap.to(liveFeedContainer, { opacity: 0, duration: 1 });
+        }, 15000);
 
-            const tiltElements = document.querySelectorAll('[data-tilt]');
-            if (typeof VanillaTilt !== 'undefined' && tiltElements.length > 0) {
-                VanillaTilt.init(tiltElements, { max: 10, speed: 400, glare: true, "max-glare": 0.2 });
-            }
-        }
-
-        // --- Live Feed Socket.IO Logic (for logged-in users) ---
-        if (isLoggedIn) {
-            const socket = io();
-            const liveFeed = document.getElementById("liveFeed");
-            const liveFeedContainer = document.getElementById("liveFeedContainer");
-
-            socket.on("liveAccess", (data) => {
-                if (!liveFeed || !liveFeedContainer) return;
-                let message = "";
-                let iconClass = "";
-                if (data.type === "login") {
-                    message = `<strong>${data.username}</strong> vừa truy cập.`;
-                    iconClass = "fas fa-sign-in-alt";
-                } else if (data.type === "register") {
-                    message = `Chào mừng <strong>${data.username}</strong> gia nhập!`;
-                    iconClass = "fas fa-user-plus";
-                }
-
-                const liveItem = document.createElement("div");
-                liveItem.className = "live-item";
-                liveItem.innerHTML = `<i class="${iconClass} live-icon"></i> ${message} <span class="time">${data.time}</span>`;
-                liveFeed.insertBefore(liveItem, liveFeed.firstChild);
-
-                gsap.from(liveItem, { opacity: 0, x: -50, duration: 0.5, ease: "power3.out" });
-
-                if (liveFeed.children.length > 5) {
-                    const oldItem = liveFeed.lastChild;
-                    gsap.to(oldItem, { opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0, duration: 0.4, ease: "power2.in", onComplete: () => oldItem.remove() });
-                }
-            });
-        }
     });
-</script>
+                    
+    // Hiệu ứng glow theo chuột cho các card
+    const interactiveCards = document.querySelectorAll('.interactive-card');
+    interactiveCards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
+
+  </script>
+
+  <%# The second script block for poster animations seems separate and can be kept as is %>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const posterSection = document.querySelector('.showcase-poster-section');
+    if (!posterSection) return; // Thoát nếu không có section này
+
+    const images = document.querySelectorAll('.poster-images-layer .image-float');
+    const features = document.querySelectorAll('.poster-features-layer .feature-highlight');
+
+    const handleScroll = () => {
+        const sectionRect = posterSection.getBoundingClientRect();
+        const start = window.innerHeight;
+        const end = -sectionRect.height;
+        const current = sectionRect.top;
+        let progress = Math.max(0, Math.min(1, (start - current) / (start - end)));
+
+        images.forEach(img => {
+            const depth = parseFloat(img.dataset.depth) || 0.2;
+            const moveY = (progress - 0.5) * -100 * depth;
+            img.style.transform = `translateY(${moveY}px) translateZ(0)`;
+        });
+
+        features.forEach(feat => {
+             const depth = parseFloat(feat.dataset.depth) || 0.15;
+             const moveY = (progress - 0.5) * -80 * depth;
+             feat.style.transform = `translateY(${moveY}px) translateZ(0)`;
+        });
+
+        posterSection.style.setProperty('--scroll-progress', progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // --- Entrance Animations using Intersection Observer ---
+    const animatedElements = document.querySelectorAll('.showcase-poster-section [data-animate]');
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries, observerInstance) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                    observerInstance.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.2 });
+
+        animatedElements.forEach(el => observer.observe(el));
+    } else {
+        animatedElements.forEach(el => el.classList.add('animate-in'));
+    }
+  });
+  </script>
+
+<%- include('partials/footer') %>
