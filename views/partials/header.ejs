@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= typeof title !== 'undefined' ? title : 'Học Tập Thủ Đức' %> - Học Tập Thủ Đức</title> <%# Đổi tên web %>
+    <title><%= typeof title !== 'undefined' ? title : '9A3 Study' %> - 9A3</title> <%# Default title %>
     <link rel="icon" type="image/png" href="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119">
 
     <!-- Fonts -->
@@ -21,9 +21,9 @@
 
     <header class="header" id="mainHeader">
         <nav class="navbar">
-            <a href="/" class="logo" title="Trang chủ Học Tập Thủ Đức">
-                <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119" alt="Học Tập Thủ Đức Logo" class="logo-img">
-                <span class="logo-text">HỌC TẬP CÙNG VỚI <strong>THỦ ĐỨC</strong></span>
+            <a href="/" class="logo" title="Trang chủ 9A3 Study">
+                <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119" alt="9A3STUDY Logo" class="logo-img">
+                <span class="logo-text">HỌC TẬP <strong>THỦ ĐỨC</strong></span>
             </a>
 
             <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navMenu">
@@ -109,7 +109,7 @@
                          <a class="nav-link logout-link" href="/logout"> <i class="fa-solid fa-arrow-right-from-bracket icon"></i> <span class="link-text">Đăng xuất</span> </a>
                      </li>
 
-                <% } else %>
+                <% } else { %>
                     <!-- Logged Out Menu -->
                     <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
                         <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
