@@ -75,28 +75,32 @@
                         </div>
 
                         <!-- Trường Select -->
-                        <div class="input-field-group select-group-styled"> <%# Wrapper for styled select %>
-                            <select name="school" id="school" class="form-select-v2" required>
-                                <option value="Trường THCS Lương Định Của">Trường THCS Lương Định Của</option>
-                                <option value="Trường THCS Bình Thọ">Trường THCS Bình Thọ</option>
-                                <option value="Trường THCS Hiệp Phú" selected>Trường THCS Hiệp Phú</option>
-                                <option value="Trường THCS Trường Thọ">Trường THCS Trường Thọ</option>
-                                <option value="Trường THCS An Phú">Trường THCS An Phú</option>
-                                <option value="Trường THCS Linh Trung">Trường THCS Linh Trung</option>
-                                <option value="Trường THCS Nguyễn Văn Bá">Trường THCS Nguyễn Văn Bá</option>
-                                <option value="Trường THCS Bình An">Trường THCS Bình An</option>
-                                <option value="Trường THCS Nguyễn Thị Định">Trường THCS Nguyễn Thị Định</option>
-                                <option value="Trường TH, THCS, THPT Ngô Thời Nhiệm">Trường TH, THCS, THPT Ngô Thời Nhiệm</option>
-                                <option value="Trường THCS, THPT Nguyễn Khuyến">Trường THCS, THPT Nguyễn Khuyến</option>
-                                <option value="Trường Tiểu học - THCS - THPT Hoa Sen">Trường Tiểu học - THCS - THPT Hoa Sen</option>
-                                <option value="Trường THCS Hoa Lư">Trường THCS Hoa Lư</option>
-                                <option value="Trường THCS Trần Quốc Toản">Trường THCS Trần Quốc Toản</option>
-                                <option value="Trường THCS Phước Bình">Trường THCS Phước Bình</option>
-                            </select>
-                             <label for="school" class="form-label-select-v2">Trường học</label> <%# Floating label for select %>
-                             <i class="fas fa-school select-icon"></i>
-                             <i class="fas fa-chevron-down select-arrow"></i>
-                        </div>
+                        <div class="select-group-styled" id="school-group">
+    <i class="fas fa-school input-icon select-icon"></i>
+    <select name="school" id="school" class="form-select-v2" required>
+        <option value="" disabled selected>Chọn trường THPT của bạn...</option>
+        <optgroup label="Trường Công Lập">
+            <option value="THPT Thủ Đức">THPT Thủ Đức</option>
+            <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
+            <option value="THPT Tam Phú">THPT Tam Phú</option>
+            <option value="THPT Hiệp Bình">THPT Hiệp Bình</option>
+            <option value="THPT Đào Sơn Tây">THPT Đào Sơn Tây</option>
+            <option value="THPT Linh Trung">THPT Linh Trung</option>
+            <option value="THPT Bình Chiểu">THPT Bình Chiểu</option>
+        </optgroup>
+        <optgroup label="Trường Chuyên & Năng Khiếu">
+            <option value="THPT Chuyên Trần Đại Nghĩa (cơ sở 2)">THPT Chuyên Trần Đại Nghĩa (cơ sở 2)</option>
+            <option value="THPT Năng khiếu (ĐHQG)">THPT Năng khiếu (ĐHQG)</option>
+        </optgroup>
+        <optgroup label="Trường Tư Thục">
+            <option value="THPT Tư thục Nguyễn Khuyến">THPT Tư thục Nguyễn Khuyến</option>
+            <option value="THPT Tư thục Ngô Thời Nhiệm">THPT Tư thục Ngô Thời Nhiệm</option>
+            <option value="THPT Bách Việt">THPT Bách Việt</option>
+        </optgroup>
+    </select>
+    <label for="school" class="form-label-v2 form-label-select-v2">Trường học</label>
+    <i class="fas fa-chevron-down select-arrow"></i>
+</div>
 
                         <!-- Cloudflare Turnstile -->
                         <div class="form-group turnstile-group">

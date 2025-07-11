@@ -541,9 +541,14 @@ app.post("/register", async (req, res) => {
     req.flash("error", "Tên người dùng phải có ít nhất 8 ký tự, chỉ bao gồm chữ và số, không có khoảng trắng.");
     return res.redirect("/register");
   }
-  const validSchools = ["Trường THCS Lương Định Của", "Trường THCS Bình Thọ", "Trường THCS Hiệp Phú", "Trường THCS Trường Thọ", "Trường THCS An Phú", "Trường THCS Linh Trung", "Trường THCS Nguyễn Văn Bá", "Trường THCS Bình An", "Trường THCS Nguyễn Thị Định", "Trường TH, THCS, THPT Ngô Thời Nhiệm", "Trường THCS, THPT Nguyễn Khuyến", "Trường Tiểu học - THCS - THPT Hoa Sen", "Trường THCS Hoa Lư", "Trường THCS Trần Quốc Toản", "Trường THCS Phước Bình", ];
+  const validSchools = [
+      "THPT Thủ Đức", "THPT Nguyễn Hữu Huân", "THPT Tam Phú", "THPT Hiệp Bình",
+      "THPT Đào Sơn Tây", "THPT Linh Trung", "THPT Bình Chiểu",
+      "THPT Chuyên Trần Đại Nghĩa (cơ sở 2)", "THPT Năng khiếu (ĐHQG)",
+      "THPT Tư thục Nguyễn Khuyến", "THPT Tư thục Ngô Thời Nhiệm", "THPT Bách Việt"
+  ];
   if (!validSchools.includes(school)) {
-    req.flash("error", "Vui lòng chọn trường THCS hợp lệ tại TP Thủ Đức.");
+    req.flash("error", "Vui lòng chọn trường THPT hợp lệ tại TP Thủ Đức.");
     return res.redirect("/register");
   }
   const turnstileToken = req.body["cf-turnstile-response"];
@@ -1283,6 +1288,35 @@ app.get('/api/auth/status', (req, res) => {
 
 app.get('/app/essay-helper', (req, res) => {
     res.render('essayAppInfo', { user: req.user, activePage: '', title: 'Giới thiệu App Học Tự Luận' });
+});
+
+// API Route to update user avatar
+app.post('/api/user/avatar', isLoggedIn, isPro, async (req, res) => {
+    try {
+        const { avatarUrl } = req.body;
+        if (!avatarUrl) {
+            return res.status(400).json({ error: 'Avatar URL is required.' });
+        }
+
+        // Basic validation for URL format
+        if (!avatarUrl.startsWith('http')) {
+            return res.status(400).json({ error: 'Invalid URL format.' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        user.avatar = avatarUrl;
+        await user.save();
+
+        res.json({ success: true, message: 'Avatar updated successfully.', newAvatarUrl: user.avatar });
+
+    } catch (error) {
+        console.error("Error updating avatar:", error);
+        res.status(500).json({ error: 'Server error while updating avatar.' });
+    }
 });
 
 app.use((req, res, next) => {

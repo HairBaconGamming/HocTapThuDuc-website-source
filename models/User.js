@@ -13,18 +13,19 @@ const UserSchema = new mongoose.Schema(
     proSecretKey: { type: String, default: "" },
     isBanned: { type: Boolean, default: false },
     lastLoginIP: { type: String, default: "" },
-    points: { type: Number, default: 0 }, // Thêm điểm thưởng cho gamification
-    // --- Tree Gamification Fields ---
-    treeLevel: { type: Number, default: 0, min: 0 }, // Current visual stage of the tree (0 = seed, 1=sprout, etc.)
-    growthPoints: { type: Number, default: 0, min: 0 }, // Accumulated points towards the next level
-    lastGrowthActivity: { type: Date, default: Date.now }, // Timestamp of the last activity contributing to growth
+    // --- NEW FIELD ---
+    avatar: { type: String, default: "https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191" }, // Default avatar
+    points: { type: Number, default: 0 },
+    treeLevel: { type: Number, default: 0, min: 0 },
+    growthPoints: { type: Number, default: 0, min: 0 },
+    lastGrowthActivity: { type: Date, default: Date.now },
   },
   {
-    timestamps: true, // <-- This automatically adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 
-// Hash password và các hooks khác giữ nguyên...
+// Hash password and other hooks remain the same...
 UserSchema.pre("save", function (next) {
   const user = this;
   if (!user.isModified("password")) return next();
