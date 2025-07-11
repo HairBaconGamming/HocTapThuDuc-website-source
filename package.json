@@ -4,7 +4,7 @@
   "description": "Ứng dụng học tập từ vựng với hệ thống tài khoản và lưu trữ",
   "main": "server.js",
   "scripts": {
-    "start": "node seeds/clearAndSeed.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.14.1",
