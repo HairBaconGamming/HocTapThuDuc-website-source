@@ -20,7 +20,7 @@
           <div class="hero-inner">
             <h1 class="hero-title">
               <span class="line"><span class="word">Chào</span> <span class="word">mừng</span> <span class="word">đến</span> <span class="word">với</span></span>
-              <span class="line"><span class="word accent-word">HỌC</span> <span class="word accent-word">TẬP</span> <span class="word accent-word">CÙNG</span> <span class="word accent-word">VỚI</span></span>
+              <span class="line"><span class="word accent-word">HỌC</span> <span class="word accent-word">TẬP</span> <span class="word accent-word">THỦ</span> <span class="word accent-word">ĐỨC</span></span>
               <span class="big-text-wrapper">
                 <span class="big-text">9A3</span>
               </span>
@@ -30,71 +30,7 @@
             </p>
             <a href="/register"
                class="btn btn-primary btn-glow stagger-in"
-               style="animation-delay: 1s;">
-              <span class="btn-text">Bắt đầu ngay</span>
-              <span class="btn-liquid"></span>
-            </a>
-          </div>
-        </div>
-      <% } else { %>
-        <div class="hero-content logged-in">
-          <div class="hero-grid">
-            <div class="stat-card interactive-card" data-tilt>
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <h2 class="card-title">Thống Kê</h2>
-                <p><i class="fas fa-users card-icon"></i> Tổng tài khoản: <strong><%= totalUsers.toLocaleString('vi-VN') %></strong></p>
-                <p><i class="fas fa-eye card-icon"></i> Lượt truy cập hôm nay: <strong><%= dailyVisits.toLocaleString('vi-VN') %></strong></p>
-                <p><i class="fas fa-chart-line card-icon"></i> Tổng lượt truy cập: <strong><%= totalVisits.toLocaleString('vi-VN') %></strong></p>
-              </div>
-            </div>
-
-            <div class="latest-card interactive-card lessons-card" data-tilt>
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <h2 class="card-title">Bài Học Mới Nhất</h2>
-                <% if (latestLessons && latestLessons.length > 0) { %>
-                  <ul class="content-list">
-                    <% latestLessons.forEach(function(lesson) { %>
-                      <li class="list-item">
-                        <a href="/lesson/<%= lesson._id %>" class="item-link">
-                          <h3 class="item-title"><%= lesson.title %></h3>
-                          <span class="item-date"><%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                        </a>
-                      </li>
-                    <% }); %>
-                  </ul>
-                <% } else { %>
-                  <p class="no-content">Chưa có bài học mới.</p>
-                <% } %>
-              </div>
-            </div>
-
-             <div class="latest-card interactive-card news-card" data-tilt>
-                <div class="card-glow"></div>
-                <div class="card-content">
-                  <h2 class="card-title">Tin Tức Mới Nhất</h2>
-                  <% if (latestNews && latestNews.length > 0) { %>
-                    <ul class="content-list">
-                      <% latestNews.forEach(function(news) { %>
-                        <li class="list-item">
-                          <a href="/news/<%= news._id %>" class="item-link">
-                            <h3 class="item-title"><%= news.title %></h3>
-                            <span class="item-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
-                          </a>
-                        </li>
-                      <% }); %>
-                    </ul>
-                  <% } else { %>
-                    <p class="no-content">Chưa có tin tức mới.</p>
-                  <% } %>
-                </div>
-              </div>
-          </div>
-
-          <div id="liveFeedContainer">
-            <div id="liveFeed">
-              </div>
+            ></a>
           </div>
         </div>
       <% } %>
