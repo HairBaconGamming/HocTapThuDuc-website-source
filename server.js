@@ -827,6 +827,18 @@ function isLoggedIn(req, res, next) {
   res.redirect("/login");
 }
 
+// Thêm middleware kiểm tra tài khoản PRO
+function isPro(req, res, next) {
+  if (req.user && req.user.isPro) {
+    return next();
+  }
+  // Nếu là API thì trả về JSON, nếu không thì redirect
+  if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
+    return res.status(403).json({ error: "Bạn cần tài khoản PRO để thực hiện thao tác này." });
+  }
+  res.redirect("/upgrade");
+}
+
 // MỚI (ĐÃ SỬA): Chuyển đổi Subject.find sang async/await
 app.get("/subjects", async (req, res) => {
   try {
