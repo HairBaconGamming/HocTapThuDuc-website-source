@@ -1,429 +1,246 @@
-<%- include('partials/header', { title: 'Trang Chủ', user: user, activePage: "home" }) %>
-<style>body {
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-  font-family: var(--font-main);
-  margin: 0;
-  overflow-x: hidden; /* Ngăn cuộn ngang */
-}</style>
-<link rel="stylesheet" href="/poster.css"> 
-<body data-mode="home">
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Tập Thủ Đức - Nền Tảng Dẫn Đầu</title>
+    
+    <!-- Include main stylesheet -->
+    <link rel="stylesheet" href="/styles.css">
+    
+    <!-- NEW: Include specific stylesheet for the new homepage -->
+    <link rel="stylesheet" href="/css/styleHome.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    
+    <!-- GSAP for animations - assumed to be loaded globally or via a layout file -->
+</head>
+<body data-page="home">
 
-  <div id="particles-js"></div>
+    <%- include('partials/header', { user: user, activePage: 'home' }) %>
 
-  <section class="hero" id="hero-section">
-    <div class="hero-overlay"></div>
+    <main>
+        <!-- =======================
+             HERO SECTION 
+        ======================== -->
+        <section class="hero-section-v2">
+            <div class="hero-background-elements">
+                <div class="hero-aurora aurora-1"></div>
+                <div class="hero-aurora aurora-2"></div>
+                <div class="hero-aurora aurora-3"></div>
+            </div>
+            <div class="hero-content-v2">
+                <div class="hero-text-content">
+                    <div class="hero-badge">
+                        <i class="fas fa-school"></i> Dành Riêng cho Học Sinh Thủ Đức
+                    </div>
+                    <h1 class="hero-title-v2">
+                        <span class="line"><span>Nền Tảng</span></span>
+                        <span class="line"><span><span class="highlight">Dẫn Đầu</span> Tương Lai</span></span>
+                    </h1>
+                    <p class="hero-subtitle-v2">
+                        Chinh phục mọi kỳ thi với hệ thống bài giảng, đề thi và công cụ AI độc quyền được thiết kế cho học sinh THPT Thủ Đức.
+                    </p>
+                    <div class="hero-cta-buttons">
+                        <% if (user) { %>
+                            <a href="/dashboard" class="btn btn-primary-glow">
+                                <i class="fas fa-chart-line"></i> Vào Bảng Điều Khiển
+                            </a>
+                             <a href="/subjects" class="btn btn-secondary-outline">
+                                <i class="fas fa-book-open"></i> Khám Phá Môn Học
+                            </a>
+                        <% } else { %>
+                            <a href="/register" class="btn btn-primary-glow">
+                                <i class="fas fa-user-plus"></i> Đăng Ký Miễn Phí
+                            </a>
+                             <a href="/login" class="btn btn-secondary-outline">
+                                <i class="fas fa-sign-in-alt"></i> Đăng Nhập
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <div class="hero-container">
-      <% if (!user) { %>
-        <div class="hero-content guest">
-          <div class="hero-inner">
-            <h1 class="hero-title">
-              <span class="line"><span class="word">Chào</span> <span class="word">mừng</span> <span class="word">đến</span> <span class="word">với</span></span>
-              <span class="line"><span class="word accent-word">HỌC</span> <span class="word accent-word">TẬP</span> <span class="word accent-word">THỦ</span> <span class="word accent-word">ĐỨC</span></span>
-              <span class="big-text-wrapper">
-                <span class="big-text">9A3</span>
-              </span>
-            </h1>
-            <p class="hero-subtitle">
-              <span class="char">C</span><span class="char">h</span><span class="char">ú</span><span class="char">c</span> <span class="char">đ</span><span class="char">ậ</span><span class="char">u</span> <span class="char">v</span><span class="char">à</span><span class="char">o</span> <span class="char">1</span><span class="char">0</span><span class="char">!</span>
-            </p>
-            <a href="/register"
-               class="btn btn-primary btn-glow stagger-in"
-            ></a>
-          </div>
-        </div>
-      <% } %>
-    </div> <div class="decorative-elements">
-        </div>
+        <!-- =======================
+             STATS SECTION 
+        ======================== -->
+        <section class="stats-section">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-item" data-animate="stagger">
+                        <i class="fas fa-users stat-icon"></i>
+                        <div class="stat-number" data-target="<%= totalUsers %>">0</div>
+                        <div class="stat-label">Học Viên</div>
+                    </div>
+                    <div class="stat-item" data-animate="stagger">
+                        <i class="fas fa-book-reader stat-icon"></i>
+                        <div class="stat-number" data-target="<%= latestLessons.length %>">0</div>
+                        <div class="stat-label">Bài Giảng Mới</div>
+                    </div>
+                    <div class="stat-item" data-animate="stagger">
+                        <i class="fas fa-eye stat-icon"></i>
+                        <div class="stat-number" data-target="<%= dailyVisits %>">0</div>
+                        <div class="stat-label">Lượt Truy Cập Hôm Nay</div>
+                    </div>
+                    <div class="stat-item" data-animate="stagger">
+                        <i class="fas fa-globe-asia stat-icon"></i>
+                        <div class="stat-number" data-target="<%= totalVisits %>">0</div>
+                        <div class="stat-label">Tổng Lượt Truy Cập</div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  </section>
-  <script src="/socket.io/socket.io.js"></script>           
-  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.7.2/vanilla-tilt.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/MotionPathPlugin.min.js"></script> <script>
-    // ----- Khởi tạo tsParticles -----
-    tsParticles.load("particles-js", {
-        // Chọn một preset phức tạp hoặc tùy chỉnh sâu
-        preset: "links", // Thử các preset khác: "stars", "seaAnemone", "snow", "fireworks"
-        background: {
-            // Màu nền phía sau hạt (có thể trong suốt để thấy CSS background)
-            color: "transparent",
-        },
-        particles: {
-            number: {
-                value: 80, // Số lượng hạt
-                density: {
-                    enable: true,
-                    value_area: 800
-                }
-            },
-            color: {
-                value: ["#ff6ec4", "#7873f5", "#ffffff", "#ffdd57"] // Mảng màu
-            },
-            shape: {
-                type: "circle", // Thử "star", "polygon"
-            },
-            opacity: {
-                value: { min: 0.1, max: 0.6 }, // Độ mờ ngẫu nhiên
-                animation: {
-                  enable: true,
-                  speed: 1,
-                  minimumValue: 0.1,
-                  sync: false
-                }
-            },
-            size: {
-                value: { min: 1, max: 4 }, // Kích thước ngẫu nhiên
-                 animation: {
-                    enable: true,
-                    speed: 3,
-                    minimumValue: 0.5,
-                    sync: false
-                 }
-            },
-            links: {
-                enable: true,
-                distance: 150,
-                color: "#ffffff", // Màu đường nối
-                opacity: 0.4,
-                width: 1
-            },
-            move: {
-                enable: true,
-                speed: 2, // Tốc độ di chuyển
-                direction: "none",
-                random: true,
-                straight: false,
-                out_mode: "out", // Ra khỏi màn hình
-                bounce: false,
-                attract: { // Hút nhau khi gần
-                    enable: true,
-                    rotateX: 600,
-                    rotateY: 1200
-                }
+        <!-- =======================
+             FEATURES SECTION 
+        ======================== -->
+        <section class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-tagline">Tại Sao Chọn Chúng Tôi?</span>
+                    <h2 class="section-title">Công Cụ Ưu Việt Cho Tương Lai Rạng Rỡ</h2>
+                    <p class="section-description">
+                        Chúng tôi không chỉ cung cấp bài học, mà còn mang đến một hệ sinh thái học tập toàn diện.
+                    </p>
+                </div>
+                <div class="features-grid-v2">
+                    <div class="feature-card-v2" data-animate="stagger">
+                        <div class="feature-card-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <h3 class="feature-card-title">Nội Dung Địa Phương Hóa</h3>
+                        <p class="feature-card-desc">Chương trình học và đề thi được biên soạn riêng, bám sát định hướng của các trường THPT tại TP. Thủ Đức.</p>
+                    </div>
+                    <div class="feature-card-v2" data-animate="stagger">
+                        <div class="feature-card-icon"><i class="fas fa-gamepad"></i></div>
+                        <h3 class="feature-card-title">Học Tập Gamification</h3>
+                        <p class="feature-card-desc">Tích lũy điểm, thăng hạng trên leaderboard và nhận thành tích để hành trình học tập luôn đầy hứng khởi.</p>
+                    </div>
+                    <div class="feature-card-v2" data-animate="stagger">
+                        <div class="feature-card-icon"><i class="fas fa-robot"></i></div>
+                        <h3 class="feature-card-title">Công Cụ AI Thông Minh</h3>
+                        <p class="feature-card-desc">Tự động tạo bài trắc nghiệm từ tài liệu và chấm điểm bài luận chính xác, tiết kiệm thời gian và nâng cao hiệu quả.</p>
+                    </div>
+                    <div class="feature-card-v2" data-animate="stagger">
+                        <div class="feature-card-icon"><i class="fas fa-users-cog"></i></div>
+                        <h3 class="feature-card-title">Cộng Đồng Năng Động</h3>
+                        <p class="feature-card-desc">Tham gia cùng hàng ngàn học viên khác, trao đổi kiến thức, và cùng nhau tiến bộ mỗi ngày.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- =======================
+             LATEST CONTENT SECTION 
+        ======================== -->
+        <section class="latest-content-section">
+            <div class="container">
+                 <div class="section-header">
+                    <span class="section-tagline">Cập Nhật Mới Nhất</span>
+                    <h2 class="section-title">Kiến Thức Luôn Mới, Thành Công Luôn Tới</h2>
+                </div>
+                <div class="content-grid">
+                    <!-- Latest Lessons -->
+                    <div class="content-column" data-animate="stagger">
+                        <h3 class="column-title"><i class="fas fa-graduation-cap"></i> Bài Giảng Mới Nhất</h3>
+                        <ul class="content-list">
+                            <% if (latestLessons && latestLessons.length > 0) { %>
+                                <% latestLessons.forEach(lesson => { %>
+                                    <li>
+                                        <a href="/lesson/<%= lesson._id %>" class="content-list-item">
+                                            <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
+                                            <div class="item-text">
+                                                <span class="item-title"><%= lesson.title %></span>
+                                                <span class="item-meta">Ngày đăng: <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                <% }) %>
+                            <% } else { %>
+                                <li class="no-content-li">Chưa có bài giảng nào.</li>
+                            <% } %>
+                        </ul>
+                    </div>
+                    <!-- Latest News -->
+                    <div class="content-column" data-animate="stagger">
+                        <h3 class="column-title"><i class="fas fa-bullhorn"></i> Tin Tức & Thông Báo</h3>
+                        <ul class="content-list">
+                           <% if (latestNews && latestNews.length > 0) { %>
+                                <% latestNews.forEach(news => { %>
+                                    <li>
+                                        <a href="/news/<%= news._id %>" class="content-list-item">
+                                            <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
+                                            <div class="item-text">
+                                                <span class="item-title"><%= news.title %></span>
+                                                <span class="item-meta">Ngày đăng: <%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                <% }) %>
+                            <% } else { %>
+                                 <li class="no-content-li">Chưa có tin tức nào.</li>
+                            <% } %>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <%- include('partials/footer') %>
+    
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/ScrollTrigger.min.js"></script>
+    <!-- Custom animation script -->
+    <script src="/js/animations.js"></script>
+    
+    <script>
+        // Specific animations for the new homepage
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof gsap === 'undefined') {
+                console.error('GSAP is not loaded!');
+                return;
             }
-        },
-        interactivity: {
-            detect_on: "canvas",
-            events: {
-                onhover: {
-                    enable: true,
-                    mode: "repulse" // Đẩy hạt ra xa khi hover, thử "grab", "bubble"
-                },
-                onclick: {
-                    enable: true,
-                    mode: "push" // Thêm hạt mới khi click
-                },
-                resize: true
-            },
-            modes: {
-                grab: {
-                    distance: 200,
-                    line_linked: {
-                        opacity: 1
-                    }
-                },
-                bubble: {
-                    distance: 250,
-                    size: 8,
-                    duration: 2,
-                    opacity: 0.8
-                },
-                repulse: {
-                    distance: 150,
-                    duration: 0.4
-                },
-                push: {
-                    particles_nb: 4 // Số hạt thêm khi click
-                },
-                remove: {
-                    particles_nb: 2
-                }
+
+            // Hero section text animation
+            const heroTitle = document.querySelector('.hero-title-v2');
+            if (heroTitle) {
+                const words = heroTitle.querySelectorAll('.line span');
+                gsap.set(words, { y: '110%', opacity: 0 });
+                gsap.to(words, {
+                    y: '0%',
+                    opacity: 1,
+                    duration: 1.2,
+                    ease: 'power4.out',
+                    stagger: 0.15,
+                    delay: 0.3
+                });
             }
-        },
-        detectRetina: true, // Hỗ trợ màn hình Retina
-    });
-
-    // ----- GSAP Animations -----
-    gsap.registerPlugin(ScrollTrigger); // Đăng ký plugin nếu dùng
-
-    // Chỉ chạy animation khi DOM đã sẵn sàng
-    document.addEventListener("DOMContentLoaded", () => {
-      const isGuest = document.querySelector('.hero-content.guest');
-      const isLoggedIn = document.querySelector('.hero-content.logged-in');
-
-      // --- Animation cho Khách ---
-      if (isGuest) {
-        const tlGuest = gsap.timeline({ delay: 0.5 });
-
-        tlGuest
-          // Sửa animation cho title words: Bắt đầu từ yPercent 110 (giống CSS) và opacity 0
-          .from(".hero-title .line .word", {
-            yPercent: 110, // Bắt đầu từ vị trí CSS đặt
-            opacity: 0,
-            rotationX: -90,
-            stagger: 0.1,
-            duration: 0.8,
-            ease: "power3.out"
-          })
-          .from(".big-text", {
-            scale: 0.5,
-            opacity: 0,
-            rotation: -30,
-            duration: 1,
-            ease: "elastic.out(1, 0.5)"
-          }, "-=0.5")
-          // Sửa animation cho subtitle chars: Vẫn bắt đầu từ opacity 0 và y 50,
-          // nhưng GSAP sẽ tự động đưa nó về opacity 1 và y 0 (trạng thái tự nhiên nếu không có CSS opacity: 0)
-          // QUAN TRỌNG: Để cách này hoạt động, bạn cần đảm bảo CSS KHÔNG đặt opacity: 0 cho .hero-subtitle .char
-          // Hoặc bạn phải dùng .to() như giải thích bên dưới.
-          // Thử cách .from() này trước:
-          .from(".hero-subtitle .char", {
-              y: 50, // Di chuyển từ dưới lên
-              opacity: 0, // Bắt đầu ẩn
-              stagger: 0.05,
-              duration: 0.5,
-              ease: "back.out(1.7)"
-              // Lưu ý: GSAP sẽ tự động đưa opacity về 1 NẾU trạng thái mặc định của nó là 1.
-              // Nếu CSS vẫn ép opacity: 0, cách này sẽ không hiện subtitle.
-          }, "-=0.7")
-          .from(".btn-glow", {
-            scale: 0.8,
-            opacity: 0,
-            duration: 1,
-            ease: "power4.out"
-          }, "-=0.5");
-
-          // Hiệu ứng Magnetic cho Button (ví dụ đơn giản)
-          const magneticButton = document.querySelector('[data-magnetic]');
-          if (magneticButton) {
-              magneticButton.addEventListener('mousemove', (e) => {
-                  const { offsetX, offsetY, target } = e;
-                  const { clientWidth, clientHeight } = target;
-                  const x = (offsetX / clientWidth - 0.5) * 40; // Khuếch đại độ lệch
-                  const y = (offsetY / clientHeight - 0.5) * 40;
-                  gsap.to(target, {
-                      x: x,
-                      y: y,
-                      duration: 0.5,
-                      ease: "power2.out"
-                  });
-              });
-              magneticButton.addEventListener('mouseleave', () => {
-                  gsap.to(magneticButton, {
-                      x: 0,
-                      y: 0,
-                      duration: 0.5,
-                      ease: "elastic.out(1, 0.5)"
-                  });
-              });
-          }
-      }
-
-      // --- Animation cho Người dùng đã đăng nhập ---
-      if (isLoggedIn) {
-          const tlLoggedIn = gsap.timeline({ delay: 0.3 });
-
-          tlLoggedIn
-              .from(".stat-card", {
-                  y: 100,
-                  opacity: 0,
-                  scale: 0.9,
-                  rotationX: -45, // Nghiêng 3D
-                  duration: 0.8,
-                  ease: "power3.out",
-                  stagger: 0.2 // Xuất hiện lần lượt
-              })
-              .from(".latest-card", {
-                  x: -100,
-                  opacity: 0,
-                  duration: 0.8,
-                  ease: "power3.out",
-                  stagger: 0.2
-              }, "-=0.5") // Bắt đầu sớm hơn
-              .from("#liveFeedContainer", {
-                  y: 50,
-                  opacity: 0,
-                  duration: 0.6,
-                  ease: "power2.out"
-              }, "-=0.4");
-
-          // Khởi tạo hiệu ứng Tilt cho card (nếu dùng vanilla-tilt)
-          const tiltElements = document.querySelectorAll('[data-tilt]');
-          if (typeof VanillaTilt !== 'undefined' && tiltElements.length > 0) {
-              VanillaTilt.init(tiltElements, {
-                  max: 15,      // Độ nghiêng tối đa
-                  speed: 400,   // Tốc độ chuyển động
-                  glare: true,  // Hiệu ứng lóa
-                  "max-glare": 0.3 // Độ sáng của lóa
-              });
-          }
-      }
-
-      // --- Hiệu ứng Parallax Đơn giản (nếu cần) ---
-      //   gsap.to(".hero-background .bg-image", { // Giả sử có lớp này
-      //     yPercent: 30, // Di chuyển ảnh nền chậm hơn khi cuộn
-      //     ease: "none",
-      //     scrollTrigger: {
-      //       trigger: "#hero-section",
-      //       start: "top top",
-      //       end: "bottom top",
-      //       scrub: true // Làm mượt hiệu ứng khi cuộn
-      //     }
-      //   });
-      //   gsap.to(".hero-content", { // Di chuyển nội dung nhanh hơn một chút
-      //      yPercent: -15,
-      //      ease: "none",
-      //      scrollTrigger: {
-      //          trigger: "#hero-section",
-      //          start: "top top",
-      //          end: "bottom top",
-      //          scrub: true
-      //      }
-      //   });
-    });
-
-
-    // ----- Socket.IO cho Live Feed (Thiết kế lại) -----
-    const socket = io();
-    const liveFeed = document.getElementById("liveFeed");
-    const liveFeedContainer = document.getElementById("liveFeedContainer");
-
-    socket.on("liveAccess", (data) => {
-        if (!liveFeed || !liveFeedContainer) return; // Kiểm tra phần tử tồn tại
-
-        let message = "";
-        let iconClass = "";
-        if (data.type === "login") {
-            message = `<strong>${data.username}</strong> vừa truy cập.`;
-            iconClass = "fas fa-sign-in-alt"; // Font Awesome icon
-        } else if (data.type === "register") {
-            message = `Chào mừng <strong>${data.username}</strong> gia nhập!`;
-            iconClass = "fas fa-user-plus";
-        }
-
-        const liveItem = document.createElement("div");
-        liveItem.className = "live-item";
-        liveItem.innerHTML = `<i class="${iconClass} live-icon"></i> ${message} <span class="time">${data.time}</span>`;
-
-        // Thêm vào đầu danh sách
-        liveFeed.insertBefore(liveItem, liveFeed.firstChild);
-
-        // Animation xuất hiện bằng GSAP
-        gsap.from(liveItem, {
-            opacity: 0,
-            x: -50, // Trượt từ trái sang
-            duration: 0.5,
-            ease: "power3.out"
+            gsap.from('.hero-badge', { duration: 0.8, scale: 0.5, autoAlpha: 0, ease: 'back.out(1.7)', delay: 0.1 });
+            gsap.from('.hero-subtitle-v2', { duration: 1, y: 20, autoAlpha: 0, ease: 'power3.out', delay: 0.8 });
+            gsap.from('.hero-cta-buttons > *', { duration: 0.8, y: 20, autoAlpha: 0, ease: 'power3.out', stagger: 0.1, delay: 1 });
+            
+            // Animated Stats Counter
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(counter => {
+                const target = +counter.dataset.target;
+                ScrollTrigger.create({
+                    trigger: counter,
+                    start: 'top 90%',
+                    once: true,
+                    onEnter: () => {
+                        gsap.to(counter, {
+                            duration: 2,
+                            innerText: target,
+                            roundProps: "innerText",
+                            ease: "power2.out",
+                        });
+                    },
+                });
+            });
         });
+    </script>
 
-        // Giới hạn số lượng thông báo hiển thị (ví dụ: 5)
-        const maxItems = 5;
-        while (liveFeed.children.length > maxItems) {
-            const oldItem = liveFeed.lastChild;
-            gsap.to(oldItem, { // Animation biến mất
-                opacity: 0,
-                height: 0,
-                paddingTop: 0,
-                paddingBottom: 0,
-                marginTop: 0,
-                marginBottom: 0,
-                duration: 0.4,
-                ease: "power2.in",
-                onComplete: () => oldItem.remove() // Xóa khỏi DOM sau khi animation xong
-            });
-        }
-
-        // Optional: Tự động ẩn container nếu không có thông báo mới trong một khoảng thời gian
-        clearTimeout(liveFeedContainer.hideTimeout);
-        liveFeedContainer.style.opacity = 1; // Hiển thị lại nếu đang ẩn
-        liveFeedContainer.hideTimeout = setTimeout(() => {
-            gsap.to(liveFeedContainer, { opacity: 0, duration: 1 });
-        }, 15000); // Ẩn sau 15 giây không có thông báo mới
-
-    });
-                    
-                    // Thêm đoạn này vào trong sự kiện DOMContentLoaded hoặc cuối file script
-    const interactiveCards = document.querySelectorAll('.interactive-card');
-    interactiveCards.forEach(card => {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left; // Vị trí x bên trong card
-            const y = e.clientY - rect.top;  // Vị trí y bên trong card
-            card.style.setProperty('--mouse-x', `${x}px`);
-            card.style.setProperty('--mouse-y', `${y}px`);
-        });
-        card.addEventListener('mouseleave', () => {
-            // Reset về giữa hoặc giữ nguyên tùy ý
-            // card.style.removeProperty('--mouse-x');
-            // card.style.removeProperty('--mouse-y');
-        });
-    });
-
-  </script>
-
-  <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const posterSection = document.querySelector('.showcase-poster-section');
-    const images = document.querySelectorAll('.poster-images-layer .image-float');
-    const features = document.querySelectorAll('.poster-features-layer .feature-highlight'); // Select features too
-
-    // Simple CSS Variable based parallax on scroll
-    if (posterSection) {
-        window.addEventListener('scroll', () => {
-            // Calculate scroll percentage relative to the section (approximate)
-            const sectionRect = posterSection.getBoundingClientRect();
-            // Start effect when section top is near viewport bottom, end when bottom is near viewport top
-            const start = window.innerHeight;
-            const end = -sectionRect.height;
-            const current = sectionRect.top;
-            // Normalize scroll progress within the section (0 to 1)
-            let progress = Math.max(0, Math.min(1, (start - current) / (start - end)));
-
-            // Apply parallax based on progress and data-depth
-            images.forEach(img => {
-                const depth = parseFloat(img.dataset.depth) || 0.2;
-                // Move opposite direction of scroll, scaled by depth
-                const moveY = (progress - 0.5) * -100 * depth; // Adjust multiplier (-100) for intensity
-                img.style.transform = `translateY(${moveY}px) translateZ(0)`; // Use translateZ for GPU accel
-            });
-
-            // Apply parallax to features (different direction/intensity)
-            features.forEach(feat => {
-                 const depth = parseFloat(feat.dataset.depth) || 0.15; // Feature depth
-                 const moveY = (progress - 0.5) * -80 * depth; // Less intense
-                 feat.style.transform = `translateY(${moveY}px) translateZ(0)`;
-            });
-
-            // Optional: Animate background elements based on scroll
-            posterSection.style.setProperty('--scroll-progress', progress);
-
-        }, { passive: true }); // Improve scroll performance
-    }
-
-    // --- Entrance Animations using Intersection Observer (CSS Driven) ---
-    const animatedElements = document.querySelectorAll('.showcase-poster-section [data-animate]');
-
-    if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver((entries, observerInstance) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-in');
-                    observerInstance.unobserve(entry.target); // Animate only once
-                }
-            });
-        }, { threshold: 0.2 }); // Trigger when 20% visible
-
-        animatedElements.forEach(el => observer.observe(el));
-    } else {
-        // Fallback for older browsers: just make them visible
-        animatedElements.forEach(el => el.classList.add('animate-in'));
-    }
-
-});
-</script>
-
-<%- include('partials/footer') %>
+</body>
+</html>

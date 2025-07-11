@@ -380,4 +380,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
+    // Animated Stats Counter
+const statNumbers = document.querySelectorAll('.stat-number');
+statNumbers.forEach(counter => {
+    // Ensure the counter element exists
+    if (!counter) return;
+    
+    // Get the target number from the data-target attribute
+    const target = +counter.dataset.target;
+
+    // Use ScrollTrigger to start the animation when the element is in view
+    ScrollTrigger.create({
+        trigger: counter,
+        start: 'top 90%', // Start animation when 90% of the element is visible
+        once: true, // Only run the animation once
+        onEnter: () => {
+            // Use GSAP to animate the innerText property
+            gsap.to(counter, {
+                duration: 2, // Animation duration in seconds
+                innerText: target,
+                roundProps: "innerText", // Round the numbers to whole integers
+                ease: "power2.out", // Easing function for a smooth effect
+            });
+        },
+    });
+});
 }); // End DOMContentLoaded
