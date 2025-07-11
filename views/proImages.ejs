@@ -394,8 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
             div.style.setProperty('--stagger-index', index); // For potential future stagger on filter
 
              // Ensure URL is correctly formed - PRIORITIZE img.url if available
-             const imageUrl = img.url ? `/api${img.url}` : (img.filename ? `/api/pro-images/${img.filename}` : '/img/placeholder.png');
-             const fullImageUrl = `${window.location.origin}${imageUrl}`; // Full URL for copy
+             const imageUrl = img.url ? img.url : (img.filename ? `/api/pro-images/${img.filename}` : '/img/placeholder.png');
+             const fullImageUrl = img.url; // Full URL for copy
 
              // Limit display name length
              const displayName = img.displayName || img.filename || 'Không tên';
