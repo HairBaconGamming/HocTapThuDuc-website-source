@@ -1,22 +1,167 @@
-<!-- filepath: d:\hoctapthptthuduc\HocTapThuDuc-website-source\views\admin.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel - truonghoangnam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
-    <div class="admin-container">
-        <h1>Admin Panel</h1>
-        <h2>Welcome, <%= user.username %></h2>
-        <div id="admin-actions">
-            <button id="refresh-seeds">Refresh Seeds</button>
-            <button id="add-seed">Add Seed</button>
-        </div>
-        <div id="seeds-list">
-            <!-- Seeds will be loaded here -->
+    <div class="admin-panel-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-shield-halved logo-icon"></i>
+                <h1 class="logo-text">VIP PANEL</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-link active" data-tab="dashboard"><i class="fas fa-tachometer-alt nav-icon"></i> Dashboard</a>
+                <a href="#users" class="nav-link" data-tab="users"><i class="fas fa-users nav-icon"></i> User Management</a>
+                <a href="#subjects" class="nav-link" data-tab="subjects"><i class="fas fa-book nav-icon"></i> Subject Management</a>
+                <a href="#system" class="nav-link" data-tab="system"><i class="fas fa-cogs nav-icon"></i> System Actions</a>
+                <a href="/" class="nav-link nav-link-bottom"><i class="fas fa-home nav-icon"></i> Back to Main Site</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div id="dashboard" class="tab-content active">
+                <h2><i class="fas fa-tachometer-alt"></i> System Overview</h2>
+                <div id="stats-grid" class="stats-grid">
+                    <!-- Stat cards will be injected by JS -->
+                </div>
+                <div class="recent-activity-container">
+                    <div class="activity-list">
+                        <h3><i class="fas fa-user-plus"></i> Recent Registrations</h3>
+                        <ul id="recent-users-list"></ul>
+                    </div>
+                    <div class="activity-list">
+                        <h3><i class="fas fa-edit"></i> Recent Lessons</h3>
+                        <ul id="recent-lessons-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="users" class="tab-content">
+                <h2><i class="fas fa-users"></i> User Management</h2>
+                <div class="controls-bar">
+                    <input type="text" id="user-search-input" class="search-input" placeholder="Search by username or email...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>PRO</th>
+                                <th>Points</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- User rows will be injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="users-pagination"></div>
+            </div>
+            
+            <div id="subjects" class="tab-content">
+                <h2><i class="fas fa-book"></i> Subject Management</h2>
+                <div class="controls-bar">
+                   <button id="add-subject-btn" class="action-btn success"><i class="fas fa-plus"></i> Add New Subject</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Image URL</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjects-table-body">
+                           <!-- Subject rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="system" class="tab-content">
+                 <h2><i class="fas fa-cogs"></i> System Actions</h2>
+                 <div class="system-actions-grid">
+                     <div class="action-card">
+                         <h3><i class="fas fa-robot"></i> AI Content Generation</h3>
+                         <p>Manually trigger the daily job to post AI-generated lessons for "Văn" and "Anh".</p>
+                         <button id="trigger-ai-btn" class="action-btn primary"><i class="fas fa-play-circle"></i> Trigger Job</button>
+                     </div>
+                     <div class="action-card danger-zone">
+                         <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                         <p>These actions are irreversible. Proceed with extreme caution.</p>
+                         <button class="action-btn danger" disabled><i class="fas fa-trash-alt"></i> Clear All Lessons (WIP)</button>
+                         <button class="action-btn danger" disabled><i class="fas fa-trash-alt"></i> Clear All News (WIP)</button>
+                     </div>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="user-edit-modal" class="modal-container">
+        <div class="modal-content">
+            <button class="modal-close-btn">×</button>
+            <h3>Edit User: <span id="modal-username"></span></h3>
+            <form id="user-edit-form">
+                <input type="hidden" id="modal-userid">
+                <div class="form-group">
+                    <label for="modal-isPro">PRO Status:</label>
+                    <select id="modal-isPro">
+                        <option value="true">PRO Member</option>
+                        <option value="false">Standard User</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-points">Points:</label>
+                    <input type="number" id="modal-points" min="0">
+                </div>
+                 <div class="form-group">
+                    <label for="modal-growthPoints">Growth Points (Tree):</label>
+                    <input type="number" id="modal-growthPoints" min="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn success">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
+    
+     <div id="subject-edit-modal" class="modal-container">
+        <div class="modal-content">
+            <button class="modal-close-btn">×</button>
+            <h3 id="modal-subject-title">Add New Subject</h3>
+            <form id="subject-edit-form">
+                <input type="hidden" id="modal-subject-id">
+                <div class="form-group">
+                    <label for="modal-subject-name">Name:</label>
+                    <input type="text" id="modal-subject-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-subject-description">Description:</label>
+                    <textarea id="modal-subject-description"></textarea>
+                </div>
+                 <div class="form-group">
+                    <label for="modal-subject-image">Image URL:</label>
+                    <input type="url" id="modal-subject-image">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn success">Save Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="/js/admin.js"></script>
 </body>
+</html>
