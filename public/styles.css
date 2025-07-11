@@ -865,7 +865,7 @@ body[data-page="home"] h2 {
   font-family: var(--font-heading);
   font-size: clamp(6rem, 18vw, 12rem);
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.5;
   background: linear-gradient(
     60deg,
     var(--secondary-color),
