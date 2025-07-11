@@ -1,246 +1,216 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Học Tập Thủ Đức - Nền Tảng Dẫn Đầu</title>
-    
-    <!-- Include main stylesheet -->
-    <link rel="stylesheet" href="/styles.css">
-    
-    <!-- NEW: Include specific stylesheet for the new homepage -->
-    <link rel="stylesheet" href="/css/styleHome.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    
-    <!-- GSAP for animations - assumed to be loaded globally or via a layout file -->
-</head>
-<body data-page="home">
-
-    <%- include('partials/header', { user: user, activePage: 'home' }) %>
-
-    <main>
-        <!-- =======================
-             HERO SECTION 
-        ======================== -->
-        <section class="hero-section-v2">
-            <div class="hero-background-elements">
-                <div class="hero-aurora aurora-1"></div>
-                <div class="hero-aurora aurora-2"></div>
-                <div class="hero-aurora aurora-3"></div>
+<%- include('partials/header', { user: user, activePage: 'home' }) %>
+    <!-- =======================
+         HERO SECTION 
+    ======================== -->
+    <section class="hero-section-v2">
+        <div class="hero-background-elements">
+            <div class="hero-aurora aurora-1"></div>
+            <div class="hero-aurora aurora-2"></div>
+            <div class="hero-aurora aurora-3"></div>
+        </div>
+        <div class="hero-content-v2">
+            <div class="hero-text-content">
+                <div class="hero-badge">
+                    <i class="fas fa-school"></i> Dành Riêng cho Học Sinh Thủ Đức
+                </div>
+                <h1 class="hero-title-v2">
+                    <span class="line"><span>Nền Tảng</span></span>
+                    <span class="line"><span><span class="highlight">Dẫn Đầu</span> Tương Lai</span></span>
+                </h1>
+                <p class="hero-subtitle-v2">
+                    Chinh phục mọi kỳ thi với hệ thống bài giảng, đề thi và công cụ AI độc quyền được thiết kế cho học sinh THPT Thủ Đức.
+                </p>
+                <div class="hero-cta-buttons">
+                    <% if (user) { %>
+                        <a href="/dashboard" class="btn btn-primary-glow">
+                            <i class="fas fa-chart-line"></i> Vào Bảng Điều Khiển
+                        </a>
+                         <a href="/subjects" class="btn btn-secondary-outline">
+                            <i class="fas fa-book-open"></i> Khám Phá Môn Học
+                        </a>
+                    <% } else { %>
+                        <a href="/register" class="btn btn-primary-glow">
+                            <i class="fas fa-user-plus"></i> Đăng Ký Miễn Phí
+                        </a>
+                         <a href="/login" class="btn btn-secondary-outline">
+                            <i class="fas fa-sign-in-alt"></i> Đăng Nhập
+                        </a>
+                    <% } %>
+                </div>
             </div>
-            <div class="hero-content-v2">
-                <div class="hero-text-content">
-                    <div class="hero-badge">
-                        <i class="fas fa-school"></i> Dành Riêng cho Học Sinh Thủ Đức
-                    </div>
-                    <h1 class="hero-title-v2">
-                        <span class="line"><span>Nền Tảng</span></span>
-                        <span class="line"><span><span class="highlight">Dẫn Đầu</span> Tương Lai</span></span>
-                    </h1>
-                    <p class="hero-subtitle-v2">
-                        Chinh phục mọi kỳ thi với hệ thống bài giảng, đề thi và công cụ AI độc quyền được thiết kế cho học sinh THPT Thủ Đức.
-                    </p>
-                    <div class="hero-cta-buttons">
-                        <% if (user) { %>
-                            <a href="/dashboard" class="btn btn-primary-glow">
-                                <i class="fas fa-chart-line"></i> Vào Bảng Điều Khiển
-                            </a>
-                             <a href="/subjects" class="btn btn-secondary-outline">
-                                <i class="fas fa-book-open"></i> Khám Phá Môn Học
-                            </a>
+        </div>
+    </section>
+
+    <!-- =======================
+         STATS SECTION 
+    ======================== -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item" data-animate="stagger">
+                    <i class="fas fa-users stat-icon"></i>
+                    <div class="stat-number" data-target="<%= totalUsers %>">0</div>
+                    <div class="stat-label">Học Viên</div>
+                </div>
+                <div class="stat-item" data-animate="stagger">
+                    <i class="fas fa-book-reader stat-icon"></i>
+                    <div class="stat-number" data-target="<%= latestLessons.length %>">0</div>
+                    <div class="stat-label">Bài Giảng Mới</div>
+                </div>
+                <div class="stat-item" data-animate="stagger">
+                    <i class="fas fa-eye stat-icon"></i>
+                    <div class="stat-number" data-target="<%= dailyVisits %>">0</div>
+                    <div class="stat-label">Lượt Truy Cập Hôm Nay</div>
+                </div>
+                <div class="stat-item" data-animate="stagger">
+                    <i class="fas fa-globe-asia stat-icon"></i>
+                    <div class="stat-number" data-target="<%= totalVisits %>">0</div>
+                    <div class="stat-label">Tổng Lượt Truy Cập</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =======================
+         FEATURES SECTION 
+    ======================== -->
+    <section class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tagline">Tại Sao Chọn Chúng Tôi?</span>
+                <h2 class="section-title">Công Cụ Ưu Việt Cho Tương Lai Rạng Rỡ</h2>
+                <p class="section-description">
+                    Chúng tôi không chỉ cung cấp bài học, mà còn mang đến một hệ sinh thái học tập toàn diện.
+                </p>
+            </div>
+            <div class="features-grid-v2">
+                <div class="feature-card-v2" data-animate="stagger">
+                    <div class="feature-card-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <h3 class="feature-card-title">Nội Dung Địa Phương Hóa</h3>
+                    <p class="feature-card-desc">Chương trình học và đề thi được biên soạn riêng, bám sát định hướng của các trường THPT tại TP. Thủ Đức.</p>
+                </div>
+                <div class="feature-card-v2" data-animate="stagger">
+                    <div class="feature-card-icon"><i class="fas fa-gamepad"></i></div>
+                    <h3 class="feature-card-title">Học Tập Gamification</h3>
+                    <p class="feature-card-desc">Tích lũy điểm, thăng hạng trên leaderboard và nhận thành tích để hành trình học tập luôn đầy hứng khởi.</p>
+                </div>
+                <div class="feature-card-v2" data-animate="stagger">
+                    <div class="feature-card-icon"><i class="fas fa-robot"></i></div>
+                    <h3 class="feature-card-title">Công Cụ AI Thông Minh</h3>
+                    <p class="feature-card-desc">Tự động tạo bài trắc nghiệm từ tài liệu và chấm điểm bài luận chính xác, tiết kiệm thời gian và nâng cao hiệu quả.</p>
+                </div>
+                <div class="feature-card-v2" data-animate="stagger">
+                    <div class="feature-card-icon"><i class="fas fa-users-cog"></i></div>
+                    <h3 class="feature-card-title">Cộng Đồng Năng Động</h3>
+                    <p class="feature-card-desc">Tham gia cùng hàng ngàn học viên khác, trao đổi kiến thức, và cùng nhau tiến bộ mỗi ngày.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- =======================
+         LATEST CONTENT SECTION 
+    ======================== -->
+    <section class="latest-content-section">
+        <div class="container">
+             <div class="section-header">
+                <span class="section-tagline">Cập Nhật Mới Nhất</span>
+                <h2 class="section-title">Kiến Thức Luôn Mới, Thành Công Luôn Tới</h2>
+            </div>
+            <div class="content-grid">
+                <!-- Latest Lessons -->
+                <div class="content-column" data-animate="stagger">
+                    <h3 class="column-title"><i class="fas fa-graduation-cap"></i> Bài Giảng Mới Nhất</h3>
+                    <ul class="content-list">
+                        <% if (latestLessons && latestLessons.length > 0) { %>
+                            <% latestLessons.forEach(lesson => { %>
+                                <li>
+                                    <a href="/lesson/<%= lesson._id %>" class="content-list-item">
+                                        <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
+                                        <div class="item-text">
+                                            <span class="item-title"><%= lesson.title %></span>
+                                            <span class="item-meta">Ngày đăng: <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
+                                        </div>
+                                    </a>
+                                </li>
+                            <% }) %>
                         <% } else { %>
-                            <a href="/register" class="btn btn-primary-glow">
-                                <i class="fas fa-user-plus"></i> Đăng Ký Miễn Phí
-                            </a>
-                             <a href="/login" class="btn btn-secondary-outline">
-                                <i class="fas fa-sign-in-alt"></i> Đăng Nhập
-                            </a>
+                            <li class="no-content-li">Chưa có bài giảng nào.</li>
                         <% } %>
-                    </div>
+                    </ul>
+                </div>
+                <!-- Latest News -->
+                <div class="content-column" data-animate="stagger">
+                    <h3 class="column-title"><i class="fas fa-bullhorn"></i> Tin Tức & Thông Báo</h3>
+                    <ul class="content-list">
+                       <% if (latestNews && latestNews.length > 0) { %>
+                            <% latestNews.forEach(news => { %>
+                                <li>
+                                    <a href="/news/<%= news._id %>" class="content-list-item">
+                                        <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
+                                        <div class="item-text">
+                                            <span class="item-title"><%= news.title %></span>
+                                            <span class="item-meta">Ngày đăng: <%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
+                                        </div>
+                                    </a>
+                                </li>
+                            <% }) %>
+                        <% } else { %>
+                             <li class="no-content-li">Chưa có tin tức nào.</li>
+                        <% } %>
+                    </ul>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- =======================
-             STATS SECTION 
-        ======================== -->
-        <section class="stats-section">
-            <div class="container">
-                <div class="stats-grid">
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-users stat-icon"></i>
-                        <div class="stat-number" data-target="<%= totalUsers %>">0</div>
-                        <div class="stat-label">Học Viên</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-book-reader stat-icon"></i>
-                        <div class="stat-number" data-target="<%= latestLessons.length %>">0</div>
-                        <div class="stat-label">Bài Giảng Mới</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-eye stat-icon"></i>
-                        <div class="stat-number" data-target="<%= dailyVisits %>">0</div>
-                        <div class="stat-label">Lượt Truy Cập Hôm Nay</div>
-                    </div>
-                    <div class="stat-item" data-animate="stagger">
-                        <i class="fas fa-globe-asia stat-icon"></i>
-                        <div class="stat-number" data-target="<%= totalVisits %>">0</div>
-                        <div class="stat-label">Tổng Lượt Truy Cập</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+<%- include('partials/footer') %>
 
-        <!-- =======================
-             FEATURES SECTION 
-        ======================== -->
-        <section class="features-section">
-            <div class="container">
-                <div class="section-header">
-                    <span class="section-tagline">Tại Sao Chọn Chúng Tôi?</span>
-                    <h2 class="section-title">Công Cụ Ưu Việt Cho Tương Lai Rạng Rỡ</h2>
-                    <p class="section-description">
-                        Chúng tôi không chỉ cung cấp bài học, mà còn mang đến một hệ sinh thái học tập toàn diện.
-                    </p>
-                </div>
-                <div class="features-grid-v2">
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <h3 class="feature-card-title">Nội Dung Địa Phương Hóa</h3>
-                        <p class="feature-card-desc">Chương trình học và đề thi được biên soạn riêng, bám sát định hướng của các trường THPT tại TP. Thủ Đức.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-gamepad"></i></div>
-                        <h3 class="feature-card-title">Học Tập Gamification</h3>
-                        <p class="feature-card-desc">Tích lũy điểm, thăng hạng trên leaderboard và nhận thành tích để hành trình học tập luôn đầy hứng khởi.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-robot"></i></div>
-                        <h3 class="feature-card-title">Công Cụ AI Thông Minh</h3>
-                        <p class="feature-card-desc">Tự động tạo bài trắc nghiệm từ tài liệu và chấm điểm bài luận chính xác, tiết kiệm thời gian và nâng cao hiệu quả.</p>
-                    </div>
-                    <div class="feature-card-v2" data-animate="stagger">
-                        <div class="feature-card-icon"><i class="fas fa-users-cog"></i></div>
-                        <h3 class="feature-card-title">Cộng Đồng Năng Động</h3>
-                        <p class="feature-card-desc">Tham gia cùng hàng ngàn học viên khác, trao đổi kiến thức, và cùng nhau tiến bộ mỗi ngày.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+<!-- Scripts specific to this page -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/ScrollTrigger.min.js"></script>
+<script src="/js/animations.js"></script>
+    
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof gsap === 'undefined') {
+            console.error('GSAP is not loaded!');
+            return;
+        }
+
+        const heroTitle = document.querySelector('.hero-title-v2');
+        if (heroTitle) {
+            const words = heroTitle.querySelectorAll('.line span');
+            gsap.set(words, { y: '110%', opacity: 0 });
+            gsap.to(words, {
+                y: '0%',
+                opacity: 1,
+                duration: 1.2,
+                ease: 'power4.out',
+                stagger: 0.15,
+                delay: 0.3
+            });
+        }
+        gsap.from('.hero-badge', { duration: 0.8, scale: 0.5, autoAlpha: 0, ease: 'back.out(1.7)', delay: 0.1 });
+        gsap.from('.hero-subtitle-v2', { duration: 1, y: 20, autoAlpha: 0, ease: 'power3.out', delay: 0.8 });
+        gsap.from('.hero-cta-buttons > *', { duration: 0.8, y: 20, autoAlpha: 0, ease: 'power3.out', stagger: 0.1, delay: 1 });
         
-        <!-- =======================
-             LATEST CONTENT SECTION 
-        ======================== -->
-        <section class="latest-content-section">
-            <div class="container">
-                 <div class="section-header">
-                    <span class="section-tagline">Cập Nhật Mới Nhất</span>
-                    <h2 class="section-title">Kiến Thức Luôn Mới, Thành Công Luôn Tới</h2>
-                </div>
-                <div class="content-grid">
-                    <!-- Latest Lessons -->
-                    <div class="content-column" data-animate="stagger">
-                        <h3 class="column-title"><i class="fas fa-graduation-cap"></i> Bài Giảng Mới Nhất</h3>
-                        <ul class="content-list">
-                            <% if (latestLessons && latestLessons.length > 0) { %>
-                                <% latestLessons.forEach(lesson => { %>
-                                    <li>
-                                        <a href="/lesson/<%= lesson._id %>" class="content-list-item">
-                                            <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
-                                            <div class="item-text">
-                                                <span class="item-title"><%= lesson.title %></span>
-                                                <span class="item-meta">Ngày đăng: <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                                            </div>
-                                        </a>
-                                    </li>
-                                <% }) %>
-                            <% } else { %>
-                                <li class="no-content-li">Chưa có bài giảng nào.</li>
-                            <% } %>
-                        </ul>
-                    </div>
-                    <!-- Latest News -->
-                    <div class="content-column" data-animate="stagger">
-                        <h3 class="column-title"><i class="fas fa-bullhorn"></i> Tin Tức & Thông Báo</h3>
-                        <ul class="content-list">
-                           <% if (latestNews && latestNews.length > 0) { %>
-                                <% latestNews.forEach(news => { %>
-                                    <li>
-                                        <a href="/news/<%= news._id %>" class="content-list-item">
-                                            <div class="item-icon"><i class="fas fa-chevron-right"></i></div>
-                                            <div class="item-text">
-                                                <span class="item-title"><%= news.title %></span>
-                                                <span class="item-meta">Ngày đăng: <%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
-                                            </div>
-                                        </a>
-                                    </li>
-                                <% }) %>
-                            <% } else { %>
-                                 <li class="no-content-li">Chưa có tin tức nào.</li>
-                            <% } %>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <%- include('partials/footer') %>
-    
-    <!-- GSAP for animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/ScrollTrigger.min.js"></script>
-    <!-- Custom animation script -->
-    <script src="/js/animations.js"></script>
-    
-    <script>
-        // Specific animations for the new homepage
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof gsap === 'undefined') {
-                console.error('GSAP is not loaded!');
-                return;
-            }
-
-            // Hero section text animation
-            const heroTitle = document.querySelector('.hero-title-v2');
-            if (heroTitle) {
-                const words = heroTitle.querySelectorAll('.line span');
-                gsap.set(words, { y: '110%', opacity: 0 });
-                gsap.to(words, {
-                    y: '0%',
-                    opacity: 1,
-                    duration: 1.2,
-                    ease: 'power4.out',
-                    stagger: 0.15,
-                    delay: 0.3
-                });
-            }
-            gsap.from('.hero-badge', { duration: 0.8, scale: 0.5, autoAlpha: 0, ease: 'back.out(1.7)', delay: 0.1 });
-            gsap.from('.hero-subtitle-v2', { duration: 1, y: 20, autoAlpha: 0, ease: 'power3.out', delay: 0.8 });
-            gsap.from('.hero-cta-buttons > *', { duration: 0.8, y: 20, autoAlpha: 0, ease: 'power3.out', stagger: 0.1, delay: 1 });
-            
-            // Animated Stats Counter
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers.forEach(counter => {
-                const target = +counter.dataset.target;
-                ScrollTrigger.create({
-                    trigger: counter,
-                    start: 'top 90%',
-                    once: true,
-                    onEnter: () => {
-                        gsap.to(counter, {
-                            duration: 2,
-                            innerText: target,
-                            roundProps: "innerText",
-                            ease: "power2.out",
-                        });
-                    },
-                });
+        const statNumbers = document.querySelectorAll('.stat-number');
+        statNumbers.forEach(counter => {
+            const target = +counter.dataset.target;
+            ScrollTrigger.create({
+                trigger: counter,
+                start: 'top 90%',
+                once: true,
+                onEnter: () => {
+                    gsap.to(counter, {
+                        duration: 2,
+                        innerText: target,
+                        roundProps: "innerText",
+                        ease: "power2.out",
+                    });
+                },
             });
         });
-    </script>
-
-</body>
-</html>
+    });
+</script>

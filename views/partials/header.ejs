@@ -20,116 +20,116 @@
 <body data-page="<%= typeof activePage !== 'undefined' ? activePage : '' %>" data-user-id="<%= typeof user !== 'undefined' && user ? user._id : '' %>">
 
     <header class="header" id="mainHeader">
-        <nav class="navbar">
-            <a href="/" class="logo" title="Trang chủ HỌC TẬP THỦ ĐỨC">
-                <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119" alt="HỌC TẬP THỦ ĐỨC Logo" class="logo-img">
-                <span class="logo-text">HỌC TẬP THỦ ĐỨC</span>
-            </a>
+    <nav class="navbar">
+        <a href="/" class="logo" title="Trang chủ HỌC TẬP THỦ ĐỨC">
+            <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119" alt="HỌC TẬP THỦ ĐỨC Logo" class="logo-img">
+            <span class="logo-text">HỌC TẬP THỦ ĐỨC</span>
+        </a>
 
-            <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navMenu">
-                <span class="hamburger-icon"></span>
-            </button>
+        <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navMenu">
+            <span class="hamburger-icon"></span>
+        </button>
 
-            <ul class="nav-menu" id="navMenu">
-                <% if (user) { %>
-                    <!-- Logged In Menu -->
-                    <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
-                        <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
-                    </li>
-                    <li class="nav-item <%= activePage === 'dashboard' ? 'active' : '' %>">
-                         <a class="nav-link loading-link" href="/dashboard"> <i class="fa-solid fa-chart-pie icon"></i> <span class="link-text">Bảng điều khiển</span> </a>
-                    </li>
-                    <li class="nav-item <%= activePage === 'subjects' ? 'active' : '' %>">
-                        <a class="nav-link loading-link" href="/subjects"> <i class="fa-solid fa-book-bookmark icon"></i> <span class="link-text">Các Môn học</span> </a>
-                    </li>
+        <ul class="nav-menu" id="navMenu">
+            <% if (user) { %>
+                <!-- Logged In Menu -->
+                <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
+                    <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
+                </li>
+                <li class="nav-item <%= activePage === 'dashboard' ? 'active' : '' %>">
+                     <a class="nav-link loading-link" href="/dashboard"> <i class="fa-solid fa-chart-pie icon"></i> <span class="link-text">Bảng điều khiển</span> </a>
+                </li>
+                <li class="nav-item <%= activePage === 'subjects' ? 'active' : '' %>">
+                    <a class="nav-link loading-link" href="/subjects"> <i class="fa-solid fa-book-bookmark icon"></i> <span class="link-text">Các Môn học</span> </a>
+                </li>
 
-                    <!-- News Dropdown -->
-                    <li class="nav-item dropdown news-dropdown <%= ['news', 'newsPost'].includes(activePage) ? 'active' : '' %>">
-                         <a href="/news" class="nav-link has-dropdown loading-link" id="newsDropdownToggle" aria-haspopup="true" aria-expanded="false">
-                             <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Newspaper_-_Idil_Keysan_-_Wikimedia_Giphy_stickers_2019.gif?v=1743778724783" alt="Tin tức" class="news-icon">
-                             <span class="link-text">Tin tức</span>
-                             <i class="fa-solid fa-chevron-down dropdown-indicator"></i>
-                         </a>
-                         <ul class="dropdown-menu news-dropdown-menu" aria-labelledby="newsDropdownToggle">
-                             <li> <a href="/news" class="tool-dropdown-link loading-link <%= activePage === 'news' ? 'active' : '' %>"> <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Newspaper_-_Idil_Keysan_-_Wikimedia_Giphy_stickers_2019.gif?v=1743778724783" alt="Xem tin tức" class="news-item-icon"> <span>Xem tin tức</span> </a> </li>
-                             <% if (user.isPro) { %>
-                                <li> <a href="/news/post" class="tool-dropdown-link loading-link <%= activePage === 'newsPost' ? 'active' : '' %>"> <span class="dropdown-animated-icon"><i class="fa-solid fa-pen-to-square"></i></span> <span>Đăng tin</span> </a> </li>
-                             <% } %>
-                         </ul>
-                     </li>
+                <!-- News Dropdown -->
+                <li class="nav-item dropdown news-dropdown <%= ['news', 'newsPost'].includes(activePage) ? 'active' : '' %>">
+                     <a href="/news" class="nav-link has-dropdown loading-link" id="newsDropdownToggle" aria-haspopup="true" aria-expanded="false">
+                         <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Newspaper_-_Idil_Keysan_-_Wikimedia_Giphy_stickers_2019.gif?v=1743778724783" alt="Tin tức" class="news-icon">
+                         <span class="link-text">Tin tức</span>
+                         <i class="fa-solid fa-chevron-down dropdown-indicator"></i>
+                     </a>
+                     <ul class="dropdown-menu news-dropdown-menu" aria-labelledby="newsDropdownToggle">
+                         <li> <a href="/news" class="tool-dropdown-link loading-link <%= activePage === 'news' ? 'active' : '' %>"> <img src="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Newspaper_-_Idil_Keysan_-_Wikimedia_Giphy_stickers_2019.gif?v=1743778724783" alt="Xem tin tức" class="news-item-icon"> <span>Xem tin tức</span> </a> </li>
+                         <% if (user.isPro) { %>
+                            <li> <a href="/news/post" class="tool-dropdown-link loading-link <%= activePage === 'newsPost' ? 'active' : '' %>"> <span class="dropdown-animated-icon"><i class="fa-solid fa-pen-to-square"></i></span> <span>Đăng tin</span> </a> </li>
+                         <% } %>
+                     </ul>
+                 </li>
 
-                    <!-- Live Stream Dropdown -->
-                    <li class="nav-item live-item dropdown">
-                        <a href="#" class="nav-link live-stream-link has-dropdown">
-                            <i class="fas fa-broadcast-tower icon"></i>
-                            <span class="link-text">Live Stream</span>
-                            <i class="fas fa-chevron-down dropdown-indicator"></i>
-                        </a>
-                        <ul class="dropdown-menu live-stream-dropdown-menu">
-                            <li><a href="/live/create" class="tool-dropdown-link"><i class="fas fa-plus-circle icon"></i> Tạo Live Stream</a></li>
-                            <li><a href="/live" class="tool-dropdown-link"><i class="fas fa-list-alt icon"></i> Xem Live Stream</a></li>
-                        </ul>
-                    </li>  
-                      
-                    <!-- More Tools Dropdown -->
-                     <li class="nav-item dropdown more-tools-dropdown <%= ['lessonAdd', 'leaderboard', 'proImages', 'upgrade', 'myTree'].includes(activePage) ? 'active' : '' %>" id="moreToolsDropdown">
-                        <a class="nav-link has-dropdown" href="#" id="moreToolsToggle" role="button" aria-haspopup="true" aria-expanded="false">
-                             <i class="fa-solid fa-layer-group icon"></i>
-                             <span class="link-text">Công cụ</span>
-                             <i class="fa-solid fa-chevron-down dropdown-indicator"></i>
-                         </a>
-                         <ul class="dropdown-menu more-tools-menu" aria-labelledby="moreToolsToggle">
-                             <li> <a class="tool-dropdown-link loading-link <%= activePage === 'lessonAdd' ? 'active' : '' %>" href="/lesson/add"> <i class="fa-solid fa-circle-plus icon"></i> <span>Thêm bài học</span> </a> </li>
-                             <li> <a class="tool-dropdown-link loading-link <%= activePage === 'leaderboard' ? 'active' : '' %>" href="/leaderboard"> <i class="fa-solid fa-trophy icon"></i> <span>Bảng xếp hạng</span> </a> </li>
-                             <li> <a class="tool-dropdown-link loading-link <%= activePage === 'myTree' ? 'active' : '' %>" href="/my-tree"> <i class="fa-solid fa-tree icon"></i> <span>Cây Thành Tích</span> </a> </li>
-                             <% if (user.isPro) { %>
-                                 <li> <a class="tool-dropdown-link loading-link <%= activePage === 'proImages' ? 'active' : '' %>" href="/pro-images"> <i class="fa-solid fa-images icon"></i> <span>Ảnh PRO</span> </a> </li>
-                             <% } else { %>
-                                  <li class="pro-upgrade-item"> <a class="tool-dropdown-link pro-upgrade-link loading-link <%= activePage === 'upgrade' ? 'active' : '' %>" href="/upgrade"> <i class="fa-solid fa-crown icon"></i> <span>Nâng cấp PRO</span> </a> </li>
-                             <% } %>
-                             <li>
-                              <a href="/app/essay-helper" class="tool-dropdown-link">
-                                <i class="fas fa-pen-alt icon"></i>
-                                <span class="link-text">App học tự luận</span>
-                              </a>
-                            </li>
-                         </ul>
-                     </li>
+                <!-- Live Stream Dropdown -->
+                <li class="nav-item live-item dropdown">
+                    <a href="#" class="nav-link live-stream-link has-dropdown">
+                        <i class="fas fa-broadcast-tower icon"></i>
+                        <span class="link-text">Live Stream</span>
+                        <i class="fas fa-chevron-down dropdown-indicator"></i>
+                    </a>
+                    <ul class="dropdown-menu live-stream-dropdown-menu">
+                        <li><a href="/live/create" class="tool-dropdown-link"><i class="fas fa-plus-circle icon"></i> Tạo Live Stream</a></li>
+                        <li><a href="/live" class="tool-dropdown-link"><i class="fas fa-list-alt icon"></i> Xem Live Stream</a></li>
+                    </ul>
+                </li>  
+                  
+                <!-- More Tools Dropdown -->
+                 <li class="nav-item dropdown more-tools-dropdown <%= ['lessonAdd', 'leaderboard', 'proImages', 'upgrade', 'myTree'].includes(activePage) ? 'active' : '' %>" id="moreToolsDropdown">
+                    <a class="nav-link has-dropdown" href="#" id="moreToolsToggle" role="button" aria-haspopup="true" aria-expanded="false">
+                         <i class="fa-solid fa-layer-group icon"></i>
+                         <span class="link-text">Công cụ</span>
+                         <i class="fa-solid fa-chevron-down dropdown-indicator"></i>
+                     </a>
+                     <ul class="dropdown-menu more-tools-menu" aria-labelledby="moreToolsToggle">
+                         <li> <a class="tool-dropdown-link loading-link <%= activePage === 'lessonAdd' ? 'active' : '' %>" href="/lesson/add"> <i class="fa-solid fa-circle-plus icon"></i> <span>Thêm bài học</span> </a> </li>
+                         <li> <a class="tool-dropdown-link loading-link <%= activePage === 'leaderboard' ? 'active' : '' %>" href="/leaderboard"> <i class="fa-solid fa-trophy icon"></i> <span>Bảng xếp hạng</span> </a> </li>
+                         <li> <a class="tool-dropdown-link loading-link <%= activePage === 'myTree' ? 'active' : '' %>" href="/my-tree"> <i class="fa-solid fa-tree icon"></i> <span>Cây Thành Tích</span> </a> </li>
+                         <% if (user.isPro) { %>
+                             <li> <a class="tool-dropdown-link loading-link <%= activePage === 'proImages' ? 'active' : '' %>" href="/pro-images"> <i class="fa-solid fa-images icon"></i> <span>Ảnh PRO</span> </a> </li>
+                         <% } else { %>
+                              <li class="pro-upgrade-item"> <a class="tool-dropdown-link pro-upgrade-link loading-link <%= activePage === 'upgrade' ? 'active' : '' %>" href="/upgrade"> <i class="fa-solid fa-crown icon"></i> <span>Nâng cấp PRO</span> </a> </li>
+                         <% } %>
+                         <li>
+                          <a href="/app/essay-helper" class="tool-dropdown-link">
+                            <i class="fas fa-pen-alt icon"></i>
+                            <span class="link-text">App học tự luận</span>
+                          </a>
+                        </li>
+                     </ul>
+                 </li>
 
-                    <!-- === FIXED USER DROPDOWN SECTION === -->
-                    <li class="nav-item dropdown user-dropdown <%= ['profile'].includes(activePage) ? 'active' : '' %>">
-                        <a href="#" class="nav-link has-dropdown user-nav-link" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
-                            <img src="<%= user.avatar %>" alt="User Avatar" class="user-avatar-header">
-                            <span class="username-header"><%= user.username %></span>
-                            <i class="fas fa-chevron-down dropdown-indicator"></i>
-                        </a>
-                        <ul class="dropdown-menu user-dropdown-menu" aria-labelledby="userDropdownToggle">
-                            <li><a href="/profile" class="tool-dropdown-link loading-link <%= activePage === 'profile' ? 'active' : '' %>"><i class="fas fa-user-circle icon"></i> Hồ Sơ Của Tôi</a></li>
-                            <li><a href="/profile/edit" class="tool-dropdown-link loading-link"><i class="fas fa-user-edit icon"></i> Chỉnh Sửa Hồ Sơ</a></li>
-                            <li class="pro-upgrade-item">
-                                <a href="/logout" class="tool-dropdown-link logout-link">
-                                    <i class="fas fa-sign-out-alt icon"></i>
-                                    <span>Đăng Xuất</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                <!-- User Dropdown with Avatar -->
+                <li class="nav-item dropdown user-dropdown <%= ['profile'].includes(activePage) ? 'active' : '' %>">
+                    <a href="#" class="nav-link has-dropdown user-nav-link" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
+                        <img src="<%= user.avatar %>" alt="User Avatar" class="user-avatar-header">
+                        <span class="username-header"><%= user.username %></span>
+                        <i class="fas fa-chevron-down dropdown-indicator"></i>
+                    </a>
+                    <ul class="dropdown-menu user-dropdown-menu" aria-labelledby="userDropdownToggle">
+                        <li><a href="/profile" class="tool-dropdown-link loading-link <%= activePage === 'profile' ? 'active' : '' %>"><i class="fas fa-user-circle icon"></i> Hồ Sơ Của Tôi</a></li>
+                        <li><a href="/profile/edit" class="tool-dropdown-link loading-link"><i class="fas fa-user-edit icon"></i> Chỉnh Sửa Hồ Sơ</a></li>
+                        <li class="pro-upgrade-item">
+                            <a href="/logout" class="tool-dropdown-link logout-link">
+                                <i class="fas fa-sign-out-alt icon"></i>
+                                <span>Đăng Xuất</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
-                <% } else { %>
-                    <!-- Logged Out Menu -->
-                    <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
-                        <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
-                    </li>
-                    <li class="nav-item <%= activePage === 'login' ? 'active' : '' %>">
-                        <a class="nav-link loading-link" href="/login"> <i class="fa-solid fa-right-to-bracket icon"></i> <span class="link-text">Đăng nhập</span> </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link register-link loading-link" href="/register"> <i class="fa-solid fa-user-plus icon"></i> <span class="link-text">Đăng ký</span> </a>
-                    </li>
-                <% } %>
-            </ul>
-        </nav>
-    </header>
+            <% } else { %>
+                <!-- Logged Out Menu -->
+                <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
+                    <a class="nav-link loading-link" href="/"> <i class="fa-solid fa-house-chimney icon"></i> <span class="link-text">Trang Chủ</span> </a>
+                </li>
+                <li class="nav-item <%= activePage === 'login' ? 'active' : '' %>">
+                    <a class="nav-link loading-link" href="/login"> <i class="fa-solid fa-right-to-bracket icon"></i> <span class="link-text">Đăng nhập</span> </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link register-link loading-link" href="/register"> <i class="fa-solid fa-user-plus icon"></i> <span class="link-text">Đăng ký</span> </a>
+                </li>
+            <% } %>
+        </ul>
+    </nav>
+</header>
  
     <main>
         <!-- Page content goes here -->
