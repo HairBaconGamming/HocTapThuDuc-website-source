@@ -1,5 +1,5 @@
 <!-- views/lessons.ejs -->
-<%- include('partials/header', { title: subject.name, user: user, activePage: 'subjects' }) %> <%# Updated activePage %>
+<%- include('partials/header', { title: subject.name || 'HỌC TẬP THỦ ĐỨC', user: user, activePage: 'subjects' }) %> <%# Updated activePage %>
 <link rel="stylesheet" href="/styleLessons.css"
 <section class="lessons-section">
   <div class="container">
