@@ -6,6 +6,7 @@
         </a>
 
         <nav class="nav-menu" id="navMenu">
+            <!-- Main Navigation Links -->
             <ul class="nav-list">
                 <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
                     <a href="/" class="nav-link"><i class="fas fa-home icon"></i> <span class="link-text">Trang Chủ</span></a>
@@ -29,38 +30,37 @@
                 <li class="nav-item dropdown" id="moreToolsDropdown">
                     <a href="#" class="nav-link has-dropdown"><i class="fas fa-tools icon"></i> <span class="link-text">Công Cụ</span> <i class="fas fa-chevron-down dropdown-indicator"></i></a>
                     <ul class="dropdown-menu">
-                        <!-- Dropdown items here -->
+                        <!-- Dropdown items will be populated here if any -->
                     </ul>
                 </li>
+            </ul>
 
-                <!-- User auth section -->
-                <div class="nav-auth-section">
-                    <% if (user) { %>
-                        <li class="nav-item dropdown user-dropdown">
-                            <a href="#" class="nav-link has-dropdown user-nav-link">
-                                <!-- === AVATAR IS DISPLAYED HERE === -->
-                                <img src="<%= user.avatar %>" alt="User Avatar" class="user-avatar-header">
-                                <span class="username-header"><%= user.username %></span>
-                                <i class="fas fa-chevron-down dropdown-indicator"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="/profile" class="tool-dropdown-link"><i class="fas fa-user-circle icon"></i> Hồ Sơ Của Tôi</a></li>
-                                <li><a href="/profile/edit" class="tool-dropdown-link"><i class="fas fa-user-edit icon"></i> Chỉnh Sửa Hồ Sơ</a></li>
-                                <% if (user.isPro) { %>
-                                    <li><a href="/pro-images" class="tool-dropdown-link"><i class="fas fa-images icon"></i> Kho Ảnh PRO</a></li>
-                                <% } else { %>
-                                    <li class="pro-upgrade-item">
-                                        <a href="/upgrade" class="pro-upgrade-link"><i class="fas fa-crown icon"></i> Nâng Cấp PRO</a>
-                                    </li>
-                                <% } %>
-                                <li><a href="/logout" class="tool-dropdown-link logout-link"><i class="fas fa-sign-out-alt icon"></i> Đăng Xuất</a></li>
-                            </ul>
-                        </li>
-                    <% } else { %>
-                        <li class="nav-item"><a href="/login" class="nav-link">Đăng Nhập</a></li>
-                        <li class="nav-item"><a href="/register" class="nav-link register-link">Đăng Ký</a></li>
-                    <% } %>
-                </div>
+            <!-- User Authentication Section (Now a direct child of nav-menu) -->
+            <ul class="nav-auth-section">
+                <% if (user) { %>
+                    <li class="nav-item dropdown user-dropdown">
+                        <a href="#" class="nav-link has-dropdown user-nav-link">
+                            <img src="<%= user.avatar %>" alt="User Avatar" class="user-avatar-header">
+                            <span class="username-header"><%= user.username %></span>
+                            <i class="fas fa-chevron-down dropdown-indicator"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/profile" class="tool-dropdown-link"><i class="fas fa-user-circle icon"></i> Hồ Sơ Của Tôi</a></li>
+                            <li><a href="/profile/edit" class="tool-dropdown-link"><i class="fas fa-user-edit icon"></i> Chỉnh Sửa Hồ Sơ</a></li>
+                            <% if (user.isPro) { %>
+                                <li><a href="/pro-images" class="tool-dropdown-link"><i class="fas fa-images icon"></i> Kho Ảnh PRO</a></li>
+                            <% } else { %>
+                                <li class="pro-upgrade-item">
+                                    <a href="/upgrade" class="pro-upgrade-link"><i class="fas fa-crown icon"></i> Nâng Cấp PRO</a>
+                                </li>
+                            <% } %>
+                            <li><a href="/logout" class="tool-dropdown-link logout-link"><i class="fas fa-sign-out-alt icon"></i> Đăng Xuất</a></li>
+                        </ul>
+                    </li>
+                <% } else { %>
+                    <li class="nav-item"><a href="/login" class="nav-link">Đăng Nhập</a></li>
+                    <li class="nav-item"><a href="/register" class="nav-link register-link">Đăng Ký</a></li>
+                <% } %>
             </ul>
         </nav>
 
