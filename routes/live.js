@@ -37,7 +37,7 @@ router.post("/create", isLoggedIn, async (req, res) => {
     }
 
     // Kiểm tra xem user đã có phòng live chưa bằng cách gọi API lấy danh sách phòng
-    const roomListResponse = await axios.get("https://live-hoctap-9a3.glitch.me/api/rooms");
+    const roomListResponse = await axios.get("https://live-hoctapthuduc.onrender.com/api/rooms");
     const existingRoom = roomListResponse.data.find(room => room.ownerid === roomOwnerId);
 
     
@@ -51,7 +51,7 @@ router.post("/create", isLoggedIn, async (req, res) => {
 
     // Nếu chưa có, gọi API tạo phòng live stream
     const payload = { roomOwnerId, roomOwnerName, title };
-    const apiResponse = await axios.post("https://live-hoctap-9a3.glitch.me/api/createStream", payload);
+    const apiResponse = await axios.post("https://live-hoctapthuduc.onrender.com/api/createStream", payload);
     
     if (apiResponse.data.existingRoomUrl) {
       const token = createToken(req.user);
@@ -96,7 +96,7 @@ router.get("/joinLive/:roomId", isLoggedIn, async (req, res) => {
   try {
     // Tạo token cho người tham gia phòng live (rút gọn payload)
     const token = createToken(user);
-    const liveUrl = `https://live-hoctap-9a3.glitch.me/room/${req.params.roomId}?token=${token}`;
+    const liveUrl = `https://live-hoctapthuduc.onrender.com/room/${req.params.roomId}?token=${token}`;
     return res.redirect(liveUrl);
   } catch (error) {
     console.error("Lỗi khi lấy token:", error.message);
