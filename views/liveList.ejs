@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const onlineTime = escapeHtml(live.onlineTime || 'N/A');
         const viewers = live.viewers || 0;
         const joinUrl = `#`; // Link initially points nowhere, JS handles logic
-        const shareUrl = `https://hoctap-9a3.glitch.me/live/joinLive/${live.id}`; // Direct join link for sharing
+        const shareUrl = `https://hoctapthuduc.onrender.com/live/joinLive/${live.id}`; // Direct join link for sharing
 
         card.innerHTML = `
             <div class="card-glow-effect"></div>
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  throw new Error(data.error || `Lỗi ${res.status}`);
             }
              // Redirect with token
-             window.location.href = `https://live-hoctap-9a3.glitch.me/room/${roomId}?token=${data.token}`;
+             window.location.href = `https://hoctapthuduc.onrender.com/room/${roomId}?token=${data.token}`;
              // No need to remove loading state here as page redirects
         } catch (error) {
             console.error("Error getting join token:", error);
