@@ -173,6 +173,14 @@ body[data-page="home"] {
     );
 }
 
+html, body {
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+
 body,
 a,
 button,
@@ -3278,6 +3286,33 @@ body[data-page="home"] h2 {
   color: var(--text-medium);
   /* ... other close button styles ... */
 }
+
+/* ----- Footer ----- */
+.site-footer {
+  background: var(--bg-dark);
+  color: var(--text-light);
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 1rem 0;
+  margin-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.site-footer p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.site-footer a {
+  color: var(--accent-color, #ff6ec4); /* hoặc màu chủ đạo bạn đang dùng */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
 
 /* --- Responsive --- */
 @media (max-width: 480px) {
