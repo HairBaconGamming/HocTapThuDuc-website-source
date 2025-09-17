@@ -40,11 +40,29 @@
       </form>
     </div>
 
-    <!-- Lessons List -->
-    <div class="lessons-grid"> <%# Changed class name %>
+    <!-- ===== THÊM KHU VỰC LỌC TAGS NÀY ===== -->
+    <% if (uniqueTags && uniqueTags.length > 0) { %>
+    <div class="tag-filter-container">
+        <h3><i class="fas fa-tags"></i> Lọc nhanh theo Tags</h3>
+        <div class="tag-list">
+            <button class="tag-filter-btn <%= activeTag === '' ? 'active' : '' %>" data-tag="all">
+                Tất cả
+            </button>
+            <% uniqueTags.forEach(tag => { %>
+                <button class="tag-filter-btn <%= activeTag === tag ? 'active' : '' %>" data-tag="<%= tag %>">
+                    #<%= tag %>
+                </button>
+            <% }) %>
+        </div>
+    </div>
+    <% } %>
+    <!-- ===================================== -->
+
+    <div class="lessons-grid">
       <% if(lessons.length > 0){ %>
         <% lessons.forEach(function(lesson) { %>
-          <div class="lesson-card-v2"> <%# Changed class name %>
+          <!-- Thay thế thẻ <a> bọc ngoài bằng <div> và thêm data-tags -->
+          <div class="lesson-card-v2" data-tags="<%= (lesson.tags || []).join(',') %>">
             <div class="card-header">
               <div class="badges">
                 <% if (lesson.isProOnly) { %>
@@ -97,6 +115,8 @@
     </div>
   </div>
 </section>
+
+<script src="/js/lessonFilter.js"></script>
 <%- include('partials/footer') %>
 
 <script>

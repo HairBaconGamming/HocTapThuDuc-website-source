@@ -2331,6 +2331,74 @@ document.addEventListener("DOMContentLoaded", () => {
         checkFilled(); // Initial check for autofill
     });
 
+    // --- TAG INPUT V3 INITIALIZATION ---
+    const tagInputContainer = document.getElementById('tag-input-container');
+    if (tagInputContainer) {
+        const realInput = tagInputContainer.querySelector('.tag-input-field');
+        const hiddenInput = document.getElementById('hidden-tags-input');
+        let tags = [];
+
+        const updateHiddenInput = () => {
+            hiddenInput.value = tags.join(',');
+            // Trigger save progress
+            if(mode !== 'edit') saveProgressThrottled();
+        };
+
+        const createTagElement = (tagText) => {
+            const tagEl = document.createElement('span');
+            tagEl.className = 'tag-item';
+            tagEl.innerHTML = `
+                ${tagText}
+                <button type="button" class="remove-tag-btn" title="Remove ${tagText}">&times;</button>
+            `;
+
+            tagEl.querySelector('.remove-tag-btn').addEventListener('click', () => {
+                const index = tags.indexOf(tagText);
+                if (index > -1) {
+                    tags.splice(index, 1);
+                    updateHiddenInput();
+                    tagEl.remove();
+                }
+            });
+
+            return tagEl;
+        };
+
+        const addTag = (tagText) => {
+            const trimmedTag = tagText.trim();
+            if (trimmedTag.length > 1 && !tags.includes(trimmedTag)) {
+                tags.push(trimmedTag);
+                const tagElement = createTagElement(trimmedTag);
+                realInput.before(tagElement); // Thêm tag pill vào trước ô input
+                updateHiddenInput();
+            }
+            realInput.value = "";
+        };
+
+        realInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTag(realInput.value);
+            } else if (e.key === 'Backspace' && realInput.value === '') {
+                if (tags.length > 0) {
+                    const lastTag = tags.pop();
+                    const lastTagEl = tagInputContainer.querySelector('.tag-item:last-of-type');
+                    if (lastTagEl) lastTagEl.remove();
+                    updateHiddenInput();
+                }
+            }
+        });
+
+        tagInputContainer.addEventListener('click', () => {
+            realInput.focus();
+        });
+        
+        // Load initial tags from hidden input on page load
+        const initialTags = hiddenInput.value.split(',').filter(Boolean);
+        initialTags.forEach(addTag);
+    }
+    // --- END TAG INPUT V3 ---
+
     console.log(`Manage Lesson V3 Script Initialized. Mode: ${mode}. Multi-choice quiz enabled.`);
 
 }); // End DOMContentLoaded

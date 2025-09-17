@@ -1633,6 +1633,72 @@ input:invalid ~ .input-icon,
 }
 /* Add more utilities as needed */
 
+/* --- Artistic Tag Input --- */
+.tag-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 15px;
+  background-color: rgba(var(--artistic-bg-dark-rgb), 0.8);
+  border: 1px solid var(--artistic-border-color);
+  border-radius: var(--border-radius-medium);
+  transition: all 0.3s ease;
+  cursor: text; /* Biến con trỏ thành dạng text khi di vào container */
+}
+.tag-input-container:focus-within {
+  border-color: var(--artistic-border-color-focus);
+  box-shadow: 0 0 0 3px rgba(var(--artistic-primary-rgb), 0.15);
+}
+
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--artistic-primary), var(--artistic-secondary));
+  color: white;
+  padding: 5px 10px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: popIn 0.3s ease forwards;
+}
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.remove-tag-btn {
+  background: rgba(0,0,0,0.2);
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.remove-tag-btn:hover {
+  background: rgba(0,0,0,0.4);
+  transform: scale(1.1);
+}
+
+.tag-input-field {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--artistic-text-light);
+  font-size: 1rem;
+  min-width: 150px; /* Đảm bảo ô input không quá nhỏ */
+  padding: 5px 0;
+}
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 992px) {
   .manage-lesson-container {

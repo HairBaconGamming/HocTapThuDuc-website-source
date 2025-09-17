@@ -150,6 +150,24 @@
                               </div>
                               <div class="validation-error" data-for="category">Vui lòng chọn thể loại.</div>
                         </div>
+
+                        <!-- views/ManageLesson.ejs (bên trong .form-grid của Step 1) -->
+
+                        <!-- THAY THẾ HOÀN TOÀN INPUT TAGS CŨ BẰNG KHỐI NÀY -->
+                        <div class="form-group full-width">
+                            <label for="tags" class="form-label-v2 static">
+                                <i class="fas fa-tags"></i> Tags (nhấn Enter hoặc dấu phẩy để thêm)
+                            </label>
+                            <!-- Container sẽ chứa các tag pills và ô input thật -->
+                            <div id="tag-input-container" class="tag-input-container">
+                                <!-- Các tag pills sẽ được JS chèn vào đây -->
+                                <input type="text" id="tag-input-field" class="tag-input-field" placeholder="Thêm tag...">
+                            </div>
+                            <!-- Input ẩn này sẽ gửi dữ liệu cuối cùng lên server -->
+                            <input type="hidden" name="tags" id="hidden-tags-input" value="<%= (typeof lesson !== 'undefined' && lesson.tags) ? lesson.tags.join(', ') : '' %>">
+                        </div>
+                        <!-- KẾT THÚC THAY THẾ -->
+
                     </div> <%# End form-grid %>
 
                     <%# Lesson Title Input %>

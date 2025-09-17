@@ -18,6 +18,7 @@ const LessonSchema = new mongoose.Schema({
   editorData: { type: mongoose.Schema.Types.Mixed }, // Đối với markdown, quiz, video, hoặc essay (đáp án mẫu)
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
+  tags: [{ type: String, trim: true, index: true }], 
   isProOnly: { type: Boolean, default: false },
   isAIGenerated: { type: Boolean, default: false }
 });

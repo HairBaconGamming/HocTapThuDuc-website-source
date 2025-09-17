@@ -246,3 +246,68 @@
   transform: translateY(-8px) scale(1.02); /* Lift and slightly scale */
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(var(--primary-color-rgb), 0.1);
 }
+
+
+/* --- Artistic Tag Filter Area --- */
+.tag-filter-container {
+  padding: 20px 25px;
+  background: rgba(var(--bg-dark-rgb), 0.4);
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--border-color);
+  margin-bottom: 45px;
+}
+.tag-filter-container h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tag-filter-container h3 .fas {
+  color: var(--primary-color);
+}
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tag-filter-btn {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-medium);
+  border: 1px solid var(--border-color);
+  padding: 8px 18px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.tag-filter-btn:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.15);
+  color: var(--text-light);
+  border-color: rgba(var(--primary-color-rgb), 0.4);
+  transform: translateY(-2px);
+}
+.tag-filter-btn.active {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 4px 15px -3px rgba(var(--primary-color-rgb), 0.3);
+}
+/* Hiệu ứng khi ẩn/hiện card bài học */
+.lessons-grid .lesson-card-v2 {
+  transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease;
+}
+.lessons-grid .lesson-card-v2.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  max-height: 0;
+  padding: 0;
+  margin-bottom: -35px; /* Bù lại gap */
+  overflow: hidden;
+  pointer-events: none;
+}

@@ -859,6 +859,9 @@ app.get("/subjects/:id", async (req, res) => {
         return res.redirect('/subjects');
     }
     let filter = { subject: subject._id };
+    if (req.query.tag) {
+      filter.tags = req.query.tag;
+    }
     if (req.query.category) {
       filter.category = req.query.category;
     }
@@ -869,7 +872,19 @@ app.get("/subjects/:id", async (req, res) => {
     const sortOption = req.query.sort || "desc";
     const sortObj = sortOption === "asc" ? { createdAt: 1 } : { createdAt: -1 };
     const lessons = await Lesson.find(filter).populate("subject createdBy").sort(sortObj).lean();
-    res.render("lessons", { user: req.user, subject, lessons, currentCategory: req.query.category || "", currentQuery: req.query.q || "", currentSort: sortOption, activePage: "subjects" });
+    const allLessonsInSubject = await Lesson.find({ subject: subject._id }).select('tags').lean();
+    const uniqueTags = [...new Set(allLessonsInSubject.flatMap(lesson => lesson.tags || []))].sort();
+    res.render("lessons", { 
+        user: req.user, 
+        subject, 
+        lessons, 
+        uniqueTags, // << Truyền tags cho EJS
+        activeTag,  // << Truyền tag đang active
+        currentCategory: req.query.category || "", 
+        currentQuery: req.query.q || "", 
+        currentSort: sortOption, 
+        activePage: "subjects" 
+    });
   } catch (err) {
     console.error(err);
     req.flash('error', 'Lỗi truy vấn bài học!');
@@ -912,7 +927,10 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
     req.flash("error", "Có lỗi xảy ra trong quá trình xác thực CAPTCHA, hãy thử lại sau.");
     return res.redirect("/lesson/add");
   }
-  let { subjectId, title, content, category, type } = req.body;
+  let { subjectId, title, content, category, type, tags } = req.body;
+  const tagsArray = typeof tags === 'string' && tags.trim() !== '' 
+    ? tags.split(',').map(tag => tag.trim()).filter(Boolean) 
+    : [];
   if (typeof content !== "string" || content.trim() === "") {
     if (type === "markdown" && req.body.editorData && req.body.editorData.markdown) { content = req.body.editorData.markdown; } 
     else if (type === "video" && req.body.editorData && req.body.editorData.video) { content = req.body.editorData.video; } 
@@ -923,7 +941,17 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
       content = essayPrompt + "\n\n" + essayAnswer;
     } else { content = ""; }
   }
-  const newLesson = new Lesson({ subject: subjectId, title: title, content: content, category: category, type: type || "markdown", createdBy: req.user._id, editorData: req.body.editorData, isProOnly: req.body.isProOnly === "true" ? true : false });
+  const newLesson = new Lesson({ 
+    subject: subjectId, 
+    title: title, 
+    content: content, 
+    category: category, 
+    type: type || "markdown", 
+    createdBy: req.user._id, 
+    editorData: req.body.editorData, 
+    isProOnly: req.body.isProOnly === "true" ? true : false,
+    tags: tagsArray 
+  });
   try {
     await newLesson.save();
     io.emit("newLesson", { lessonId: newLesson._id, title: newLesson.title });
@@ -1047,7 +1075,10 @@ app.post("/lesson/:id/edit", isLoggedIn, upload.none(), async (req, res) => {
       req.flash("error", "Bạn không có quyền chỉnh sửa bài học này.");
       return res.redirect("/dashboard");
     }
-    let { subjectId, title, content, category, type, editorData, isProOnly } = req.body;
+    let { subjectId, title, content, category, type, editorData, isProOnly, tags } = req.body;
+    const tagsArray = typeof tags === 'string' && tags.trim() !== '' 
+    ? tags.split(',').map(tag => tag.trim()).filter(Boolean) 
+    : [];
     if (typeof content !== "string" || content.trim() === "") {
       if (type === "markdown" && req.body.editorData && req.body.editorData.markdown) { content = req.body.editorData.markdown; } 
       else if (type === "video" && req.body.editorData && req.body.editorData.video) { content = req.body.editorData.video; } 
@@ -1062,6 +1093,7 @@ app.post("/lesson/:id/edit", isLoggedIn, upload.none(), async (req, res) => {
     lesson.type = type || "markdown";
     lesson.editorData = editorData;
     lesson.isProOnly = isProOnly === "true";
+    lesson.tags = tagsArray;
     await lesson.save();
     req.flash("success", "Bài học đã được cập nhật thành công.");
     res.redirect("/lesson/" + lesson._id);
