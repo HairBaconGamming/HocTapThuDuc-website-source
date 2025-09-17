@@ -572,7 +572,7 @@ app.post("/register", async (req, res) => {
         req.flash("error", "Xác thực CAPTCHA thất bại. Vui lòng xác thực hCaptcha.");
         return res.redirect("/register");
       }
-      const hCaptchaSecret = "ES_877d5a194ad041a680490a255dd79e3f";
+      const hCaptchaSecret = process.env.HCAPTCHA_SECRET_KEY;
       const hCaptchaVerificationURL = "https://hcaptcha.com/siteverify";
       const hParams = new URLSearchParams();
       hParams.append("secret", hCaptchaSecret);
