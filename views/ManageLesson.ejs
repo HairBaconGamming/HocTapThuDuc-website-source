@@ -164,8 +164,7 @@
                                 <input type="text" id="tag-input-field" class="tag-input-field" placeholder="Thêm tag...">
                             </div>
                             <!-- Input ẩn này sẽ gửi dữ liệu cuối cùng lên server -->
-                            <input type="hidden" name="tags" id="hidden-tags-input" value="<%= (typeof lesson !== 'undefined' && lesson.tags) ? lesson.tags.join(', ') : '' %>">
-                        </div>
+                            <input type="hidden" name="tags" id="hidden-tags-input" value="<%= (lesson && lesson.tags) ? lesson.tags.join(', ') : '' %>">
                         <!-- KẾT THÚC THAY THẾ -->
 
                     </div> <%# End form-grid %>
