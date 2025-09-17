@@ -10,6 +10,8 @@ const UserSchema = new mongoose.Schema(
     class: { type: String, default: "" },
     school: { type: String, default: "" },
     isPro: { type: Boolean, default: false },
+    isTeacher: { type: Boolean, default: false }, 
+    isAdmin: { type: Boolean, default: false },   
     proSecretKey: { type: String, default: "" },
     isBanned: { type: Boolean, default: false },
     lastLoginIP: { type: String, default: "" },
