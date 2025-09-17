@@ -2331,73 +2331,97 @@ document.addEventListener("DOMContentLoaded", () => {
         checkFilled(); // Initial check for autofill
     });
 
-    // --- TAG INPUT V3 INITIALIZATION ---
-    const tagInputContainer = document.getElementById('tag-input-container');
-    if (tagInputContainer) {
-        const realInput = tagInputContainer.querySelector('.tag-input-field');
-        const hiddenInput = document.getElementById('hidden-tags-input');
-        let tags = [];
+// --- TAG INPUT V4 INITIALIZATION ---
+const tagGroup = document.querySelector('.tag-input-group');
+if (tagGroup) {
+    const tagInputContainer = tagGroup.querySelector('#tag-input-container');
+    const realInput = tagGroup.querySelector('#tag-input-field');
+    const hiddenInput = tagGroup.querySelector('#hidden-tags-input');
+    let tags = [];
 
-        const updateHiddenInput = () => {
-            hiddenInput.value = tags.join(',');
-            // Trigger save progress
-            if(mode !== 'edit') saveProgressThrottled();
-        };
+    const checkFilledState = () => {
+        // Thêm class 'filled' nếu có tag, để label nổi lên
+        tagGroup.classList.toggle('filled', tags.length > 0);
+    };
 
-        const createTagElement = (tagText) => {
-            const tagEl = document.createElement('span');
-            tagEl.className = 'tag-item';
-            tagEl.innerHTML = `
-                ${tagText}
-                <button type="button" class="remove-tag-btn" title="Remove ${tagText}">&times;</button>
-            `;
+    const updateHiddenInput = () => {
+        hiddenInput.value = tags.join(',');
+        checkFilledState();
+        if(mode !== 'edit') saveProgressThrottled();
+    };
 
-            tagEl.querySelector('.remove-tag-btn').addEventListener('click', () => {
-                const index = tags.indexOf(tagText);
-                if (index > -1) {
-                    tags.splice(index, 1);
-                    updateHiddenInput();
-                    tagEl.remove();
-                }
-            });
+    const createTagElement = (tagText) => {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'tag-item';
+        tagEl.dataset.tagValue = tagText; 
+        tagEl.innerHTML = `
+            ${tagText}
+            <button type="button" class="remove-tag-btn" title="Xóa tag ${tagText}">&times;</button>
+        `;
 
-            return tagEl;
-        };
-
-        const addTag = (tagText) => {
-            const trimmedTag = tagText.trim();
-            if (trimmedTag.length > 1 && !tags.includes(trimmedTag)) {
-                tags.push(trimmedTag);
-                const tagElement = createTagElement(trimmedTag);
-                realInput.before(tagElement); // Thêm tag pill vào trước ô input
+        tagEl.querySelector('.remove-tag-btn').addEventListener('click', () => {
+            const index = tags.indexOf(tagText);
+            if (index > -1) {
+                tags.splice(index, 1);
                 updateHiddenInput();
             }
-            realInput.value = "";
-        };
-
-        realInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault();
-                addTag(realInput.value);
-            } else if (e.key === 'Backspace' && realInput.value === '') {
-                if (tags.length > 0) {
-                    const lastTag = tags.pop();
-                    const lastTagEl = tagInputContainer.querySelector('.tag-item:last-of-type');
-                    if (lastTagEl) lastTagEl.remove();
-                    updateHiddenInput();
-                }
-            }
+            // Animate out and remove
+            gsap.to(tagEl, { 
+                scale: 0, 
+                opacity: 0, 
+                duration: 0.3, 
+                ease: 'power2.in', 
+                onComplete: () => tagEl.remove() 
+            });
         });
 
-        tagInputContainer.addEventListener('click', () => {
-            realInput.focus();
-        });
-        
-        // Load initial tags from hidden input on page load
-        const initialTags = hiddenInput.value.split(',').filter(Boolean);
-        initialTags.forEach(addTag);
+        return tagEl;
+    };
+
+    const addTag = (tagText) => {
+        const trimmedTag = tagText.trim().replace(/,/g, "");
+        if (trimmedTag.length > 1 && !tags.includes(trimmedTag)) {
+            tags.push(trimmedTag);
+            const tagElement = createTagElement(trimmedTag);
+            realInput.before(tagElement);
+            updateHiddenInput();
+        } else if (tags.includes(trimmedTag)) {
+            // Hiệu ứng rung lắc khi nhập tag trùng
+            tagGroup.classList.add('shake');
+            setTimeout(() => tagGroup.classList.remove('shake'), 500);
+        }
+        realInput.value = "";
+    };
+
+    realInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            if (realInput.value) addTag(realInput.value);
+        } else if (e.key === 'Backspace' && realInput.value === '' && tags.length > 0) {
+            const lastTagEl = tagInputContainer.querySelector('.tag-item:last-of-type');
+            lastTagEl?.querySelector('.remove-tag-btn')?.click();
+        }
+    });
+
+    realInput.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text');
+        pasteData.split(',').forEach(tag => addTag(tag));
+    });
+    
+    tagInputContainer.addEventListener('click', () => realInput.focus());
+
+    // Thêm class 'focused' cho label nổi
+    realInput.addEventListener('focus', () => tagGroup.classList.add('focused'));
+    realInput.addEventListener('blur', () => tagGroup.classList.remove('focused'));
+
+    // Tải các tag đã có khi vào trang edit
+    if (hiddenInput.value) {
+        hiddenInput.value.split(',').map(t => t.trim()).filter(Boolean).forEach(addTag);
     }
-    // --- END TAG INPUT V3 ---
+    checkFilledState(); // Kiểm tra trạng thái ban đầu
+}
+// --- END TAG INPUT V4 ---
 
     console.log(`Manage Lesson V3 Script Initialized. Mode: ${mode}. Multi-choice quiz enabled.`);
 

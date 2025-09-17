@@ -153,21 +153,20 @@
 
                         <!-- views/ManageLesson.ejs (bên trong .form-grid của Step 1) -->
 
-                        <!-- THAY THẾ HOÀN TOÀN INPUT TAGS CŨ BẰNG KHỐI NÀY -->
-                        <div class="form-group full-width">
-                            <label for="tags" class="form-label-v2 static">
-                                <i class="fas fa-tags"></i> Tags (nhấn Enter hoặc dấu phẩy để thêm)
-                            </label>
-                            <!-- Container sẽ chứa các tag pills và ô input thật -->
-                            <div id="tag-input-container" class="tag-input-container">
-                                <!-- Các tag pills sẽ được JS chèn vào đây -->
-                                <input type="text" id="tag-input-field" class="tag-input-field" placeholder="Thêm tag...">
-                            </div>
-                            <!-- Input ẩn này sẽ gửi dữ liệu cuối cùng lên server -->
-                            <input type="hidden" name="tags" id="hidden-tags-input" value="<%= (lesson && lesson.tags) ? lesson.tags.join(', ') : '' %>">
-                        <!-- KẾT THÚC THAY THẾ -->
-
-                    </div> <%# End form-grid %>
+                     <div class="input-field-group fancy-input full-width tag-input-group">
+                        <i class="fas fa-tags input-icon"></i>
+                        <!-- Container chứa các tag pill và ô input thật sự -->
+                        <div id="tag-input-container" class="tag-input-container">
+                            <!-- JS sẽ chèn các tag pill vào đây -->
+                            <input type="text" id="tag-input-field" class="tag-input-field" placeholder=" ">
+                        </div>
+                        <!-- Label nổi, nhất quán với các trường khác -->
+                        <label for="tag-input-field" class="form-label-v2">Tags (nhấn Enter hoặc dấu phẩy)</label>
+                        <!-- Đường gạch chân hiệu ứng focus -->
+                        <div class="input-focus-line"></div>
+                        <!-- Input ẩn này mới thực sự gửi dữ liệu đi -->
+                        <input type="hidden" name="tags" id="hidden-tags-input" value="<%= (lesson && lesson.tags) ? lesson.tags.join(', ') : '' %>">
+                    </div>
 
                     <%# Lesson Title Input %>
                     <div class="input-field-group fancy-input">

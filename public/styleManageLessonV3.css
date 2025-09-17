@@ -1633,70 +1633,104 @@ input:invalid ~ .input-icon,
 }
 /* Add more utilities as needed */
 
-/* --- Artistic Tag Input --- */
-.tag-input-container {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 15px;
-  background-color: rgba(var(--artistic-bg-dark-rgb), 0.8);
-  border: 1px solid var(--artistic-border-color);
-  border-radius: var(--border-radius-medium);
-  transition: all 0.3s ease;
-  cursor: text; /* Biến con trỏ thành dạng text khi di vào container */
-}
-.tag-input-container:focus-within {
-  border-color: var(--artistic-border-color-focus);
-  box-shadow: 0 0 0 3px rgba(var(--artistic-primary-rgb), 0.15);
+
+/* --- Artistic Tag Input V4 --- */
+.tag-input-group {
+    position: relative;
+    margin-bottom: 30px; /* Duy trì khoảng cách nhất quán */
 }
 
+/* Container chính bao bọc các tag và ô input */
+.tag-input-group .tag-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 50px; /* Chiều cao tối thiểu, bằng các input khác */
+    padding: 12px 15px 8px 50px; /* Căn lề cho icon và tag pills */
+    cursor: text;
+    border-bottom: 1px solid var(--artistic-border-color); /* Giống các input khác */
+    transition: border-color 0.3s ease;
+}
+
+/* Ô input thật, ẩn đi các đường viền */
+.tag-input-group .tag-input-field {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--artistic-text-light);
+    font-size: 1rem;
+    min-width: 120px;
+    padding: 5px 0;
+}
+.tag-input-group .tag-input-field::placeholder {
+    color: transparent; /* Ẩn placeholder để dùng label nổi */
+}
+
+/* Kiểu dáng của từng "viên" tag */
 .tag-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, var(--artistic-primary), var(--artistic-secondary));
-  color: white;
-  padding: 5px 10px;
-  border-radius: var(--border-radius-pill);
-  font-size: 0.85rem;
-  font-weight: 500;
-  animation: popIn 0.3s ease forwards;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--artistic-primary);
+    color: white;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-pill);
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transform: scale(0);
+    opacity: 0;
+    animation: tagPopIn 0.3s var(--transition-snap) forwards;
 }
-@keyframes popIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+@keyframes tagPopIn {
+    to { transform: scale(1); opacity: 1; }
 }
 
+/* Hiệu ứng rung lắc khi nhập tag trùng */
+.tag-input-group.shake {
+    animation: shakeHorizontal 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shakeHorizontal {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Nút xóa tag */
 .remove-tag-btn {
-  background: rgba(0,0,0,0.2);
-  border: none;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+    background: none;
+    border: none;
+    color: white;
+    opacity: 0.8;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .remove-tag-btn:hover {
-  background: rgba(0,0,0,0.4);
-  transform: scale(1.1);
+    opacity: 1;
+    transform: scale(1.2) rotate(90deg);
 }
 
-.tag-input-field {
-  flex-grow: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--artistic-text-light);
-  font-size: 1rem;
-  min-width: 150px; /* Đảm bảo ô input không quá nhỏ */
-  padding: 5px 0;
+/* Logic cho label nổi */
+.tag-input-group:focus-within .form-label-v2,
+.tag-input-group.filled .form-label-v2 {
+    transform: translateY(-24px) translateX(-50px) scale(0.8);
+    color: var(--artistic-primary-light);
+}
+
+/* Hiệu ứng focus cho cả group */
+.tag-input-group:focus-within .input-focus-line {
+    transform: scaleX(1);
+}
+.tag-input-group:focus-within .input-icon {
+    color: var(--artistic-primary);
+    opacity: 1;
 }
 
 /* --- Responsive Adjustments --- */
