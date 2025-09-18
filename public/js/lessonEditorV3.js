@@ -642,125 +642,58 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-
     /**
      * Navigates to the specified step number with animation.
      * @param {number} targetStepNum The step number to navigate to (1-based).
      */
     function goToStep(targetStepNum) {
-        if (isAnimating) { console.warn("Animation in progress, delaying step change."); return; }
+        if (isAnimating || currentStep === targetStepNum) return;
 
-        const currentStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.classList.contains('active')));
-        const targetStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.dataset.stepContent == targetStepNum)); // Use == for type coercion flexibility
-        const wrapper = /** @type {HTMLElement | null} */ (document.querySelector('.form-steps-wrapper'));
+        const currentStepElement = steps[currentStep - 1];
+        const targetStepElement = steps[targetStepNum - 1];
+        const wrapper = document.querySelector('.form-steps-wrapper');
 
-        if (!targetStepElement || !wrapper || targetStepElement.classList.contains('active')) {
-            console.warn(`goToStep(${targetStepNum}) - Target invalid, already active, or wrapper not found.`);
-            return;
-        }
+        if (!targetStepElement || !wrapper) return;
+        
+        console.log(`Navigating from step ${currentStep} to ${targetStepNum}`);
+        isAnimating = true;
 
-        const currentStepNum = currentStepElement ? parseInt(currentStepElement.dataset.stepContent || '0', 10) : 0;
-        console.log(`Navigating from step ${currentStepNum} to ${targetStepNum}`);
-        isAnimating = true; // Lock animation
-
-        // --- Prepare for Step Change ---
         // Populate review data if moving to step 3
         if (targetStepNum === 3) {
             populateReviewData();
         }
-        // Ensure data is parsed/ready if moving TO step 2 (usually handled by initial load or type change)
-        // if (targetStepNum === 2) { /* Data should already be parsed */ }
 
-
-        // --- Height Calculation ---
-        let targetHeight = 0;
-        // Temporarily modify target styles to measure its natural height
-        const originalStyles = {
-            position: targetStepElement.style.position,
-            display: targetStepElement.style.display,
-            visibility: targetStepElement.style.visibility,
-            opacity: targetStepElement.style.opacity
-        };
-        gsap.set(targetStepElement, {
-            position: 'relative', // Allow natural height calculation
-            display: 'block',
-            visibility: 'hidden', // Keep hidden but occupy space
-            opacity: 0
-        });
-        targetHeight = targetStepElement.scrollHeight;
-        // Restore original styles immediately before animation starts
-        gsap.set(targetStepElement, {
-            position: originalStyles.position || 'absolute', // Default back to absolute for transitions
-            display: originalStyles.display || 'none',
-            visibility: originalStyles.visibility || 'hidden',
-            opacity: originalStyles.opacity || '0'
-        });
-        console.log(`Target step ${targetStepNum} calculated height: ${targetHeight}px`);
-
-
-        // --- Animation Logic ---
-        if (prefersReducedMotion) {
-            // Simple show/hide, no animation
-            steps.forEach(step => {
-                 step.classList.remove('active');
-                 gsap.set(step, { display: 'none', opacity: 0, position: 'absolute' });
-            });
-            targetStepElement.classList.add('active');
-            gsap.set(targetStepElement, { display: 'block', opacity: 1, position: 'relative'});
-            gsap.set(wrapper, { height: targetHeight > 0 ? `${targetHeight}px` : 'auto' });
-            // Set wrapper height back to auto after render to allow dynamic content changes later
-             requestAnimationFrame(() => {
-                 requestAnimationFrame(() => {
-                     if(targetStepElement.classList.contains('active')) gsap.set(wrapper, { height: 'auto' });
-                 });
-             });
-             isAnimating = false; // Unlock immediately
-
-        } else {
-            // GSAP Timeline animation
-            const tl = gsap.timeline({
-                defaults: { duration: 0.5, ease: 'power2.inOut' },
-                onComplete: () => {
-                    // Ensure correct final state
-                    steps.forEach(step => {
-                        const isActive = step === targetStepElement;
-                        step.classList.toggle('active', isActive);
-                        // Use set instead of to for instant final state
-                        gsap.set(step, {
-                            position: isActive ? 'relative' : 'absolute',
-                            display: isActive ? 'block' : 'none',
-                            autoAlpha: isActive ? 1 : 0 // Handles visibility and opacity
-                        });
-                    });
-                    // Set wrapper height to auto AFTER animation
-                    gsap.set(wrapper, { height: 'auto' });
-                    console.log(`Step transition complete. Wrapper height set to auto. Active step: ${targetStepElement.dataset.stepContent}`);
-                    // Refresh ScrollTrigger if layout changed significantly and it's loaded
-                    if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
-                    isAnimating = false; // Unlock animation state
-                }
-            });
-
-            const direction = targetStepNum > currentStepNum ? 1 : -1; // 1 for next, -1 for back
-
-            // 1. Animate wrapper height
-            // Start immediately, use 'auto' if targetHeight is 0 or invalid
-            tl.to(wrapper, { height: targetHeight > 0 ? targetHeight : 'auto' }, 0);
-
-            // 2. Animate out current step
-            if (currentStepElement) {
-                tl.to(currentStepElement, { autoAlpha: 0, x: -50 * direction }, 0); // Fade and slide out
+        // --- Animation Logic using GSAP Timeline ---
+        const tl = gsap.timeline({
+            onComplete: () => {
+                isAnimating = false;
+                // Set final state reliably
+                gsap.set(currentStepElement, { display: 'none' });
+                gsap.set(targetStepElement, { position: 'relative' });
+                gsap.set(wrapper, { height: 'auto' }); // Allow dynamic height after animation
             }
+        });
 
-            // 3. Animate in target step
-            // Set initial state (off-screen, invisible, absolute position)
-            gsap.set(targetStepElement, { x: 50 * direction, autoAlpha: 0, position: 'absolute', display: 'block' });
-            // Add active class slightly before 'in' animation starts visually
-            tl.call(() => targetStepElement.classList.add('active'), null, ">-0.3");
-            // Animate to final position (visible, centered)
-            tl.to(targetStepElement, { autoAlpha: 1, x: 0 }, "<"); // Start slightly before outgoing finishes
-        }
+        // 1. Calculate heights
+        const currentHeight = currentStepElement.offsetHeight;
+        gsap.set(targetStepElement, { display: 'block', position: 'absolute', top: 0, left: 0, opacity: 0 }); // Temporarily show to measure
+        const targetHeight = targetStepElement.offsetHeight;
+        gsap.set(targetStepElement, { display: 'none', position: 'absolute' }); // Hide it again
 
+        // 2. Animate wrapper height
+        tl.to(wrapper, { height: targetHeight, duration: 0.4, ease: 'power2.inOut' });
+
+        // 3. Animate steps
+        const direction = targetStepNum > currentStep ? 1 : -1;
+        tl.to(currentStepElement, { autoAlpha: 0, x: -30 * direction, duration: 0.3, ease: 'power2.in' }, 0);
+        
+        tl.set(targetStepElement, { display: 'block', x: 30 * direction, autoAlpha: 0 });
+        tl.to(targetStepElement, { autoAlpha: 1, x: 0, duration: 0.3, ease: 'power2.out' }, ">-0.1");
+
+        // 4. Update classes
+        currentStepElement.classList.remove('active');
+        targetStepElement.classList.add('active');
+        
         currentStep = targetStepNum;
         updateStepIndicator(currentStep);
     }
@@ -2212,14 +2145,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!progressLoaded) {
         console.log(`Initializing state for mode: ${mode}. Progress loaded: ${progressLoaded}`);
         const initialType = typeSelectHidden?.value || 'markdown'; // Get type set by EJS or default
-
-        editorPanels.forEach(panel => {
-            if (panel.dataset.editorType === initialType) {
-                gsap.set(panel, { display: 'block', autoAlpha: 1 });
-            } else {
-                gsap.set(panel, { display: 'none', autoAlpha: 0 });
-            }
-        });
 
         // --- Edit Mode: Parse initial data provided by EJS ---
         if (mode === 'edit') {
