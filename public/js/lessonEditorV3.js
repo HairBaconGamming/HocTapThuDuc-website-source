@@ -2213,6 +2213,14 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`Initializing state for mode: ${mode}. Progress loaded: ${progressLoaded}`);
         const initialType = typeSelectHidden?.value || 'markdown'; // Get type set by EJS or default
 
+        editorPanels.forEach(panel => {
+            if (panel.dataset.editorType === initialType) {
+                gsap.set(panel, { display: 'block', autoAlpha: 1 });
+            } else {
+                gsap.set(panel, { display: 'none', autoAlpha: 0 });
+            }
+        });
+
         // --- Edit Mode: Parse initial data provided by EJS ---
         if (mode === 'edit') {
             console.log("Edit mode: Parsing initial data from EJS inputs...");
