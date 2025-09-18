@@ -8,7 +8,7 @@ const LessonSchema = new mongoose.Schema({
   category: { 
     type: String, 
     required: true, 
-    enum: ['grammar', 'vocabulary', 'exercise', 'theory'] 
+    enum: ['grammar', 'vocabulary', 'exercise', 'theory', 'reading', 'listening', 'other'] 
   },
   type: { 
     type: String, 
