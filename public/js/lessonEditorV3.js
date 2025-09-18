@@ -642,7 +642,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    /**
+    
+       /**
      * Navigates to the specified step number with animation.
      * @param {number} targetStepNum The step number to navigate to (1-based).
      */
@@ -653,47 +654,61 @@ document.addEventListener("DOMContentLoaded", () => {
         const targetStepElement = steps[targetStepNum - 1];
         const wrapper = document.querySelector('.form-steps-wrapper');
 
-        if (!targetStepElement || !wrapper) return;
+        if (!currentStepElement || !targetStepElement || !wrapper) {
+            console.error("Step navigation failed: Missing critical elements.");
+            return;
+        }
         
         console.log(`Navigating from step ${currentStep} to ${targetStepNum}`);
         isAnimating = true;
 
-        // Populate review data if moving to step 3
         if (targetStepNum === 3) {
             populateReviewData();
         }
 
-        // --- Animation Logic using GSAP Timeline ---
+        const direction = targetStepNum > currentStep ? 1 : -1;
+
+        // Animate using a GSAP timeline for better control
         const tl = gsap.timeline({
             onComplete: () => {
                 isAnimating = false;
-                // Set final state reliably
-                gsap.set(currentStepElement, { display: 'none' });
+                // Final state cleanup
+                gsap.set(currentStepElement, { position: 'absolute', display: 'none' });
                 gsap.set(targetStepElement, { position: 'relative' });
-                gsap.set(wrapper, { height: 'auto' }); // Allow dynamic height after animation
+                gsap.set(wrapper, { height: 'auto' });
             }
         });
 
-        // 1. Calculate heights
-        const currentHeight = currentStepElement.offsetHeight;
-        gsap.set(targetStepElement, { display: 'block', position: 'absolute', top: 0, left: 0, opacity: 0 }); // Temporarily show to measure
+        // 1. Set target to be absolute for height calculation without affecting layout
+        gsap.set(targetStepElement, {
+            position: 'absolute',
+            display: 'block',
+            autoAlpha: 0, // Keep it invisible
+            width: currentStepElement.offsetWidth // Match current width
+        });
         const targetHeight = targetStepElement.offsetHeight;
-        gsap.set(targetStepElement, { display: 'none', position: 'absolute' }); // Hide it again
 
         // 2. Animate wrapper height
         tl.to(wrapper, { height: targetHeight, duration: 0.4, ease: 'power2.inOut' });
 
-        // 3. Animate steps
-        const direction = targetStepNum > currentStep ? 1 : -1;
-        tl.to(currentStepElement, { autoAlpha: 0, x: -30 * direction, duration: 0.3, ease: 'power2.in' }, 0);
-        
-        tl.set(targetStepElement, { display: 'block', x: 30 * direction, autoAlpha: 0 });
-        tl.to(targetStepElement, { autoAlpha: 1, x: 0, duration: 0.3, ease: 'power2.out' }, ">-0.1");
+        // 3. Animate current step out
+        tl.to(currentStepElement, {
+            autoAlpha: 0,
+            x: -40 * direction,
+            duration: 0.35,
+            ease: 'power2.in'
+        }, 0); // Start at the beginning of the timeline
 
-        // 4. Update classes
+        // 4. Animate new step in
+        tl.fromTo(targetStepElement, 
+            { x: 40 * direction, autoAlpha: 0 },
+            { autoAlpha: 1, x: 0, duration: 0.35, ease: 'power2.out' },
+            '>-0.1' // Overlap slightly with the end of the previous animation
+        );
+
+        // 5. Update classes and state
         currentStepElement.classList.remove('active');
         targetStepElement.classList.add('active');
-        
         currentStep = targetStepNum;
         updateStepIndicator(currentStep);
     }
