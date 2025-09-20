@@ -297,390 +297,363 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Quiz Specific Processing (MULTI-CHOICE AWARE) ---
+    // --- QUIZ LOGIC WITH PAGINATION (MULTI-CHOICE SUPPORT) ---
     if (lessonType === 'quiz' && contentWrapper) {
-        let quizDataParsed = [];
-        try {
-            // 1. Get the outer string (which contains the JSON string inside)
-            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
-
-            // 2. Parse the outer string to get the *inner* JSON string
-            // Note: JSON.stringify already handles escaping within the string literal
-            const innerJsonString = JSON.parse(outerString);
-
-            // 3. Parse the inner JSON string to get the actual data
-            // Add a check to ensure innerJsonString is actually a string before parsing
-            if (typeof innerJsonString === 'string') {
-                 quizDataParsed = JSON.parse(innerJsonString);
-            } else {
-                 // If the outer parse already resulted in an object (meaning server sent correct data)
-                 console.warn("Quiz data might not have been double-stringified, using directly.");
-                 quizDataParsed = innerJsonString || [];
-            }
-
-
-            // Validate that the result is an array
-            if (!Array.isArray(quizDataParsed)) {
-                console.error("Parsed quiz data is not an array");
-                throw new Error("Parsed data is not an array");
-            }
-            console.log("Successfully parsed quiz data");
-
-        } catch (e) {
-            console.error("Error parsing quiz data (potentially double-stringified):", e);
-            quizDataParsed = []; // Reset on error
-            const quizContainer = document.getElementById('quizContainerV2');
-            if (quizContainer) {
-                 quizContainer.insertAdjacentHTML('beforebegin',
-                    '<p class="placeholder-text video-error">Lỗi tải dữ liệu trắc nghiệm. Dữ liệu có thể không đúng định dạng.</p>');
-            }
-        }
-        const quizForm = document.getElementById('quizFormV2');
+        const ITEMS_PER_PAGE = 5; // Number of questions per page
         const quizContainer = document.getElementById('quizContainerV2');
+        const paginationContainer = document.getElementById('quizPagination');
+        const quizForm = document.getElementById('quizFormV2');
         const resultDiv = document.getElementById('quizResultV2');
         const resetBtn = document.getElementById("resetQuizBtnV2");
         const randomQuestionsToggle = /** @type {HTMLInputElement | null} */ (document.getElementById("toggleRandomQuestions"));
         const randomChoicesToggle = /** @type {HTMLInputElement | null} */ (document.getElementById("toggleRandomChoices"));
-        let originalQuestionElements = quizContainer ? Array.from(quizContainer.children) : [];
+        let masterQuizData = [];
+        let workingQuizData = [];
+        let currentPage = 1;
 
-        function shuffleArray(array) { /* ... shuffle logic ... */ for(let i=array.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [array[i],array[j]]=[array[j],array[i]]; } return array; }
-
-        function loadQuizProgress() {
-             const savedQuiz = localStorage.getItem('quizProgress_' + lessonId);
-             if (savedQuiz && quizContainer) {
-                 try {
-                     const savedAnswers = JSON.parse(savedQuiz);
-                     quizContainer.querySelectorAll('.quiz-question-card').forEach((qElem) => {
-                         const originalIndex = parseInt(qElem.dataset.originalIndex ?? '-1', 10);
-                         const inputType = qElem.dataset.inputType; // Get input type
-
-                         if (!isNaN(originalIndex) && savedAnswers[originalIndex] !== null && savedAnswers[originalIndex] !== undefined) {
-                             const answersForQuestion = savedAnswers[originalIndex];
-
-                             if (inputType === 'radio') {
-                                 const savedOptionIndex = answersForQuestion; // It's a single index
-                                 const selectedOption = qElem.querySelector(`.quiz-option-v2[data-option-index="${savedOptionIndex}"]`);
-                                 const radio = selectedOption?.querySelector('input[type="radio"]');
-                                 if (radio) { radio.checked = true; selectedOption?.classList.add('selected'); }
-                             } else if (inputType === 'checkbox') {
-                                 if (Array.isArray(answersForQuestion)) { // Expecting an array of indices
-                                     answersForQuestion.forEach(savedOptionIndex => {
-                                         const selectedOption = qElem.querySelector(`.quiz-option-v2[data-option-index="${savedOptionIndex}"]`);
-                                         const checkbox = selectedOption?.querySelector('input[type="checkbox"]');
-                                         if (checkbox) { checkbox.checked = true; selectedOption?.classList.add('selected'); /* Optionally add visual cue */}
-                                     });
-                                 }
-                             }
-                         }
-                     });
-                     console.log("Quiz progress loaded.");
-                 } catch (e) { console.error("Error loading quiz progress:", e); }
-             }
-         }
-
-        function saveQuizProgress() {
-            const answersByOriginalIndex = [];
-             if (quizContainer) {
-                 quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
-                     const originalIndex = parseInt(qElem.dataset.originalIndex ?? '-1', 10);
-                     const inputType = qElem.dataset.inputType;
-
-                     if (originalIndex > -1) {
-                         if (inputType === 'radio') {
-                             const selectedRadio = qElem.querySelector('input[type="radio"]:checked');
-                             answersByOriginalIndex[originalIndex] = selectedRadio ? selectedRadio.value : null; // Store index
-                         } else if (inputType === 'checkbox') {
-                             const checkedBoxes = qElem.querySelectorAll('input[type="checkbox"]:checked');
-                             const checkedIndices = Array.from(checkedBoxes).map(cb => cb.value); // Store array of indices
-                             answersByOriginalIndex[originalIndex] = checkedIndices;
-                         }
-                     }
-                 });
-                 try { localStorage.setItem('quizProgress_' + lessonId, JSON.stringify(answersByOriginalIndex)); } catch(e) { console.error("Error saving quiz progress:", e); }
-             }
-         }
-
-        function resetQuestionElementState(questionElem) { /* ... same as before ... */
-              if (!questionElem) return;
-              questionElem.querySelectorAll('.quiz-option-v2').forEach(opt => { opt.classList.remove('selected', 'correct', 'incorrect', 'correct-answer-reveal'); opt.style.pointerEvents = 'auto'; });
-              questionElem.querySelectorAll('.quiz-input').forEach(input => { input.checked = false; }); // Target generic class
-              const feedbackDiv = questionElem.querySelector('.question-feedback'); if (feedbackDiv) feedbackDiv.innerHTML = '';
+        // Parse quiz data (double-stringify safe)
+        try {
+            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
+            const innerJsonString = JSON.parse(outerString);
+            if (typeof innerJsonString === 'string') {
+                masterQuizData = JSON.parse(innerJsonString);
+            } else {
+                masterQuizData = innerJsonString || [];
+            }
+            if (!Array.isArray(masterQuizData)) masterQuizData = [];
+        } catch (e) {
+            console.error("Error parsing quiz data (potentially double-stringified):", e);
+            if (quizContainer) {
+                quizContainer.innerHTML = '<p class="placeholder-text video-error">Lỗi tải dữ liệu trắc nghiệm. Dữ liệu có thể không đúng định dạng.</p>';
+            }
+            return;
         }
 
-        function renderQuiz(randomizeQuestions, randomizeChoices) { /* ... same as before ... */
-            if (!quizContainer || !Array.isArray(quizDataParsed)) return;
-            let questionsToRenderElements = originalQuestionElements.slice();
-            if (randomizeQuestions) shuffleArray(questionsToRenderElements);
+        // Utility: shuffle array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Create question card DOM (multi-choice aware)
+        function createQuestionCard(q, originalIndex) {
+            const card = document.createElement('div');
+            card.className = 'quiz-question-card';
+            card.dataset.originalIndex = originalIndex;
+            card.dataset.questionId = q.id;
+
+            // Determine input type
+            const correctCount = (q.options || []).filter(opt => opt.isCorrect === true).length;
+            const inputType = correctCount > 1 ? 'checkbox' : 'radio';
+            card.dataset.inputType = inputType;
+
+            let optionsHtml = '';
+            (q.options || []).forEach((option, oIdx) => {
+                const optionId = `q${originalIndex}o${oIdx}_${q.id}`;
+                optionsHtml += `
+                    <div class="quiz-option-v2" data-option-index="${oIdx}" data-is-correct="${option.isCorrect}">
+                        <input type="${inputType}" name="question-${originalIndex}-${inputType}" id="${optionId}" value="${oIdx}" class="visually-hidden quiz-input">
+                        <label for="${optionId}" class="option-label">
+                            <span class="option-indicator ${inputType}"></span>
+                            <span class="option-text prose-styling">${typeof marked !== 'undefined' ? marked.parseInline(option.text || "") : (option.text || "")}</span>
+                            <span class="option-feedback-icon"></span>
+                        </label>
+                    </div>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="question-header"><div class="question-number">Câu ${originalIndex + 1}</div></div>
+                <div class="question-content-markdown prose-styling">${typeof marked !== 'undefined' ? marked.parse(q.question || "") : (q.question || "")}</div>
+                <div class="quiz-options-list" role="${inputType === 'radio' ? 'radiogroup' : 'group'}" aria-labelledby="q${originalIndex}-label">
+                    <span id="q${originalIndex}-label" class="sr-only">Các lựa chọn cho câu ${originalIndex + 1}</span>
+                    ${optionsHtml}
+                </div>
+                <div class="question-feedback"></div>
+            `;
+            return card;
+        }
+
+        // Render current page
+        function renderCurrentPage() {
+            if (!quizContainer) return;
             quizContainer.innerHTML = '';
-            questionsToRenderElements.forEach(qElementTemplate => { const newQuestionElem = qElementTemplate.cloneNode(true); resetQuestionElementState(newQuestionElem); const optionsContainer = newQuestionElem.querySelector(".quiz-options-list"); if (optionsContainer && randomizeChoices) { let options = Array.from(optionsContainer.children); shuffleArray(options); optionsContainer.innerHTML = ''; options.forEach(opt => optionsContainer.appendChild(opt)); } quizContainer.appendChild(newQuestionElem); });
-            attachOptionListeners(); if (resultDiv) resultDiv.innerHTML = ''; if (quizForm) { quizForm.classList.remove('submitted'); const submitBtn = quizForm.querySelector('.submit-quiz-btn'); if (submitBtn) submitBtn.disabled = false; }
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageItems = workingQuizData.slice(startIndex, endIndex);
+
+            pageItems.forEach(q => {
+                const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
+                const card = createQuestionCard(q, originalIndex);
+                quizContainer.appendChild(card);
+            });
+
+            attachOptionListeners();
+            loadQuizProgress();
+            if (typeof gsap !== 'undefined') {
+                gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
+            }
         }
 
+        // Render pagination controls
+        function renderPagination() {
+            if (!paginationContainer) return;
+            const totalItems = workingQuizData.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            paginationContainer.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            function createBtn(content, page) {
+                const btn = document.createElement('button');
+                btn.innerHTML = content;
+                btn.className = 'pagination-btn';
+                btn.disabled = page < 1 || page > totalPages;
+                btn.addEventListener('click', () => {
+                    currentPage = page;
+                    renderCurrentPage();
+                    renderPagination();
+                });
+                return btn;
+            }
+
+            paginationContainer.appendChild(createBtn('<i class="fas fa-chevron-left"></i>', currentPage - 1));
+            const pageInfo = document.createElement('span');
+            pageInfo.className = 'pagination-info';
+            pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
+            paginationContainer.appendChild(pageInfo);
+            paginationContainer.appendChild(createBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1));
+        }
+
+        // Attach listeners for options (multi-choice aware)
         function attachOptionListeners() {
             quizContainer?.querySelectorAll('.quiz-option-v2').forEach(optionElem => {
-                 optionElem.replaceWith(optionElem.cloneNode(true)); // Remove old listeners
+                optionElem.replaceWith(optionElem.cloneNode(true)); // Remove old listeners
             });
             quizContainer?.querySelectorAll('.quiz-option-v2').forEach(optionElem => {
-                const input = optionElem.querySelector('.quiz-input'); // Use generic class
+                const input = optionElem.querySelector('.quiz-input');
                 if (input?.type === 'radio') {
-                     // Only attach the visual selection logic to radio buttons
-                     optionElem.addEventListener('click', handleRadioOptionClick);
+                    optionElem.addEventListener('click', function (event) {
+                        const wrapperDiv = event.currentTarget;
+                        const radioInput = wrapperDiv.querySelector('input[type="radio"]');
+                        if (radioInput && event.target !== radioInput && !event.target.closest('label')) { radioInput.checked = true; }
+                        const parentList = wrapperDiv.closest('.quiz-options-list');
+                        parentList.querySelectorAll('.quiz-option-v2').forEach(opt => opt.classList.remove('selected'));
+                        wrapperDiv.classList.add('selected');
+                        saveQuizProgress();
+                    });
                 } else if (input?.type === 'checkbox') {
-                     // Checkbox clicks are handled natively, just save progress
-                     optionElem.addEventListener('change', handleCheckboxChange); // Use change for checkboxes
+                    optionElem.addEventListener('change', function (event) {
+                        saveQuizProgress();
+                        const wrapperDiv = event.currentTarget.closest('.quiz-option-v2');
+                        const checkbox = event.currentTarget.querySelector('input[type="checkbox"]');
+                        if (wrapperDiv && checkbox) {
+                            wrapperDiv.classList.toggle('selected', checkbox.checked);
+                        }
+                    });
                 }
             });
         }
-        function handleRadioOptionClick(event) { // Renamed for clarity
-            const wrapperDiv = event.currentTarget;
-            const radioInput = wrapperDiv.querySelector('input[type="radio"]');
-            if (radioInput && event.target !== radioInput && !event.target.closest('label')) { radioInput.checked = true; }
-            const parentList = wrapperDiv.closest('.quiz-options-list'); if (!parentList) return;
-            parentList.querySelectorAll('.quiz-option-v2').forEach(opt => opt.classList.remove('selected'));
-            wrapperDiv.classList.add('selected');
-            saveQuizProgress();
-        }
-        function handleCheckboxChange(event) {
-            // Save progress whenever any checkbox changes state
-            saveQuizProgress();
-             // Optional: add/remove 'selected' class visually for checkboxes too
-            const wrapperDiv = event.currentTarget.closest('.quiz-option-v2');
-            const checkbox = event.currentTarget.querySelector('input[type="checkbox"]');
-             if (wrapperDiv && checkbox) {
-                 wrapperDiv.classList.toggle('selected', checkbox.checked);
-             }
-        }
 
-
-        function resetAndRenderQuiz() { /* ... same as before ... */
-            try { localStorage.removeItem('quizProgress_' + lessonId); } catch (e) { console.error("Error removing quiz progress:", e); }
-            const randomizeQ = randomQuestionsToggle?.checked ?? false; const randomizeC = randomChoicesToggle?.checked ?? false;
-            if(quizContainer) quizContainer.innerHTML = '';
-            let elementsToRender = randomizeQ ? shuffleArray(originalQuestionElements.slice()) : originalQuestionElements.slice();
-            elementsToRender.forEach(templateElement => { const clonedElement = templateElement.cloneNode(true); resetQuestionElementState(clonedElement); const optionsContainer = clonedElement.querySelector(".quiz-options-list"); if (optionsContainer && randomizeC) { let options = Array.from(optionsContainer.children); shuffleArray(options); optionsContainer.innerHTML = ""; options.forEach(opt => optionsContainer.appendChild(opt)); } quizContainer.appendChild(clonedElement); });
-            attachOptionListeners(); if (resultDiv) resultDiv.innerHTML = ''; if(quizForm){ quizForm.classList.remove('submitted'); const submitBtn = quizForm.querySelector('.submit-quiz-btn'); if(submitBtn) submitBtn.disabled = false; }
-            loadQuizProgress(); quizContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' }); if(completeBtn) completeBtn.disabled = true; if(scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
+        // Save quiz progress (multi-choice aware)
+        function saveQuizProgress() {
+            const answers = {};
+            quizContainer?.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                const originalIndex = qElem.dataset.originalIndex;
+                const inputType = qElem.dataset.inputType;
+                if (inputType === 'radio') {
+                    const selectedRadio = qElem.querySelector('input[type="radio"]:checked');
+                    answers[originalIndex] = selectedRadio ? selectedRadio.value : null;
+                } else if (inputType === 'checkbox') {
+                    const checkedBoxes = qElem.querySelectorAll('input[type="checkbox"]:checked');
+                    answers[originalIndex] = Array.from(checkedBoxes).map(cb => cb.value);
+                }
+            });
+            // Merge with existing saved answers
+            const savedState = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
+            const newState = { ...savedState, ...answers };
+            localStorage.setItem('quizProgress_' + lessonId, JSON.stringify(newState));
         }
 
-        resetBtn?.addEventListener("click", resetAndRenderQuiz);
-        randomQuestionsToggle?.addEventListener("change", resetAndRenderQuiz);
-        randomChoicesToggle?.addEventListener("change", resetAndRenderQuiz);
+        // Load quiz progress (multi-choice aware)
+        function loadQuizProgress() {
+            const savedAnswers = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
+            quizContainer?.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                const originalIndex = qElem.dataset.originalIndex;
+                const inputType = qElem.dataset.inputType;
+                if (savedAnswers[originalIndex] !== undefined && inputType === 'radio') {
+                    const radio = qElem.querySelector(`input[value="${savedAnswers[originalIndex]}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        radio.closest('.quiz-option-v2').classList.add('selected');
+                    }
+                } else if (savedAnswers[originalIndex] !== undefined && inputType === 'checkbox') {
+                    const checkedArr = Array.isArray(savedAnswers[originalIndex]) ? savedAnswers[originalIndex] : [];
+                    checkedArr.forEach(idx => {
+                        const checkbox = qElem.querySelector(`input[value="${idx}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            checkbox.closest('.quiz-option-v2').classList.add('selected');
+                        }
+                    });
+                }
+            });
+        }
 
-        if(quizContainer){
-             originalQuestionElements = Array.from(quizContainer.children);
-             renderQuiz(false, false); // Calls attachOptionListeners internally
-             loadQuizProgress();
-        } else { console.error("Quiz container missing on load."); }
-
-        // --- Quiz Form Submission (MULTI-CHOICE AWARE - CORRECTED) ---
-        quizForm?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (this.classList.contains('submitted')) {
-                console.log("Quiz already submitted.");
-                return; // Prevent re-submit
+        // Reset quiz and render
+        function resetQuiz() {
+            try { localStorage.removeItem('quizProgress_' + lessonId); } catch (e) { }
+            if (resultDiv) resultDiv.innerHTML = '';
+            if (quizForm) {
+                quizForm.classList.remove('submitted');
+                const submitBtn = quizForm.querySelector('.submit-quiz-btn');
+                if (submitBtn) submitBtn.disabled = false;
             }
+            workingQuizData = randomQuestionsToggle?.checked ? shuffleArray([...masterQuizData]) : [...masterQuizData];
+            currentPage = 1;
+            renderCurrentPage();
+            renderPagination();
+            if (completeBtn) completeBtn.disabled = true;
+            if (scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
+        }
 
-            let correctQuestionsCount = 0; // Count correctly answered *questions*
-            let allQuestionsAnswered = true; // Assume true initially
-            const questionElements = quizContainer?.querySelectorAll('.quiz-question-card') ?? [];
-            const totalQuestions = questionElements.length;
+        randomQuestionsToggle?.addEventListener('change', resetQuiz);
+        randomChoicesToggle?.addEventListener('change', function () {
+            // Only reshuffle choices, not questions
+            renderCurrentPage();
+        });
+        resetBtn?.addEventListener('click', resetQuiz);
 
-            if (totalQuestions === 0) {
-                showAlert("Không có câu hỏi nào để nộp bài.", "info");
+        // Quiz form submission (multi-choice aware, paginated)
+        quizForm?.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (this.classList.contains('submitted')) return;
+            const savedAnswers = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
+            let allAnswered = true;
+            let correctCount = 0;
+            const totalQuestions = masterQuizData.length;
+
+            // Check all questions answered
+            masterQuizData.forEach((q, index) => {
+                const correctCountForQ = (q.options || []).filter(opt => opt.isCorrect === true).length;
+                const inputType = correctCountForQ > 1 ? 'checkbox' : 'radio';
+                if (inputType === 'radio') {
+                    if (savedAnswers[index] === undefined || savedAnswers[index] === null) allAnswered = false;
+                } else if (inputType === 'checkbox') {
+                    if (!Array.isArray(savedAnswers[index]) || savedAnswers[index].length === 0) allAnswered = false;
+                }
+            });
+            if (!allAnswered) {
+                showAlert('Vui lòng trả lời tất cả các câu hỏi trước khi nộp bài.', 'warning');
                 return;
             }
-            console.log(`Starting quiz submission check for ${totalQuestions} questions.`);
 
-            // --- Helper Function to Check Correctness (Consolidates Logic) ---
-            function checkQuestionCorrectness(questionElem, qData) {
-                if (!qData || !Array.isArray(qData.options)) {
-                    console.error("checkQuestionCorrectness: Invalid qData provided.", qData);
-                    return false; // Cannot determine correctness if data is bad
-                }
-                const inputType = questionElem.dataset.inputType;
-
+            // Score calculation
+            masterQuizData.forEach((q, index) => {
+                const correctIndices = (q.options || []).map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null);
+                const correctCountForQ = correctIndices.length;
+                const inputType = correctCountForQ > 1 ? 'checkbox' : 'radio';
                 if (inputType === 'radio') {
-                    const selectedRadio = questionElem.querySelector('input[type="radio"]:checked');
-                    const selectedOptionIndex = selectedRadio ? parseInt(selectedRadio.value, 10) : -1;
-                    // Correct if a radio is selected AND that option's isCorrect is true
-                    return selectedOptionIndex !== -1 && qData.options[selectedOptionIndex]?.isCorrect === true;
+                    const userAnswerIndex = parseInt(savedAnswers[index], 10);
+                    if (q.options[userAnswerIndex]?.isCorrect) correctCount++;
                 } else if (inputType === 'checkbox') {
-                    const checkedBoxes = questionElem.querySelectorAll('input[type="checkbox"]:checked');
-                    const checkedIndices = new Set(Array.from(checkedBoxes).map(cb => parseInt(cb.value, 10)));
-                    const correctIndices = new Set();
-                    qData.options.forEach((opt, idx) => { if (opt.isCorrect === true) correctIndices.add(idx); });
-
-                    // Strict Check: Correct ONLY if the set of checked indices exactly matches the set of correct indices
-                    return checkedIndices.size === correctIndices.size &&
-                           [...checkedIndices].every(idx => correctIndices.has(idx));
+                    const userAnswers = Array.isArray(savedAnswers[index]) ? savedAnswers[index].map(Number) : [];
+                    // Strict: must match all and only correct indices
+                    if (
+                        userAnswers.length === correctIndices.length &&
+                        userAnswers.every(idx => correctIndices.includes(idx)) &&
+                        correctIndices.every(idx => userAnswers.includes(idx))
+                    ) {
+                        correctCount++;
+                    }
                 }
-                console.warn(`checkQuestionCorrectness: Unknown input type "${inputType}"`);
-                return false; // Default for unknown type
-            }
-            // --- End Helper Function ---
+            });
 
-
-            // --- Phase 1: Validate Answers and Calculate Score ---
-            console.log("Phase 1: Validating answers and calculating score...");
-            questionElements.forEach((questionElem, index) => {
-                const originalIndex = parseInt(questionElem.dataset.originalIndex ?? '-1', 10);
-                const inputType = questionElem.dataset.inputType;
-
-                // Basic Data Sanity Check
-                if (isNaN(originalIndex) || !quizDataParsed || !quizDataParsed[originalIndex]) {
-                     console.error(`Submit Error: Invalid index (${originalIndex}) or missing data at index ${index}.`);
-                     allQuestionsAnswered = false; // Treat as unanswered if data is broken
-                     questionElem.classList.add('error-highlight'); // Maybe add an error style
-                     return; // Stop processing this question
-                }
-                const qData = quizDataParsed[originalIndex];
-
-                // Check if Answered
-                let isAnswered = false;
+            // Feedback for current page only
+            quizContainer?.querySelectorAll('.quiz-question-card').forEach(card => {
+                const originalIndex = card.dataset.originalIndex;
+                const qData = masterQuizData[originalIndex];
+                const correctIndices = (qData.options || []).map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null);
+                const inputType = card.dataset.inputType;
+                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                    const optIndex = parseInt(opt.dataset.optionIndex, 10);
+                    const isCorrect = opt.dataset.isCorrect === 'true';
+                    const inputEl = opt.querySelector('.quiz-input');
+                    const isChecked = inputEl?.checked;
+                    opt.style.pointerEvents = 'none';
+                    if (isCorrect) opt.classList.add('correct-answer-reveal');
+                    if (isChecked) opt.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (isChecked) opt.classList.add('selected');
+                });
+                // Show explanation if incorrect
+                let isCorrectOverall = false;
                 if (inputType === 'radio') {
-                    isAnswered = !!questionElem.querySelector('input[type="radio"]:checked');
+                    const userIdx = parseInt(savedAnswers[originalIndex], 10);
+                    isCorrectOverall = qData.options[userIdx]?.isCorrect === true;
                 } else if (inputType === 'checkbox') {
-                    isAnswered = !!questionElem.querySelector('input[type="checkbox"]:checked'); // Any checked counts as answered for this check
+                    const userArr = Array.isArray(savedAnswers[originalIndex]) ? savedAnswers[originalIndex].map(Number) : [];
+                    isCorrectOverall =
+                        userArr.length === correctIndices.length &&
+                        userArr.every(idx => correctIndices.includes(idx)) &&
+                        correctIndices.every(idx => userArr.includes(idx));
                 }
+                if (!isCorrectOverall && qData.explanation) {
+                    const feedbackDiv = card.querySelector('.question-feedback');
+                    if (feedbackDiv) {
+                        const sanitizedExplanation = qData.explanation.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+                        feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${sanitizedExplanation}</p>`;
+                        if (typeof gsap !== 'undefined') {
+                            gsap.from(feedbackDiv, { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power1.out' });
+                        }
+                    }
+                }
+            });
 
-                if (!isAnswered) {
-                    allQuestionsAnswered = false;
-                    questionElem.classList.add('unanswered-highlight');
-                    console.log(`Question ${index + 1} (original index ${originalIndex}) is unanswered.`);
+            // Show result
+            const scorePercentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+            if (resultDiv) {
+                resultDiv.innerHTML = '';
+                const resultContainer = document.createElement('div');
+                resultContainer.className = `quiz-final-result ${scorePercentage >= PASSING_PERCENTAGE ? 'perfect' : (scorePercentage >= 50 ? 'good' : 'bad')}`;
+                resultContainer.innerHTML = `
+                    <h4>Kết quả:</h4>
+                    <p>Bạn đã trả lời đúng <strong>${correctCount} / ${totalQuestions}</strong> câu (${scorePercentage.toFixed(0)}%).</p>
+                    ${scorePercentage >= PASSING_PERCENTAGE ? '<span class="perfect-score-msg"><i class="fas fa-star"></i> Đạt yêu cầu hoàn thành!</span>' : `<span class="fail-score-msg"><i class="fas fa-times-circle"></i> Cần đạt ${PASSING_PERCENTAGE}% để hoàn thành.</span>`}
+                    <button type="button" class="results-reset-btn">Làm lại</button>
+                `;
+                resultDiv.appendChild(resultContainer);
+
+                const resultsResetBtn = resultDiv.querySelector('.results-reset-btn');
+                if (typeof resetQuiz === 'function') {
+                    resultsResetBtn?.addEventListener('click', resetQuiz);
+                }
+                if (typeof gsap !== 'undefined') {
+                    gsap.from(resultContainer, { duration: 0.5, scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)' });
+                }
+                // Enable/Disable Complete Button based on score
+                if (scorePercentage >= PASSING_PERCENTAGE) {
+                    if (completeBtn) completeBtn.disabled = false;
+                    if (scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
+                    if (typeof gsap !== 'undefined' && completeBtn) gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' });
                 } else {
-                    questionElem.classList.remove('unanswered-highlight'); // Remove highlight if answered now
-                    // Calculate score ONLY IF answered
-                    if (checkQuestionCorrectness(questionElem, qData)) {
-                        correctQuestionsCount++;
-                        console.log(`Question ${index + 1} (original index ${originalIndex}) answered correctly.`);
-                    } else {
-                         console.log(`Question ${index + 1} (original index ${originalIndex}) answered incorrectly.`);
-                    }
+                    if (completeBtn) completeBtn.disabled = true;
+                    if (scoreRequirementMsg) scoreRequirementMsg.style.display = 'inline';
                 }
-            }); // End Phase 1 loop
-
-            // --- Stop if not all questions are answered ---
-            if (!allQuestionsAnswered) {
-                showAlert('Vui lòng trả lời tất cả câu hỏi trước khi nộp bài.', 'warning');
-                // Scroll to first unanswered question
-                const firstUnanswered = quizContainer?.querySelector('.unanswered-highlight');
-                firstUnanswered?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Optional: Remove highlights after a delay
-                setTimeout(() => { quizContainer?.querySelectorAll('.unanswered-highlight').forEach(el => el.classList.remove('unanswered-highlight')); }, 3000);
-                return; // EXIT submission
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-
-            // --- Phase 2: Show Feedback and Results (Only if all answered) ---
-            console.log("Phase 2: All questions answered. Applying feedback...");
-            this.classList.add('submitted'); // Mark form as submitted
+            // Mark as submitted
+            this.classList.add('submitted');
             const submitBtn = this.querySelector('.submit-quiz-btn');
-            if(submitBtn) submitBtn.disabled = true; // Disable submit button
-            const feedbackAnimations = [];
+            if (submitBtn) submitBtn.disabled = true;
+            // Ensure options remain disabled
+            quizContainer?.querySelectorAll('.quiz-option-v2').forEach(opt => { opt.style.pointerEvents = 'none'; });
+        });
 
-            questionElements.forEach(questionElem => {
-                 const originalIndex = parseInt(questionElem.dataset.originalIndex ?? '-1', 10);
-                 if (isNaN(originalIndex) || !quizDataParsed[originalIndex]) return; // Skip if bad data
-
-                 const qData = quizDataParsed[originalIndex];
-                 const options = questionElem.querySelectorAll('.quiz-option-v2');
-                 const feedbackDiv = questionElem.querySelector('.question-feedback');
-
-                 if(feedbackDiv) feedbackDiv.innerHTML = ''; // Clear old feedback
-
-                 // Determine overall correctness using the helper function again
-                 const isQuestionCorrectOverall = checkQuestionCorrectness(questionElem, qData);
-
-                 // Apply feedback styles to all options
-                 options.forEach(opt => {
-                     opt.style.pointerEvents = 'none'; // Disable interaction
-                     opt.classList.remove('correct', 'incorrect', 'correct-answer-reveal', 'selected'); // Clear previous states
-
-                     const optIndex = parseInt(opt.dataset.optionIndex ?? '-1', 10);
-                     if (isNaN(optIndex) || !qData.options?.[optIndex]) return; // Skip if bad option data
-
-                     const isThisOptionCorrect = qData.options[optIndex].isCorrect === true;
-                     const inputElement = opt.querySelector('.quiz-input'); // Generic class
-                     const isChecked = inputElement?.checked || false; // Is this specific option checked?
-
-                     // 1. Reveal ALL correct answers
-                     if (isThisOptionCorrect) {
-                         opt.classList.add('correct-answer-reveal');
-                     }
-
-                     // 2. Style CHECKED options based on correctness
-                     if (isChecked) {
-                         opt.classList.add(isThisOptionCorrect ? 'correct' : 'incorrect');
-                         // Animate selected/checked option
-                         if(!prefersReducedMotion) {
-                            feedbackAnimations.push(gsap.fromTo(opt, { scale: 1 }, { scale: 1.05, duration: 0.3, yoyo: true, repeat: 1, ease: 'power2.inOut' }));
-                         }
-                     }
-                     // 3. Add 'selected' class back to checked options for visual consistency
-                     if (isChecked) {
-                         opt.classList.add('selected');
-                     }
-                 });
-
-                 // Show explanation if question was answered INCORRECTLY and explanation exists
-                 if (!isQuestionCorrectOverall && qData.explanation && feedbackDiv) {
-                     const sanitizedExplanation = qData.explanation.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-                     feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${sanitizedExplanation}</p>`;
-                     if(!prefersReducedMotion){
-                         feedbackAnimations.push(gsap.from(feedbackDiv, { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power1.out' }));
-                     } else {
-                         gsap.set(feedbackDiv, {autoAlpha: 1});
-                     }
-                 }
-            }); // End Phase 2 loop
-
-            // --- Display final results after animations ---
-            Promise.all(feedbackAnimations).catch(err => console.error("Feedback animation error:", err)).finally(() => {
-                const scorePercentage = totalQuestions > 0 ? (correctQuestionsCount / totalQuestions) * 100 : 0;
-                if (resultDiv) {
-                    resultDiv.innerHTML = ''; // Clear previous
-                    const resultContainer = document.createElement('div');
-                    resultContainer.className = `quiz-final-result ${scorePercentage >= PASSING_PERCENTAGE ? 'perfect' : (scorePercentage >= 50 ? 'good' : 'bad')}`;
-                    resultContainer.innerHTML = `
-                         <h4>Kết quả:</h4>
-                         <p>Bạn đã trả lời đúng <strong>${correctQuestionsCount} / ${totalQuestions}</strong> câu (${scorePercentage.toFixed(0)}%).</p>
-                         ${scorePercentage >= PASSING_PERCENTAGE ? '<span class="perfect-score-msg"><i class="fas fa-star"></i> Đạt yêu cầu hoàn thành!</span>' : `<span class="fail-score-msg"><i class="fas fa-times-circle"></i> Cần đạt ${PASSING_PERCENTAGE}% để hoàn thành.</span>`}
-                         <button type="button" class="results-reset-btn">Làm lại</button>
-                    `;
-                    resultDiv.appendChild(resultContainer);
-
-                    const resultsResetBtn = resultDiv.querySelector('.results-reset-btn');
-                    // Ensure resetAndRenderQuiz is defined before attaching listener
-                    if(typeof resetAndRenderQuiz === 'function') {
-                         resultsResetBtn?.addEventListener('click', resetAndRenderQuiz);
-                    } else {
-                         console.error("resetAndRenderQuiz function not found, reset button in results won't work.");
-                    }
-
-
-                    // Animate result container entrance
-                    if(!prefersReducedMotion){
-                         gsap.from(resultContainer, { duration: 0.5, scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)' });
-                     } else {
-                          gsap.set(resultContainer, { autoAlpha: 1 });
-                     }
-
-                    // Enable/Disable Complete Button based on score
-                    if (scorePercentage >= PASSING_PERCENTAGE) {
-                       if(completeBtn) completeBtn.disabled = false;
-                       if(scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
-                       if(!prefersReducedMotion && completeBtn) gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' });
-                   } else {
-                        if(completeBtn) completeBtn.disabled = true; // Keep disabled
-                        if(scoreRequirementMsg) scoreRequirementMsg.style.display = 'inline'; // Show requirement message
-                   }
-                     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                // Ensure options remain disabled
-                quizContainer?.querySelectorAll('.quiz-option-v2').forEach(opt => { opt.style.pointerEvents = 'none'; });
-            }); // End Promise.finally
-        }); // End submit event listener
+        // Initial render
+        resetQuiz();
     }
-
 
     // --- Essay Specific Processing ---
     if (lessonType === 'essay' && contentWrapper) {
@@ -990,4 +963,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 }); // End DOMContentLoaded
 </script>
-<script src="/js/lessonDetail.js"></script>
