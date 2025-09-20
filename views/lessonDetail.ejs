@@ -23,6 +23,57 @@
 <%# KaTeX CSS %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
 
+<style>
+    /* CSS for Question Navigation */
+    .quiz-question-nav {
+        padding: 15px;
+        margin-bottom: 20px;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .quiz-question-nav-title {
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+    .quiz-question-nav-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .quiz-question-nav-item {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: #3a3f5a;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    .quiz-question-nav-item:hover {
+        background-color: #4a5073;
+        transform: translateY(-2px);
+    }
+    .quiz-question-nav-item.answered {
+        background-color: #28a745; /* Green for answered */
+        border-color: #86e79b;
+    }
+    .quiz-question-nav-item.current-page {
+        border-color: #00aaff;
+        box-shadow: 0 0 8px rgba(0, 170, 255, 0.7);
+    }
+</style>
+
 <section class="lesson-detail-page-section">
 
     <!-- Background Elements -->
@@ -135,6 +186,7 @@
                                 </div>
                                 <button type="button" id="resetQuizBtnV2" class="btn btn-secondary-outline reset-quiz-btn"><i class="fas fa-sync-alt"></i> Tải lại</button>
                             </div>
+                            <div id="quizQuestionNav" class="quiz-question-nav"></div>
                             <form id="quizFormV2" class="quiz-form-v2">
                                 <div id="quizContainerV2" class="quiz-questions-container">
                                     <% quizDataParsed.forEach((q, idx) => { %>
@@ -302,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ITEMS_PER_PAGE = 5; // Number of questions per page
         const quizContainer = document.getElementById('quizContainerV2');
         const paginationContainer = document.getElementById('quizPagination');
+        const questionNavContainer = document.getElementById('quizQuestionNav');
         const quizForm = document.getElementById('quizFormV2');
         const resultDiv = document.getElementById('quizResultV2');
         const resetBtn = document.getElementById("resetQuizBtnV2");
@@ -386,15 +439,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageItems = workingQuizData.slice(startIndex, endIndex);
 
             pageItems.forEach(q => {
-                const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
-                const card = createQuestionCard(q, originalIndex);
-                quizContainer.appendChild(card);
+            const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
+            const card = createQuestionCard(q, originalIndex);
+            quizContainer.appendChild(card);
             });
 
             attachOptionListeners();
             loadQuizProgress();
+            renderQuestionNav(); // Update nav on page change
             if (typeof gsap !== 'undefined') {
-                gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
+            gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
+            }
+            // Scroll to top of quiz container or page
+            if (quizContainer.scrollIntoView) {
+            quizContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -427,6 +487,47 @@ document.addEventListener('DOMContentLoaded', () => {
             paginationContainer.appendChild(createBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1));
         }
 
+        // Render Question Navigation
+        function renderQuestionNav() {
+            if (!questionNavContainer) return;
+            questionNavContainer.innerHTML = '<div class="quiz-question-nav-title"><i class="fas fa-list-ol"></i> Danh sách câu hỏi</div>';
+            const list = document.createElement('div');
+            list.className = 'quiz-question-nav-list';
+            const savedAnswers = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
+
+            workingQuizData.forEach((q, index) => {
+                const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
+                const item = document.createElement('div');
+                item.className = 'quiz-question-nav-item';
+                item.textContent = index + 1;
+                item.dataset.questionIndex = index;
+
+                // Check if answered
+                if (savedAnswers[originalIndex] !== undefined && savedAnswers[originalIndex] !== null && savedAnswers[originalIndex].length !== 0) {
+                    item.classList.add('answered');
+                }
+
+                // Highlight questions on the current page
+                const questionPage = Math.floor(index / ITEMS_PER_PAGE) + 1;
+                if (questionPage === currentPage) {
+                    item.classList.add('current-page');
+                }
+
+                item.addEventListener('click', () => {
+                    currentPage = questionPage;
+                    renderCurrentPage();
+                    renderPagination();
+                    // Optional: scroll to the specific question after page render
+                    setTimeout(() => {
+                        const targetCard = quizContainer.querySelector(`[data-original-index="${originalIndex}"]`);
+                        targetCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100); // Small delay for render
+                });
+                list.appendChild(item);
+            });
+            questionNavContainer.appendChild(list);
+        }
+
         // Attach listeners for options (multi-choice aware)
         function attachOptionListeners() {
             quizContainer?.querySelectorAll('.quiz-option-v2').forEach(optionElem => {
@@ -443,10 +544,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         parentList.querySelectorAll('.quiz-option-v2').forEach(opt => opt.classList.remove('selected'));
                         wrapperDiv.classList.add('selected');
                         saveQuizProgress();
+                        renderQuestionNav(); // Update nav on answer
                     });
                 } else if (input?.type === 'checkbox') {
                     optionElem.addEventListener('change', function (event) {
                         saveQuizProgress();
+                        renderQuestionNav(); // Update nav on answer
                         const wrapperDiv = event.currentTarget.closest('.quiz-option-v2');
                         const checkbox = event.currentTarget.querySelector('input[type="checkbox"]');
                         if (wrapperDiv && checkbox) {
@@ -515,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPage = 1;
             renderCurrentPage();
             renderPagination();
+            renderQuestionNav(); // Initial render of nav
             if (completeBtn) completeBtn.disabled = true;
             if (scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
         }
@@ -647,6 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.classList.add('submitted');
             const submitBtn = this.querySelector('.submit-quiz-btn');
             if (submitBtn) submitBtn.disabled = true;
+            renderQuestionNav(); // Update nav to show all as "answered" (or keep as is)
             // Ensure options remain disabled
             quizContainer?.querySelectorAll('.quiz-option-v2').forEach(opt => { opt.style.pointerEvents = 'none'; });
         });
