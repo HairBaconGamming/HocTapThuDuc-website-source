@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const { Readable } = require("stream");
 const { isLoggedIn, isTeacher } = require("../middlewares/auth"); // Dùng isTeacher để chỉ giáo viên mới được upload
+const jwt = require('jsonwebtoken'); 
 
 const router = express.Router();
 
