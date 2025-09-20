@@ -353,6 +353,52 @@ body {
   margin-bottom: 30px;
 }
 
+/* --- Artistic Pagination for Content --- */
+.content-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.pagination-btn {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--artistic-border-color);
+  color: var(--artistic-text-medium);
+  padding: 8px 14px;
+  border-radius: var(--border-radius-medium);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: rgba(var(--artistic-primary-rgb), 0.15);
+  color: var(--artistic-text-light);
+  border-color: rgba(var(--artistic-primary-rgb), 0.4);
+  transform: translateY(-2px);
+}
+
+.pagination-btn.active {
+  background: var(--artistic-primary);
+  color: white;
+  border-color: var(--artistic-primary);
+  font-weight: 600;
+  box-shadow: 0 0 15px -3px var(--artistic-glow-color);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: var(--artistic-text-medium);
+  padding: 0 10px;
+}
 /* --- Responsive Adjustments --- */
 @media (max-width: 992px) { .lesson-detail-container { max-width: 90%; padding: 35px 40px; } }
 @media (max-width: 768px) { .lesson-detail-page-section { padding: 60px 15px 80px; } .lesson-detail-container { padding: 30px 25px; max-width: 100%; } .lesson-detail-header { flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 25px; padding-bottom: 20px; } .lesson-owner-actions { position: absolute; top: 15px; right: 15px; margin-left: 0; } .lesson-type-icon { width: 50px; height: 50px; font-size: 1.8rem; } .lesson-title-area h1 { font-size: 2rem; } .lesson-meta-info { justify-content: center; } .lesson-content-wrapper { margin-bottom: 30px; } .prose-styling { font-size: 1rem; } .quiz-question-card { padding: 20px; } .question-header { padding: 10px 20px; } .question-content-markdown, .quiz-options-list { padding: 15px 20px; } .essay-prompt-card { padding: 20px; } .essay-question-group { padding: 15px; } .lesson-action-bar { flex-direction: column; gap: 15px; align-items: center; } .completion-wrapper { width: 100%; justify-content: center; } }

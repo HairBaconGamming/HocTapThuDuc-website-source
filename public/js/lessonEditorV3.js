@@ -1425,73 +1425,96 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /** Renders the entire quiz section based on the current `quizData` array. */
-    function renderQuiz() {
-        if (!quizContainer) {
-             console.error("Cannot render quiz: Missing container (#quizContainer).");
-             return;
-        }
-        // quizData should be up-to-date (parsed on load or modified by interactions)
-        console.log("Rendering Quiz UI (Multi-Choice Enabled)"); // Log deep copy
+    // ==========================================================================
+    // ===== PAGINATION HELPER =====
+    // ==========================================================================
+    const ITEMS_PER_PAGE = 5; // Số câu hỏi mỗi trang
 
-        quizContainer.innerHTML = ""; // Clear existing questions visually
+    function setupPagination(containerId, totalItems, onPageChange) {
+        const paginationContainer = document.getElementById(containerId);
+        if (!paginationContainer) return;
 
-        if (!Array.isArray(quizData)) {
-             console.error("Quiz data is not an array, cannot render.", quizData);
-             quizData = []; // Attempt recovery
-             updateQuizDataInput(); // Update input to reflect reset
-             quizContainer.innerHTML = '<p class="text-danger text-center">Lỗi: Dữ liệu quiz không hợp lệ.</p>';
-             return;
-        }
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        let currentPage = 1;
 
-        if (quizData.length === 0) {
-            quizContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi nào. Hãy thêm câu hỏi mới hoặc tạo từ file!</p>';
-        } else {
-            quizData.forEach((q, index) => {
-                 // Ensure each question has a valid ID (important for data from server/AI without IDs)
-                if (!q || typeof q !== 'object') {
-                     console.warn(`Invalid item found at quiz index ${index}, skipping rendering.`, q);
-                     // Optionally remove it from quizData here or filter before loop
-                     return; // Skip this item
-                 }
-                if (!q.id || typeof q.id !== 'string') {
-                    console.warn(`Question at index ${index} is missing a valid string ID. Generating fallback ID.`);
-                    q.id = `quizQ_render_${Date.now()}_${index}`;
-                    // No need to update quizData[index] directly if q is a reference from the loop
-                }
+        const render = () => {
+            paginationContainer.innerHTML = '';
+            if (totalPages <= 1) return;
 
-                // Create the question element
-                const questionElement = createQuizQuestionElement(q, q.id);
-
-                // If element created successfully, render its options
-                if (questionElement) {
-                    q.options = q.options || []; // Ensure options array exists
-                    if (Array.isArray(q.options)) {
-                        q.options.forEach((opt, optIdx) => {
-                             if (opt && typeof opt === 'object') { // Basic check for valid option object
-                                addQuizOption(q.id, optIdx, opt); // Render each valid option
-                             } else {
-                                 console.warn(`Invalid option found at index ${optIdx} for question ${q.id}, skipping.`, opt);
-                                 // Optionally remove/clean the invalid option from q.options here
-                             }
-                        });
-                    } else {
-                         console.warn(`Options for question ${q.id} is not an array. Resetting.`, q.options);
-                         q.options = []; // Reset to empty array
-                         // Optionally add a default blank option: addQuizOption(q.id);
-                    }
-                } else {
-                     console.error(`Failed to create question element for index ${index}, ID ${q.id}`);
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.className = 'pagination-btn';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    onPageChange(currentPage);
+                    render();
                 }
             });
-            updateQuizDataInput(); // Ensure hidden input reflects potentially corrected data IDs
-            updateQuizNumbering(); // Update all numbers after rendering is complete
+            paginationContainer.appendChild(prevBtn);
+
+            // Page Info
+            const pageInfo = document.createElement('span');
+            pageInfo.className = 'pagination-info';
+            pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
+            paginationContainer.appendChild(pageInfo);
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.className = 'pagination-btn';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    onPageChange(currentPage);
+                    render();
+                }
+            });
+            paginationContainer.appendChild(nextBtn);
+        };
+        
+        onPageChange(1); // Render trang đầu tiên
+        render();
+    }
+
+    /** Renders the entire quiz section based on the current `quizData` array. */
+    function renderQuiz() {
+        if (!quizContainer) return;
+        
+        quizContainer.innerHTML = "";
+        if (!Array.isArray(quizData) || quizData.length === 0) {
+            quizContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi nào.</p>';
+            document.getElementById('quizPagination').innerHTML = '';
+            return;
         }
-        // Ensure listeners are attached to all newly rendered previews
-         quizContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-             addPreviewClickListener( /** @type {HTMLElement} */ (el));
-        });
-     }
+
+        const onPageChange = (page) => {
+            quizContainer.innerHTML = ""; // Clear for new page
+            const startIndex = (page - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageItems = quizData.slice(startIndex, endIndex);
+
+            pageItems.forEach(q => {
+                if (!q || typeof q !== 'object' || !q.id) return;
+                const questionElement = createQuizQuestionElement(q, q.id); // This function creates and appends one card
+                if (questionElement) {
+                    q.options = q.options || [];
+                    q.options.forEach((opt, optIdx) => {
+                        addQuizOption(q.id, optIdx, opt);
+                    });
+                }
+            });
+            // Attach listeners to newly rendered previews
+            quizContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
+                addPreviewClickListener(el);
+            });
+        };
+
+        setupPagination('quizPagination', quizData.length, onPageChange);
+    }
 
     // --- Quiz Button Listeners ---
     addQuestionBtn?.addEventListener("click", addNewQuizQuestion);
@@ -1612,51 +1635,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /** Renders the essay questions based on the current `essayData` array. */
+    /** Renders the essay questions based on the current `essayData` array, with pagination. */
     function renderEssayQuestions() {
-        if (!essayContainer) {
-            console.error("Cannot render essay questions: Missing container (#essayContainer).");
-            return;
-        }
-        // essayData should be up-to-date (parsed on load or modified by interactions)
-        console.log("Rendering Essay Questions UI with data:", JSON.parse(JSON.stringify(essayData))); // Log deep copy
+        if (!essayContainer) return;
 
-        essayContainer.innerHTML = ''; // Clear existing visually
+        essayContainer.innerHTML = '';
+        const validEssayData = (essayData || []).filter(Boolean); // Clean data first
 
-        if (!Array.isArray(essayData)) {
-            console.error("Essay data is not an array, cannot render.", essayData);
-            essayData = []; // Attempt recovery
-            updateEssayDataInput(); // Update input to reflect reset
-            essayContainer.innerHTML = '<p class="text-danger text-center">Lỗi: Dữ liệu tự luận không hợp lệ.</p>';
+        if (validEssayData.length === 0) {
+            essayContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi tự luận nào.</p>';
+            const pag = document.getElementById('essayPagination');
+            if (pag) pag.innerHTML = '';
             return;
         }
 
-        if (essayData.length === 0) {
-             essayContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi tự luận nào.</p>';
-        } else {
-            // Filter out nulls before rendering, in case remove logic left them
-            const validEssayData = essayData.filter(item => item !== null && item !== undefined);
-            if (validEssayData.length !== essayData.length) {
-                 console.warn("Found null entries in essayData during render, rendering only valid items.");
-                 essayData = validEssayData; // Update main array to clean state
-                 updateEssayDataInput(); // Save cleaned state
-            }
+        const onPageChange = (page) => {
+            essayContainer.innerHTML = "";
+            const startIndex = (page - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageItems = validEssayData.slice(startIndex, endIndex);
 
+            pageItems.forEach((item, idxOnPage) => {
+                const originalIndex = essayData.indexOf(item); // Find original index to link data
+                if (originalIndex === -1) return;
 
-            essayData.forEach((item, idx) => {
-                 // Basic check for valid object structure
-                 if (!item || typeof item !== 'object') {
-                    console.warn(`Invalid essay item found at index ${idx}, skipping render.`, item);
-                    return; // Skip this item
-                 }
+                const questionTargetId = `essayQuestionData_${originalIndex}`;
+                const answerTargetId = `essayAnswerData_${originalIndex}`;
+                const currentQuestionNumber = startIndex + idxOnPage + 1;
 
                 const essayDiv = document.createElement("div");
                 essayDiv.className = "essay-question-card";
-                essayDiv.dataset.index = String(idx); // Use index as the identifier
-                const questionTargetId = `essayQuestionData_${idx}`;
-                const answerTargetId = `essayAnswerData_${idx}`;
-                const currentQuestionNumber = idx + 1; // For labels/context
-
+                essayDiv.dataset.index = String(originalIndex);
                 essayDiv.innerHTML = `
                     <div class="essay-card-header">
                         <span class="question-number">Câu Tự Luận ${currentQuestionNumber}</span>
@@ -1664,30 +1673,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     <div class="essay-card-body">
                         <label class="form-label" for="${questionTargetId}_preview">Nội dung câu hỏi:</label>
-                        <!-- Essay Question Preview -->
                         <div id="${questionTargetId}_preview" class="editor-preview-container interactive-preview"
                              data-editor-target="${questionTargetId}"
                              data-editor-type="essayQuestion"
-                             data-q-id="${idx}"
+                             data-q-id="${originalIndex}"
                              data-editor-context="Câu hỏi Tự luận ${currentQuestionNumber}"
                              tabindex="0" role="button" aria-label="Chỉnh sửa câu hỏi Tự luận ${currentQuestionNumber}">
                             <div class="preview-content"></div>
-                             <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
+                            <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
                         </div>
                         <textarea id="${questionTargetId}" class="hidden-data" aria-hidden="true">${item.question || ''}</textarea>
 
                         <label class="form-label" style="margin-top: 15px;" for="${answerTargetId}_preview">Đáp án mẫu (Gợi ý chấm):</label>
-                        <!-- Essay Answer Preview -->
-                         <div id="${answerTargetId}_preview" class="editor-preview-container interactive-preview"
-                              data-editor-target="${answerTargetId}"
-                              data-editor-type="essayAnswer"
-                              data-q-id="${idx}" 
-                              data-editor-context="Đáp án mẫu - Câu ${currentQuestionNumber}"
-                              tabindex="0" role="button" aria-label="Chỉnh sửa đáp án mẫu cho Câu ${currentQuestionNumber}">
-                             <div class="preview-content"></div>
-                             <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
+                        <div id="${answerTargetId}_preview" class="editor-preview-container interactive-preview"
+                             data-editor-target="${answerTargetId}"
+                             data-editor-type="essayAnswer"
+                             data-q-id="${originalIndex}" 
+                             data-editor-context="Đáp án mẫu - Câu ${currentQuestionNumber}"
+                             tabindex="0" role="button" aria-label="Chỉnh sửa đáp án mẫu cho Câu ${currentQuestionNumber}">
+                            <div class="preview-content"></div>
+                            <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
                         </div>
-                         <textarea id="${answerTargetId}" class="hidden-data" aria-hidden="true">${item.sampleAnswer || ''}</textarea>
+                        <textarea id="${answerTargetId}" class="hidden-data" aria-hidden="true">${item.sampleAnswer || ''}</textarea>
                     </div>
                 `;
                 essayContainer.appendChild(essayDiv);
@@ -1695,53 +1702,42 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Render initial previews
                 const qPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayQuestion"]'));
                 const aPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayAnswer"]'));
-                 if(qPreview) renderPreview(qPreview, item.question);
-                 if(aPreview) renderPreview(aPreview, item.sampleAnswer);
-                 if(qPreview) addPreviewClickListener(qPreview); // Attach listener
-                 if(aPreview) addPreviewClickListener(aPreview); // Attach listener
+                if (qPreview) renderPreview(qPreview, item.question);
+                if (aPreview) renderPreview(aPreview, item.sampleAnswer);
+                if (qPreview) addPreviewClickListener(qPreview);
+                if (aPreview) addPreviewClickListener(aPreview);
 
                 // Remove button listener
                 const removeBtn = essayDiv.querySelector(".remove-essay-question-btn");
                 if (removeBtn) {
                     removeBtn.addEventListener("click", () => {
                         if (isAnimating) return;
-                        // Use custom confirm modal ideally
                         if (window.confirm(`Bạn có chắc muốn xóa Câu hỏi Tự luận ${currentQuestionNumber}?`)) {
                             const currentIndex = parseInt(essayDiv.dataset.index || '-1', 10);
                             if (currentIndex > -1 && essayData[currentIndex] !== undefined) {
-                                // Mark for removal instead of splicing immediately to avoid index shifts during potential animations
-                                // essayData.splice(currentIndex, 1); // Avoid splice here
-                                essayData[currentIndex] = null; // Mark as null
-                                console.log(`Marked essay question at index ${currentIndex} for removal.`);
-
-                                // Animate removal
+                                essayData[currentIndex] = null;
                                 gsap.to(essayDiv, { duration: 0.3, autoAlpha: 0, height: 0, marginTop: 0, marginBottom: -15, ease: 'power1.in', onComplete: () => {
-                                    essayDiv.remove(); // Remove from DOM
-                                    // Now, update the data input and re-number visually
-                                    updateEssayDataInput(); // Saves the array *with* nulls filtered out
-                                    updateEssayQuestionNumbering(); // Fix numbers on remaining visible cards
+                                    essayDiv.remove();
+                                    updateEssayDataInput();
+                                    updateEssayQuestionNumbering();
                                     if (mode !== 'edit') saveProgressThrottled();
                                 }});
                             } else {
-                                 console.warn(`Could not mark essay question at index ${currentIndex} for removal. Index invalid or item already removed?`);
-                                 essayDiv.remove(); // Remove from DOM anyway
-                                 updateEssayDataInput();
-                                 updateEssayQuestionNumbering();
+                                essayDiv.remove();
+                                updateEssayDataInput();
+                                updateEssayQuestionNumbering();
                             }
                         }
                     });
                 }
             });
-             // Ensure numbering is correct after initial render
             updateEssayQuestionNumbering();
-            // Update hidden input after rendering all valid items
-            // updateEssayDataInput(); // Already called within the loop if items were cleaned
-        }
+            essayContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
+                addPreviewClickListener(el);
+            });
+        };
 
-        // Ensure listeners are attached to all newly rendered previews
-         essayContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-            addPreviewClickListener( /** @type {HTMLElement} */ (el));
-        });
+        setupPagination('essayPagination', validEssayData.length, onPageChange);
     }
 
     /** Updates the visual numbering (Câu Tự Luận 1...) of the essay questions currently in the DOM. */
