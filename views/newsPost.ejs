@@ -100,7 +100,6 @@
 <%- include('partials/footer') %>
 
 <!-- JS Libraries (Ensure they are loaded correctly, usually in footer) -->
-<!-- MathLive (If needed by mathEditorPlugin) -->
 <!-- <link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive.core.css" /> -->
 <!-- <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script> -->
 <!-- KaTeX -->
@@ -108,8 +107,6 @@
 <!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script> -->
 <!-- Toast UI Editor JS -->
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-<!-- Your custom math plugin -->
-<script type="module" src="/js/plugins/mathEditorPlugin.js"></script> <%# Ensure path is correct %>
 <!-- GSAP -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <!-- Your custom JS -->
@@ -117,8 +114,6 @@
 
 <!-- Page Specific JS -->
 <script type="module">
-  // Ensure plugin is loaded before initializing editor
-  import mathEditorPlugin from '/js/plugins/mathEditorPlugin.js'; // Assuming this path works
 
   document.addEventListener('DOMContentLoaded', () => {
     // --- Config & Refs ---
@@ -152,7 +147,7 @@
                  // Add custom math button if plugin provides one or handle differently
              ],
              hideModeSwitch: false, // Show mode switch (MD/WYSIWYG)
-            plugins: typeof mathEditorPlugin !== 'undefined' ? [[mathEditorPlugin, { /* plugin options if any */ }]] : [],
+            plugins: [],
             // Add custom buttons or hooks here if needed
         });
          console.log("Toast UI Editor Initialized");
