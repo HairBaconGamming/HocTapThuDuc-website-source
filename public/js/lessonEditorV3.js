@@ -130,80 +130,64 @@ document.addEventListener("DOMContentLoaded", () => {
     // HELPER FUNCTIONS
     // ==========================================================================
 
-    // =========================================================================
-    // ===== KÄTEX PLUGIN FOR TOAST UI EDITOR =====
+     // =========================================================================
+    // ===== KÄTEX PLUGIN FOR TOAST UI EDITOR (CORRECT IMPLEMENTATION) =====
     // =========================================================================
     function katexPlugin() {
-        // This function will be the core of our plugin
-        const toHTMLRenderers = {
-            // This renderer handles custom code blocks marked with 'katex'
-            katex(node) {
-                if (!window.katex) {
-                    return [
-                        { type: 'openTag', tagName: 'div', attributes: { style: 'color: red; font-weight: bold;' } },
-                        { type: 'text', content: 'KaTeX library not loaded.' },
-                        { type: 'closeTag', tagName: 'div' }
-                    ];
-                }
-                try {
-                    const html = katex.renderToString(node.literal, {
-                        throwOnError: false,
-                        displayMode: true // Render as display math (block level)
-                    });
-                    return [
-                        { type: 'openTag', tagName: 'div', outerNewLine: true, attributes: { 'data-katex-block': 'true' } },
-                        { type: 'html', content: html },
-                        { type: 'closeTag', tagName: 'div', outerNewLine: true }
-                    ];
-                } catch (e) {
-                    console.error("KaTeX rendering error in plugin:", e);
-                    return [
-                        { type: 'openTag', tagName: 'div', attributes: { style: 'color: red;' } },
-                        { type: 'text', content: `KaTeX Error: ${e.message}` },
-                        { type: 'closeTag', tagName: 'div' }
-                    ];
-                }
-            },
-            // This renderer handles inline math wrapped in $...$
-            customInline(node) {
-                 if (node.type === 'customInline' && node.info === 'katex') {
-                    if (!window.katex) return { type: 'text', content: '$...$ (KaTeX not loaded)' };
-                    try {
-                        const html = katex.renderToString(node.literal, {
-                            throwOnError: false,
-                            displayMode: false // Render as inline math
-                        });
-                        return { type: 'html', content: html };
-                    } catch (e) {
-                         console.error("Inline KaTeX rendering error:", e);
-                         return { type: 'html', content: `<span style="color:red;">$${node.literal}$</span>` };
-                    }
-                 }
-                 return null; // Let other renderers handle it
+        // Function to render KaTeX safely
+        const renderKatex = (literal, isDisplayMode) => {
+            if (!window.katex) {
+                return `<span style="color: red; font-weight: bold;">KaTeX library not loaded.</span>`;
+            }
+            try {
+                return katex.renderToString(literal, {
+                    throwOnError: false, // Don't crash the editor on syntax error
+                    displayMode: isDisplayMode,
+                    output: "htmlAndMathml",
+                });
+            } catch (e) {
+                console.error("KaTeX Plugin Error:", e);
+                return `<span style="color: red;">${e.message}</span>`;
             }
         };
 
-        // Define a custom rule to detect $...$ for inline math
+        const toHTMLRenderers = {
+            // Renderer for block-level math: ```math ... ```
+            math(node) {
+                const html = renderKatex(node.literal, true);
+                return [
+                    { type: 'openTag', tagName: 'div', outerNewLine: true, attributes: { 'data-katex-block': 'true' } },
+                    { type: 'html', content: html },
+                    { type: 'closeTag', tagName: 'div', outerNewLine: true }
+                ];
+            },
+            // Renderer for inline-level math: $...$
+            // This is triggered by the customInlineRules below
+            katexInline(node) {
+                 const html = renderKatex(node.literal, false);
+                 return { type: 'html', content: html };
+            }
+        };
+
+        // This rule finds $...$ patterns and tells the editor to use our `katexInline` renderer
         const customInlineRules = [
             {
-                // Regex to find content between single dollar signs that isn't just whitespace
-                // and avoids matching $$...$$ blocks
-                // It looks for a '$', then captures characters until the next '$' that isn't followed by another '$'
-                // This is a simplified regex; more complex ones exist for edge cases.
-                rule: /(^|[^$])\$([^\n$]+?)\$([^$]|$)/,
+                // Regex: finds a '$' not preceded or followed by another '$',
+                // captures the content inside until the next single '$'.
+                // This prevents it from matching block-level $$...$$.
+                rule: /(?:^|[^$])\$((?:\\.|[^$])+)\$([^$]|$)/,
                 toCustomInline: (text, [leading, content, trailing]) => {
-                    // We return the custom node and the text before/after it
                     return {
                         nodes: [
                             { type: 'text', content: leading },
-                            { type: 'customInline', info: 'katex', literal: content },
+                            { type: 'customInline', info: 'katexInline', literal: content.trim() },
                             { type: 'text', content: trailing }
                         ]
                     };
                 }
             }
         ];
-
+        
         return { toHTMLRenderers, customInlineRules };
     }
 
