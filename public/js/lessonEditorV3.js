@@ -153,11 +153,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: formData,
                 });
 
-                const result = await response.json();
-
+                // KIỂM TRA PHẢN HỒI TRƯỚC KHI PARSE JSON
                 if (!response.ok) {
-                    throw new Error(result.error || 'Lỗi không xác định từ server');
+                    let errorMsg = `Lỗi server: ${response.status}`;
+                    try {
+                        // Cố gắng lấy lỗi chi tiết từ server nếu có
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {
+                        // Bỏ qua nếu phản hồi lỗi không phải là JSON
+                    }
+                    throw new Error(errorMsg);
                 }
+
+                // Nếu response.ok, chúng ta có thể an toàn parse JSON
+                const result = await response.json();
                 
                 // Lưu thông tin file vào input ẩn
                 documentDataInput.value = JSON.stringify(result);

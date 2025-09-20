@@ -36,8 +36,10 @@ const upload = multer({
   },
 });
 
+
 // API Endpoint: POST /api/documents/upload
-router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), (req, res) => {
+// SỬA LẠI TOÀN BỘ ROUTE NÀY THÀNH ASYNC/AWAIT VÀ DÙNG PROMISE
+router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "Không có file nào được chọn." });
   }
@@ -45,34 +47,40 @@ router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), (re
     return res.status(500).json({ error: "Dịch vụ lưu trữ chưa sẵn sàng, vui lòng thử lại." });
   }
 
-  const filename = `${Date.now()}-${req.file.originalname}`;
-  const readableStream = Readable.from(req.file.buffer);
+  try {
+    const filename = `${Date.now()}-${req.file.originalname}`;
+    const readableStream = Readable.from(req.file.buffer);
 
-  const uploadStream = bucket.openUploadStream(filename, {
-    contentType: req.file.mimetype,
-    metadata: {
-      originalName: req.file.originalname,
-      uploaderId: req.user._id.toString(),
-    },
-  });
-
-  readableStream.pipe(uploadStream)
-    .on("error", (err) => {
-      console.error("GridFS upload error:", err);
-      res.status(500).json({ error: "Lỗi khi lưu file." });
-    })
-    .on("finish", (file) => {
-      res.status(201).json({
-        message: "Tải file lên thành công!",
-        fileId: file._id,
-        filename: file.filename,
-        originalName: file.metadata.originalName,
-        contentType: file.contentType,
-        size: file.length,
-        // URL để truy cập file sau này
-        url: `/documents/view/${file.filename}`
-      });
+    const uploadStream = bucket.openUploadStream(filename, {
+      contentType: req.file.mimetype,
+      metadata: {
+        originalName: req.file.originalname,
+        uploaderId: req.user._id.toString(),
+      },
     });
+
+    // Bọc quá trình pipe vào một Promise để có thể "await"
+    const uploadedFile = await new Promise((resolve, reject) => {
+      readableStream.pipe(uploadStream)
+        .on("error", (err) => reject(err))
+        .on("finish", () => resolve(uploadStream));
+    });
+
+    // Chỉ gửi phản hồi sau khi upload đã hoàn tất
+    res.status(201).json({
+      message: "Tải file lên thành công!",
+      fileId: uploadedFile.id,
+      filename: uploadedFile.filename,
+      originalName: req.file.originalname,
+      contentType: req.file.mimetype,
+      size: req.file.size,
+      url: `/documents/view/${uploadedFile.filename}`
+    });
+
+  } catch (error) {
+    console.error("GridFS upload error:", error);
+    res.status(500).json({ error: "Lỗi khi lưu file." });
+  }
 });
 
 // Route để xem/tải file: GET /documents/view/:filename
