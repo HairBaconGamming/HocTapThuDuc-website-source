@@ -238,14 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('trigger-ai-btn')?.addEventListener('click', async () => {
-        if(confirm('Hành động này sẽ bắt đầu job tạo nội dung AI dưới nền. Tiếp tục?')) {
-            await apiFetch('/api/trigger-ai-post', { method: 'POST' }).then(data => {
-                if (data.success) showToast(data.message, 'success');
-            });
-        }
-    });
-
     // --- Modal Logic ---
     const modals = { 
         user: document.getElementById('user-edit-modal'), 

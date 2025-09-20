@@ -37,7 +37,4 @@ router.use(isAdmin); // Middleware tiếp theo sẽ yêu cầu quyền Admin
 router.get('/api/users/pro-keys', adminController.getProKeys);
 router.post('/api/users/:id/regenerate-key', adminController.regenerateProKey);
 
-// System Actions (Admin only)
-router.post('/api/trigger-ai-post', adminController.triggerAiPost);
-
 module.exports = router;

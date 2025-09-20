@@ -218,8 +218,6 @@ app.use(async (req, res, next) => {
   next();
 });
 
-const { autoPostAICourses } = require("./scheduler");
-
 const VisitStats = require("./models/VisitStats");
 const moment = require("moment-timezone");
 

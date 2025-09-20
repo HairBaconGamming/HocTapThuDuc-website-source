@@ -267,13 +267,5 @@ Chủ đề mới: [Your new topic here]`;
   }
 }
 
-// Schedule the job to run daily at 7:00 AM Ho Chi Minh time
-cron.schedule('0 7 * * *', () => {
-  console.log("Đang chạy job đăng bài học AI hàng ngày...");
-  autoPostAICourses();
-}, {
-  scheduled: true,
-  timezone: "Asia/Ho_Chi_Minh"
-});
 
 module.exports = { autoPostAICourses };

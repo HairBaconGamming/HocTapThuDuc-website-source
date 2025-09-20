@@ -199,13 +199,3 @@ exports.deleteSubject = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete subject' });
     }
 };
-
-// POST /api/trigger-ai-post
-exports.triggerAiPost = async (req, res) => {
-    try {
-        autoPostAICourses();
-        res.status(202).json({ success: true, message: 'AI course generation has been triggered.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to trigger AI job.' });
-    }
-};
