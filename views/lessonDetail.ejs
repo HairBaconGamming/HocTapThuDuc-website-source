@@ -317,6 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let masterQuizData = [];
         let workingQuizData = [];
         let currentPage = 1;
+        let quizSubmitted = false; // Track if quiz is submitted
+        let quizFeedback = {}; // Store feedback for each question
 
         // Parse quiz data (double-stringify safe)
         try {
@@ -401,6 +403,12 @@ document.addEventListener('DOMContentLoaded', () => {
             attachOptionListeners();
             loadQuizProgress();
             renderNavigation(); // update navigation highlight
+
+            // If quiz was submitted, re-apply feedback
+            if (quizSubmitted) {
+                applyQuizFeedback();
+            }
+
             if (typeof gsap !== 'undefined') {
                 gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
             }
@@ -562,6 +570,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             workingQuizData = randomQuestionsToggle?.checked ? shuffleArray([...masterQuizData]) : [...masterQuizData];
             currentPage = 1;
+            quizSubmitted = false;
+            quizFeedback = {};
             renderCurrentPage();
             renderPagination();
             renderNavigation();
@@ -575,6 +585,49 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCurrentPage();
         });
         resetBtn?.addEventListener('click', resetQuiz);
+
+        // Apply feedback (correct/incorrect) after submission, for all questions
+        function applyQuizFeedback() {
+            const savedAnswers = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
+            quizContainer?.querySelectorAll('.quiz-question-card').forEach(card => {
+                const originalIndex = card.dataset.originalIndex;
+                const qData = masterQuizData[originalIndex];
+                const correctIndices = (qData.options || []).map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null);
+                const inputType = card.dataset.inputType;
+                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                    const optIndex = parseInt(opt.dataset.optionIndex, 10);
+                    const isCorrect = opt.dataset.isCorrect === 'true';
+                    const inputEl = opt.querySelector('.quiz-input');
+                    const isChecked = inputEl?.checked;
+                    opt.style.pointerEvents = 'none';
+                    if (isCorrect) opt.classList.add('correct-answer-reveal');
+                    if (isChecked) opt.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (isChecked) opt.classList.add('selected');
+                });
+                // Show explanation if incorrect
+                let isCorrectOverall = false;
+                if (inputType === 'radio') {
+                    const userIdx = parseInt(savedAnswers[originalIndex], 10);
+                    isCorrectOverall = qData.options[userIdx]?.isCorrect === true;
+                } else if (inputType === 'checkbox') {
+                    const userArr = Array.isArray(savedAnswers[originalIndex]) ? savedAnswers[originalIndex].map(Number) : [];
+                    isCorrectOverall =
+                        userArr.length === correctIndices.length &&
+                        userArr.every(idx => correctIndices.includes(idx)) &&
+                        correctIndices.every(idx => userArr.includes(idx));
+                }
+                if (!isCorrectOverall && qData.explanation) {
+                    const feedbackDiv = card.querySelector('.question-feedback');
+                    if (feedbackDiv) {
+                        const sanitizedExplanation = qData.explanation.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+                        feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${sanitizedExplanation}</p>`;
+                        if (typeof gsap !== 'undefined') {
+                            gsap.from(feedbackDiv, { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power1.out' });
+                        }
+                    }
+                }
+            });
+        }
 
         // Quiz form submission (multi-choice aware, paginated)
         quizForm?.addEventListener('submit', function (e) {
@@ -621,45 +674,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Feedback for current page only
-            quizContainer?.querySelectorAll('.quiz-question-card').forEach(card => {
-                const originalIndex = card.dataset.originalIndex;
-                const qData = masterQuizData[originalIndex];
-                const correctIndices = (qData.options || []).map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null);
-                const inputType = card.dataset.inputType;
-                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                    const optIndex = parseInt(opt.dataset.optionIndex, 10);
-                    const isCorrect = opt.dataset.isCorrect === 'true';
-                    const inputEl = opt.querySelector('.quiz-input');
-                    const isChecked = inputEl?.checked;
-                    opt.style.pointerEvents = 'none';
-                    if (isCorrect) opt.classList.add('correct-answer-reveal');
-                    if (isChecked) opt.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    if (isChecked) opt.classList.add('selected');
-                });
-                // Show explanation if incorrect
+            // Store feedback for all questions
+            quizFeedback = {};
+            masterQuizData.forEach((q, index) => {
+                const correctIndices = (q.options || []).map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null);
+                const correctCountForQ = correctIndices.length;
+                const inputType = correctCountForQ > 1 ? 'checkbox' : 'radio';
                 let isCorrectOverall = false;
                 if (inputType === 'radio') {
-                    const userIdx = parseInt(savedAnswers[originalIndex], 10);
-                    isCorrectOverall = qData.options[userIdx]?.isCorrect === true;
+                    const userIdx = parseInt(savedAnswers[index], 10);
+                    isCorrectOverall = q.options[userIdx]?.isCorrect === true;
                 } else if (inputType === 'checkbox') {
-                    const userArr = Array.isArray(savedAnswers[originalIndex]) ? savedAnswers[originalIndex].map(Number) : [];
+                    const userArr = Array.isArray(savedAnswers[index]) ? savedAnswers[index].map(Number) : [];
                     isCorrectOverall =
                         userArr.length === correctIndices.length &&
                         userArr.every(idx => correctIndices.includes(idx)) &&
                         correctIndices.every(idx => userArr.includes(idx));
                 }
-                if (!isCorrectOverall && qData.explanation) {
-                    const feedbackDiv = card.querySelector('.question-feedback');
-                    if (feedbackDiv) {
-                        const sanitizedExplanation = qData.explanation.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-                        feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${sanitizedExplanation}</p>`;
-                        if (typeof gsap !== 'undefined') {
-                            gsap.from(feedbackDiv, { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power1.out' });
-                        }
-                    }
-                }
+                quizFeedback[index] = {
+                    isCorrect: isCorrectOverall,
+                    explanation: q.explanation || ""
+                };
             });
+
+            // Feedback for current page only
+            quizSubmitted = true;
+            applyQuizFeedback();
 
             // Show result
             const scorePercentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
