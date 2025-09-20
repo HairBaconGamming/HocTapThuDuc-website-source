@@ -211,27 +211,44 @@
                         } 
                     %>
 
-                    <% if (docData && docData.url && docData.absoluteUrl) { %>
+                    <% if (docData && docData.url) { %>
                         <%
-                            const absoluteFileUrl = docData.absoluteUrl;
+                            // URL xem trước công khai (cho Office) hoặc URL trực tiếp (cho PDF)
+                            const previewUrl = docData.publicViewUrl || docData.url;
                             let previewHtml = '';
                             
+                            // Logic để chọn trình xem trước
                             if (docData.contentType.includes('pdf')) {
-                                previewHtml = `<embed src="${absoluteFileUrl}" type="application/pdf" width="100%" height="700px" />`;
+                                // PDF có thể nhúng trực tiếp bằng <embed> hoặc <iframe> mà không cần token công khai
+                                // vì trình duyệt của người dùng (đã đăng nhập) sẽ tải nó.
+                                previewHtml = `<embed src="${docData.url}" type="application/pdf" width="100%" height="700px" />`;
+                            
                             } else if (docData.contentType.includes('word') || docData.contentType.includes('excel') || docData.contentType.includes('presentation')) {
-                                const encodedUrl = encodeURIComponent(absoluteFileUrl);
-                                previewHtml = `<iframe src='https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}' width='100%' height='700px' frameborder='0'>This is an embedded Microsoft Office document.</iframe>`;
+                                // Word, Excel, PowerPoint CẦN link công khai có token
+                                if (docData.publicViewUrl) {
+                                    const encodedUrl = encodeURIComponent(docData.publicViewUrl);
+                                    previewHtml = `<iframe src='https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}' width='100%' height='700px' frameborder='0'>This is an embedded <a target='_blank' href='https://office.com'>Microsoft Office</a> document, powered by <a target='_blank' href='https://office.com/webapps'>Office</a>.</iframe>`;
+                                } else {
+                                    // Fallback nếu không có publicViewUrl
+                                    previewHtml = `<div class="document-preview-unsupported"><p>Không thể tạo link xem trước an toàn cho tài liệu này.</p></div>`;
+                                }
                             }
                         %>
 
                         <div class="lesson-content-document">
                             <div class="document-header">
                                 <div class="document-icon">
-                                    <% if (docData.contentType.includes('pdf')) { %><i class="fas fa-file-pdf"></i>
-                                    <% } else if (docData.contentType.includes('word')) { %><i class="fas fa-file-word"></i>
-                                    <% } else if (docData.contentType.includes('excel') || docData.contentType.includes('spreadsheet')) { %><i class="fas fa-file-excel"></i>
-                                    <% } else if (docData.contentType.includes('presentation')) { %><i class="fas fa-file-powerpoint"></i>
-                                    <% } else { %><i class="fas fa-file-alt"></i><% } %>
+                                    <% if (docData.contentType.includes('pdf')) { %>
+                                        <i class="fas fa-file-pdf"></i>
+                                    <% } else if (docData.contentType.includes('word')) { %>
+                                        <i class="fas fa-file-word"></i>
+                                    <% } else if (docData.contentType.includes('excel') || docData.contentType.includes('spreadsheet')) { %>
+                                        <i class="fas fa-file-excel"></i>
+                                    <% } else if (docData.contentType.includes('presentation')) { %>
+                                        <i class="fas fa-file-powerpoint"></i>
+                                    <% } else { %>
+                                        <i class="fas fa-file-alt"></i>
+                                    <% } %>
                                 </div>
                                 <div class="document-info">
                                     <h3 class="document-filename"><%= docData.originalName %></h3>

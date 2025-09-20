@@ -83,29 +83,54 @@ router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), asy
   }
 });
 
-// Route để xem/tải file: GET /documents/view/:filename
-router.get("/view/:filename", isLoggedIn, async (req, res) => {
-    if (!bucket) {
-        return res.status(500).send("Dịch vụ lưu trữ chưa sẵn sàng.");
+// ===== THÊM ROUTE MỚI NÀY VÀO CUỐI FILE =====
+// Route CÔNG KHAI để xem file, xác thực bằng token
+// KHÔNG có middleware isLoggedIn
+router.get("/public-view/:filename", async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(401).send("Access token is missing.");
     }
+    if (!bucket) {
+        return res.status(500).send("Storage service is not ready.");
+    }
+
     try {
+        // 1. Xác thực token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_fallback_secret');
+
+        // 2. Kiểm tra xem filename trong token có khớp với filename trong URL không
+        if (decoded.filename !== req.params.filename) {
+            return res.status(403).send("Invalid token for this file.");
+        }
+
+        // 3. Nếu token hợp lệ, tiến hành stream file
         const files = await bucket.find({ filename: req.params.filename }).toArray();
         if (!files || files.length === 0) {
-            return res.status(404).send("Không tìm thấy tài liệu.");
+            return res.status(404).send("File not found.");
         }
 
         const file = files[0];
         res.set("Content-Type", file.contentType);
-        // 'inline' sẽ cố gắng hiển thị file trên trình duyệt (PDF), 'attachment' sẽ luôn tải xuống
         res.set("Content-Disposition", `inline; filename="${file.metadata.originalName}"`);
 
         const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
         downloadStream.pipe(res);
+
     } catch (error) {
-        console.error("Error streaming document:", error);
-        res.status(500).send("Lỗi khi truy cập tài liệu.");
+        // Lỗi nếu token hết hạn hoặc không hợp lệ
+        if (error instanceof jwt.TokenExpiredError) {
+            return res.status(403).send("Access link has expired. Please reload the lesson page.");
+        }
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(403).send("Invalid access token.");
+        }
+        console.error("Error streaming public document:", error);
+        res.status(500).send("Server error while accessing the file.");
     }
 });
+// ===============================================
 
 
 module.exports = router;
