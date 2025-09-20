@@ -984,7 +984,6 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
   }
 });
 
-// server.js
 
 app.get("/lesson/:id", isLoggedIn, async (req, res) => {
   try {
@@ -996,67 +995,77 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
       req.flash("error", "Bài học không tồn tại!");
       return res.redirect("/subjects");
     }
+    
     if (lesson.isProOnly && (!req.user || !req.user.isPro)) {
       req.flash('error', 'Đây là nội dung dành riêng cho tài khoản PRO.');
       return res.redirect('/upgrade');
     }
 
     const subject = await Subject.findById(lesson.subject).select("name").lean();
-    let renderedContent = "";
-    let estimatedReadingTime = 0;
+    
+    // Chuẩn bị dữ liệu để render, bắt đầu với dữ liệu gốc
+    const lessonDataForRender = { ...lesson, subject };
 
-    // --- XỬ LÝ DỮ LIỆU MỘT CÁCH THỐNG NHẤT ---
-    let editorDataForView = lesson.editorData ? JSON.parse(JSON.stringify(lesson.editorData)) : {};
-
-    // 1. Xử lý Markdown và tính thời gian đọc
+    // Xử lý dữ liệu đặc thù cho từng loại bài học
     if (lesson.type === "markdown") {
-      const mdContent = editorDataForView.markdown || lesson.content || "";
-      renderedContent = marked.parse(mdContent);
+      const mdContent = lesson.editorData?.markdown || lesson.content || "";
+      lessonDataForRender.renderedContent = marked.parse(mdContent);
       const wordCount = mdContent.split(/\s+/).filter(Boolean).length;
-      estimatedReadingTime = Math.ceil(wordCount / 200);
+      lessonDataForRender.estimatedReadingTime = Math.ceil(wordCount / 200);
     }
     
-    // 2. Parse an toàn dữ liệu Quiz, Essay, Document từ chuỗi JSON
-    ['quiz', 'essay', 'document'].forEach(key => {
-        if (editorDataForView[key] && typeof editorDataForView[key] === 'string') {
-            try {
-                editorDataForView[key] = JSON.parse(editorDataForView[key]);
-            } catch (e) {
-                console.error(`Error parsing editorData.${key} for lesson ${lesson._id}:`, e);
-                editorDataForView[key] = (key === 'document' ? null : []); // Fallback
+    if (lesson.type === "quiz" && lesson.editorData?.quiz) {
+      try {
+        // Parse an toàn, gán vào lessonDataForRender
+        lessonDataForRender.quizData = JSON.parse(lesson.editorData.quiz);
+      } catch (e) {
+        console.error(`Error parsing quiz data for lesson ${lesson._id}:`, e);
+        lessonDataForRender.quizData = []; // Fallback
+      }
+    }
+
+    if (lesson.type === "essay" && lesson.editorData?.essay) {
+      try {
+        // Parse an toàn, gán vào lessonDataForRender
+        lessonDataForRender.essayData = JSON.parse(lesson.editorData.essay);
+      } catch (e) {
+        console.error(`Error parsing essay data for lesson ${lesson._id}:`, e);
+        lessonDataForRender.essayData = []; // Fallback
+      }
+    }
+
+    if (lesson.type === 'document' && lesson.editorData?.document) {
+        try {
+            let docData = JSON.parse(lesson.editorData.document);
+            
+            if (docData.fileId) {
+                const fileAccessToken = jwt.sign(
+                    { fileId: docData.fileId },
+                    process.env.JWT_SECRET || 'your_fallback_secret',
+                    { expiresIn: '10m' }
+                );
+
+                const publicViewUrl = new URL(`/documents/public-view/${docData.fileId}`, `${req.protocol}://${req.get('host')}`);
+                publicViewUrl.searchParams.set('token', fileAccessToken);
+
+                // Thêm URL công khai vào đối tượng docData
+                docData.publicViewUrl = publicViewUrl.href;
             }
+            
+            // Gán đối tượng đã xử lý vào lessonDataForRender
+            // Quan trọng: Gán vào một thuộc tính mới để không ghi đè editorData gốc
+            lessonDataForRender.documentData = docData;
+
+        } catch (e) {
+            console.error(`Error processing document data for lesson ${lesson._id}:`, e);
+            lessonDataForRender.documentData = null;
         }
-    });
-
-    // 3. Tạo URL công khai cho Document nếu cần
-    if (lesson.type === 'document' && editorDataForView.document && editorDataForView.document.fileId) {
-        const docData = editorDataForView.document;
-        const fileAccessToken = jwt.sign(
-            { fileId: docData.fileId },
-            process.env.JWT_SECRET || 'your_fallback_secret',
-            { expiresIn: '1m' } // Tăng thời gian token lên 15 phút
-        );
-
-        const publicViewUrl = new URL(`/documents/public-view/${docData.fileId}`, `${req.protocol}://${req.get('host')}`);
-        publicViewUrl.searchParams.set('token', fileAccessToken);
-        
-        // Thêm trường mới, không ghi đè dữ liệu gốc
-        editorDataForView.document.publicViewUrl = publicViewUrl.href;
     }
-    
-    // Tạo đối tượng lesson cuối cùng để render
-    const lessonDataForRender = { 
-        ...lesson, 
-        subject, 
-        renderedContent,
-        estimatedReadingTime,
-        editorData: editorDataForView // Sử dụng editorData đã được xử lý hoàn chỉnh
-    };
     
     res.render("lessonDetail", { 
         user: req.user, 
         lesson: lessonDataForRender, 
-        marked,
+        marked: marked, 
         activePage: "subjects" 
     });
 

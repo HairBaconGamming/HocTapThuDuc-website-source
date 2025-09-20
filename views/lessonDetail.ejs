@@ -200,15 +200,10 @@
                  </div>
 
                 <%# ================== TÀI LIỆU ================== %>
-                <% } else if (lesson.type === 'document' && lesson.editorData && lesson.editorData.document) { %>
+                <% } else if (lesson.type === 'document' && lesson.documentData) { %>
                     <% 
-                        let docData = null; 
-                        try { 
-                            // Dữ liệu từ backend là một chuỗi JSON, ta parse nó ở đây
-                            docData = JSON.parse(lesson.editorData.document); 
-                        } catch(e){
-                            console.error('EJS Error: Could not parse document JSON string', e);
-                        } 
+                        // Backend đã parse sẵn, chỉ cần gán biến
+                        const docData = lesson.documentData; 
                     %>
 
                     <% if (docData && docData.url) { %>
