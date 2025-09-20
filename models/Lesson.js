@@ -12,7 +12,7 @@ const LessonSchema = new mongoose.Schema({
   },
   type: { 
     type: String, 
-    enum: ['markdown', 'quiz', 'video', 'essay'],  // thêm 'essay'
+    enum: ['markdown', 'quiz', 'video', 'essay', 'document'],
     default: 'markdown' 
   },
   editorData: { type: mongoose.Schema.Types.Mixed }, // Đối với markdown, quiz, video, hoặc essay (đáp án mẫu)

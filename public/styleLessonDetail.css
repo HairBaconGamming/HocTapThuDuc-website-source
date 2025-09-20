@@ -323,6 +323,36 @@ body {
 /* --- General Utilities --- */
 .text-muted { color: var(--text-medium); } .text-danger { color: var(--danger-color); } .text-warning { color: var(--warning-color); } .text-success { color: var(--success-color); } .text-primary { color: var(--primary-color); } .text-center { text-align: center; } .fw-bold { font-weight: 700; } .fst-italic { font-style: italic; } .ms-1 { margin-left: 0.25rem; } .me-1 { margin-right: 0.25rem; } .my-4 { margin-top: 1.5rem; margin-bottom: 1.5rem; } .mb-3 { margin-bottom: 1rem; } .mt-3 { margin-top: 1rem; }
 
+
+/* --- Document Content --- */
+.lesson-content-document {
+  text-align: center;
+  padding: 50px 20px;
+  background: rgba(var(--artistic-primary-rgb), 0.05);
+  border: 1px solid var(--artistic-border-color);
+  border-radius: var(--border-radius-medium);
+}
+.document-icon {
+  font-size: 4rem;
+  color: var(--artistic-primary);
+  margin-bottom: 20px;
+}
+.document-icon .fa-file-pdf { color: #e74c3c; }
+.document-icon .fa-file-word { color: #3498db; }
+.document-icon .fa-file-excel { color: #2ecc71; }
+
+.document-filename {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--artistic-text-light);
+  margin-bottom: 10px;
+}
+.document-meta {
+  font-size: 0.9rem;
+  color: var(--artistic-text-medium);
+  margin-bottom: 30px;
+}
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 992px) { .lesson-detail-container { max-width: 90%; padding: 35px 40px; } }
 @media (max-width: 768px) { .lesson-detail-page-section { padding: 60px 15px 80px; } .lesson-detail-container { padding: 30px 25px; max-width: 100%; } .lesson-detail-header { flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 25px; padding-bottom: 20px; } .lesson-owner-actions { position: absolute; top: 15px; right: 15px; margin-left: 0; } .lesson-type-icon { width: 50px; height: 50px; font-size: 1.8rem; } .lesson-title-area h1 { font-size: 2rem; } .lesson-meta-info { justify-content: center; } .lesson-content-wrapper { margin-bottom: 30px; } .prose-styling { font-size: 1rem; } .quiz-question-card { padding: 20px; } .question-header { padding: 10px 20px; } .question-content-markdown, .quiz-options-list { padding: 15px 20px; } .essay-prompt-card { padding: 20px; } .essay-question-group { padding: 15px; } .lesson-action-bar { flex-direction: column; gap: 15px; align-items: center; } .completion-wrapper { width: 100%; justify-content: center; } }

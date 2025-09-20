@@ -13,7 +13,7 @@ const { isPro } = require("../middlewares/auth");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Use environment variable or fallback secret key
-const apiKey = process.env.GEMINI_API_KEY_2 || "AIzaSyALx6MqoO2Lz9SQjhCpd3msWodOQQRMlxc";
+const apiKey = process.env.GEMINI_API_KEY_2;
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // Get the Gemini model

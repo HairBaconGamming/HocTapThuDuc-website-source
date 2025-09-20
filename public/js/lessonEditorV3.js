@@ -120,6 +120,125 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeModalBtn = fullscreenModal?.querySelector(".close-fullscreen-editor");
     const saveAndCloseBtn = getEl("save-and-close-editor");
 
+    const documentDataInput = getEl("documentData");
+    const documentDropZone = getEl("document-drop-zone");
+    const documentFileInput = getEl("documentFileInput");
+    const uploadStatusContainer = getEl("upload-status");
+    // --- DOCUMENT UPLOAD LOGIC ---
+    if (documentDropZone && documentFileInput && uploadStatusContainer && documentDataInput) {
+        
+        const updateStatus = (html) => {
+            uploadStatusContainer.innerHTML = html;
+        };
+        
+        const handleFileUpload = async (file) => {
+            if (!file) return;
+
+            updateStatus(`
+                <div class="status-card uploading">
+                    <div class="status-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                    <div class="status-text">
+                        <strong>Đang tải lên...</strong>
+                        <small>${file.name}</small>
+                    </div>
+                </div>
+            `);
+
+            const formData = new FormData();
+            formData.append('documentFile', file);
+
+            try {
+                const response = await fetch('/documents/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Lỗi không xác định từ server');
+                }
+                
+                // Lưu thông tin file vào input ẩn
+                documentDataInput.value = JSON.stringify(result);
+
+                updateStatus(`
+                    <div class="status-card success">
+                        <div class="status-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="status-text">
+                            <strong>Tải lên thành công!</strong>
+                            <small>${result.originalName} (${(result.size / 1024 / 1024).toFixed(2)} MB)</small>
+                        </div>
+                    </div>
+                `);
+
+                if(mode !== 'edit') saveProgressThrottled();
+
+            } catch (error) {
+                console.error('Upload failed:', error);
+                updateStatus(`
+                     <div class="status-card error">
+                        <div class="status-icon"><i class="fas fa-times-circle"></i></div>
+                        <div class="status-text">
+                            <strong>Tải lên thất bại!</strong>
+                            <small>${error.message}</small>
+                        </div>
+                    </div>
+                `);
+                documentDataInput.value = ''; // Xóa dữ liệu cũ nếu upload lỗi
+            }
+        };
+        
+        // Hiển thị lại trạng thái file đã upload (khi sửa bài)
+        if (documentDataInput.value) {
+            try {
+                const existingData = JSON.parse(documentDataInput.value);
+                 updateStatus(`
+                    <div class="status-card success">
+                        <div class="status-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="status-text">
+                            <strong>Đã tải lên file:</strong>
+                            <small>${existingData.originalName} (${(existingData.size / 1024 / 1024).toFixed(2)} MB)</small>
+                        </div>
+                    </div>
+                `);
+            } catch(e) {}
+        }
+
+
+        documentDropZone.addEventListener('click', () => documentFileInput.click());
+        documentFileInput.addEventListener('change', () => {
+            if (documentFileInput.files.length > 0) {
+                handleFileUpload(documentFileInput.files[0]);
+            }
+        });
+
+        // Drag and Drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            documentDropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            documentDropZone.addEventListener(eventName, () => {
+                documentDropZone.classList.add('drag-over');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            documentDropZone.addEventListener(eventName, () => {
+                documentDropZone.classList.remove('drag-over');
+            }, false);
+        });
+
+        documentDropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                handleFileUpload(dt.files[0]);
+            }
+        });
+    }
+
     // --- State Variables ---
     let currentStep = 1;
     let isSubmitting = false; // Prevent double submit

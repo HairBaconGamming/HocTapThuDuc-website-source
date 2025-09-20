@@ -133,7 +133,7 @@
                                     <div class="setting-item-v2"><input type="checkbox" id="toggleRandomQuestions" class="custom-checkbox visually-hidden"><label for="toggleRandomQuestions" class="custom-checkbox-label"><span class="custom-choice-indicator"></span> Xáo trộn câu hỏi</label></div>
                                     <div class="setting-item-v2"><input type="checkbox" id="toggleRandomChoices" class="custom-checkbox visually-hidden"><label for="toggleRandomChoices" class="custom-checkbox-label"><span class="custom-choice-indicator"></span> Xáo trộn đáp án</label></div>
                                 </div>
-                                <button type="button" id="resetQuizBtnV2" class="btn btn-secondary-outline reset-quiz-btn-v2"><i class="fas fa-sync-alt"></i> Tải lại</button>
+                                <button type="button" id="resetQuizBtnV2" class="btn btn-secondary-outline reset-quiz-btn"><i class="fas fa-sync-alt"></i> Tải lại</button>
                             </div>
                             <form id="quizFormV2" class="quiz-form-v2">
                                 <div id="quizContainerV2" class="quiz-questions-container">
@@ -192,13 +192,37 @@
                      <% if (essayDataParsed.length > 0) { %> <form id="essayFormV2" class="essay-form-v2"> <h3 class="essay-section-title">Bài làm của bạn</h3> <% essayDataParsed.forEach((q, idx) => { %> <% if (q && typeof q === 'object') { %> <div class="essay-question-group" data-question-index="<%= idx %>"> <div class="essay-question-content prose-styling"> <span class="question-number">Câu <%= idx + 1 %>:</span> <% try { %> <%- marked.parse(q.question || "(Câu hỏi trống)") %> <% } catch(e) { %> <%= q.question || "(Câu hỏi trống)" %> <% } %> </div> <div class="textarea-wrapper"> <textarea class="essay-answer-textarea form-input-v2" placeholder="Nhập câu trả lời..." rows="5" required name="answers[<%= idx %>]"></textarea> <span class="input-focus-line"></span> </div> </div> <% } %> <% }); %> <div class="essay-submit-area"> <button type="submit" class="btn btn-primary-glow submit-essay-btn" id="submitEssayBtnV2"><i class="fas fa-paper-plane"></i> Gửi bài chấm AI</button> <div id="gradingStatusV2" class="grading-status-v2"></div> </div> </form> <div id="essayResultV2" class="essay-result-v2"></div> <% } else { %> <p class="placeholder-text">Không có câu hỏi tự luận.</p> <% } %>
                  </div>
 
-                <%# ==================== DEFAULT / FALLBACK ==================== %>
-                <% } else { %>
-                    <div class="lesson-content-default prose-styling">
-                         <% try { %> <%- marked.parse(lesson.content || '<p class="placeholder-text">Nội dung chưa được cập nhật.</p>') %> <% } catch(e) { %> <%= lesson.content || '<p class="placeholder-text">Nội dung chưa được cập nhật.</p>' %> <% } %>
-                     </div>
-                <% } %>
+                <%# ================== TÀI LIỆU ================== %>
+                <% } else if (lesson.type === 'document' && lesson.editorData && lesson.editorData.document) { %>
+                    <% let docData = null; %>
+                    <% try { docData = JSON.parse(lesson.editorData.document); } catch(e){} %>
 
+                    <% if (docData && docData.url) { %>
+                        <div class="lesson-content-document">
+                            <div class="document-icon">
+                                <% if (docData.contentType.includes('pdf')) { %>
+                                    <i class="fas fa-file-pdf"></i>
+                                <% } else if (docData.contentType.includes('word')) { %>
+                                    <i class="fas fa-file-word"></i>
+                                <% } else if (docData.contentType.includes('excel') || docData.contentType.includes('spreadsheet')) { %>
+                                    <i class="fas fa-file-excel"></i>
+                                <% } else { %>
+                                    <i class="fas fa-file-alt"></i>
+                                <% } %>
+                            </div>
+                            <h3 class="document-filename"><%= docData.originalName %></h3>
+                            <p class="document-meta">
+                                Loại file: <%= docData.contentType %> | Kích thước: <%= (docData.size / 1024 / 1024).toFixed(2) %> MB
+                            </p>
+                            <a href="<%= docData.url %>" class="btn btn-primary-glow" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-eye"></i> Xem / Tải về
+                            </a>
+                        </div>
+                    <% } else { %>
+                        <p class="placeholder-text text-danger">Lỗi: Không tìm thấy thông tin tài liệu đính kèm.</p>
+                    <% } %>
+                <% } %>
+                
             </div> <!-- End .lesson-content-wrapper -->
 
             <!-- Action/Completion Bar -->

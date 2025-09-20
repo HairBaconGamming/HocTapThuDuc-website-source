@@ -235,6 +235,10 @@
                         <button type="button" class="type-tab-btn <%= initialType === 'essay' ? 'active' : '' %>" data-type="essay" title="Tự luận">
                             <i class="fas fa-pen-alt"></i> <span>Tự luận</span>
                         </button>
+                        <!-- Thêm nút chọn loại Tài liệu -->
+                        <button type="button" class="type-tab-btn <%= initialType === 'document' ? 'active' : '' %>" data-type="document" title="Tài liệu (PDF, Word...)">
+                            <i class="fas fa-file-alt"></i> <span>Tài liệu</span>
+                        </button>
                     </div>
                     <%# Hidden input to store the selected lesson type %>
                     <input type="hidden" id="lessonType" name="type" value="<%= initialType %>">
@@ -320,7 +324,7 @@
                         </div>
 
                         <%# --- Essay Panel --- %>
-                         <div class="editor-panel" data-editor-type="essay" style="<%= initialType === 'essay' ? 'display: block;' : 'display: none;' %>">
+                        <div class="editor-panel" data-editor-type="essay" style="<%= initialType === 'essay' ? 'display: block;' : 'display: none;' %>">
                             <label class="editor-label"><i class="fas fa-pen-alt"></i> Soạn thảo Tự luận</label>
 
                             <div class="essay-section">
@@ -400,8 +404,31 @@
                                 }
                             %>
                             <input type="hidden" name="editorData[essay]" id="essayData" class="hidden-data" value='<%- essayJsonString %>'>
-                        </div> <%# End essay-panel %>
+                        </div>
 
+                        <%# --- Document Panel --- %>
+                        <div class="editor-panel" data-editor-type="document" style="<%= initialType === 'document' ? 'display: block;' : 'display: none;' %>">
+                            <label class="editor-label"><i class="fas fa-file-upload"></i> Tải lên Tập tài liệu</label>
+                            
+                            <div class="document-upload-area">
+                                <div id="document-drop-zone" class="file-drop-zone">
+                                    <input type="file" id="documentFileInput" class="file-input-hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+                                    <div class="drop-zone-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p><strong>Kéo và thả file vào đây</strong><br>hoặc click để chọn file</p>
+                                        <small>Hỗ trợ: PDF, Word, Excel, PowerPoint (Tối đa 10MB)</small>
+                                    </div>
+                                </div>
+                                
+                                <div id="upload-status" class="upload-status">
+                                    <!-- JS sẽ cập nhật trạng thái ở đây -->
+                                </div>
+                            </div>
+                            
+                            <!-- Input ẩn này lưu thông tin file đã upload thành công -->
+                            <input type="hidden" name="editorData[document]" id="documentData" value='<%= (lesson && lesson.type === "document" && lesson.editorData && lesson.editorData.document) ? JSON.stringify(lesson.editorData.document) : "" %>'>
+                        </div>
+                        
                     </div><!-- End .editor-area -->
 
                     <%# Step 2 Navigation Buttons %>

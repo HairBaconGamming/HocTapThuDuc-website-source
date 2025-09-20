@@ -230,6 +230,9 @@ app.use("/live", liveRouter);
 const adminRouter = require("./routes/admin");
 app.use("/admin", adminRouter);
 
+const documentRouter = require("./routes/documents");
+app.use("/documents", documentRouter); // Sử dụng prefix /documents
+
 // Middleware cập nhật lượt truy cập
 async function updateVisitStats(req, res, next) {
   try {
@@ -948,7 +951,17 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
       const essayPrompt = req.body.editorData && req.body.editorData.essayPrompt ? req.body.editorData.essayPrompt : "";
       const essayAnswer = req.body.editorData && req.body.editorData.essay ? req.body.editorData.essay : "";
       content = essayPrompt + "\n\n" + essayAnswer;
-    } else { content = ""; }
+    }
+    else if (type === "document" && req.body.editorData && req.body.editorData.document) {
+      // Dữ liệu document là JSON, ta có thể lấy tên file để làm content
+      try {
+        const docData = JSON.parse(req.body.editorData.document);
+        content = `Tài liệu: ${docData.originalName}`;
+      } catch (e) {
+        content = "Tài liệu đính kèm";
+      }
+    }
+    else { content = ""; }
   }
   const newLesson = new Lesson({ 
     subject: subjectId, 
@@ -1093,6 +1106,14 @@ app.post("/lesson/:id/edit", isLoggedIn, upload.none(), async (req, res) => {
       else if (type === "video" && req.body.editorData && req.body.editorData.video) { content = req.body.editorData.video; } 
       else if (type === "quiz" && req.body.editorData && req.body.editorData.quiz) { content = "Bài trắc nghiệm"; } 
       else if (type === "essay") { content = req.body.editorData.essay; } 
+      else if (type === "document" && req.body.editorData && req.body.editorData.document) {
+          try {
+              const docData = JSON.parse(req.body.editorData.document);
+              content = `Tài liệu: ${docData.originalName}`;
+          } catch(e) {
+              content = "Tài liệu đính kèm";
+          }
+      }
       else { content = ""; }
     }
     lesson.subject = subjectId;

@@ -1733,6 +1733,72 @@ input:invalid ~ .input-icon,
     opacity: 1;
 }
 
+
+/* --- Document Upload Panel --- */
+.document-upload-area {
+  padding: 20px;
+  background-color: rgba(0,0,0,0.2);
+  border-radius: var(--border-radius-medium);
+}
+.file-drop-zone {
+  border: 2px dashed var(--artistic-border-color-focus);
+  border-radius: var(--border-radius-medium);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.file-drop-zone.drag-over {
+  background-color: rgba(var(--artistic-primary-rgb), 0.1);
+  border-color: var(--artistic-primary);
+}
+.file-input-hidden {
+  display: none;
+}
+.drop-zone-prompt i {
+  font-size: 3rem;
+  color: var(--artistic-primary);
+  margin-bottom: 15px;
+}
+.drop-zone-prompt p {
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: var(--artistic-text-medium);
+}
+.drop-zone-prompt small {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.upload-status {
+  margin-top: 20px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.status-card {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--border-radius-small);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  animation: popIn 0.3s ease;
+}
+.status-card.uploading { background-color: rgba(var(--artistic-accent-rgb), 0.1); }
+.status-card.success { background-color: rgba(var(--artistic-success-rgb), 0.1); }
+.status-card.error { background-color: rgba(var(--artistic-danger-rgb), 0.1); }
+
+.status-icon { font-size: 1.5rem; }
+.status-icon .fa-spinner { color: var(--artistic-accent); }
+.status-icon .fa-check-circle { color: var(--artistic-success); }
+.status-icon .fa-times-circle { color: var(--artistic-danger); }
+
+.status-text strong { display: block; color: var(--artistic-text-light); font-weight: 600; }
+.status-text small { color: var(--artistic-text-medium); font-size: 0.8rem; }
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 992px) {
   .manage-lesson-container {
