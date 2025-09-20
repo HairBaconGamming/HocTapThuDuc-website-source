@@ -326,8 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     usageStatistics: false,
                     // ===== PLUGIN INTEGRATION =====
                     plugins: [
-                        katexPlugin, // Our new KaTeX plugin
-                        [mathEditorPlugin] // The math input helper plugin
+                        katexPlugin
                     ]
                     // ==============================
                 });
