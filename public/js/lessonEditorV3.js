@@ -14,7 +14,7 @@ if (typeof gsap !== 'undefined' && typeof Flip !== 'undefined') {
 }
 
 // Optional: Math plugin (uncomment if used and properly imported/configured)
-// import mathEditorPlugin from "./plugins/mathEditorPlugin.js";
+import mathEditorPlugin from "./plugins/mathEditorPlugin.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Initializing Manage Lesson V3 Script (with Multi-Choice Quiz)...");
@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof marked === 'undefined') {
         console.error("Marked library not loaded (needed for previews)! Previews will likely fail.");
     }
+    if (typeof katex === 'undefined') console.warn("KaTeX not loaded! Math plugin will fail.");
     // Check for Math rendering functions
     const hasRenderMathInElement = typeof renderMathInElement === 'function'; // For KaTeX auto-render
     const hasMathLive = typeof MathLive !== 'undefined' && typeof MathLive.renderMathInElement === 'function';
@@ -131,6 +132,83 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================================
     // HELPER FUNCTIONS
     // ==========================================================================
+
+    // =========================================================================
+    // ===== KÄTEX PLUGIN FOR TOAST UI EDITOR =====
+    // =========================================================================
+    function katexPlugin() {
+        // This function will be the core of our plugin
+        const toHTMLRenderers = {
+            // This renderer handles custom code blocks marked with 'katex'
+            katex(node) {
+                if (!window.katex) {
+                    return [
+                        { type: 'openTag', tagName: 'div', attributes: { style: 'color: red; font-weight: bold;' } },
+                        { type: 'text', content: 'KaTeX library not loaded.' },
+                        { type: 'closeTag', tagName: 'div' }
+                    ];
+                }
+                try {
+                    const html = katex.renderToString(node.literal, {
+                        throwOnError: false,
+                        displayMode: true // Render as display math (block level)
+                    });
+                    return [
+                        { type: 'openTag', tagName: 'div', outerNewLine: true, attributes: { 'data-katex-block': 'true' } },
+                        { type: 'html', content: html },
+                        { type: 'closeTag', tagName: 'div', outerNewLine: true }
+                    ];
+                } catch (e) {
+                    console.error("KaTeX rendering error in plugin:", e);
+                    return [
+                        { type: 'openTag', tagName: 'div', attributes: { style: 'color: red;' } },
+                        { type: 'text', content: `KaTeX Error: ${e.message}` },
+                        { type: 'closeTag', tagName: 'div' }
+                    ];
+                }
+            },
+            // This renderer handles inline math wrapped in $...$
+            customInline(node) {
+                 if (node.type === 'customInline' && node.info === 'katex') {
+                    if (!window.katex) return { type: 'text', content: '$...$ (KaTeX not loaded)' };
+                    try {
+                        const html = katex.renderToString(node.literal, {
+                            throwOnError: false,
+                            displayMode: false // Render as inline math
+                        });
+                        return { type: 'html', content: html };
+                    } catch (e) {
+                         console.error("Inline KaTeX rendering error:", e);
+                         return { type: 'html', content: `<span style="color:red;">$${node.literal}$</span>` };
+                    }
+                 }
+                 return null; // Let other renderers handle it
+            }
+        };
+
+        // Define a custom rule to detect $...$ for inline math
+        const customInlineRules = [
+            {
+                // Regex to find content between single dollar signs that isn't just whitespace
+                // and avoids matching $$...$$ blocks
+                // It looks for a '$', then captures characters until the next '$' that isn't followed by another '$'
+                // This is a simplified regex; more complex ones exist for edge cases.
+                rule: /(^|[^$])\$([^\n$]+?)\$([^$]|$)/,
+                toCustomInline: (text, [leading, content, trailing]) => {
+                    // We return the custom node and the text before/after it
+                    return {
+                        nodes: [
+                            { type: 'text', content: leading },
+                            { type: 'customInline', info: 'katex', literal: content },
+                            { type: 'text', content: trailing }
+                        ]
+                    };
+                }
+            }
+        ];
+
+        return { toHTMLRenderers, customInlineRules };
+    }
 
     /**
      * Throttles a function to ensure it's not called too frequently.
@@ -249,17 +327,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     height: "100%",
                     initialValue: initialMarkdown,
                     usageStatistics: false,
-                    // plugins: [mathEditorPlugin], // Uncomment if using math plugin
-                    // Example: Customize toolbar
-                    // toolbarItems: [
-                    //    ['heading', 'bold', 'italic', 'strike'], ['hr', 'quote'],
-                    //    ['ul', 'ol', 'task'], ['table', 'image', 'link'],
-                    //    ['code', 'codeblock'], ['scrollSync']
-                    // ],
-                     events: {
-                         // Optional: Add TUI events if needed (e.g., change, keydown)
-                         // change: () => { console.log("Editor content changed"); }
-                     }
+                    // ===== PLUGIN INTEGRATION =====
+                    plugins: [
+                        katexPlugin, // Our new KaTeX plugin
+                        [mathEditorPlugin] // The math input helper plugin
+                    ]
+                    // ==============================
                 });
                 console.log("Fullscreen Editor Initialized successfully.");
                 return true;
@@ -642,73 +715,125 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    
-       /**
+
+    /**
      * Navigates to the specified step number with animation.
      * @param {number} targetStepNum The step number to navigate to (1-based).
      */
     function goToStep(targetStepNum) {
-        if (isAnimating || currentStep === targetStepNum) return;
+        if (isAnimating) { console.warn("Animation in progress, delaying step change."); return; }
 
-        const currentStepElement = steps[currentStep - 1];
-        const targetStepElement = steps[targetStepNum - 1];
-        const wrapper = document.querySelector('.form-steps-wrapper');
+        const currentStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.classList.contains('active')));
+        const targetStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.dataset.stepContent == targetStepNum)); // Use == for type coercion flexibility
+        const wrapper = /** @type {HTMLElement | null} */ (document.querySelector('.form-steps-wrapper'));
 
-        if (!currentStepElement || !targetStepElement || !wrapper) {
-            console.error("Step navigation failed: Missing critical elements.");
+        if (!targetStepElement || !wrapper || targetStepElement.classList.contains('active')) {
+            console.warn(`goToStep(${targetStepNum}) - Target invalid, already active, or wrapper not found.`);
             return;
         }
-        
-        console.log(`Navigating from step ${currentStep} to ${targetStepNum}`);
-        isAnimating = true;
 
+        const currentStepNum = currentStepElement ? parseInt(currentStepElement.dataset.stepContent || '0', 10) : 0;
+        console.log(`Navigating from step ${currentStepNum} to ${targetStepNum}`);
+        isAnimating = true; // Lock animation
+
+        // --- Prepare for Step Change ---
+        // Populate review data if moving to step 3
         if (targetStepNum === 3) {
             populateReviewData();
         }
+        // Ensure data is parsed/ready if moving TO step 2 (usually handled by initial load or type change)
+        // if (targetStepNum === 2) { /* Data should already be parsed */ }
 
-        const direction = targetStepNum > currentStep ? 1 : -1;
 
-        // Animate using a GSAP timeline for better control
-        const tl = gsap.timeline({
-            onComplete: () => {
-                isAnimating = false;
-                // Final state cleanup
-                gsap.set(currentStepElement, { position: 'absolute', display: 'none' });
-                gsap.set(targetStepElement, { position: 'relative' });
-                gsap.set(wrapper, { height: 'auto' });
-            }
-        });
-
-        // 1. Set target to be absolute for height calculation without affecting layout
+        // --- Height Calculation ---
+        let targetHeight = 0;
+        // Temporarily modify target styles to measure its natural height
+        const originalStyles = {
+            position: targetStepElement.style.position,
+            display: targetStepElement.style.display,
+            visibility: targetStepElement.style.visibility,
+            opacity: targetStepElement.style.opacity
+        };
         gsap.set(targetStepElement, {
-            position: 'absolute',
+            position: 'relative', // Allow natural height calculation
             display: 'block',
-            autoAlpha: 0, // Keep it invisible
-            width: currentStepElement.offsetWidth // Match current width
+            visibility: 'hidden', // Keep hidden but occupy space
+            opacity: 0
         });
-        const targetHeight = targetStepElement.offsetHeight;
+        targetHeight = targetStepElement.scrollHeight;
+        // Restore original styles immediately before animation starts
+        gsap.set(targetStepElement, {
+            position: originalStyles.position || 'absolute', // Default back to absolute for transitions
+            display: originalStyles.display || 'none',
+            visibility: originalStyles.visibility || 'hidden',
+            opacity: originalStyles.opacity || '0'
+        });
+        console.log(`Target step ${targetStepNum} calculated height: ${targetHeight}px`);
 
-        // 2. Animate wrapper height
-        tl.to(wrapper, { height: targetHeight, duration: 0.4, ease: 'power2.inOut' });
 
-        // 3. Animate current step out
-        tl.to(currentStepElement, {
-            autoAlpha: 0,
-            x: -40 * direction,
-            duration: 0.35,
-            ease: 'power2.in'
-        }, 0); // Start at the beginning of the timeline
+        // --- Animation Logic ---
+        if (prefersReducedMotion) {
+            // Simple show/hide, no animation
+            steps.forEach(step => {
+                 step.classList.remove('active');
+                 gsap.set(step, { display: 'none', opacity: 0, position: 'absolute' });
+            });
+            targetStepElement.classList.add('active');
+            gsap.set(targetStepElement, { display: 'block', opacity: 1, position: 'relative'});
+            gsap.set(wrapper, { height: targetHeight > 0 ? `${targetHeight}px` : 'auto' });
+            // Set wrapper height back to auto after render to allow dynamic content changes later
+             requestAnimationFrame(() => {
+                 requestAnimationFrame(() => {
+                     if(targetStepElement.classList.contains('active')) gsap.set(wrapper, { height: 'auto' });
+                 });
+             });
+             isAnimating = false; // Unlock immediately
 
-        // 4. Animate new step in
-        tl.fromTo(targetStepElement, 
-            { x: 40 * direction, autoAlpha: 0 },
-            { autoAlpha: 1, x: 0, duration: 0.35, ease: 'power2.out' },
-            '>-0.1' // Overlap slightly with the end of the previous animation
-        );
+        } else {
+            // GSAP Timeline animation
+            const tl = gsap.timeline({
+                defaults: { duration: 0.5, ease: 'power2.inOut' },
+                onComplete: () => {
+                    // Ensure correct final state
+                    steps.forEach(step => {
+                        const isActive = step === targetStepElement;
+                        step.classList.toggle('active', isActive);
+                        // Use set instead of to for instant final state
+                        gsap.set(step, {
+                            position: isActive ? 'relative' : 'absolute',
+                            display: isActive ? 'block' : 'none',
+                            autoAlpha: isActive ? 1 : 0 // Handles visibility and opacity
+                        });
+                    });
+                    // Set wrapper height to auto AFTER animation
+                    gsap.set(wrapper, { height: 'auto' });
+                    console.log(`Step transition complete. Wrapper height set to auto. Active step: ${targetStepElement.dataset.stepContent}`);
+                    // Refresh ScrollTrigger if layout changed significantly and it's loaded
+                    if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
+                    isAnimating = false; // Unlock animation state
+                }
+            });
 
-        // 5. Update classes and state
-        currentStepElement.classList.remove('active');
-        targetStepElement.classList.add('active');
+            const direction = targetStepNum > currentStepNum ? 1 : -1; // 1 for next, -1 for back
+
+            // 1. Animate wrapper height
+            // Start immediately, use 'auto' if targetHeight is 0 or invalid
+            tl.to(wrapper, { height: targetHeight > 0 ? targetHeight : 'auto' }, 0);
+
+            // 2. Animate out current step
+            if (currentStepElement) {
+                tl.to(currentStepElement, { autoAlpha: 0, x: -50 * direction }, 0); // Fade and slide out
+            }
+
+            // 3. Animate in target step
+            // Set initial state (off-screen, invisible, absolute position)
+            gsap.set(targetStepElement, { x: 50 * direction, autoAlpha: 0, position: 'absolute', display: 'block' });
+            // Add active class slightly before 'in' animation starts visually
+            tl.call(() => targetStepElement.classList.add('active'), null, ">-0.3");
+            // Animate to final position (visible, centered)
+            tl.to(targetStepElement, { autoAlpha: 1, x: 0 }, "<"); // Start slightly before outgoing finishes
+        }
+
         currentStep = targetStepNum;
         updateStepIndicator(currentStep);
     }
