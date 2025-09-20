@@ -135,7 +135,12 @@
                                 </div>
                                 <button type="button" id="resetQuizBtnV2" class="btn btn-secondary-outline reset-quiz-btn"><i class="fas fa-sync-alt"></i> Tải lại</button>
                             </div>
-                            <div id="quizQuestionNav" class="quiz-question-nav"></div>
+                            <div id="quizNavPanel" class="quiz-navigation-panel">
+                                <h4><i class="fas fa-list-ol"></i> Danh sách câu hỏi</h4>
+                                <div id="questionJumper" class="question-jumper-grid">
+                                    <!-- JS sẽ render các nút nhảy câu hỏi vào đây -->
+                                </div>
+                            </div>
                             <form id="quizFormV2" class="quiz-form-v2">
                                 <div id="quizContainerV2" class="quiz-questions-container">
                                     <% quizDataParsed.forEach((q, idx) => { %>
@@ -303,12 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const ITEMS_PER_PAGE = 5; // Number of questions per page
         const quizContainer = document.getElementById('quizContainerV2');
         const paginationContainer = document.getElementById('quizPagination');
-        const questionNavContainer = document.getElementById('quizQuestionNav');
         const quizForm = document.getElementById('quizFormV2');
         const resultDiv = document.getElementById('quizResultV2');
         const resetBtn = document.getElementById("resetQuizBtnV2");
         const randomQuestionsToggle = /** @type {HTMLInputElement | null} */ (document.getElementById("toggleRandomQuestions"));
         const randomChoicesToggle = /** @type {HTMLInputElement | null} */ (document.getElementById("toggleRandomChoices"));
+        const navPanel = document.getElementById('questionJumper');
         let masterQuizData = [];
         let workingQuizData = [];
         let currentPage = 1;
@@ -388,22 +393,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageItems = workingQuizData.slice(startIndex, endIndex);
 
             pageItems.forEach(q => {
-            const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
-            const card = createQuestionCard(q, originalIndex);
-            quizContainer.appendChild(card);
+                const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
+                const card = createQuestionCard(q, originalIndex);
+                quizContainer.appendChild(card);
             });
 
             attachOptionListeners();
             loadQuizProgress();
-            renderQuestionNav(); // Update nav on page change
+            renderNavigation(); // update navigation highlight
             if (typeof gsap !== 'undefined') {
-            gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
+                gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
             }
             // Scroll to top of quiz container or page
             if (quizContainer.scrollIntoView) {
-            quizContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                quizContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -436,45 +441,37 @@ document.addEventListener('DOMContentLoaded', () => {
             paginationContainer.appendChild(createBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1));
         }
 
-        // Render Question Navigation
-        function renderQuestionNav() {
-            if (!questionNavContainer) return;
-            questionNavContainer.innerHTML = '<div class="quiz-question-nav-title"><i class="fas fa-list-ol"></i> Danh sách câu hỏi</div>';
-            const list = document.createElement('div');
-            list.className = 'quiz-question-nav-list';
+        // --- Navigation Panel ---
+        function renderNavigation() {
+            if (!navPanel) return;
+            navPanel.innerHTML = '';
             const savedAnswers = JSON.parse(localStorage.getItem('quizProgress_' + lessonId) || '{}');
-
-            workingQuizData.forEach((q, index) => {
-                const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
-                const item = document.createElement('div');
-                item.className = 'quiz-question-nav-item';
-                item.textContent = index + 1;
-                item.dataset.questionIndex = index;
-
-                // Check if answered
-                if (savedAnswers[originalIndex] !== undefined && savedAnswers[originalIndex] !== null && savedAnswers[originalIndex].length !== 0) {
-                    item.classList.add('answered');
+            masterQuizData.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-jump-btn';
+                btn.type = 'button';
+                btn.textContent = idx + 1;
+                // Highlight if on current page
+                const pageOfThis = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+                if (pageOfThis === currentPage) btn.classList.add('on-page');
+                // Mark if answered
+                const correctCountForQ = (q.options || []).filter(opt => opt.isCorrect === true).length;
+                const inputType = correctCountForQ > 1 ? 'checkbox' : 'radio';
+                let answered = false;
+                if (inputType === 'radio') {
+                    answered = savedAnswers[idx] !== undefined && savedAnswers[idx] !== null;
+                } else if (inputType === 'checkbox') {
+                    answered = Array.isArray(savedAnswers[idx]) && savedAnswers[idx].length > 0;
                 }
-
-                // Highlight questions on the current page
-                const questionPage = Math.floor(index / ITEMS_PER_PAGE) + 1;
-                if (questionPage === currentPage) {
-                    item.classList.add('current-page');
-                }
-
-                item.addEventListener('click', () => {
-                    currentPage = questionPage;
+                if (answered) btn.classList.add('answered');
+                btn.title = `Câu ${idx + 1}`;
+                btn.addEventListener('click', () => {
+                    currentPage = pageOfThis;
                     renderCurrentPage();
                     renderPagination();
-                    // Optional: scroll to the specific question after page render
-                    setTimeout(() => {
-                        const targetCard = quizContainer.querySelector(`[data-original-index="${originalIndex}"]`);
-                        targetCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 100); // Small delay for render
                 });
-                list.appendChild(item);
+                navPanel.appendChild(btn);
             });
-            questionNavContainer.appendChild(list);
         }
 
         // Attach listeners for options (multi-choice aware)
@@ -493,17 +490,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         parentList.querySelectorAll('.quiz-option-v2').forEach(opt => opt.classList.remove('selected'));
                         wrapperDiv.classList.add('selected');
                         saveQuizProgress();
-                        renderQuestionNav(); // Update nav on answer
+                        renderNavigation();
                     });
                 } else if (input?.type === 'checkbox') {
                     optionElem.addEventListener('change', function (event) {
                         saveQuizProgress();
-                        renderQuestionNav(); // Update nav on answer
                         const wrapperDiv = event.currentTarget.closest('.quiz-option-v2');
                         const checkbox = event.currentTarget.querySelector('input[type="checkbox"]');
                         if (wrapperDiv && checkbox) {
                             wrapperDiv.classList.toggle('selected', checkbox.checked);
                         }
+                        renderNavigation();
                     });
                 }
             });
@@ -567,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPage = 1;
             renderCurrentPage();
             renderPagination();
-            renderQuestionNav(); // Initial render of nav
+            renderNavigation();
             if (completeBtn) completeBtn.disabled = true;
             if (scoreRequirementMsg) scoreRequirementMsg.style.display = 'none';
         }
@@ -700,7 +697,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.classList.add('submitted');
             const submitBtn = this.querySelector('.submit-quiz-btn');
             if (submitBtn) submitBtn.disabled = true;
-            renderQuestionNav(); // Update nav to show all as "answered" (or keep as is)
             // Ensure options remain disabled
             quizContainer?.querySelectorAll('.quiz-option-v2').forEach(opt => { opt.style.pointerEvents = 'none'; });
         });
@@ -966,54 +962,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Lightbox Setup ---
-    const lightboxModal = document.getElementById('lessonLightboxModal');
-    const lightboxImg = document.getElementById('lessonLightboxImg');
-    const lightboxCaption = document.getElementById('lessonLightboxCaption');
-    const lightboxCloseBtn = document.querySelector('#lessonLightboxModal .lightbox-close-btn');
-    const lightboxBackdrop = document.querySelector('#lessonLightboxModal .lightbox-backdrop');
-
-    function openLessonLightbox(src, caption) {
-         if (!src || !lightboxModal || !lightboxImg || !lightboxCaption) return;
-         lightboxImg.src = ''; lightboxImg.src = src; lightboxCaption.textContent = caption || '';
-         gsap.set(lightboxModal, { display: 'flex', autoAlpha: 0 });
-         gsap.to(lightboxModal, { duration: 0.4, autoAlpha: 1, ease: 'power2.out' });
-         gsap.from(lightboxImg, { duration: 0.5, scale: 0.9, delay: 0.1, ease: 'power2.out' });
-         document.body.style.overflow = 'hidden';
-     }
-    function closeLessonLightbox() {
-         if (!lightboxModal || !(lightboxImg instanceof HTMLImageElement)) return;
-         gsap.to(lightboxModal, { duration: 0.3, autoAlpha: 0, ease: 'power1.in', onComplete: () => { lightboxModal.style.display = 'none'; document.body.style.overflow = ''; lightboxImg.src = ''; } });
-     }
-    lightboxCloseBtn?.addEventListener('click', closeLessonLightbox);
-    lightboxBackdrop?.addEventListener('click', closeLessonLightbox);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lightboxModal && lightboxModal.style.display !== 'none') closeLessonLightbox(); });
-
-    // --- Loading Link Script ---
-    document.querySelectorAll(".loading-link").forEach(anchor => {
-        anchor.addEventListener("click", function (event) {
-             // Simple check if it's a link to the same page (hash link)
-            if (this.hash && this.pathname === window.location.pathname) { return; }
-            // Prevent default navigation for external links or other protocols? Maybe not needed.
-            // if (this.hostname !== window.location.hostname || this.protocol !== window.location.protocol) { return; }
-
-             const overlay = document.getElementById('loading-overlay');
-             if (overlay) {
-                overlay.style.opacity = '0'; // Start transparent
-                overlay.classList.add('active');
-                gsap.to(overlay, { opacity: 1, duration: 0.3 }); // Fade in
-             }
-             // No preventDefault(), allow navigation to proceed after showing overlay
-         });
-     });
-
-    // --- Initial State for Complete Button (Quiz/Essay) ---
-     if ((lessonType === 'quiz' || lessonType === 'essay') && completeBtn) {
-         completeBtn.disabled = true; // Start disabled
-          if(scoreRequirementMsg) scoreRequirementMsg.style.display = 'inline'; // Show requirement initially
-     } else if (scoreRequirementMsg) {
-           scoreRequirementMsg.style.display = 'none'; // Hide if not quiz/essay
-     }
     // --- Lightbox Setup ---
     const lightboxModal = document.getElementById('lessonLightboxModal');
     const lightboxImg = document.getElementById('lessonLightboxImg');
