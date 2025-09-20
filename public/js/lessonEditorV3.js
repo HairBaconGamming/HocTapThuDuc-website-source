@@ -13,9 +13,6 @@ if (typeof gsap !== 'undefined' && typeof Flip !== 'undefined') {
     console.error("GSAP Core or Flip plugin not loaded. Animations might be disabled or broken.");
 }
 
-// Optional: Math plugin (uncomment if used and properly imported/configured)
-import mathEditorPlugin from "./plugins/mathEditorPlugin.js";
-
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Initializing Manage Lesson V3 Script (with Multi-Choice Quiz)...");
 
