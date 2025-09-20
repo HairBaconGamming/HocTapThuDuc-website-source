@@ -4,52 +4,42 @@ const express = require("express");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const { Readable } = require("stream");
-const { isLoggedIn, isTeacher } = require("../middlewares/auth"); // Dùng isTeacher để chỉ giáo viên mới được upload
-const jwt = require('jsonwebtoken'); 
+const { isLoggedIn, isTeacher } = require("../middlewares/auth");
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// Sử dụng một kết nối MongoDB riêng cho GridFS để tránh xung đột
 const conn = mongoose.createConnection(process.env.MONGO_URI);
 
 let bucket;
 conn.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "lessonDocuments", // Tạo một bucket mới riêng cho tài liệu bài học
+    bucketName: "lessonDocuments",
   });
   console.log("GridFS for documents is ready.");
 });
 
-// Cấu hình Multer
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // Giới hạn 10MB
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    // Chỉ cho phép các loại file tài liệu phổ biến
-    const allowedTypes = /pdf|doc|docx|xls|xlsx|ppt|pptx/;
-    const mimetype = allowedTypes.test(file.mimetype);
-    const extname = allowedTypes.test(file.originalname.split('.').pop().toLowerCase());
-
-    if (mimetype || extname) {
+    const allowedTypes = /pdf|doc|docx|xls|xlsx|ppt|pptx|txt/; // Thêm các loại file bạn muốn
+    const extname = file.originalname.split('.').pop().toLowerCase();
+    if (allowedTypes.test(extname)) {
       return cb(null, true);
     }
-    cb(new Error("Loại file không được hỗ trợ! Chỉ chấp nhận Word, Excel, PowerPoint, PDF."));
+    cb(new Error("Loại file không được hỗ trợ!"));
   },
 });
 
-
-// API Endpoint: POST /api/documents/upload
-// SỬA LẠI TOÀN BỘ ROUTE NÀY THÀNH ASYNC/AWAIT VÀ DÙNG PROMISE
+// === API UPLOAD: Trả về _id thay vì filename trong URL ===
 router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Không có file nào được chọn." });
-  }
-  if (!bucket) {
-    return res.status(500).json({ error: "Dịch vụ lưu trữ chưa sẵn sàng, vui lòng thử lại." });
-  }
+  if (!req.file) return res.status(400).json({ error: "Không có file nào được chọn." });
+  if (!bucket) return res.status(500).json({ error: "Dịch vụ lưu trữ chưa sẵn sàng." });
 
   try {
-    const filename = `${Date.now()}-${req.file.originalname}`;
+    // Tên file trong GridFS giờ chỉ là timestamp để đảm bảo duy nhất, không dùng trong URL nữa
+    const filename = `${Date.now()}`;
     const readableStream = Readable.from(req.file.buffer);
 
     const uploadStream = bucket.openUploadStream(filename, {
@@ -60,22 +50,20 @@ router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), asy
       },
     });
 
-    // Bọc quá trình pipe vào một Promise để có thể "await"
     const uploadedFile = await new Promise((resolve, reject) => {
       readableStream.pipe(uploadStream)
-        .on("error", (err) => reject(err))
+        .on("error", reject)
         .on("finish", () => resolve(uploadStream));
     });
 
-    // Chỉ gửi phản hồi sau khi upload đã hoàn tất
     res.status(201).json({
       message: "Tải file lên thành công!",
-      fileId: uploadedFile.id,
-      filename: uploadedFile.filename,
+      fileId: uploadedFile.id.toString(), // QUAN TRỌNG: Trả về fileId dạng chuỗi
       originalName: req.file.originalname,
       contentType: req.file.mimetype,
       size: req.file.size,
-      url: `/documents/view/${uploadedFile.filename}`
+      // URL mới sử dụng fileId
+      url: `/documents/view/${uploadedFile.id.toString()}`
     });
 
   } catch (error) {
@@ -84,54 +72,65 @@ router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), asy
   }
 });
 
-// ===== THÊM ROUTE MỚI NÀY VÀO CUỐI FILE =====
-// Route CÔNG KHAI để xem file, xác thực bằng token
-// KHÔNG có middleware isLoggedIn
-router.get("/public-view/:filename", async (req, res) => {
-    const { token } = req.query;
-
-    if (!token) {
-        return res.status(401).send("Access token is missing.");
+// === ROUTE XEM FILE (YÊU CẦU LOGIN) SỬ DỤNG _id ===
+router.get("/view/:id", isLoggedIn, async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).send("ID tài liệu không hợp lệ.");
     }
-    if (!bucket) {
-        return res.status(500).send("Storage service is not ready.");
-    }
+    if (!bucket) return res.status(500).send("Dịch vụ lưu trữ chưa sẵn sàng.");
 
     try {
-        // 1. Xác thực token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_fallback_secret');
-
-        // 2. Kiểm tra xem filename trong token có khớp với filename trong URL không
-        if (decoded.filename !== req.params.filename) {
-            return res.status(403).send("Invalid token for this file.");
-        }
-
-        // 3. Nếu token hợp lệ, tiến hành stream file
-        const files = await bucket.find({ filename: req.params.filename }).toArray();
+        const fileId = new mongoose.Types.ObjectId(req.params.id);
+        const files = await bucket.find({ _id: fileId }).toArray();
         if (!files || files.length === 0) {
-            return res.status(404).send("File not found.");
+            return res.status(404).send("Không tìm thấy tài liệu.");
         }
 
         const file = files[0];
         res.set("Content-Type", file.contentType);
         res.set("Content-Disposition", `inline; filename="${file.metadata.originalName}"`);
 
-        const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+        const downloadStream = bucket.openDownloadStream(fileId);
         downloadStream.pipe(res);
+    } catch (error) {
+        console.error("Error streaming document:", error);
+        res.status(500).send("Lỗi khi truy cập tài liệu.");
+    }
+});
+
+// === ROUTE XEM FILE CÔNG KHAI SỬ DỤNG _id VÀ TOKEN ===
+router.get("/public-view/:id", async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(401).send("Access token is missing.");
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).send("ID tài liệu không hợp lệ.");
+    }
+    if (!bucket) return res.status(500).send("Storage service is not ready.");
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_fallback_secret');
+        
+        // Token giờ sẽ chứa fileId
+        if (decoded.fileId !== req.params.id) {
+            return res.status(403).send("Invalid token for this file.");
+        }
+
+        const fileId = new mongoose.Types.ObjectId(req.params.id);
+        const files = await bucket.find({ _id: fileId }).toArray();
+        if (!files || files.length === 0) return res.status(404).send("File not found.");
+
+        const file = files[0];
+        res.set("Content-Type", file.contentType);
+        res.set("Content-Disposition", `inline; filename="${file.metadata.originalName}"`);
+        
+        bucket.openDownloadStream(fileId).pipe(res);
 
     } catch (error) {
-        // Lỗi nếu token hết hạn hoặc không hợp lệ
-        if (error instanceof jwt.TokenExpiredError) {
-            return res.status(403).send("Access link has expired. Please reload the lesson page.");
-        }
-        if (error instanceof jwt.JsonWebTokenError) {
-            return res.status(403).send("Invalid access token.");
-        }
+        if (error instanceof jwt.TokenExpiredError) return res.status(403).send("Access link has expired.");
+        if (error instanceof jwt.JsonWebTokenError) return res.status(403).send("Invalid access token.");
         console.error("Error streaming public document:", error);
         res.status(500).send("Server error while accessing the file.");
     }
 });
-// ===============================================
-
 
 module.exports = router;

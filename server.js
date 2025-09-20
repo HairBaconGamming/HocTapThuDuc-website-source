@@ -1034,28 +1034,22 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
     // ===== BẮT ĐẦU PHẦN SỬA LỖI LOGIC DOCUMENT =====
     if (lesson.type === 'document' && editorDataForView.document) {
         try {
-            // Bước 1: Parse chuỗi JSON gốc từ database
             let docData = JSON.parse(editorDataForView.document);
             
-            // Bước 2: Tạo URL tuyệt đối nếu chưa có
-            if (docData.url && !docData.absoluteUrl) {
-                docData.absoluteUrl = new URL(docData.url, `${req.protocol}://${req.get('host')}`).href;
+            // ===== LOGIC MỚI SỬ DỤNG fileId =====
+            if (docData.fileId) {
+                const fileAccessToken = jwt.sign(
+                    { fileId: docData.fileId }, // Payload giờ chứa fileId
+                    process.env.JWT_SECRET || 'your_fallback_secret',
+                    { expiresIn: '10m' } // Tăng thời gian token lên 10 phút
+                );
+
+                const publicViewUrl = new URL(`/documents/public-view/${docData.fileId}`, `${req.protocol}://${req.get('host')}`);
+                publicViewUrl.searchParams.set('token', fileAccessToken);
+
+                docData.publicViewUrl = publicViewUrl.href;
+                editorDataForView.document = JSON.stringify(docData);
             }
-            
-           // TẠO TOKEN TRUY CẬP TẠM THỜI (vd: 5 phút)
-            const fileAccessToken = jwt.sign(
-                { filename: docData.filename }, // Payload chứa tên file cần truy cập
-                process.env.JWT_SECRET || 'your_fallback_secret', // Dùng chung secret key
-                { expiresIn: '5m' } // Token chỉ có hiệu lực 5 phút
-            );
-
-            // TẠO URL XEM TRƯỚC CÔNG KHAI VỚI TOKEN
-            const publicViewUrl = new URL(`/documents/public-view/${docData.filename}`, `${req.protocol}://${req.get('host')}`);
-            publicViewUrl.searchParams.set('token', fileAccessToken);
-
-            docData.publicViewUrl = publicViewUrl.href; // Gán URL mới vào đối tượng
-            editorDataForView.document = JSON.stringify(docData);
-
         } catch (e) {
             console.error(`Error processing document data for lesson ${lesson._id}:`, e);
             editorDataForView.document = null; // Gán null nếu có lỗi để frontend biết

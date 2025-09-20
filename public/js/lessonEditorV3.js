@@ -169,8 +169,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Nếu response.ok, chúng ta có thể an toàn parse JSON
                 const result = await response.json();
                 
-                // Lưu thông tin file vào input ẩn
-                documentDataInput.value = JSON.stringify(result);
+                const documentInfo = {
+                    fileId: result.fileId,
+                    originalName: result.originalName,
+                    contentType: result.contentType,
+                    size: result.size,
+                    url: result.url // URL này vẫn là /view/:id để tải về
+                };
+                documentDataInput.value = JSON.stringify(documentInfo);
 
                 updateStatus(`
                     <div class="status-card success">
