@@ -984,91 +984,79 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
   }
 });
 
+// server.js
+
 app.get("/lesson/:id", isLoggedIn, async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id)
-      .populate("createdBy", "username avatar _id isTeacher") // Lấy thêm isTeacher
+      .populate("createdBy", "username avatar _id isTeacher")
       .lean();
 
     if (!lesson) {
       req.flash("error", "Bài học không tồn tại!");
       return res.redirect("/subjects");
     }
-
-    // Pro-only check
     if (lesson.isProOnly && (!req.user || !req.user.isPro)) {
-        req.flash('error', 'Đây là nội dung dành riêng cho tài khoản PRO.');
-        return res.redirect('/upgrade');
+      req.flash('error', 'Đây là nội dung dành riêng cho tài khoản PRO.');
+      return res.redirect('/upgrade');
     }
 
     const subject = await Subject.findById(lesson.subject).select("name").lean();
-
     let renderedContent = "";
-    if (lesson.type === "markdown") {
-      const mdContent = lesson.editorData?.markdown || lesson.content || "";
-      renderedContent = marked.parse(mdContent);
-    }
-    
-    // ===== BẮT ĐẦU PHẦN SỬA LỖI VÀ NÂNG CẤP LOGIC =====
-    // Tạo một bản sao của editorData để có thể chỉnh sửa an toàn
+    let estimatedReadingTime = 0;
+
+    // --- XỬ LÝ DỮ LIỆU MỘT CÁCH THỐNG NHẤT ---
     let editorDataForView = lesson.editorData ? JSON.parse(JSON.stringify(lesson.editorData)) : {};
 
-    // 1. Parse an toàn dữ liệu Quiz và Essay
-    if (lesson.type === 'quiz' && editorDataForView.quiz) {
-        try {
-            editorDataForView.quiz = JSON.parse(editorDataForView.quiz);
-        } catch(e) { 
-            console.error(`Error parsing quiz JSON for lesson ${lesson._id}:`, e);
-            editorDataForView.quiz = []; // Fallback an toàn
-        }
+    // 1. Xử lý Markdown và tính thời gian đọc
+    if (lesson.type === "markdown") {
+      const mdContent = editorDataForView.markdown || lesson.content || "";
+      renderedContent = marked.parse(mdContent);
+      const wordCount = mdContent.split(/\s+/).filter(Boolean).length;
+      estimatedReadingTime = Math.ceil(wordCount / 200);
     }
-    if (lesson.type === 'essay' && editorDataForView.essay) {
-        try {
-            editorDataForView.essay = JSON.parse(editorDataForView.essay);
-        } catch(e) { 
-            console.error(`Error parsing essay JSON for lesson ${lesson._id}:`, e);
-            editorDataForView.essay = []; // Fallback an toàn
-        }
-    }
-
-    // ===== BẮT ĐẦU PHẦN SỬA LỖI LOGIC DOCUMENT =====
-    if (lesson.type === 'document' && editorDataForView.document) {
-        try {
-            let docData = JSON.parse(editorDataForView.document);
-            
-            // ===== LOGIC MỚI SỬ DỤNG fileId =====
-            if (docData.fileId) {
-                const fileAccessToken = jwt.sign(
-                    { fileId: docData.fileId }, // Payload giờ chứa fileId
-                    process.env.JWT_SECRET || 'your_fallback_secret',
-                    { expiresIn: '10m' } // Tăng thời gian token lên 10 phút
-                );
-
-                const publicViewUrl = new URL(`/documents/public-view/${docData.fileId}`, `${req.protocol}://${req.get('host')}`);
-                publicViewUrl.searchParams.set('token', fileAccessToken);
-
-                docData.publicViewUrl = publicViewUrl.href;
-                editorDataForView.document = JSON.stringify(docData);
+    
+    // 2. Parse an toàn dữ liệu Quiz, Essay, Document từ chuỗi JSON
+    ['quiz', 'essay', 'document'].forEach(key => {
+        if (editorDataForView[key] && typeof editorDataForView[key] === 'string') {
+            try {
+                editorDataForView[key] = JSON.parse(editorDataForView[key]);
+            } catch (e) {
+                console.error(`Error parsing editorData.${key} for lesson ${lesson._id}:`, e);
+                editorDataForView[key] = (key === 'document' ? null : []); // Fallback
             }
-        } catch (e) {
-            console.error(`Error processing document data for lesson ${lesson._id}:`, e);
-            editorDataForView.document = null; // Gán null nếu có lỗi để frontend biết
         }
+    });
+
+    // 3. Tạo URL công khai cho Document nếu cần
+    if (lesson.type === 'document' && editorDataForView.document && editorDataForView.document.fileId) {
+        const docData = editorDataForView.document;
+        const fileAccessToken = jwt.sign(
+            { fileId: docData.fileId },
+            process.env.JWT_SECRET || 'your_fallback_secret',
+            { expiresIn: '1m' } // Tăng thời gian token lên 15 phút
+        );
+
+        const publicViewUrl = new URL(`/documents/public-view/${docData.fileId}`, `${req.protocol}://${req.get('host')}`);
+        publicViewUrl.searchParams.set('token', fileAccessToken);
+        
+        // Thêm trường mới, không ghi đè dữ liệu gốc
+        editorDataForView.document.publicViewUrl = publicViewUrl.href;
     }
-    // ===== KẾT THÚC PHẦN SỬA LỖI =====
-
-
+    
+    // Tạo đối tượng lesson cuối cùng để render
     const lessonDataForRender = { 
         ...lesson, 
         subject, 
         renderedContent,
-        editorData: editorDataForView // Sử dụng editorData đã được xử lý
+        estimatedReadingTime,
+        editorData: editorDataForView // Sử dụng editorData đã được xử lý hoàn chỉnh
     };
     
     res.render("lessonDetail", { 
         user: req.user, 
         lesson: lessonDataForRender, 
-        req: req, // << Truyền đối tượng req vào EJS
+        marked,
         activePage: "subjects" 
     });
 
