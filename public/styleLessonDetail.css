@@ -464,35 +464,77 @@ body {
 .text-muted { color: var(--text-medium); } .text-danger { color: var(--danger-color); } .text-warning { color: var(--warning-color); } .text-success { color: var(--success-color); } .text-primary { color: var(--primary-color); } .text-center { text-align: center; } .fw-bold { font-weight: 700; } .fst-italic { font-style: italic; } .ms-1 { margin-left: 0.25rem; } .me-1 { margin-right: 0.25rem; } .my-4 { margin-top: 1.5rem; margin-bottom: 1.5rem; } .mb-3 { margin-bottom: 1rem; } .mt-3 { margin-top: 1rem; }
 
 
-/* --- Document Content --- */
+/* --- Document Content (ENHANCED WITH PREVIEW) --- */
 .lesson-content-document {
-  text-align: center;
-  padding: 50px 20px;
-  background: rgba(var(--artistic-primary-rgb), 0.05);
+  padding: 0; /* Bỏ padding ngoài để header và preview chiếm toàn bộ */
+}
+.document-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 25px;
+  background: rgba(var(--artistic-primary-rgb), 0.08);
   border: 1px solid var(--artistic-border-color);
-  border-radius: var(--border-radius-medium);
+  border-radius: var(--border-radius-medium) var(--border-radius-medium) 0 0; /* Bo góc trên */
+  border-bottom: none; /* Không cần border dưới ở đây */
 }
 .document-icon {
-  font-size: 4rem;
-  color: var(--artistic-primary);
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  flex-shrink: 0;
 }
 .document-icon .fa-file-pdf { color: #e74c3c; }
 .document-icon .fa-file-word { color: #3498db; }
 .document-icon .fa-file-excel { color: #2ecc71; }
+.document-icon .fa-file-powerpoint { color: #e67e22; }
 
+.document-info {
+  flex-grow: 1;
+  min-width: 0; /* Ngăn text dài đẩy các element khác */
+}
 .document-filename {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: var(--artistic-text-light);
-  margin-bottom: 10px;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .document-meta {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--artistic-text-medium);
-  margin-bottom: 30px;
+  margin: 0;
+}
+.download-btn {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  font-size: 0.9rem;
 }
 
+.document-preview-container {
+  border: 1px solid var(--artistic-border-color);
+  border-top: none; /* Nối liền với header */
+  border-radius: 0 0 var(--border-radius-medium) var(--border-radius-medium); /* Bo góc dưới */
+  background-color: #333; /* Nền tối cho loading */
+  overflow: hidden; /* Đảm bảo iframe không tràn */
+  min-height: 700px;
+}
+.document-preview-container embed,
+.document-preview-container iframe {
+  display: block; /* Bỏ khoảng trống thừa */
+}
+
+.document-preview-unsupported {
+  text-align: center;
+  padding: 50px 20px;
+  border: 1px solid var(--artistic-border-color);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius-medium) var(--border-radius-medium);
+}
+.document-preview-unsupported p {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
 
 /* --- Artistic Pagination for Content --- */
 .content-pagination {
