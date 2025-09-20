@@ -23,57 +23,6 @@
 <%# KaTeX CSS %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
 
-<style>
-    /* CSS for Question Navigation */
-    .quiz-question-nav {
-        padding: 15px;
-        margin-bottom: 20px;
-        background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .quiz-question-nav-title {
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 10px;
-        font-size: 1rem;
-    }
-    .quiz-question-nav-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .quiz-question-nav-item {
-        width: 35px;
-        height: 35px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background-color: #3a3f5a;
-        color: #fff;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-    }
-    .quiz-question-nav-item:hover {
-        background-color: #4a5073;
-        transform: translateY(-2px);
-    }
-    .quiz-question-nav-item.answered {
-        background-color: #28a745; /* Green for answered */
-        border-color: #86e79b;
-    }
-    .quiz-question-nav-item.current-page {
-        border-color: #00aaff;
-        box-shadow: 0 0 8px rgba(0, 170, 255, 0.7);
-    }
-</style>
-
 <section class="lesson-detail-page-section">
 
     <!-- Background Elements -->
@@ -1017,6 +966,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // --- Lightbox Setup ---
+    const lightboxModal = document.getElementById('lessonLightboxModal');
+    const lightboxImg = document.getElementById('lessonLightboxImg');
+    const lightboxCaption = document.getElementById('lessonLightboxCaption');
+    const lightboxCloseBtn = document.querySelector('#lessonLightboxModal .lightbox-close-btn');
+    const lightboxBackdrop = document.querySelector('#lessonLightboxModal .lightbox-backdrop');
+
+    function openLessonLightbox(src, caption) {
+         if (!src || !lightboxModal || !lightboxImg || !lightboxCaption) return;
+         lightboxImg.src = ''; lightboxImg.src = src; lightboxCaption.textContent = caption || '';
+         gsap.set(lightboxModal, { display: 'flex', autoAlpha: 0 });
+         gsap.to(lightboxModal, { duration: 0.4, autoAlpha: 1, ease: 'power2.out' });
+         gsap.from(lightboxImg, { duration: 0.5, scale: 0.9, delay: 0.1, ease: 'power2.out' });
+         document.body.style.overflow = 'hidden';
+     }
+    function closeLessonLightbox() {
+         if (!lightboxModal || !(lightboxImg instanceof HTMLImageElement)) return;
+         gsap.to(lightboxModal, { duration: 0.3, autoAlpha: 0, ease: 'power1.in', onComplete: () => { lightboxModal.style.display = 'none'; document.body.style.overflow = ''; lightboxImg.src = ''; } });
+     }
+    lightboxCloseBtn?.addEventListener('click', closeLessonLightbox);
+    lightboxBackdrop?.addEventListener('click', closeLessonLightbox);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lightboxModal && lightboxModal.style.display !== 'none') closeLessonLightbox(); });
+
+    // --- Loading Link Script ---
+    document.querySelectorAll(".loading-link").forEach(anchor => {
+        anchor.addEventListener("click", function (event) {
+             // Simple check if it's a link to the same page (hash link)
+            if (this.hash && this.pathname === window.location.pathname) { return; }
+            // Prevent default navigation for external links or other protocols? Maybe not needed.
+            // if (this.hostname !== window.location.hostname || this.protocol !== window.location.protocol) { return; }
+
+             const overlay = document.getElementById('loading-overlay');
+             if (overlay) {
+                overlay.style.opacity = '0'; // Start transparent
+                overlay.classList.add('active');
+                gsap.to(overlay, { opacity: 1, duration: 0.3 }); // Fade in
+             }
+             // No preventDefault(), allow navigation to proceed after showing overlay
+         });
+     });
+
+    // --- Initial State for Complete Button (Quiz/Essay) ---
+     if ((lessonType === 'quiz' || lessonType === 'essay') && completeBtn) {
+         completeBtn.disabled = true; // Start disabled
+          if(scoreRequirementMsg) scoreRequirementMsg.style.display = 'inline'; // Show requirement initially
+     } else if (scoreRequirementMsg) {
+           scoreRequirementMsg.style.display = 'none'; // Hide if not quiz/essay
+     }
     // --- Lightbox Setup ---
     const lightboxModal = document.getElementById('lessonLightboxModal');
     const lightboxImg = document.getElementById('lessonLightboxImg');

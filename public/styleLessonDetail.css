@@ -192,6 +192,68 @@ body {
 .reset-quiz-btn-v2 { padding: 6px 15px; font-size: 0.85rem; gap: 6px; background: rgba(var(--accent-color-rgb), 0.1); border-color: rgba(var(--accent-color-rgb), 0.3); color: var(--accent-color); border: 1px solid; border-radius: var(--border-radius-pill); cursor: pointer; transition: all var(--transition-fast); }
 .reset-quiz-btn-v2:hover { background: rgba(var(--accent-color-rgb), 0.2); color: var(--text-light); }
 
+/* --- Quiz Question Navigation --- */
+.quiz-question-nav {
+  padding: 15px 20px;
+  margin-bottom: 30px;
+  background: rgba(var(--bg-dark-rgb), 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-medium);
+}
+.quiz-question-nav-title {
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 12px;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+.quiz-question-nav-title .fas {
+  margin-right: 8px;
+  color: var(--primary-color);
+}
+.quiz-question-nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.quiz-question-nav-item {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--bg-light);
+  color: var(--text-medium);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 2px solid transparent;
+}
+.quiz-question-nav-item:hover {
+  background-color: #4b5563; /* Slightly lighter than --bg-light */
+  transform: translateY(-2px);
+  color: var(--text-light);
+}
+.quiz-question-nav-item.answered {
+  background-color: rgba(var(--success-color-rgb), 0.2);
+  color: var(--success-color);
+  font-weight: 700;
+}
+.quiz-question-nav-item.current-page {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5);
+}
+.quiz-question-nav-item.answered.current-page {
+  border-color: var(--success-color);
+  box-shadow: 0 0 8px rgba(var(--success-color-rgb), 0.5);
+}
+
+
 .quiz-form-v2 { /* Form */ }
 .quiz-questions-container { display: flex; flex-direction: column; gap: 30px; margin-bottom: 30px; }
 .quiz-question-card { background: rgba(var(--bg-dark-rgb), 0.6); border: 1px solid var(--border-color); border-radius: var(--border-radius-medium); padding: 0; /* Padding handled by inner divs */ box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
