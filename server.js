@@ -1034,6 +1034,15 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
     // ===== BẮT ĐẦU PHẦN SỬA LỖI LOGIC DOCUMENT =====
     if (lesson.type === 'document' && editorDataForView.document) {
         try {
+            // Bước 1: Parse chuỗi JSON gốc từ database
+            let docData = JSON.parse(editorDataForView.document);
+            
+            // Bước 2: Tạo URL tuyệt đối nếu chưa có
+            if (docData.url && !docData.absoluteUrl) {
+                docData.absoluteUrl = new URL(docData.url, `${req.protocol}://${req.get('host')}`).href;
+            }
+            
+           // TẠO TOKEN TRUY CẬP TẠM THỜI (vd: 5 phút)
             const fileAccessToken = jwt.sign(
                 { filename: docData.filename }, // Payload chứa tên file cần truy cập
                 process.env.JWT_SECRET || 'your_fallback_secret', // Dùng chung secret key
