@@ -1031,26 +1031,27 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
         }
     }
 
-    // 2. Xử lý và tạo URL tuyệt đối cho loại 'document'
+    // ===== BẮT ĐẦU PHẦN SỬA LỖI LOGIC DOCUMENT =====
     if (lesson.type === 'document' && editorDataForView.document) {
         try {
-            let docData = (typeof editorDataForView.document === 'string') 
-                ? JSON.parse(editorDataForView.document) 
-                : editorDataForView.document;
+            // Bước 1: Parse chuỗi JSON gốc từ database
+            let docData = JSON.parse(editorDataForView.document);
             
-            if (docData.url) {
-                // Tạo URL tuyệt đối
-                const absoluteUrl = new URL(docData.url, `${req.protocol}://${req.get('host')}`).href;
-                // Gán lại vào đối tượng
-                docData.absoluteUrl = absoluteUrl;
-                editorDataForView.document = docData; // Gán lại đối tượng đã xử lý
+            // Bước 2: Tạo URL tuyệt đối nếu chưa có
+            if (docData.url && !docData.absoluteUrl) {
+                docData.absoluteUrl = new URL(docData.url, `${req.protocol}://${req.get('host')}`).href;
             }
+            
+            // Bước 3: Stringify lại toàn bộ đối tượng đã cập nhật
+            editorDataForView.document = JSON.stringify(docData);
+
         } catch (e) {
             console.error(`Error processing document data for lesson ${lesson._id}:`, e);
-            // Để nguyên dữ liệu gốc nếu có lỗi
+            editorDataForView.document = null; // Gán null nếu có lỗi để frontend biết
         }
     }
     // ===== KẾT THÚC PHẦN SỬA LỖI =====
+
 
     const lessonDataForRender = { 
         ...lesson, 

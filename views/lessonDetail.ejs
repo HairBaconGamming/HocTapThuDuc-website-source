@@ -204,16 +204,15 @@
                     <% 
                         let docData = null; 
                         try { 
-                            // Dữ liệu đã được xử lý ở backend, chỉ cần parse
+                            // Dữ liệu từ backend là một chuỗi JSON, ta parse nó ở đây
                             docData = JSON.parse(lesson.editorData.document); 
                         } catch(e){
-                            console.error('EJS Error: Could not parse document data', e);
+                            console.error('EJS Error: Could not parse document JSON string', e);
                         } 
                     %>
 
                     <% if (docData && docData.url && docData.absoluteUrl) { %>
                         <%
-                            // URL tuyệt đối đã có sẵn trong docData.absoluteUrl
                             const absoluteFileUrl = docData.absoluteUrl;
                             let previewHtml = '';
                             
@@ -221,7 +220,7 @@
                                 previewHtml = `<embed src="${absoluteFileUrl}" type="application/pdf" width="100%" height="700px" />`;
                             } else if (docData.contentType.includes('word') || docData.contentType.includes('excel') || docData.contentType.includes('presentation')) {
                                 const encodedUrl = encodeURIComponent(absoluteFileUrl);
-                                previewHtml = `<iframe src='https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}' width='100%' height='700px' frameborder='0'>This is an embedded <a target='_blank' href='https://office.com'>Microsoft Office</a> document, powered by <a target='_blank' href='https://office.com/webapps'>Office</a>.</iframe>`;
+                                previewHtml = `<iframe src='https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}' width='100%' height='700px' frameborder='0'>This is an embedded Microsoft Office document.</iframe>`;
                             }
                         %>
 
