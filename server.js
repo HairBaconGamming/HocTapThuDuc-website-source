@@ -986,55 +986,86 @@ app.post("/lesson/add", isLoggedIn, async (req, res) => {
 
 app.get("/lesson/:id", isLoggedIn, async (req, res) => {
   try {
-    const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar _id").lean();
+    const lesson = await Lesson.findById(req.params.id)
+      .populate("createdBy", "username avatar _id isTeacher") // Lấy thêm isTeacher
+      .lean();
+
     if (!lesson) {
       req.flash("error", "Bài học không tồn tại!");
       return res.redirect("/subjects");
     }
-    let subject = null;
-    if (lesson.subject) {
-      try {
-        subject = await Subject.findById(lesson.subject).select("name").lean();
-        if (!subject) { console.warn(`Subject ID ${lesson.subject} found in lesson ${lesson._id}, but Subject document not found.`); }
-      } catch (subjectErr) {
-        console.error(`Error fetching subject ${lesson.subject} for lesson ${lesson._id}:`, subjectErr);
-      }
-    } else {
-      console.warn(`Lesson ${lesson._id} does not have a subject ID associated.`);
+
+    // Pro-only check
+    if (lesson.isProOnly && (!req.user || !req.user.isPro)) {
+        req.flash('error', 'Đây là nội dung dành riêng cho tài khoản PRO.');
+        return res.redirect('/upgrade');
     }
+
+    const subject = await Subject.findById(lesson.subject).select("name").lean();
+
     let renderedContent = "";
-    let estimatedReadingTime = 0;
     if (lesson.type === "markdown") {
       const mdContent = lesson.editorData?.markdown || lesson.content || "";
-      try {
-        renderedContent = marked.parse(mdContent);
-      } catch (parseError) {
-        console.error("Marked parsing error:", parseError);
-        renderedContent = `<p>Lỗi hiển thị nội dung.</p>`;
-      }
-      const wordCount = mdContent.split(/\s+/).filter(Boolean).length;
-      estimatedReadingTime = Math.ceil(wordCount / 200);
+      renderedContent = marked.parse(mdContent);
     }
-    let quizData = [];
-    if (lesson.type === "quiz" && lesson.editorData?.quiz) {
-      try {
-        quizData = JSON.parse(lesson.editorData.quiz);
-      } catch (e) {
-        console.error(`Error parsing quiz data for lesson ${lesson._id}:`, e);
-        quizData = [];
-      }
+    
+    // ===== BẮT ĐẦU PHẦN SỬA LỖI VÀ NÂNG CẤP LOGIC =====
+    // Tạo một bản sao của editorData để có thể chỉnh sửa an toàn
+    let editorDataForView = lesson.editorData ? JSON.parse(JSON.stringify(lesson.editorData)) : {};
+
+    // 1. Parse an toàn dữ liệu Quiz và Essay
+    if (lesson.type === 'quiz' && editorDataForView.quiz) {
+        try {
+            editorDataForView.quiz = JSON.parse(editorDataForView.quiz);
+        } catch(e) { 
+            console.error(`Error parsing quiz JSON for lesson ${lesson._id}:`, e);
+            editorDataForView.quiz = []; // Fallback an toàn
+        }
     }
-    let essayData = [];
-    if (lesson.type === "essay" && lesson.editorData?.essay) {
-      try {
-        essayData = JSON.parse(lesson.editorData.essay);
-      } catch (e) {
-        console.error(`Error parsing essay data for lesson ${lesson._id}:`, e);
-        essayData = [];
-      }
+    if (lesson.type === 'essay' && editorDataForView.essay) {
+        try {
+            editorDataForView.essay = JSON.parse(editorDataForView.essay);
+        } catch(e) { 
+            console.error(`Error parsing essay JSON for lesson ${lesson._id}:`, e);
+            editorDataForView.essay = []; // Fallback an toàn
+        }
     }
-    const lessonDataForRender = { ...lesson, subject: subject, renderedContent, estimatedReadingTime, quizData, essayData };
-    res.render("lessonDetail", { user: req.user, lesson: lessonDataForRender, marked: marked, activePage: "subjects" });
+
+    // 2. Xử lý và tạo URL tuyệt đối cho loại 'document'
+    if (lesson.type === 'document' && editorDataForView.document) {
+        try {
+            let docData = (typeof editorDataForView.document === 'string') 
+                ? JSON.parse(editorDataForView.document) 
+                : editorDataForView.document;
+            
+            if (docData.url) {
+                // Tạo URL tuyệt đối
+                const absoluteUrl = new URL(docData.url, `${req.protocol}://${req.get('host')}`).href;
+                // Gán lại vào đối tượng
+                docData.absoluteUrl = absoluteUrl;
+                editorDataForView.document = docData; // Gán lại đối tượng đã xử lý
+            }
+        } catch (e) {
+            console.error(`Error processing document data for lesson ${lesson._id}:`, e);
+            // Để nguyên dữ liệu gốc nếu có lỗi
+        }
+    }
+    // ===== KẾT THÚC PHẦN SỬA LỖI =====
+
+    const lessonDataForRender = { 
+        ...lesson, 
+        subject, 
+        renderedContent,
+        editorData: editorDataForView // Sử dụng editorData đã được xử lý
+    };
+    
+    res.render("lessonDetail", { 
+        user: req.user, 
+        lesson: lessonDataForRender, 
+        req: req, // << Truyền đối tượng req vào EJS
+        activePage: "subjects" 
+    });
+
   } catch (err) {
     console.error("Error fetching lesson detail:", err);
     req.flash("error", "Lỗi tải bài học.");
