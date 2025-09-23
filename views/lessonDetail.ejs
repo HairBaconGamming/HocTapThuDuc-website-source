@@ -378,39 +378,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const modeTabs = document.querySelectorAll('.mode-tab-btn');
         const studyPanel = document.getElementById('study-mode-container');
         const reviewPanel = document.getElementById('review-mode-container');
-        let activeMode = 'review'; // Default mode
+        let activeMode = 'review';
+        let isAnimating = false;
 
         function switchMode(targetMode) {
-            if (activeMode === targetMode) return;
+            if (isAnimating || activeMode === targetMode) return;
+            isAnimating = true;
             activeMode = targetMode;
 
-            modeTabs.forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.mode === targetMode);
-            });
-
+            modeTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.mode === targetMode));
+            
             const panelToShow = targetMode === 'study' ? studyPanel : reviewPanel;
             const panelToHide = targetMode === 'study' ? reviewPanel : studyPanel;
 
-            gsap.timeline()
-                .to(panelToHide, { autoAlpha: 0, duration: 0.3, onComplete: () => panelToHide.classList.remove('active') })
-                .set(panelToShow, { display: 'block', autoAlpha: 0 }) // Use display: block for grid
-                .to(panelToShow, { autoAlpha: 1, duration: 0.4, onStart: () => {
-                    panelToShow.classList.add('active');
-                    if (targetMode === 'study') {
-                        initStudyMode();
-                    } else {
-                        initReviewMode();
-                    }
-                    updateCompletionButtonState(); // Update button state when switching modes
-                }});
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    isAnimating = false;
+                    gsap.set(panelToHide, { display: 'none' });
+                    if (targetMode === 'study') initStudyMode();
+                    else initReviewMode();
+                    updateCompletionButtonState();
+                }
+            });
+
+            tl.to(panelToHide, { duration: 0.3, autoAlpha: 0, y: 15, ease: 'power2.in' });
+            tl.set(panelToShow, { display: targetMode === 'study' ? 'grid' : 'block', y: 15, autoAlpha: 0 }, "-=0.2");
+            tl.to(panelToShow, { duration: 0.4, autoAlpha: 1, y: 0, ease: 'power2.out' });
         }
 
         modeTabs.forEach(tab => tab.addEventListener('click', () => switchMode(tab.dataset.mode)));
         
-        // Function to shuffle array
         const shuffleArray = (array) => { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; };
         
-        // Function to create question card DOM
         const createQuestionCard = (q, originalIndex) => {
             const card = document.createElement('div');
             card.className = 'quiz-question-card';
@@ -427,46 +426,42 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const updateCompletionButtonState = () => {
+            let canComplete = false;
+            let message = '';
             if (activeMode === 'review') {
                 const resultDiv = document.getElementById('quizResultV2');
                 const scoreText = resultDiv?.querySelector('.quiz-final-result p strong')?.textContent;
                 if (scoreText) {
-                    const score = parseFloat(scoreText.split('/')[0]);
-                    const total = parseFloat(scoreText.split('/')[1]);
+                    const [score, total] = scoreText.split('/').map(Number);
                     const percentage = total > 0 ? (score / total) * 100 : 0;
-                    completeBtn.disabled = percentage < PASSING_PERCENTAGE;
-                    scoreRequirementMsg.textContent = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
-                    scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
-                } else {
-                    completeBtn.disabled = true;
-                    scoreRequirementMsg.textContent = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
-                    scoreRequirementMsg.style.display = 'inline';
+                    canComplete = percentage >= PASSING_PERCENTAGE;
                 }
+                message = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
             } else if (activeMode === 'study') {
                 const saved = localStorage.getItem(`studyProgress_${lessonId}`);
                 if (saved) {
                     const state = JSON.parse(saved);
                     const masteredCount = Object.values(state.questions).filter(q => q.status === 'mastered').length;
-                    completeBtn.disabled = masteredCount < masterQuizData.length;
-                    scoreRequirementMsg.textContent = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
-                    scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
-                } else {
-                    completeBtn.disabled = true;
-                    scoreRequirementMsg.textContent = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
-                    scoreRequirementMsg.style.display = 'inline';
+                    canComplete = masteredCount >= masterQuizData.length;
                 }
+                message = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
+            }
+            if (completeBtn) completeBtn.disabled = !canComplete;
+            if (scoreRequirementMsg) {
+                scoreRequirementMsg.textContent = message;
+                scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
             }
         };
 
         // ===================================
         // ===== REVIEW MODE LOGIC =========
         // ===================================
-        let initReviewMode = (() => {
+        const initReviewMode = (() => {
             let initialized = false;
             return () => {
-                if (initialized) return;
+                if (initialized && !reviewPanel.innerHTML.includes('quiz-controls-header')) return; // Simple check if it's already rendered
                 initialized = true;
-
+                
                 const ITEMS_PER_PAGE = 5;
                 const quizContainer = document.getElementById('quizContainerV2');
                 const paginationContainer = document.getElementById('quizPagination');
@@ -559,12 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
                         const pageOfThis = Math.floor(idx / ITEMS_PER_PAGE) + 1;
                         if (pageOfThis === currentPage) btn.classList.add('on-page');
-                        
                         const correctCountForQ = (q.options || []).filter(opt => opt.isCorrect).length;
                         const inputType = correctCountForQ > 1 ? 'checkbox' : 'radio';
                         let answered = (inputType === 'radio') ? (savedAnswers[originalIndex] != null) : (Array.isArray(savedAnswers[originalIndex]) && savedAnswers[originalIndex].length > 0);
                         if (answered) btn.classList.add('answered');
-
                         if (quizSubmitted && quizFeedback[originalIndex] != null) {
                             btn.classList.add(quizFeedback[originalIndex].isCorrect ? 'correct' : 'incorrect');
                         }
@@ -670,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ===================================
         // ===== STUDY MODE LOGIC ==========
         // ===================================
-        let initStudyMode = (() => {
+        const initStudyMode = (() => {
             let initialized = false;
             return () => {
                 if (initialized) return;
@@ -682,26 +675,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nextBtn = document.getElementById('study-next-btn');
                 const checkBtn = document.getElementById('study-check-btn');
                 const resetProgressBtn = document.getElementById('study-reset-progress');
-                const navPanel = document.getElementById('questionJumper'); // Re-use nav panel for study mode
-
+                const navPanel = document.getElementById('questionJumper');
                 let studyState = { currentIndex: 0, questions: {}, highScore: 0 };
 
                 const loadStudyProgress = () => {
                     const saved = localStorage.getItem(PROGRESS_KEY);
                     if (saved) {
-                        studyState = JSON.parse(saved);
-                        if(studyState.currentIndex >= masterQuizData.length) studyState.currentIndex = 0;
+                        try { studyState = JSON.parse(saved); } catch (e) { /* corrupted, will reset */ }
                     }
-                    // Initialize state for any new questions not in storage
+                    if(studyState.currentIndex >= masterQuizData.length) studyState.currentIndex = 0;
                     masterQuizData.forEach((_, index) => {
                         if (!studyState.questions[index]) {
-                             studyState.questions[index] = { status: 'unseen', wrong: 0, lastAnswer: null };
+                            studyState.questions[index] = { status: 'unseen', wrong: 0, lastAnswer: null };
                         }
                     });
                 };
 
                 const saveStudyProgress = () => localStorage.setItem(PROGRESS_KEY, JSON.stringify(studyState));
-
+                
                 const updateStats = () => {
                     const total = masterQuizData.length;
                     const masteredCount = Object.values(studyState.questions).filter(q => q.status === 'mastered').length;
@@ -709,7 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const progressPercent = total > 0 ? (masteredCount / total) * 100 : 0;
                     document.getElementById('study-progress-fill').style.width = `${progressPercent}%`;
                     document.getElementById('study-highscore').textContent = `${(studyState.highScore || 0).toFixed(0)}%`;
-                    
                     const difficultQuestions = Object.entries(studyState.questions).filter(([, data]) => data.wrong > 0).sort(([, a], [, b]) => b.wrong - a.wrong).slice(0, 5);
                     const listEl = document.getElementById('study-difficult-questions');
                     listEl.innerHTML = difficultQuestions.length > 0 ? difficultQuestions.map(([idx, data]) => `<li data-idx="${idx}">Câu ${parseInt(idx, 10) + 1} (sai ${data.wrong} lần)</li>`).join('') : '<li>Chưa có dữ liệu</li>';
@@ -726,15 +716,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const qState = studyState.questions[qIndex];
                     if(qState?.lastAnswer != null) {
-                        if (card.dataset.inputType === 'radio') {
-                            const radio = card.querySelector(`input[value="${qState.lastAnswer}"]`);
-                            if (radio) radio.checked = true;
-                        } else {
-                            (qState.lastAnswer || []).forEach(val => {
-                                 const checkbox = card.querySelector(`input[value="${val}"]`);
-                                 if (checkbox) checkbox.checked = true;
-                            });
-                        }
+                         if (card.dataset.inputType === 'radio') { const radio = card.querySelector(`input[value="${qState.lastAnswer}"]`); if (radio) radio.checked = true; } 
+                         else { (qState.lastAnswer || []).forEach(val => { const checkbox = card.querySelector(`input[value="${val}"]`); if (checkbox) checkbox.checked = true; }); }
                     }
                     
                     prevBtn.disabled = qIndex === 0;
@@ -746,27 +729,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                  const renderStudyNavigation = () => {
                     if (!navPanel) return;
-                    navPanel.innerHTML = ''; // Clear previous nav
+                    navPanel.innerHTML = '';
                     masterQuizData.forEach((_, idx) => {
                         const btn = document.createElement('button');
                         btn.className = 'nav-jump-btn';
                         btn.type = 'button';
                         btn.textContent = idx + 1;
                         const qState = studyState.questions[idx];
-                        if (qState) {
-                            btn.classList.add(`status-${qState.status}`); // unseen, learning, mastered
-                        }
-                        if (idx === studyState.currentIndex) {
-                            btn.classList.add('on-page');
-                        }
-                        btn.onclick = () => {
-                            studyState.currentIndex = idx;
-                            renderStudyQuestion();
-                        };
+                        if (qState) btn.classList.add(`status-${qState.status}`);
+                        if (idx === studyState.currentIndex) btn.classList.add('on-page');
+                        btn.onclick = () => { studyState.currentIndex = idx; renderStudyQuestion(); };
                         navPanel.appendChild(btn);
                     });
                 };
-
 
                 const checkStudyAnswer = () => {
                     const qIndex = studyState.currentIndex;
@@ -801,11 +776,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     card.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                        const isCorrect = opt.dataset.isCorrect === 'true';
-                        const isChecked = opt.querySelector('.quiz-input')?.checked;
                         opt.style.pointerEvents = 'none';
-                        if (isCorrect) opt.classList.add('study-reveal-correct');
-                        if (isChecked) opt.classList.add(isCorrect ? 'study-correct' : 'study-incorrect');
+                        if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
+                        if (opt.querySelector('.quiz-input')?.checked) {
+                            opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
+                        }
                     });
                     
                     checkBtn.style.display = 'none';
@@ -820,11 +795,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
                     
                     if (priorityIndices.length > 0) {
-                        let currentPriorityIndex = priorityIndices.indexOf(nextIndex);
+                        let currentInPriority = priorityIndices.indexOf(nextIndex);
                         if (direction > 0) {
-                            nextIndex = (currentPriorityIndex !== -1 && currentPriorityIndex < priorityIndices.length - 1) ? priorityIndices[currentPriorityIndex + 1] : priorityIndices[0];
+                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
                         } else {
-                             nextIndex = (currentPriorityIndex > 0) ? priorityIndices[currentPriorityIndex - 1] : priorityIndices[priorityIndices.length - 1];
+                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
                         }
                     } else {
                         nextIndex = (nextIndex + direction + total) % total;
@@ -852,14 +827,16 @@ document.addEventListener('DOMContentLoaded', () => {
                          renderStudyQuestion();
                      }
                 });
-
+                
                 loadStudyProgress();
                 renderStudyQuestion();
                 updateStats();
             };
         })();
 
-        // Initial setup
+        // *** Initial Setup ***
+        gsap.set(reviewPanel, { display: 'block', autoAlpha: 1 });
+        gsap.set(studyPanel, { display: 'none' });
         initReviewMode();
         updateCompletionButtonState();
     }
