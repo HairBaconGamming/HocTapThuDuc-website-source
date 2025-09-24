@@ -452,16 +452,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
             }
         };
-
-        // ===================================
-        // ===== REVIEW MODE LOGIC =========
+// ===================================
+        // ===== REVIEW MODE LOGIC (ENHANCED) =========
         // ===================================
         const initReviewMode = (() => {
             let initialized = false;
             return () => {
-                if (initialized && !reviewPanel.innerHTML.includes('quiz-controls-header')) return; // Simple check if it's already rendered
+                if (initialized) return;
                 initialized = true;
-                
+
                 const ITEMS_PER_PAGE = 5;
                 const quizContainer = document.getElementById('quizContainerV2');
                 const paginationContainer = document.getElementById('quizPagination');
@@ -471,10 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const randomQuestionsToggle = document.getElementById("toggleRandomQuestions");
                 const randomChoicesToggle = document.getElementById("toggleRandomChoices");
                 const navPanel = document.getElementById('questionJumper');
+                
                 let workingQuizData = [];
                 let currentPage = 1;
                 let quizSubmitted = false;
                 let quizFeedback = {};
+                let incorrectQuestionIndices = [];
+                let isReviewingIncorrect = false;
                 const PROGRESS_KEY = `reviewProgress_${lessonId}`;
 
                 const saveQuizProgress = () => {
@@ -597,10 +599,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 const resetQuiz = () => {
+                    isReviewingIncorrect = false;
+                    incorrectQuestionIndices = [];
                     localStorage.removeItem(PROGRESS_KEY);
                     resultDiv.innerHTML = '';
                     quizForm.classList.remove('submitted');
-                    quizForm.querySelector('.submit-quiz-btn').disabled = false;
+                    const submitBtn = quizForm.querySelector('.submit-quiz-btn');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-check-double"></i> Nộp bài';
                     workingQuizData = randomQuestionsToggle.checked ? shuffleArray(JSON.parse(JSON.stringify(masterQuizData))) : JSON.parse(JSON.stringify(masterQuizData));
                     workingQuizData.forEach(q => { if (randomChoicesToggle.checked) q.options = shuffleArray(q.options); });
                     currentPage = 1;
@@ -613,41 +619,111 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 quizForm.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    if (quizSubmitted) return;
+                    if (quizSubmitted && !isReviewingIncorrect) return;
+                    
                     const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
-                    if (Object.keys(savedAnswers).length < masterQuizData.length) {
+                    if (Object.keys(savedAnswers).length < workingQuizData.length) {
                         return showAlert('Vui lòng trả lời tất cả các câu hỏi.', 'warning');
                     }
+
                     quizSubmitted = true;
                     let correctCount = 0;
-                    masterQuizData.forEach((q, index) => {
+                    let currentIncorrectIndices = [];
+
+                    workingQuizData.forEach(q => {
+                        const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
                         const correctIndices = q.options.map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null).sort();
-                        const inputType = correctIndices.length > 1 ? 'checkbox' : 'radio';
                         let isCorrectOverall = false;
+                        const inputType = q.options.filter(o => o.isCorrect).length > 1 ? 'checkbox' : 'radio';
                         if (inputType === 'radio') {
-                            if (correctIndices.includes(parseInt(savedAnswers[index], 10))) isCorrectOverall = true;
+                             if (correctIndices.includes(parseInt(savedAnswers[originalIndex], 10))) isCorrectOverall = true;
                         } else {
-                            const userAnswers = (savedAnswers[index] || []).map(Number).sort();
+                            const userAnswers = (savedAnswers[originalIndex] || []).map(Number).sort();
                             if (JSON.stringify(userAnswers) === JSON.stringify(correctIndices)) isCorrectOverall = true;
                         }
+
                         if(isCorrectOverall) correctCount++;
-                        quizFeedback[index] = { isCorrect: isCorrectOverall, explanation: q.explanation };
+                        else currentIncorrectIndices.push(originalIndex);
+                        
+                        quizFeedback[originalIndex] = { isCorrect: isCorrectOverall, explanation: q.explanation };
                     });
                     
                     applyQuizFeedback();
                     renderNavigation();
 
-                    const scorePercentage = (correctCount / masterQuizData.length) * 100;
+                    const scorePercentage = (correctCount / workingQuizData.length) * 100;
                     
-                    const studyProgressRaw = localStorage.getItem(`studyProgress_${lessonId}`);
-                    const studyProgress = studyProgressRaw ? JSON.parse(studyProgressRaw) : {};
-                    studyProgress.highScore = Math.max(studyProgress.highScore || 0, scorePercentage);
-                    localStorage.setItem(`studyProgress_${lessonId}`, JSON.stringify(studyProgress));
+                    if(isReviewingIncorrect) {
+                        resultDiv.innerHTML = `<div class="quiz-final-result ${scorePercentage === 100 ? 'perfect' : 'good'}">
+                            <h4>Hoàn thành Ôn tập!</h4>
+                            <p>Bạn đã trả lời đúng <strong>${correctCount}/${workingQuizData.length}</strong> câu hỏi đã làm sai trước đó.</p>
+                            <div class="review-actions">
+                                <button type="button" class="btn btn-secondary-outline results-reset-btn">Làm lại từ đầu</button>
+                            </div>
+                        </div>`;
+                        resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
+                    } else {
+                        incorrectQuestionIndices = currentIncorrectIndices;
+                        const studyProgress = JSON.parse(localStorage.getItem(`studyProgress_${lessonId}`) || '{}');
+                        studyProgress.highScore = Math.max(studyProgress.highScore || 0, scorePercentage);
+                        localStorage.setItem(`studyProgress_${lessonId}`, JSON.stringify(studyProgress));
 
-                    resultDiv.innerHTML = `<div class="quiz-final-result ${scorePercentage >= PASSING_PERCENTAGE ? 'perfect' : 'bad'}"><h4>Kết quả</h4><p>Đúng <strong>${correctCount}/${masterQuizData.length}</strong> câu (${scorePercentage.toFixed(0)}%).</p>${scorePercentage >= PASSING_PERCENTAGE ? '<span class="perfect-score-msg"><i class="fas fa-star"></i> Đạt yêu cầu!</span>' : `<span class="fail-score-msg"><i class="fas fa-times-circle"></i> Cần ${PASSING_PERCENTAGE}% để hoàn thành.</span>`}<button type="button" class="results-reset-btn">Làm lại</button></div>`;
-                    resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
-                    gsap.from(resultDiv.firstElementChild, { scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)' });
+                        let incorrectListHtml = '';
+                        if(incorrectQuestionIndices.length > 0) {
+                            incorrectListHtml = `<div class="incorrect-questions-summary">
+                                <h5>Câu hỏi cần xem lại:</h5>
+                                <ul class="incorrect-questions-list">${incorrectQuestionIndices.map(idx => `<li data-idx="${idx}">Câu ${idx + 1} - ${masterQuizData[idx].question.substring(0, 30)}...</li>`).join('')}</ul>
+                            </div>`;
+                        }
+
+                        resultDiv.innerHTML = `<div class="quiz-final-result ${scorePercentage >= PASSING_PERCENTAGE ? 'perfect' : 'bad'}">
+                            <h4>Kết quả</h4>
+                            <p>Đúng <strong>${correctCount}/${masterQuizData.length}</strong> câu (${scorePercentage.toFixed(0)}%).</p>
+                            ${scorePercentage >= PASSING_PERCENTAGE ? '<span class="perfect-score-msg"><i class="fas fa-star"></i> Đạt yêu cầu!</span>' : `<span class="fail-score-msg"><i class="fas fa-times-circle"></i> Cần ${PASSING_PERCENTAGE}% để hoàn thành.</span>`}
+                            ${incorrectListHtml}
+                            <div class="review-actions">
+                                <button type="button" class="btn btn-secondary-outline results-reset-btn">Làm lại từ đầu</button>
+                                ${incorrectQuestionIndices.length > 0 ? '<button type="button" class="btn btn-review-incorrect">Ôn tập lại câu sai</button>' : ''}
+                            </div>
+                        </div>`;
+                        
+                        resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
+                        const reviewIncorrectBtn = resultDiv.querySelector('.btn-review-incorrect');
+                        if (reviewIncorrectBtn) {
+                            reviewIncorrectBtn.onclick = () => {
+                                isReviewingIncorrect = true;
+                                quizSubmitted = false;
+                                quizFeedback = {};
+                                localStorage.removeItem(PROGRESS_KEY); // Clear answers for the new session
+                                resultDiv.innerHTML = '';
+                                workingQuizData = masterQuizData.filter((_, idx) => incorrectQuestionIndices.includes(idx));
+                                currentPage = 1;
+                                const submitBtn = quizForm.querySelector('.submit-quiz-btn');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fas fa-check"></i> Hoàn thành Ôn tập';
+                                renderCurrentPage();
+                                renderPagination();
+                            };
+                        }
+                        const incorrectLinks = resultDiv.querySelectorAll('.incorrect-questions-list li');
+                        incorrectLinks.forEach(link => {
+                            link.onclick = () => {
+                                const qIdx = parseInt(link.dataset.idx, 10);
+                                const targetPage = Math.floor(qIdx / ITEMS_PER_PAGE) + 1;
+                                currentPage = targetPage;
+                                renderCurrentPage();
+                                renderPagination();
+                                // Highlight the specific question
+                                const cardToHighlight = quizContainer.querySelector(`[data-original-index="${qIdx}"]`);
+                                if (cardToHighlight) {
+                                    cardToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    gsap.fromTo(cardToHighlight, {boxShadow: "0 0 0px 0px rgba(255, 223, 186, 0)"}, {boxShadow: "0 0 15px 5px rgba(245, 158, 11, 0.6)", duration: 0.5, yoyo: true, repeat: 1});
+                                }
+                            };
+                        });
+                    }
                     
+                    gsap.from(resultDiv.firstElementChild, { scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)' });
                     quizForm.querySelector('.submit-quiz-btn').disabled = true;
                     updateCompletionButtonState();
                 });
@@ -659,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resetQuiz();
             };
         })();
-
+        
         // ===================================
         // ===== STUDY MODE LOGIC ==========
         // ===================================

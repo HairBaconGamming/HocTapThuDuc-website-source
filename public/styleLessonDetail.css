@@ -1199,6 +1199,67 @@ body {
 #study-question-display .quiz-option-v2.study-incorrect .option-label { border-color: var(--danger-color); background-color: rgba(var(--danger-color-rgb), 0.1); }
 #study-question-display .quiz-option-v2.study-reveal-correct .option-label { border-left: 4px solid var(--success-color); }
 
+/* ================== REVIEW MODE ENHANCEMENTS ================== */
+.quiz-final-result .incorrect-questions-summary {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border-color);
+    text-align: left;
+}
+
+.quiz-final-result .incorrect-questions-summary h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-medium);
+    margin-bottom: 15px;
+}
+
+.quiz-final-result .incorrect-questions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: var(--border-radius-small);
+    padding: 5px;
+}
+
+.quiz-final-result .incorrect-questions-list li {
+    padding: 8px 12px;
+    border-radius: var(--border-radius-small);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+    color: var(--text-medium);
+}
+
+.quiz-final-result .incorrect-questions-list li:hover {
+    background-color: var(--bg-hover-dark);
+    color: var(--text-light);
+}
+
+.review-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+.btn-review-incorrect {
+    /* Style similar to primary button but with a different color */
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+    color: var(--text-dark);
+    font-weight: 600;
+}
+.btn-review-incorrect:hover {
+    background: #ffb74d; /* Lighter orange */
+    border-color: #ffb74d;
+}
 
 /* ==========================================================================
    7. ESSAY COMPONENTS
