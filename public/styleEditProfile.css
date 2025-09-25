@@ -318,21 +318,31 @@
 .fancy-toggle-switch .switch-text { color: var(--text-medium); font-weight: 500; font-size: 0.95rem; transition: color 0.3s ease; }
 .fancy-toggle-switch input[type="checkbox"]:checked + .switch-label .switch-text { color: var(--primary-color); }
 
-
 /* Password Fields Container */
 .password-fields-container {
-    overflow: hidden;
-    max-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    overflow: hidden; /* Rất quan trọng cho animation */
+    max-height: 0; /* Bắt đầu ở trạng thái đóng */
     opacity: 0;
-    transition: max-height 0.5s ease-out, opacity 0.4s ease-out, margin-top 0.5s ease-out;
     margin-top: 0;
+    visibility: hidden;
+    transition: max-height 0.5s ease-out, 
+                opacity 0.4s ease-out, 
+                margin-top 0.5s ease-out,
+                visibility 0.5s;
 }
 .password-fields-container.active {
-    max-height: 400px; /* Allow space for fields and turnstile */
+    max-height: 400px; /* Một giá trị đủ lớn để chứa các trường input và turnstile */
     opacity: 1;
-    margin-top: 15px; /* Add space when visible */
+    margin-top: 25px; /* Thêm khoảng cách khi hiện ra */
+    visibility: visible;
 }
-.password-fields-container .input-field-group { margin-bottom: 25px; }
+
+.password-fields-container .input-field-group { 
+    margin-bottom: 0; 
+}
 
 .turnstile-group { display: flex; justify-content: center; margin-top: 10px; }
 

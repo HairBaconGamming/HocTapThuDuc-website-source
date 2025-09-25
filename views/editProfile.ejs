@@ -179,31 +179,41 @@
             const passwordFieldsContainer = document.getElementById('passwordFields');
             const passwordInputs = passwordFieldsContainer.querySelectorAll('input[type="password"]');
 
+            // Hàm mới, đơn giản hơn, chỉ quản lý class 'active'
             function setPasswordFieldsState(enabled) {
                 if (enabled) {
-                    passwordFieldsContainer.style.display = 'flex'; // Use flex to show
-                    setTimeout(() => passwordFieldsContainer.style.opacity = 1, 10);
+                    passwordFieldsContainer.classList.add('active');
                 } else {
-                    passwordFieldsContainer.style.opacity = 0;
-                    setTimeout(() => passwordFieldsContainer.style.display = 'none', 300);
+                    passwordFieldsContainer.classList.remove('active');
                 }
-                passwordInputs.forEach(input => input.disabled = !enabled);
+
+                // Bật/tắt và xóa giá trị của các trường input
+                passwordInputs.forEach(input => {
+                    input.disabled = !enabled;
+                    if (!enabled) {
+                        input.value = ''; // Xóa giá trị khi ẩn đi
+                        // Kích hoạt sự kiện 'blur' để label quay về vị trí cũ nếu cần
+                        input.dispatchEvent(new Event('blur')); 
+                    }
+                });
             }
             
+            // Gắn sự kiện 'change' vào nút gạt
             toggle.addEventListener('change', () => {
                 setPasswordFieldsState(toggle.checked);
             });
 
-            // Initial state
+            // Thiết lập trạng thái ban đầu khi tải trang
             setPasswordFieldsState(toggle.checked);
 
-             // Handle filled state for labels
+            // Xử lý trạng thái 'filled' cho các label
             document.querySelectorAll('.form-input-v2, .form-select-v2').forEach(input => {
                 const group = input.closest('.input-field-group, .select-group-styled');
                 if(!group) return;
 
                 const checkFilled = () => {
-                    if ((input.value && input.value !== "") || input.matches(':autofill')) {
+                    // Thêm điều kiện kiểm tra autofill của trình duyệt
+                    if ((input.value && input.value !== "") || input.matches(':-webkit-autofill')) {
                         group.classList.add('filled');
                     } else {
                         group.classList.remove('filled');
@@ -212,7 +222,29 @@
 
                 input.addEventListener('input', checkFilled);
                 input.addEventListener('blur', checkFilled);
-                checkFilled();
+                // Thêm một chút delay để trình duyệt có thời gian xử lý autofill
+                setTimeout(checkFilled, 100);
+            });
+
+            // Xử lý nút bật/tắt hiển thị mật khẩu
+            document.querySelectorAll('.password-toggle-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const passwordInput = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+
+                    if (passwordInput && icon) {
+                        if (passwordInput.type === 'password') {
+                            passwordInput.type = 'text';
+                            icon.classList.remove('fa-eye');
+                            icon.classList.add('fa-eye-slash');
+                        } else {
+                            passwordInput.type = 'password';
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                        }
+                    }
+                });
             });
         });
     </script>
