@@ -33,15 +33,39 @@
                 <fieldset class="form-section">
                     <legend class="form-section-title">Ảnh Đại Diện PRO</legend>
                     <div class="avatar-management-area">
-                        <div class="avatar-preview-wrapper">
-                            <img src="<%= user.avatar %>" alt="Current Avatar" id="current-avatar-preview" class="current-avatar-img">
-                            <div class="avatar-upload-form">
-                                <label for="avatar-file-input" class="action-btn upload-label"><i class="fas fa-upload"></i> Tải Ảnh Mới</label>
+                        
+                        <!-- Uploader & Preview Card -->
+                        <div class="avatar-preview-card">
+                            <div class="avatar-preview-wrapper" id="avatar-preview-wrapper" title="Nhấn hoặc kéo thả ảnh vào đây">
+                                <img src="<%= user.avatar %>" alt="Current Avatar" id="current-avatar-preview" class="current-avatar-img">
+                                
+                                <!-- Overlay for Hover/Drag -->
+                                <div class="upload-overlay">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-upload"></i>
+                                        <i class="fas fa-file-import"></i>
+                                        <span id="upload-prompt-text">Đổi ảnh</span>
+                                    </div>
+                                </div>
+
+                                <!-- Circular Progress Bar -->
+                                <svg class="progress-ring" viewBox="0 0 120 120">
+                                    <circle class="progress-ring__circle-bg" cx="60" cy="60" r="54" />
+                                    <circle class="progress-ring__circle-fill" cx="60" cy="60" r="54" />
+                                </svg>
+
                                 <input type="file" id="avatar-file-input" class="visually-hidden" accept="image/png, image/jpeg, image/gif, image/webp">
-                                <button type="button" id="upload-avatar-btn" class="action-btn success" disabled><i class="fas fa-check"></i> Lưu Ảnh Này</button>
                             </div>
+                            
+                            <div class="avatar-action-buttons" id="avatar-action-buttons">
+                                <button type="button" id="cancel-avatar-btn" class="action-btn cancel-btn">Hủy</button>
+                                <button type="button" id="save-avatar-btn" class="action-btn success"><i class="fas fa-check"></i> Lưu ảnh này</button>
+                            </div>
+                            
                             <small class="upload-hint">Chọn ảnh (JPG, PNG, GIF, WEBP) dưới 5MB.</small>
                         </div>
+
+                        <!-- Gallery -->
                         <div class="avatar-gallery-wrapper">
                             <h4>Hoặc chọn từ kho ảnh của bạn</h4>
                             <div id="pro-image-gallery" class="gallery-grid">

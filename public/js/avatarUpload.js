@@ -1,52 +1,77 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if we are on the profile edit page and if the user is PRO
     const avatarSection = document.querySelector('.avatar-management-area');
-    if (!avatarSection) {
-        return; // Exit if this isn't the right page
-    }
+    if (!avatarSection) return;
 
+    // --- DOM ELEMENT REFERENCES ---
+    const wrapper = document.querySelector('.avatar-preview-wrapper');
     const previewImg = document.getElementById('current-avatar-preview');
     const fileInput = document.getElementById('avatar-file-input');
-    const uploadBtn = document.getElementById('upload-avatar-btn');
+    const actionButtonsContainer = document.getElementById('avatar-action-buttons');
+    const saveBtn = document.getElementById('save-avatar-btn');
+    const cancelBtn = document.getElementById('cancel-avatar-btn');
     const galleryContainer = document.getElementById('pro-image-gallery');
     const headerAvatar = document.querySelector('.user-avatar-header');
+    const progressRing = document.querySelector('.progress-ring__circle-fill');
 
+    // --- STATE MANAGEMENT ---
     let selectedFile = null;
+    let isUploading = false;
+    const originalAvatarSrc = previewImg.src;
+    
+    // Calculate progress ring circumference
+    const radius = progressRing.r.baseVal.value;
+    const circumference = radius * 2 * Math.PI;
+    progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+    progressRing.style.strokeDashoffset = circumference;
 
-    // --- 1. Load User's Existing PRO Images ---
+    // --- HELPER FUNCTIONS ---
+    function setRingProgress(percent) {
+        const offset = circumference - (percent / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+    }
+
+    function showToast(message, type = 'success', duration = 3000) {
+        // Assuming a global showAlert function exists from alerts.js
+        if (typeof showAlert === 'function') {
+            const title = type.charAt(0).toUpperCase() + type.slice(1);
+            showAlert(message, type, duration, title);
+        } else {
+            console.log(`[Toast/${type}]: ${message}`);
+        }
+    }
+
+    // --- CORE LOGIC ---
     async function loadUserImages() {
-        galleryContainer.innerHTML = '<div class="gallery-loader"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+        galleryContainer.innerHTML = '<div class="gallery-loader"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
         try {
             const response = await fetch('/api/pro-images/list');
-            if (!response.ok) throw new Error('Failed to fetch images.');
+            if (!response.ok) throw new Error('Không thể tải danh sách ảnh.');
             const images = await response.json();
 
             if (images.length === 0) {
-                galleryContainer.innerHTML = '<p class="gallery-loader">No images uploaded yet.</p>';
+                galleryContainer.innerHTML = '<p class="gallery-loader">Bạn chưa tải lên ảnh nào.</p>';
                 return;
             }
 
             galleryContainer.innerHTML = ''; // Clear loader
             images.forEach(image => {
-                const url = `/api/pro-images/${image.filename}`;
                 const item = document.createElement('div');
                 item.className = 'gallery-item';
                 item.innerHTML = `
-                    <img src="${url}" alt="${image.displayName}" loading="lazy">
-                    <div class="set-avatar-overlay"><i class="fas fa-check"></i> Set Avatar</div>
+                    <img src="${image.url}" alt="${image.displayName}" loading="lazy">
+                    <div class="set-avatar-overlay"><i class="fas fa-check-circle"></i></div>
                 `;
-                item.addEventListener('click', () => handleSetAvatar(url));
+                item.addEventListener('click', () => handleSetAvatar(image.url));
                 galleryContainer.appendChild(item);
             });
         } catch (error) {
             console.error(error);
-            galleryContainer.innerHTML = '<p class="gallery-loader">Could not load images.</p>';
+            galleryContainer.innerHTML = '<p class="gallery-loader text-danger">Không thể tải ảnh.</p>';
         }
     }
 
-    // --- 2. Handle Setting an Avatar ---
     async function handleSetAvatar(avatarUrl) {
-        showToast('Setting new avatar...', 'info');
+        showToast('Đang đặt ảnh đại diện...', 'info');
         try {
             const response = await fetch('/api/user/avatar', {
                 method: 'POST',
@@ -56,105 +81,129 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Failed to set avatar.');
+                throw new Error(errData.error || 'Đặt ảnh đại diện thất bại.');
             }
             
             const result = await response.json();
             previewImg.src = result.newAvatarUrl;
             if(headerAvatar) headerAvatar.src = result.newAvatarUrl;
-            showToast('Avatar updated successfully!', 'success');
-
+            previewImg.dataset.originalSrc = result.newAvatarUrl; // Update original source
+            showToast('Cập nhật ảnh đại diện thành công!', 'success');
         } catch (error) {
             console.error(error);
             showToast(error.message, 'danger');
         }
     }
-    
-    // --- 3. Handle File Input and Upload ---
-    fileInput.addEventListener('change', () => {
-        const file = fileInput.files[0];
-        if (file) {
-            // Validate file type and size
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-                showToast('Invalid file type. Please select a JPG, PNG, GIF, or WEBP file.', 'danger');
-                fileInput.value = '';
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) { // 5 MB limit
-                showToast('File is too large. Maximum size is 5MB.', 'danger');
-                fileInput.value = '';
-                return;
-            }
-            
-            selectedFile = file;
-            uploadBtn.disabled = false;
-            // Show a preview of the selected file
-            const reader = new FileReader();
-            reader.onload = (e) => { previewImg.src = e.target.result; };
-            reader.readAsDataURL(file);
-        } else {
-            selectedFile = null;
-            uploadBtn.disabled = true;
+
+    function handleFileSelect(file) {
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            showToast('Loại file không hợp lệ. Vui lòng chọn ảnh (JPG, PNG, GIF, WEBP).', 'danger');
+            return;
         }
-    });
+        if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+            showToast('File quá lớn. Kích thước tối đa là 5MB.', 'danger');
+            return;
+        }
+        
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => { previewImg.src = e.target.result; };
+        reader.readAsDataURL(file);
 
-    uploadBtn.addEventListener('click', async () => {
-        if (!selectedFile) return;
+        actionButtonsContainer.classList.add('visible');
+    }
 
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    function resetState() {
+        selectedFile = null;
+        fileInput.value = '';
+        previewImg.src = previewImg.dataset.originalSrc || originalAvatarSrc;
+        actionButtonsContainer.classList.remove('visible');
+    }
+
+    function handleUpload() {
+        if (!selectedFile || isUploading) return;
+
+        isUploading = true;
+        wrapper.classList.add('uploading');
+        setRingProgress(0);
 
         const formData = new FormData();
         formData.append('image', selectedFile);
-
-        try {
-            // Use the existing pro-images upload endpoint
-            const uploadResponse = await fetch('/api/pro-images/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!uploadResponse.ok) {
-                 const errData = await uploadResponse.json();
-                throw new Error(errData.error || 'Upload failed.');
-            }
-            const uploadResult = await uploadResponse.json();
-            
-            // Now, set the uploaded image URL as the avatar
-            await handleSetAvatar(uploadResult.url);
-            
-            // Refresh the gallery to show the new image
-            await loadUserImages();
-            
-        } catch (error) {
-            console.error(error);
-            showToast(error.message, 'danger');
-        } finally {
-            uploadBtn.disabled = true; // Disable until a new file is chosen
-            uploadBtn.innerHTML = '<i class="fas fa-check"></i> Lưu Ảnh Này';
-            fileInput.value = ''; // Reset file input
-            selectedFile = null;
-        }
-    });
-
-    // --- Simple Toast Notification ---
-    function showToast(message, type = 'success', duration = 3000) {
-        const existingToast = document.querySelector('.admin-toast');
-        if(existingToast) existingToast.remove();
-
-        const toast = document.createElement('div');
-        toast.className = `admin-toast ${type}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
         
-        setTimeout(() => toast.classList.add('show'), 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 500);
-        }, duration);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/pro-images/upload', true);
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                setRingProgress(percentComplete);
+            }
+        };
+
+        xhr.onload = async () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const uploadResult = JSON.parse(xhr.responseText);
+                await handleSetAvatar(uploadResult.url);
+                await loadUserImages(); // Refresh gallery
+                resetState();
+            } else {
+                try {
+                    const errData = JSON.parse(xhr.responseText);
+                    showToast(errData.error || 'Tải lên thất bại.', 'danger');
+                } catch {
+                    showToast('Tải lên thất bại.', 'danger');
+                }
+            }
+             // Final state handled in 'loadend'
+        };
+
+        xhr.onerror = () => {
+            showToast('Lỗi mạng, không thể tải ảnh lên.', 'danger');
+             // Final state handled in 'loadend'
+        };
+        
+        xhr.onloadend = () => {
+            isUploading = false;
+            wrapper.classList.remove('uploading');
+            setTimeout(() => setRingProgress(0), 400); // Reset ring after transition
+        };
+
+        xhr.send(formData);
     }
     
+    // --- EVENT LISTENERS ---
+    wrapper.addEventListener('click', () => {
+        if (!isUploading) fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
+
+    // Drag and Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        wrapper.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+        wrapper.addEventListener(eventName, () => wrapper.classList.add('drag-over'));
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        wrapper.addEventListener(eventName, () => wrapper.classList.remove('drag-over'));
+    });
+
+    wrapper.addEventListener('drop', e => {
+        const file = e.dataTransfer?.files[0];
+        if (file) handleFileSelect(file);
+    });
+
+    saveBtn.addEventListener('click', handleUpload);
+    cancelBtn.addEventListener('click', resetState);
+
     // Initial Load
+    previewImg.dataset.originalSrc = originalAvatarSrc; // Store initial avatar
     loadUserImages();
 });
