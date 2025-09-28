@@ -203,6 +203,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div id="studyNavPanel" class="quiz-navigation-panel">
+                                    <h4><i class="fas fa-list-ol"></i> Danh sách câu hỏi</h4>
+                                    <div id="studyQuestionJumper" class="question-jumper-grid"></div>
+                                </div>
                             </div>
 
                         </div>
@@ -771,7 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nextBtn = document.getElementById('study-next-btn');
                 const checkBtn = document.getElementById('study-check-btn');
                 const resetProgressBtn = document.getElementById('study-reset-progress');
-                const navPanel = document.getElementById('questionJumper');
                 let studyState = { currentIndex: 0, questions: {}, highScore: 0, srsEnabled: true };
 
                 // SRS Toggle
@@ -832,8 +835,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                  const renderStudyNavigation = () => {
-                    if (!navPanel) return;
-                    navPanel.innerHTML = '';
+                    const studyNavPanel = document.getElementById('studyQuestionJumper');
+                    if (!studyNavPanel) return;
+                    studyNavPanel.innerHTML = '';
                     masterQuizData.forEach((_, idx) => {
                         const btn = document.createElement('button');
                         btn.className = 'nav-jump-btn';
@@ -843,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (qState) btn.classList.add(`status-${qState.status}`);
                         if (idx === studyState.currentIndex) btn.classList.add('on-page');
                         btn.onclick = () => { studyState.currentIndex = idx; renderStudyQuestion(); };
-                        navPanel.appendChild(btn);
+                        studyNavPanel.appendChild(btn);
                     });
                 };
 
