@@ -189,6 +189,10 @@
                                     </div>
                                     <button id="study-reset-progress" class="btn btn-danger" style="width: 100%; margin-top: 10px;"><i class="fas fa-trash-alt"></i> Xóa tiến trình</button>
                                 </div>
+                                <div class="study-navigation-panel">
+                                    <h4><i class="fas fa-list-ol"></i> Danh sách câu hỏi</h4>
+                                    <div id="study-questionJumper" class="question-jumper-grid"></div>
+                                </div>
                                 <div class="study-main-area">
                                     <div id="study-question-display">
                                         <!-- Current study question will be rendered here -->
@@ -751,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nextBtn = document.getElementById('study-next-btn');
                 const checkBtn = document.getElementById('study-check-btn');
                 const resetProgressBtn = document.getElementById('study-reset-progress');
-                const navPanel = document.getElementById('questionJumper');
+                const navPanel = document.getElementById('study-questionJumper');
                 let studyState = { currentIndex: 0, questions: {}, highScore: 0, srsEnabled: true };
 
                 // SRS Toggle
