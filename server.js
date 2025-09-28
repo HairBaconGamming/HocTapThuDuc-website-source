@@ -64,6 +64,15 @@ const {
 } = require("./utils/growthUtils"); // Ensure path is correct
 
 const marked = require("marked");
+const DOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
+
+// Safe marked functions
+app.locals.marked = (text) => purify.sanitize(marked.parse(text));
+app.locals.markedInline = (text) => purify.sanitize(marked.parseInline(text));
+
 if (!Array.prototype.at) {
   Array.prototype.at = function (n) {
     n = Math.trunc(n) || 0;
@@ -1009,7 +1018,7 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
     // Xử lý dữ liệu đặc thù cho từng loại bài học
     if (lesson.type === "markdown") {
       const mdContent = lesson.editorData?.markdown || lesson.content || "";
-      lessonDataForRender.renderedContent = marked.parse(mdContent);
+      lessonDataForRender.renderedContent = app.locals.marked(mdContent);
       const wordCount = mdContent.split(/\s+/).filter(Boolean).length;
       lessonDataForRender.estimatedReadingTime = Math.ceil(wordCount / 200);
     }
@@ -1062,11 +1071,11 @@ app.get("/lesson/:id", isLoggedIn, async (req, res) => {
         }
     }
     
-    res.render("lessonDetail", { 
-        user: req.user, 
-        lesson: lessonDataForRender, 
-        marked: marked, 
-        activePage: "subjects" 
+    res.render("lessonDetail", {
+        user: req.user,
+        lesson: lessonDataForRender,
+        marked: app.locals.marked,
+        activePage: "subjects"
     });
 
   } catch (err) {

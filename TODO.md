@@ -1,0 +1,2 @@
+- [x] Add author display in views/news.ejs news cards
+- [x] Fix author display in views/newsDetail.ejs to use postedBy

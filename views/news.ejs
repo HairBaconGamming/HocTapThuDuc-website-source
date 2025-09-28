@@ -153,6 +153,10 @@ function getPlainTextExcerpt(content = '', maxLength = 180) {
                                               <span class="news-badge category-badge-news news-cat-<%= categoryClass %>"><%= item.category %></span>
                                           <% } %>
                                       <% } %>
+                                      <%# Author %>
+                                      <% if (item.postedBy && item.postedBy.username) { %>
+                                          <span class="news-post-author"><i class="fas fa-user"></i> <%= item.postedBy.username %></span>
+                                      <% } %>
                                       <%# Date %>
                                       <% if (item.createdAt && typeof item.createdAt.toLocaleDateString === 'function') { %> <%# Check if it's a date object %>
                                            <span class="news-post-date"><i class="far fa-clock"></i> <%= item.createdAt.toLocaleDateString('vi-VN') %></span>

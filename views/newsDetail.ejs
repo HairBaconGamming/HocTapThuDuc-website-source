@@ -76,8 +76,8 @@ function parseMarkdownSafe(markdownContent) {
                      <% if (newsItem.createdAt) { %>
                         <span class="masthead-date"><i class="far fa-calendar-alt"></i> <%= newsItem.createdAt.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                      <% } %>
-                      <% if (newsItem.createdBy) { %>
-                         <span class="masthead-author"><i class="fas fa-user-edit"></i> <a href="/profile/<%= newsItem.createdBy._id %>" class="author-link loading-link"><%= newsItem.createdBy.username || 'Admin' %></a></span>
+                      <% if (newsItem.postedBy) { %>
+                         <span class="masthead-author"><i class="fas fa-user-edit"></i> <a href="/profile/<%= newsItem.postedBy._id %>" class="author-link loading-link"><%= newsItem.postedBy.username || 'Admin' %></a></span>
                       <% } %>
                  </div>
                  <h1 class="news-article-headline"><%= newsItem.title %></h1>
