@@ -373,8 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lessonType === 'quiz') {
             const activeModeTab = document.querySelector('.mode-tab-btn.active');
             const activeMode = activeModeTab ? activeModeTab.dataset.mode : 'review';
-            const quizDataString = `<%- JSON.stringify(lesson.editorData.quiz || '[]') %>`;
-            const masterQuizData = JSON.parse(typeof JSON.parse(quizDataString) === 'string' ? JSON.parse(quizDataString) : quizDataString) || [];
+            const masterQuizData = <%- JSON.stringify(lesson.editorData.quiz || []) %>;
+            if (!Array.isArray(masterQuizData)) {
+                return;
+            }
 
             if (activeMode === 'review') {
                 const resultDiv = document.getElementById('quizResultV2');
@@ -412,13 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- QUIZ LOGIC (ALL MODES) ---
     if (lessonType === 'quiz' && contentWrapper) {
-        let masterQuizData = [];
-        try {
-            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
-            masterQuizData = JSON.parse(typeof JSON.parse(outerString) === 'string' ? JSON.parse(outerString) : outerString) || [];
-            if (!Array.isArray(masterQuizData)) masterQuizData = [];
-        } catch (e) {
-            console.error("Error parsing master quiz data:", e);
+        let masterQuizData = <%- JSON.stringify(lesson.editorData.quiz || []) %>;
+        if (!Array.isArray(masterQuizData)) {
+            console.error("Invalid quiz data");
             contentWrapper.innerHTML = '<p class="placeholder-text video-error">Lỗi tải dữ liệu trắc nghiệm.</p>';
             return;
         }
@@ -848,16 +846,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 };
 
+                const findNextQuestion = (direction) => {
+                    let nextIndex = studyState.currentIndex;
+                    const total = masterQuizData.length;
+                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
+
+                    if (priorityIndices.length > 0) {
+                        let currentInPriority = priorityIndices.indexOf(nextIndex);
+                        if (direction > 0) {
+                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
+                        } else {
+                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
+                        }
+                    } else {
+                        nextIndex = (nextIndex + direction + total) % total;
+                    }
+                    studyState.currentIndex = nextIndex;
+                    renderStudyQuestion();
+                };
+
                 const checkStudyAnswer = () => {
                     const qIndex = studyState.currentIndex;
                     const qData = masterQuizData[qIndex];
                     const card = questionDisplay.querySelector('.quiz-question-card');
                     if (!card) return;
                     const qState = studyState.questions[qIndex];
-                    
+
                     const correctIndices = qData.options.map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null).sort();
                     let isCorrectOverall = false;
-                    
+
                     if (card.dataset.inputType === 'radio') {
                         const selected = card.querySelector('input:checked');
                         const userAnswer = selected ? parseInt(selected.value, 10) : null;
@@ -869,7 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         qState.lastAnswer = userAnswers;
                         if (JSON.stringify(userAnswers) === JSON.stringify(correctIndices)) isCorrectOverall = true;
                     }
-                    
+
                     qState.attempts = (qState.attempts || 0) + 1;
                     if (isCorrectOverall) {
                         qState.status = 'mastered';
@@ -900,44 +917,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studyState.srsEnabled) {
                         const now = Date.now();
                         if (isCorrectOverall) {
-                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
-                    qState.interval = Math.max(1, qState.interval * qState.easeFactor);
-                    qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
-                } else {
-                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
-                    qState.interval = 1;
-                    qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
-                }
-                
-                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                    opt.style.pointerEvents = 'none';
-                    if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
-                    if (opt.querySelector('.quiz-input')?.checked) {
-                        opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
-                    }
-                });
-                
-                checkBtn.style.display = 'none';
-                updateStats();
-                saveStudyProgress();
-                renderStudyNavigation();
-                };
-                    let nextIndex = studyState.currentIndex;
-                    const total = masterQuizData.length;
-                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
-                    
-                    if (priorityIndices.length > 0) {
-                        let currentInPriority = priorityIndices.indexOf(nextIndex);
-                        if (direction > 0) {
-                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                            qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
                         } else {
-                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
+                            qState.interval = 1;
+                            qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
                         }
-                    } else {
-                        nextIndex = (nextIndex + direction + total) % total;
                     }
-                    studyState.currentIndex = nextIndex;
-                    renderStudyQuestion();
+
+                    card.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                        opt.style.pointerEvents = 'none';
+                        if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
+                        if (opt.querySelector('.quiz-input')?.checked) {
+                            opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
+                        }
+                    });
+
+                    checkBtn.style.display = 'none';
+                    updateStats();
+                    saveStudyProgress();
+                    renderStudyNavigation();
+
+                    // Auto-advance to next question after a delay
+                    setTimeout(() => findNextQuestion(1), 2000);
                 };
 
                 prevBtn.addEventListener('click', () => findNextQuestion(-1));
