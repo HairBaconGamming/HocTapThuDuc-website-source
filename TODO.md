@@ -1,22 +1,37 @@
-# TODO 🚧
+# TODO: Upgrade Learning Methods and UX in lessonDetail
 
-Your new site is all yours so it doesn't matter if you break it! Try editing the code.
+## Learning Methods Upgrades
+- [x] Implement Spaced Repetition System (SRS) in quiz study mode: Add review intervals based on performance (easy: +4x, hard: next session), track due dates, filter due questions.
+  - [x] Update interval logic in study mode JS: easy (+4x interval), hard (1 day), prioritize due questions by nextReview.
+  - [x] Add filtering to show due questions first in study mode.
+- [ ] Add inline quizzes to markdown content: Parse quiz blocks, render mini-quiz components with feedback.
+  - [ ] Parse markdown for ```quiz ... ``` blocks in EJS/JS.
+  - [ ] Render mini-quiz components with feedback in lesson content.
+- [ ] Enhance essay with revision prompts: Post-grading, add "Rewrite" button to highlight low-score sections and provide targeted prompts.
+  - [ ] Add "Rewrite" button post-grading in essay result UI.
+  - [ ] Highlight low-score sections and generate targeted prompts in JS.
 
-Let's keep track of the submitted favorites using an array. First add this code near the top of `server.js` (where the comment says `ADD FAVORITES ARRAY VARIABLE`):
+## UX Upgrades
+- [x] Add loading states: Spinners for quiz submission and essay grading.
+- [ ] Enhance animations: Confetti on correct quiz answers, shake on wrong, smooth mode transitions.
+  - [ ] Add confetti on correct answers in review/study modes.
+  - [ ] Add shake animation on wrong answers.
+  - [ ] Smooth transitions for mode switches.
+- [ ] Improve accessibility: ARIA labels for quiz options, keyboard navigation for modes.
+  - [ ] Add ARIA labels to quiz options and buttons.
+  - [ ] Implement keyboard navigation for modes and options.
+- [ ] Mobile responsiveness: Update CSS for better mobile layout (e.g., quiz options, progress bars).
+  - [ ] Tweak CSS for mobile quiz layouts, progress bars.
+- [ ] Better user feedback: Tooltips on buttons, progress animations, error messages.
+  - [ ] Add tooltips to buttons.
+  - [ ] Enhance progress animations.
+  - [ ] Improve error message displays.
 
-```js
-const favorites = [];
-```
+## Files to Edit
+- [ ] views/lessonDetail.ejs: Core changes for SRS, inline quizzes, revision prompts, UX enhancements.
+- [ ] public/js/lessonDetail.js: Cleanup redundancy, integrate pagination if needed.
+- [ ] public/styleLessonDetail.css: Styles for new elements (SRS badges, inline quizzes, mobile tweaks).
 
-In the `POST` route, inside the `if(color)` block, add this code to save the submitted value to the array, and write it to the console:
-
-```js
-favorites.push(color);
-console.log(favorites);
-```
-
-Click __Tools__ > __Logs__ at the bottom of Glitch to see the log statement in action when you submit new colors through the form.
-
-## Keep going! 🚀
-
-Clearly this is not a robust data storage approach and won't persist for long! Your Node apps can use a variety of databases, like [SQLite](https://glitch.com/~glitch-hello-sqlite) and [Airtable](https://glitch.com/~glitch-hello-airtable).
+## Testing
+- [x] Manual test: Simulate SRS in quiz study mode, check localStorage.
+- [x] Browser test: Launch lesson page, verify animations and responsiveness.
