@@ -361,6 +361,54 @@ document.addEventListener('DOMContentLoaded', () => {
          completeBtn.disabled = false;
     }
 
+    const updateCompletionButtonState = () => {
+        const lessonType = "<%= lesson?.type ?? 'unknown' %>";
+        const lessonId = "<%= lesson?._id ?? '' %>";
+        const completeBtn = document.getElementById("completeLessonBtnV2");
+        const scoreRequirementMsg = document.getElementById("scoreRequirementMsg");
+        const PASSING_PERCENTAGE = 80;
+        let canComplete = false;
+        let message = '';
+
+        if (lessonType === 'quiz') {
+            const activeModeTab = document.querySelector('.mode-tab-btn.active');
+            const activeMode = activeModeTab ? activeModeTab.dataset.mode : 'review';
+            const quizDataString = `<%- JSON.stringify(lesson.editorData.quiz || '[]') %>`;
+            const masterQuizData = JSON.parse(typeof JSON.parse(quizDataString) === 'string' ? JSON.parse(quizDataString) : quizDataString) || [];
+
+            if (activeMode === 'review') {
+                const resultDiv = document.getElementById('quizResultV2');
+                const scoreText = resultDiv?.querySelector('.quiz-final-result p strong')?.textContent;
+                if (scoreText) {
+                    const [score, total] = scoreText.split('/').map(Number);
+                    const percentage = total > 0 ? (score / total) * 100 : 0;
+                    canComplete = percentage >= PASSING_PERCENTAGE;
+                }
+                message = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
+            } else if (activeMode === 'study') {
+                const saved = localStorage.getItem(`studyProgress_${lessonId}`);
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    const masteredCount = Object.values(state.questions).filter(q => q.status === 'mastered').length;
+                    canComplete = masteredCount >= masterQuizData.length;
+                }
+                message = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
+            }
+        } else if (lessonType === 'essay') {
+            // Logic cho essay đã có sẵn ở nơi khác, ta chỉ cần đảm bảo nút không bị ảnh hưởng sai
+            // Hoặc có thể thêm logic kiểm tra kết quả essay ở đây nếu cần
+        } else {
+             // Các loại bài học khác thường có thể hoàn thành ngay
+            canComplete = true; 
+        }
+
+        if (completeBtn) completeBtn.disabled = !canComplete;
+        if (scoreRequirementMsg) {
+            scoreRequirementMsg.textContent = message;
+            // Chỉ hiển thị message khi nút bị vô hiệu hóa VÀ là quiz hoặc essay
+            scoreRequirementMsg.style.display = (completeBtn.disabled && (lessonType === 'quiz' || lessonType === 'essay')) ? 'inline' : 'none';
+        }
+    };
 
     // --- QUIZ LOGIC (ALL MODES) ---
     if (lessonType === 'quiz' && contentWrapper) {
@@ -425,34 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return card;
         };
 
-        const updateCompletionButtonState = () => {
-            let canComplete = false;
-            let message = '';
-            if (activeMode === 'review') {
-                const resultDiv = document.getElementById('quizResultV2');
-                const scoreText = resultDiv?.querySelector('.quiz-final-result p strong')?.textContent;
-                if (scoreText) {
-                    const [score, total] = scoreText.split('/').map(Number);
-                    const percentage = total > 0 ? (score / total) * 100 : 0;
-                    canComplete = percentage >= PASSING_PERCENTAGE;
-                }
-                message = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
-            } else if (activeMode === 'study') {
-                const saved = localStorage.getItem(`studyProgress_${lessonId}`);
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    const masteredCount = Object.values(state.questions).filter(q => q.status === 'mastered').length;
-                    canComplete = masteredCount >= masterQuizData.length;
-                }
-                message = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
-            }
-            if (completeBtn) completeBtn.disabled = !canComplete;
-            if (scoreRequirementMsg) {
-                scoreRequirementMsg.textContent = message;
-                scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
-            }
-        };
-// ===================================
+        // ===================================
         // ===== REVIEW MODE LOGIC (ENHANCED) =========
         // ===================================
         const initReviewMode = (() => {
