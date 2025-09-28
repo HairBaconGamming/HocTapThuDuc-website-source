@@ -1,21 +1,25 @@
 // public/js/alerts.js
 
 // Ensure GSAP and tsParticles are available globally or handle potential errors
-const gsapExists = typeof gsap !== "undefined";
-const tsParticlesExists = typeof tsParticles !== "undefined";
-const prefersReducedMotion =
-  gsapExists && window.matchMedia
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : true;
+// FIX: Check if the variable is already declared before attempting to declare it again.
+if (typeof gsapExists === 'undefined') {
+  const gsapExists = typeof gsap !== "undefined";
+  const tsParticlesExists = typeof tsParticles !== "undefined";
+  const prefersReducedMotion =
+    gsapExists && window.matchMedia
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : true;
 
-if (!gsapExists)
-  console.error(
-    "GSAP library not loaded! Animations in alerts.js will be affected."
-  );
-if (!tsParticlesExists)
-  console.warn(
-    "tsParticles library not loaded! Particle effects in achievement notifications will not work."
-  );
+  if (!gsapExists)
+    console.error(
+      "GSAP library not loaded! Animations in alerts.js will be affected."
+    );
+  if (!tsParticlesExists)
+    console.warn(
+      "tsParticles library not loaded! Particle effects in achievement notifications will not work."
+    );
+}
+
 
 /**
  * Displays an advanced toast alert based on the CSS structure in styles.css.

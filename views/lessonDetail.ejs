@@ -203,10 +203,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div id="studyNavPanel" class="quiz-navigation-panel">
-                                    <h4><i class="fas fa-list-ol"></i> Danh sách câu hỏi</h4>
-                                    <div id="studyQuestionJumper" class="question-jumper-grid"></div>
-                                </div>
                             </div>
 
                         </div>
@@ -698,18 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 tsParticles.load('tsparticles', {
                                     particles: {
                                         number: { value: 100 },
-                                        color: { value: '#FFD700' },
-                                        shape: { type: 'circle' },
-                                        opacity: { value: 0.7 },
-                                        size: { value: 6 },
-                                        move: { enable: true, speed: 4, direction: 'none', random: true, straight: false, outModes: 'out' }
-                                    },
-                                    interactivity: { events: { onHover: { enable: false } } },
-                                    detectRetina: true
-                                });
-                                setTimeout(() => tsParticles.domItem(0).destroy(), 3000);
-                            }
-                        }
                         
                         resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
                         const reviewIncorrectBtn = resultDiv.querySelector('.btn-review-incorrect');
@@ -775,6 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nextBtn = document.getElementById('study-next-btn');
                 const checkBtn = document.getElementById('study-check-btn');
                 const resetProgressBtn = document.getElementById('study-reset-progress');
+                const navPanel = document.getElementById('questionJumper');
                 let studyState = { currentIndex: 0, questions: {}, highScore: 0, srsEnabled: true };
 
                 // SRS Toggle
@@ -835,9 +820,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                  const renderStudyNavigation = () => {
-                    const studyNavPanel = document.getElementById('studyQuestionJumper');
-                    if (!studyNavPanel) return;
-                    studyNavPanel.innerHTML = '';
+                    if (!navPanel) return;
+                    navPanel.innerHTML = '';
                     masterQuizData.forEach((_, idx) => {
                         const btn = document.createElement('button');
                         btn.className = 'nav-jump-btn';
@@ -847,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (qState) btn.classList.add(`status-${qState.status}`);
                         if (idx === studyState.currentIndex) btn.classList.add('on-page');
                         btn.onclick = () => { studyState.currentIndex = idx; renderStudyQuestion(); };
-                        studyNavPanel.appendChild(btn);
+                        navPanel.appendChild(btn);
                     });
                 };
 
