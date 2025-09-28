@@ -1,2 +1,2 @@
-- [ ] Fix try-catch syntax in essay prompt section
-- [ ] Fix try-catch syntax in essay questions section
+- [x] Add author display in views/news.ejs news cards
+- [x] Fix author display in views/newsDetail.ejs to use postedBy
