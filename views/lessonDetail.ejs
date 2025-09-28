@@ -361,62 +361,16 @@ document.addEventListener('DOMContentLoaded', () => {
          completeBtn.disabled = false;
     }
 
-    const updateCompletionButtonState = () => {
-        const lessonType = "<%= lesson?.type ?? 'unknown' %>";
-        const lessonId = "<%= lesson?._id ?? '' %>";
-        const completeBtn = document.getElementById("completeLessonBtnV2");
-        const scoreRequirementMsg = document.getElementById("scoreRequirementMsg");
-        const PASSING_PERCENTAGE = 80;
-        let canComplete = false;
-        let message = '';
-
-        if (lessonType === 'quiz') {
-            const activeModeTab = document.querySelector('.mode-tab-btn.active');
-            const activeMode = activeModeTab ? activeModeTab.dataset.mode : 'review';
-            const masterQuizData = <%- JSON.stringify(lesson.editorData.quiz || []) %>;
-            if (!Array.isArray(masterQuizData)) {
-                return;
-            }
-
-            if (activeMode === 'review') {
-                const resultDiv = document.getElementById('quizResultV2');
-                const scoreText = resultDiv?.querySelector('.quiz-final-result p strong')?.textContent;
-                if (scoreText) {
-                    const [score, total] = scoreText.split('/').map(Number);
-                    const percentage = total > 0 ? (score / total) * 100 : 0;
-                    canComplete = percentage >= PASSING_PERCENTAGE;
-                }
-                message = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
-            } else if (activeMode === 'study') {
-                const saved = localStorage.getItem(`studyProgress_${lessonId}`);
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    const masteredCount = Object.values(state.questions).filter(q => q.status === 'mastered').length;
-                    canComplete = masteredCount >= masterQuizData.length;
-                }
-                message = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
-            }
-        } else if (lessonType === 'essay') {
-            // Logic cho essay đã có sẵn ở nơi khác, ta chỉ cần đảm bảo nút không bị ảnh hưởng sai
-            // Hoặc có thể thêm logic kiểm tra kết quả essay ở đây nếu cần
-        } else {
-             // Các loại bài học khác thường có thể hoàn thành ngay
-            canComplete = true; 
-        }
-
-        if (completeBtn) completeBtn.disabled = !canComplete;
-        if (scoreRequirementMsg) {
-            scoreRequirementMsg.textContent = message;
-            // Chỉ hiển thị message khi nút bị vô hiệu hóa VÀ là quiz hoặc essay
-            scoreRequirementMsg.style.display = (completeBtn.disabled && (lessonType === 'quiz' || lessonType === 'essay')) ? 'inline' : 'none';
-        }
-    };
 
     // --- QUIZ LOGIC (ALL MODES) ---
     if (lessonType === 'quiz' && contentWrapper) {
-        let masterQuizData = <%- JSON.stringify(lesson.editorData.quiz || []) %>;
-        if (!Array.isArray(masterQuizData)) {
-            console.error("Invalid quiz data");
+        let masterQuizData = [];
+        try {
+            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
+            masterQuizData = JSON.parse(typeof JSON.parse(outerString) === 'string' ? JSON.parse(outerString) : outerString) || [];
+            if (!Array.isArray(masterQuizData)) masterQuizData = [];
+        } catch (e) {
+            console.error("Error parsing master quiz data:", e);
             contentWrapper.innerHTML = '<p class="placeholder-text video-error">Lỗi tải dữ liệu trắc nghiệm.</p>';
             return;
         }
@@ -471,7 +425,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return card;
         };
 
-        // ===================================
+        const updateCompletionButtonState = () => {
+            let canComplete = false;
+            let message = '';
+            if (activeMode === 'review') {
+                const resultDiv = document.getElementById('quizResultV2');
+                const scoreText = resultDiv?.querySelector('.quiz-final-result p strong')?.textContent;
+                if (scoreText) {
+                    const [score, total] = scoreText.split('/').map(Number);
+                    const percentage = total > 0 ? (score / total) * 100 : 0;
+                    canComplete = percentage >= PASSING_PERCENTAGE;
+                }
+                message = `(Cần >= ${PASSING_PERCENTAGE}% để hoàn thành)`;
+            } else if (activeMode === 'study') {
+                const saved = localStorage.getItem(`studyProgress_${lessonId}`);
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    const masteredCount = Object.values(state.questions).filter(q => q.status === 'mastered').length;
+                    canComplete = masteredCount >= masterQuizData.length;
+                }
+                message = `(Cần học thuộc ${masterQuizData.length}/${masterQuizData.length} câu)`;
+            }
+            if (completeBtn) completeBtn.disabled = !canComplete;
+            if (scoreRequirementMsg) {
+                scoreRequirementMsg.textContent = message;
+                scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
+            }
+        };
+// ===================================
         // ===== REVIEW MODE LOGIC (ENHANCED) =========
         // ===================================
         const initReviewMode = (() => {
@@ -846,35 +827,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 };
 
-                const findNextQuestion = (direction) => {
-                    let nextIndex = studyState.currentIndex;
-                    const total = masterQuizData.length;
-                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
-
-                    if (priorityIndices.length > 0) {
-                        let currentInPriority = priorityIndices.indexOf(nextIndex);
-                        if (direction > 0) {
-                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
-                        } else {
-                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
-                        }
-                    } else {
-                        nextIndex = (nextIndex + direction + total) % total;
-                    }
-                    studyState.currentIndex = nextIndex;
-                    renderStudyQuestion();
-                };
-
                 const checkStudyAnswer = () => {
                     const qIndex = studyState.currentIndex;
                     const qData = masterQuizData[qIndex];
                     const card = questionDisplay.querySelector('.quiz-question-card');
                     if (!card) return;
                     const qState = studyState.questions[qIndex];
-
+                    
                     const correctIndices = qData.options.map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null).sort();
                     let isCorrectOverall = false;
-
+                    
                     if (card.dataset.inputType === 'radio') {
                         const selected = card.querySelector('input:checked');
                         const userAnswer = selected ? parseInt(selected.value, 10) : null;
@@ -886,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         qState.lastAnswer = userAnswers;
                         if (JSON.stringify(userAnswers) === JSON.stringify(correctIndices)) isCorrectOverall = true;
                     }
-
+                    
                     qState.attempts = (qState.attempts || 0) + 1;
                     if (isCorrectOverall) {
                         qState.status = 'mastered';
@@ -917,31 +879,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studyState.srsEnabled) {
                         const now = Date.now();
                         if (isCorrectOverall) {
-                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
-                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
-                            qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
-                        } else {
-                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
-                            qState.interval = 1;
-                            qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
-                        }
+                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                    qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                    qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
+                } else {
+                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
+                    qState.interval = 1;
+                    qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
+                }
+                
+                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                    if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
+                    if (opt.querySelector('.quiz-input')?.checked) {
+                        opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
                     }
-
-                    card.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                        opt.style.pointerEvents = 'none';
-                        if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
-                        if (opt.querySelector('.quiz-input')?.checked) {
-                            opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
+                });
+                
+                checkBtn.style.display = 'none';
+                updateStats();
+                saveStudyProgress();
+                renderStudyNavigation();
+                };
+                    let nextIndex = studyState.currentIndex;
+                    const total = masterQuizData.length;
+                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
+                    
+                    if (priorityIndices.length > 0) {
+                        let currentInPriority = priorityIndices.indexOf(nextIndex);
+                        if (direction > 0) {
+                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
+                        } else {
+                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
                         }
-                    });
-
-                    checkBtn.style.display = 'none';
-                    updateStats();
-                    saveStudyProgress();
-                    renderStudyNavigation();
-
-                    // Auto-advance to next question after a delay
-                    setTimeout(() => findNextQuestion(1), 2000);
+                    } else {
+                        nextIndex = (nextIndex + direction + total) % total;
+                    }
+                    studyState.currentIndex = nextIndex;
+                    renderStudyQuestion();
                 };
 
                 prevBtn.addEventListener('click', () => findNextQuestion(-1));
