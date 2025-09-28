@@ -331,7 +331,8 @@
 <script src="/js/alerts.js" defer></script>
 <script src="/js/confirm.js" defer></script>
 <!-- Page Specific JS -->
-<script>
+<script data-lesson-type="<%= lesson?.type ?? 'unknown' %>" data-lesson-id="<%= lesson?._id ?? '' %>" data-estimated-time="<%= (lesson?.estimatedReadingTime ?? 0) * 60 %>" data-quiz-data="<%- JSON.stringify(lesson.editorData.quiz || '[]') %>">
+/* eslint-disable */
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -340,8 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof marked === 'undefined') { console.warn("Marked library not loaded! Markdown parsing might fail."); }
     gsap.registerPlugin(ScrollTrigger);
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const lessonType = "<%= lesson?.type ?? 'unknown' %>";
-    const lessonId = "<%= lesson?._id ?? '' %>";
+    const lessonType = document.currentScript.dataset.lessonType;
+    const lessonId = document.currentScript.dataset.lessonId;
     const completeBtn = document.getElementById("completeLessonBtnV2");
     const scoreRequirementMsg = document.getElementById("scoreRequirementMsg");
     const PASSING_PERCENTAGE = 80;
@@ -355,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
          const contentAreaMd = document.getElementById("lessonContentV2");
          if (contentAreaMd && typeof renderMathInElement === 'function') { try { renderMathInElement(contentAreaMd, { delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true } ], throwOnError: false }); } catch (error) { console.error("KaTeX error:", error); } }
          const markdownImages = contentAreaMd ? contentAreaMd.querySelectorAll('img') : []; markdownImages.forEach(img => { img.style.cursor = 'pointer'; img.addEventListener('click', () => openLessonLightbox(img.src, img.alt || 'Hình ảnh')); });
-         const estimatedTimeSeconds = <%= (lesson?.estimatedReadingTime ?? 0) * 60 %>; const countdownTextEl = document.getElementById("countdownTextV2"); const countdownProgressCircle = document.getElementById("countdownProgressCircle"); const countdownContainer = document.getElementById("countdownContainerV2");
+         const estimatedTimeSeconds = parseInt(document.currentScript.dataset.estimatedTime, 10);
          if (estimatedTimeSeconds > 0 && countdownTextEl && countdownProgressCircle && completeBtn && countdownContainer) { let remaining = estimatedTimeSeconds; countdownTextEl.textContent = remaining; gsap.set(countdownProgressCircle, { strokeDashoffset: 100 }); if (!prefersReducedMotion) { const interval = setInterval(() => { remaining--; countdownTextEl.textContent = remaining > 0 ? remaining : "✓"; const progress = Math.max(0, (remaining / estimatedTimeSeconds)); const dashoffset = progress * 100; gsap.to(countdownProgressCircle, { strokeDashoffset: dashoffset, duration: 1, ease: 'linear' }); if (remaining <= 0) { clearInterval(interval); completeBtn.disabled = false; gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' }); gsap.to(countdownContainer, { scale: 1.1, autoAlpha: 0.7, duration: 0.3, ease: 'power2.out'}); } }, 1000); completeBtn.disabled = true; } else { completeBtn.disabled = false; countdownContainer.style.display = 'none'; } } else if(completeBtn) { completeBtn.disabled = false; if(countdownContainer) countdownContainer.style.display = 'none'; }
     } else if (completeBtn) {
          completeBtn.disabled = false;
@@ -366,8 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lessonType === 'quiz' && contentWrapper) {
         let masterQuizData = [];
         try {
-            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
-            masterQuizData = JSON.parse(typeof JSON.parse(outerString) === 'string' ? JSON.parse(outerString) : outerString) || [];
+            const outerString = document.currentScript.dataset.quizData;
+            masterQuizData = JSON.parse(outerString) || [];
             if (!Array.isArray(masterQuizData)) masterQuizData = [];
         } catch (e) {
             console.error("Error parsing master quiz data:", e);
@@ -752,7 +753,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const checkBtn = document.getElementById('study-check-btn');
                 const resetProgressBtn = document.getElementById('study-reset-progress');
                 const navPanel = document.getElementById('questionJumper');
-                let studyState = { currentIndex: 0, questions: {}, highScore: 0 };
+                let studyState = { currentIndex: 0, questions: {}, highScore: 0, srsEnabled: true };
+
+                // SRS Toggle
+                const srsToggle = document.createElement('div');
+                srsToggle.innerHTML = '<input type="checkbox" id="srs-toggle" checked> <label for="srs-toggle">Bật Spaced Repetition (SRS)</label>';
+                srsToggle.style.marginBottom = '10px';
+                document.getElementById('study-mode-container').insertBefore(srsToggle, document.getElementById('study-stats-panel'));
+                const srsCheckbox = document.getElementById('srs-toggle');
+                srsCheckbox.addEventListener('change', () => { studyState.srsEnabled = srsCheckbox.checked; saveStudyProgress(); });
 
                 const loadStudyProgress = () => {
                     const saved = localStorage.getItem(PROGRESS_KEY);
@@ -762,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(studyState.currentIndex >= masterQuizData.length) studyState.currentIndex = 0;
                     masterQuizData.forEach((_, index) => {
                         if (!studyState.questions[index]) {
-                            studyState.questions[index] = { status: 'unseen', wrong: 0, lastAnswer: null };
+                            studyState.questions[index] = { status: 'unseen', wrong: 0, lastAnswer: null, interval: 1, nextReview: Date.now(), easeFactor: 2.5 };
                         }
                     });
                 };
@@ -845,10 +854,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (isCorrectOverall) {
                         qState.status = 'mastered';
                         card.classList.add('correct-answer-pop');
+                        // Trigger confetti
+                        if (typeof tsParticles !== 'undefined') {
+                            tsParticles.load('tsparticles', {
+                                particles: {
+                                    number: { value: 50 },
+                                    color: { value: '#00ff00' },
+                                    shape: { type: 'circle' },
+                                    opacity: { value: 0.5 },
+                                    size: { value: 5 },
+                                    move: { enable: true, speed: 3, direction: 'none', random: true, straight: false, outModes: 'out' }
+                                },
+                                interactivity: { events: { onHover: { enable: false } } },
+                                detectRetina: true
+                            });
+                            setTimeout(() => tsParticles.domItem(0).destroy(), 2000);
+                        }
                     } else {
                         qState.status = 'learning';
                         qState.wrong = (qState.wrong || 0) + 1;
                         card.classList.add('incorrect-answer-shake');
+                    }
+
+                    // SRS Logic
+                    if (studyState.srsEnabled) {
+                        const now = Date.now();
+                        if (isCorrectOverall) {
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                            qState.nextReview = now + qState.interval * 24 * 60 * 60 * 1000; // days to ms
+                        } else {
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.8);
+                            qState.interval = 1;
+                            qState.nextReview = now + 1 * 24 * 60 * 60 * 1000;
+                        }
                     }
                     
                     card.querySelectorAll('.quiz-option-v2').forEach(opt => {
