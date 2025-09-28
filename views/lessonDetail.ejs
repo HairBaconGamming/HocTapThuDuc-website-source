@@ -897,15 +897,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studyState.srsEnabled) {
                         const now = Date.now();
                         if (isCorrectOverall) {
-                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
-                    qState.interval = Math.max(1, qState.interval * qState.easeFactor);
-                    qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
-                } else {
-                    qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
-                    qState.interval = 1;
-                    qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
-                }
-                
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                            qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
+                        } else {
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
+                            qState.interval = 1;
+                            qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
+                        }
+                    }
+                        
                 card.querySelectorAll('.quiz-option-v2').forEach(opt => {
                     opt.style.pointerEvents = 'none';
                     if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
@@ -919,24 +920,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveStudyProgress();
                 renderStudyNavigation();
                 findNextQuestion(1);
-                };
-
-                const findNextQuestion = (direction) => {
-                    let nextIndex = studyState.currentIndex;
-                    const total = masterQuizData.length;
-                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
-                    if (priorityIndices.length > 0) {
-                        let currentInPriority = priorityIndices.indexOf(nextIndex);
-                        if (direction > 0) {
-                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
-                        } else {
-                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
-                        }
-                    } else {
-                        nextIndex = (nextIndex + direction + total) % total;
-                    }
-                    studyState.currentIndex = nextIndex;
-                    renderStudyQuestion();
                 };
 
                 prevBtn.addEventListener('click', () => findNextQuestion(-1));
