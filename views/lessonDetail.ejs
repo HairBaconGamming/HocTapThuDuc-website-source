@@ -331,8 +331,7 @@
 <script src="/js/alerts.js" defer></script>
 <script src="/js/confirm.js" defer></script>
 <!-- Page Specific JS -->
-<script data-lesson-type="<%= lesson?.type ?? 'unknown' %>" data-lesson-id="<%= lesson?._id ?? '' %>" data-estimated-time="<%= (lesson?.estimatedReadingTime ?? 0) * 60 %>" data-quiz-data="<%- JSON.stringify(lesson.editorData.quiz || '[]') %>">
-/* eslint-disable */
+<script>
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -341,8 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof marked === 'undefined') { console.warn("Marked library not loaded! Markdown parsing might fail."); }
     gsap.registerPlugin(ScrollTrigger);
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const lessonType = document.currentScript.dataset.lessonType;
-    const lessonId = document.currentScript.dataset.lessonId;
+    const lessonType = "<%= lesson?.type ?? 'unknown' %>";
+    const lessonId = "<%= lesson?._id ?? '' %>";
     const completeBtn = document.getElementById("completeLessonBtnV2");
     const scoreRequirementMsg = document.getElementById("scoreRequirementMsg");
     const PASSING_PERCENTAGE = 80;
@@ -356,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
          const contentAreaMd = document.getElementById("lessonContentV2");
          if (contentAreaMd && typeof renderMathInElement === 'function') { try { renderMathInElement(contentAreaMd, { delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true } ], throwOnError: false }); } catch (error) { console.error("KaTeX error:", error); } }
          const markdownImages = contentAreaMd ? contentAreaMd.querySelectorAll('img') : []; markdownImages.forEach(img => { img.style.cursor = 'pointer'; img.addEventListener('click', () => openLessonLightbox(img.src, img.alt || 'Hình ảnh')); });
-         const estimatedTimeSeconds = parseInt(document.currentScript.dataset.estimatedTime, 10);
+         const estimatedTimeSeconds = <%= (lesson?.estimatedReadingTime ?? 0) * 60 %>; const countdownTextEl = document.getElementById("countdownTextV2"); const countdownProgressCircle = document.getElementById("countdownProgressCircle"); const countdownContainer = document.getElementById("countdownContainerV2");
          if (estimatedTimeSeconds > 0 && countdownTextEl && countdownProgressCircle && completeBtn && countdownContainer) { let remaining = estimatedTimeSeconds; countdownTextEl.textContent = remaining; gsap.set(countdownProgressCircle, { strokeDashoffset: 100 }); if (!prefersReducedMotion) { const interval = setInterval(() => { remaining--; countdownTextEl.textContent = remaining > 0 ? remaining : "✓"; const progress = Math.max(0, (remaining / estimatedTimeSeconds)); const dashoffset = progress * 100; gsap.to(countdownProgressCircle, { strokeDashoffset: dashoffset, duration: 1, ease: 'linear' }); if (remaining <= 0) { clearInterval(interval); completeBtn.disabled = false; gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' }); gsap.to(countdownContainer, { scale: 1.1, autoAlpha: 0.7, duration: 0.3, ease: 'power2.out'}); } }, 1000); completeBtn.disabled = true; } else { completeBtn.disabled = false; countdownContainer.style.display = 'none'; } } else if(completeBtn) { completeBtn.disabled = false; if(countdownContainer) countdownContainer.style.display = 'none'; }
     } else if (completeBtn) {
          completeBtn.disabled = false;
@@ -367,8 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lessonType === 'quiz' && contentWrapper) {
         let masterQuizData = [];
         try {
-            const outerString = document.currentScript.dataset.quizData;
-            masterQuizData = JSON.parse(outerString) || [];
+            const outerString = <%- JSON.stringify(lesson.editorData.quiz || '[]') %>;
+            masterQuizData = JSON.parse(typeof JSON.parse(outerString) === 'string' ? JSON.parse(outerString) : outerString) || [];
             if (!Array.isArray(masterQuizData)) masterQuizData = [];
         } catch (e) {
             console.error("Error parsing master quiz data:", e);
@@ -687,25 +686,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${incorrectQuestionIndices.length > 0 ? '<button type="button" class="btn btn-review-incorrect">Ôn tập lại câu sai</button>' : ''}
                             </div>
                         </div>`;
-
-                        // Trigger confetti if score >= 80%
-                        if (scorePercentage >= PASSING_PERCENTAGE) {
-                            if (typeof tsParticles !== 'undefined') {
-                                tsParticles.load('tsparticles', {
-                                    particles: {
-                                        number: { value: 100 },
-                                        color: { value: '#FFD700' },
-                                        shape: { type: 'circle' },
-                                        opacity: { value: 0.7 },
-                                        size: { value: 6 },
-                                        move: { enable: true, speed: 4, direction: 'none', random: true, straight: false, outModes: 'out' }
-                                    },
-                                    interactivity: { events: { onHover: { enable: false } } },
-                                    detectRetina: true
-                                });
-                                setTimeout(() => tsParticles.domItem(0).destroy(), 3000);
-                            }
-                        }
                         
                         resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
                         const reviewIncorrectBtn = resultDiv.querySelector('.btn-review-incorrect');
@@ -899,15 +879,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studyState.srsEnabled) {
                         const now = Date.now();
                         if (isCorrectOverall) {
-                            // Easy: multiply interval by 4x
-                            qState.interval = Math.max(1, qState.interval * 4);
-                            qState.nextReview = now + qState.interval * 24 * 60 * 60 * 1000; // days to ms
-                        } else {
-                            // Hard: next session (1 day)
-                            qState.interval = 1;
-                            qState.nextReview = now + 1 * 24 * 60 * 60 * 1000;
-                        }
-                    }
+                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
                     
                     card.querySelectorAll('.quiz-option-v2').forEach(opt => {
                         opt.style.pointerEvents = 'none';
@@ -926,15 +899,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const findNextQuestion = (direction) => {
                     let nextIndex = studyState.currentIndex;
                     const total = masterQuizData.length;
-                    const now = Date.now();
-                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered').sort((a, b) => {
-                        const aDue = studyState.questions[a]?.nextReview || 0;
-                        const bDue = studyState.questions[b]?.nextReview || 0;
-                        if (aDue <= now && bDue > now) return -1; // Due first
-                        if (bDue <= now && aDue > now) return 1;
-                        return aDue - bDue; // Earlier due first
-                    });
-
+                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
+                    
                     if (priorityIndices.length > 0) {
                         let currentInPriority = priorityIndices.indexOf(nextIndex);
                         if (direction > 0) {
