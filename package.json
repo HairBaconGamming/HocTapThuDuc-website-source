@@ -39,7 +39,7 @@
     "tmp": "^0.2.3"
   },
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "repository": {
     "url": "https://glitch.com/edit/#!/glitch-hello-node"
