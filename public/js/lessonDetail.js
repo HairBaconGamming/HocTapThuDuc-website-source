@@ -128,9 +128,35 @@ document.addEventListener('DOMContentLoaded', () => {
         randomQuestionsToggle.addEventListener("change", renderQuizState);
         randomChoicesToggle.addEventListener("change", renderQuizState);
 
+        // Add loading state for quiz submission
+        const submitBtn = quizForm.querySelector('.submit-quiz-btn');
+        if (submitBtn) {
+            quizForm.addEventListener('submit', () => {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang nộp...';
+            });
+        }
+
         // Khởi tạo lần đầu
         renderQuizState();
     }
-    
+
+    // =========================================================================
+    // ===== LOGIC DÀNH RIÊNG CHO ESSAY =====
+    // =========================================================================
+    if (lessonType === 'essay') {
+        // Add loading state for essay grading
+        const essayForm = document.getElementById('essayForm');
+        if (essayForm) {
+            const gradeBtn = essayForm.querySelector('.grade-essay-btn');
+            if (gradeBtn) {
+                gradeBtn.addEventListener('click', () => {
+                    gradeBtn.disabled = true;
+                    gradeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang chấm...';
+                });
+            }
+        }
+    }
+
     // ... (Toàn bộ logic khác của trang detail: quiz submission, essay, markdown, v.v. giữ nguyên) ...
 });

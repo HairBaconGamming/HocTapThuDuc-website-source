@@ -687,6 +687,25 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${incorrectQuestionIndices.length > 0 ? '<button type="button" class="btn btn-review-incorrect">Ôn tập lại câu sai</button>' : ''}
                             </div>
                         </div>`;
+
+                        // Trigger confetti if score >= 80%
+                        if (scorePercentage >= PASSING_PERCENTAGE) {
+                            if (typeof tsParticles !== 'undefined') {
+                                tsParticles.load('tsparticles', {
+                                    particles: {
+                                        number: { value: 100 },
+                                        color: { value: '#FFD700' },
+                                        shape: { type: 'circle' },
+                                        opacity: { value: 0.7 },
+                                        size: { value: 6 },
+                                        move: { enable: true, speed: 4, direction: 'none', random: true, straight: false, outModes: 'out' }
+                                    },
+                                    interactivity: { events: { onHover: { enable: false } } },
+                                    detectRetina: true
+                                });
+                                setTimeout(() => tsParticles.domItem(0).destroy(), 3000);
+                            }
+                        }
                         
                         resultDiv.querySelector('.results-reset-btn').onclick = resetQuiz;
                         const reviewIncorrectBtn = resultDiv.querySelector('.btn-review-incorrect');
@@ -880,11 +899,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studyState.srsEnabled) {
                         const now = Date.now();
                         if (isCorrectOverall) {
-                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
-                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                            // Easy: multiply interval by 4x
+                            qState.interval = Math.max(1, qState.interval * 4);
                             qState.nextReview = now + qState.interval * 24 * 60 * 60 * 1000; // days to ms
                         } else {
-                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.8);
+                            // Hard: next session (1 day)
                             qState.interval = 1;
                             qState.nextReview = now + 1 * 24 * 60 * 60 * 1000;
                         }
@@ -907,8 +926,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const findNextQuestion = (direction) => {
                     let nextIndex = studyState.currentIndex;
                     const total = masterQuizData.length;
-                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
-                    
+                    const now = Date.now();
+                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered').sort((a, b) => {
+                        const aDue = studyState.questions[a]?.nextReview || 0;
+                        const bDue = studyState.questions[b]?.nextReview || 0;
+                        if (aDue <= now && bDue > now) return -1; // Due first
+                        if (bDue <= now && aDue > now) return 1;
+                        return aDue - bDue; // Earlier due first
+                    });
+
                     if (priorityIndices.length > 0) {
                         let currentInPriority = priorityIndices.indexOf(nextIndex);
                         if (direction > 0) {

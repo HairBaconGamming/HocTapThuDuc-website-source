@@ -831,6 +831,7 @@ body {
 .quiz-option-v2.correct .option-label {
     border-color: var(--success-color);
     background-color: rgba(var(--success-color-rgb), 0.1);
+    animation: correctPop 0.5s ease-out;
 }
 .quiz-option-v2.correct .option-feedback-icon::before {
     content: "\f00c";
@@ -841,6 +842,7 @@ body {
 .quiz-option-v2.incorrect .option-label {
     border-color: var(--danger-color);
     background-color: rgba(var(--danger-color-rgb), 0.1);
+    animation: incorrectShake 0.6s cubic-bezier(.36,.07,.19,.97) both;
 }
 .quiz-option-v2.incorrect .option-feedback-icon::before {
     content: "\f00d";
