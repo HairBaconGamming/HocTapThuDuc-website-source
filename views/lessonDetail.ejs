@@ -827,6 +827,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 };
 
+                const findNextQuestion = (direction) => {
+                    let nextIndex = studyState.currentIndex;
+                    const total = masterQuizData.length;
+                    const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
+                    if (priorityIndices.length > 0) {
+                        let currentInPriority = priorityIndices.indexOf(nextIndex);
+                        if (direction > 0) {
+                            nextIndex = (currentInPriority !== -1 && currentInPriority < priorityIndices.length - 1) ? priorityIndices[currentInPriority + 1] : priorityIndices[0];
+                        } else {
+                             nextIndex = (currentInPriority > 0) ? priorityIndices[currentInPriority - 1] : priorityIndices[priorityIndices.length - 1];
+                        }
+                    } else {
+                        nextIndex = (nextIndex + direction + total) % total;
+                    }
+                    studyState.currentIndex = nextIndex;
+                    renderStudyQuestion();
+                };
+
                 const checkStudyAnswer = () => {
                     const qIndex = studyState.currentIndex;
                     const qData = masterQuizData[qIndex];
@@ -900,11 +918,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStats();
                 saveStudyProgress();
                 renderStudyNavigation();
+                findNextQuestion(1);
                 };
+
+                const findNextQuestion = (direction) => {
                     let nextIndex = studyState.currentIndex;
                     const total = masterQuizData.length;
                     const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
-                    
                     if (priorityIndices.length > 0) {
                         let currentInPriority = priorityIndices.indexOf(nextIndex);
                         if (direction > 0) {
@@ -1158,8 +1178,5 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeLessonLightbox() { if (!lightboxModal || !(lightboxImg instanceof HTMLImageElement)) return; gsap.to(lightboxModal, { duration: 0.3, autoAlpha: 0, ease: 'power1.in', onComplete: () => { lightboxModal.style.display = 'none'; document.body.style.overflow = ''; lightboxImg.src = ''; } }); }
     lightboxCloseBtn?.addEventListener('click', closeLessonLightbox); lightboxBackdrop?.addEventListener('click', closeLessonLightbox); document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lightboxModal && lightboxModal.style.display !== 'none') closeLessonLightbox(); });
     document.querySelectorAll(".loading-link").forEach(anchor => { anchor.addEventListener("click", function (event) { if (this.hash && this.pathname === window.location.pathname) { return; } const overlay = document.getElementById('loading-overlay'); if (overlay) { overlay.style.opacity = '0'; overlay.classList.add('active'); gsap.to(overlay, { opacity: 1, duration: 0.3 }); } }); });
-    
-    // Initial State
-    updateCompletionButtonState();
 });
 </script>
