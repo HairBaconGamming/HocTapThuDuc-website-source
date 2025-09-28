@@ -1,0 +1,2 @@
+- [ ] Fix try-catch syntax in essay prompt section
+- [ ] Fix try-catch syntax in essay questions section

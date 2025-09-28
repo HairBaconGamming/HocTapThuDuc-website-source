@@ -878,25 +878,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     // SRS Logic
                     if (studyState.srsEnabled) {
                         const now = Date.now();
-                        if (isCorrectOverall) {
-                            qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
-                            qState.interval = Math.max(1, qState.interval * qState.easeFactor);
-                    
-                    card.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                        opt.style.pointerEvents = 'none';
-                        if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
-                        if (opt.querySelector('.quiz-input')?.checked) {
-                            opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
-                        }
-                    });
-                    
-                    checkBtn.style.display = 'none';
-                    updateStats();
-                    saveStudyProgress();
-                    renderStudyNavigation();
+                    if (isCorrectOverall) {
+                        qState.easeFactor = Math.max(1.3, qState.easeFactor * 1.3);
+                        qState.interval = Math.max(1, qState.interval * qState.easeFactor);
+                        qState.nextReview = now + (qState.interval * 24 * 60 * 60 * 1000);
+                    } else {
+                        qState.easeFactor = Math.max(1.3, qState.easeFactor * 0.7);
+                        qState.interval = 1;
+                        qState.nextReview = now + (1 * 24 * 60 * 60 * 1000);
+                    }
+                
+                card.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                    if (opt.dataset.isCorrect === 'true') opt.classList.add('study-reveal-correct');
+                    if (opt.querySelector('.quiz-input')?.checked) {
+                        opt.classList.add(opt.dataset.isCorrect === 'true' ? 'study-correct' : 'study-incorrect');
+                    }
+                });
+                
+                checkBtn.style.display = 'none';
+                updateStats();
+                saveStudyProgress();
+                renderStudyNavigation();
                 };
-
-                const findNextQuestion = (direction) => {
                     let nextIndex = studyState.currentIndex;
                     const total = masterQuizData.length;
                     const priorityIndices = [...Array(total).keys()].filter(i => studyState.questions[i]?.status !== 'mastered');
