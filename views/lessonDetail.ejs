@@ -334,6 +334,15 @@
 <!-- Your custom JS -->
 <script src="/js/alerts.js" defer></script>
 <script src="/js/confirm.js" defer></script>
+<!-- Lesson Data -->
+<script>
+window.lessonData = {
+    type: "<%= lesson?.type ?? 'unknown' %>",
+    id: "<%= lesson?._id ?? '' %>",
+    quiz: <%- JSON.stringify(lesson.editorData.quiz || '[]') %>,
+    estimatedReadingTime: <%= lesson?.estimatedReadingTime ?? 0 %>
+};
+</script>
 <!-- Page Specific JS -->
 <script>
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
@@ -344,8 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof marked === 'undefined') { console.warn("Marked library not loaded! Markdown parsing might fail."); }
     gsap.registerPlugin(ScrollTrigger);
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const lessonType = "<%= lesson?.type ?? 'unknown' %>";
-    const lessonId = "<%= lesson?._id ?? '' %>";
+    const lessonType = window.lessonData.type;
+    const lessonId = window.lessonData.id;
     const completeBtn = document.getElementById("completeLessonBtnV2");
     const scoreRequirementMsg = document.getElementById("scoreRequirementMsg");
     const PASSING_PERCENTAGE = 80;
@@ -926,9 +935,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // findNextQuestion(1);
                 };
 
-                prevBtn.addEventListener('click', () => findNextQuestion(-1));
-                nextBtn.addEventListener('click', () => findNextQuestion(1));
                 checkBtn.addEventListener('click', checkStudyAnswer);
+
                 resetProgressBtn.addEventListener('click', () => {
                     if (confirm('Bạn có chắc muốn xóa tiến trình học tập?')) {
                         localStorage.removeItem(PROGRESS_KEY);
@@ -939,13 +947,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         saveStudyProgress();
                     }
                 });
+
+                // Auto-save on option change in study mode
+                const studyModeContainer = document.getElementById('study-mode-container');
+                studyModeContainer?.addEventListener('change', (e) => {
+                    if (!e.target.classList.contains('quiz-input')) return;
+                    const qIndex = studyState.currentIndex;
+                    const card = document.querySelector('.study-mode-card');
+                    if (!card) return;
+                    if (card.dataset.inputType === 'radio') {
+                        const selected = card.querySelector('input:checked');
+                        studyState.questions[qIndex].lastAnswer = selected ? parseInt(selected.value, 10) : null;
+                    } else {
+                        const selected = card.querySelectorAll('input:checked');
+                        studyState.questions[qIndex].lastAnswer = Array.from(selected).map(cb => parseInt(cb.value, 10));
+                    }
+                    saveStudyProgress();
+                });
+
                 document.getElementById('study-difficult-questions').addEventListener('click', (e) => {
                      if(e.target.tagName === 'LI' && e.target.dataset.idx) {
                          studyState.currentIndex = parseInt(e.target.dataset.idx, 10);
                          renderStudyQuestion();
                      }
                 });
-                
+
+                // Save currentIndex on navigation buttons
+                prevBtn.addEventListener('click', () => {
+                    studyState.currentIndex = Math.max(0, studyState.currentIndex - 1);
+                    renderStudyQuestion();
+                    saveStudyProgress();
+                });
+                nextBtn.addEventListener('click', () => {
+                    studyState.currentIndex = Math.min(masterQuizData.length - 1, studyState.currentIndex + 1);
+                    renderStudyQuestion();
+                    saveStudyProgress();
+                });
+
                 loadStudyProgress();
                 renderStudyQuestion();
                 updateStats();
@@ -1122,7 +1160,16 @@ document.addEventListener('DOMContentLoaded', () => {
     saveBtn?.addEventListener('click', function () {
         let saved = false;
         if (lessonType === 'essay') { /* saveEssayProgress(); */ saved = true; }
-        if (lessonType === 'quiz') { /* saveQuizProgress() or saveStudyProgress(); */ saved = true; } // Logic already saves on change
+        if (lessonType === 'quiz') {
+            if (activeMode === 'study') {
+                // Save current study progress explicitly
+                saveStudyProgress();
+                saved = true;
+            } else if (activeMode === 'review') {
+                // Save review progress if needed
+                saved = true;
+            }
+        }
 
         if (saved && typeof showAlert === 'function') {
             gsap.timeline().to(saveBtn, { scale: 0.95, duration: 0.15, ease: 'power1.in' }).to(saveBtn, { scale: 1, duration: 0.4, ease: 'elastic.out(1, 0.5)' });
