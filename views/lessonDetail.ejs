@@ -376,6 +376,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- QUIZ LOGIC (ALL MODES) ---
     let activeMode = 'review';
+    /**
+                 * CẬP NHẬT: Lưu tiến trình làm bài bằng cách lưu text của đáp án.
+                 * Điều này giúp khôi phục lựa chọn chính xác ngay cả khi thứ tự đáp án bị xáo trộn.
+                 */
+                const saveQuizProgress = () => {
+                    const answers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                        const originalIndex = qElem.dataset.originalIndex;
+                        const inputType = qElem.dataset.inputType;
+                        if (inputType === 'radio') {
+                            const selected = qElem.querySelector('input:checked');
+                            if (selected) {
+                                // Lưu text của đáp án thay vì value (chỉ số)
+                                const optionText = selected.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent || '';
+                                answers[originalIndex] = optionText.trim();
+                            } else {
+                                answers[originalIndex] = null;
+                            }
+                        } else {
+                            const selected = qElem.querySelectorAll('input:checked');
+                            const selectedTexts = Array.from(selected).map(cb => cb.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent.trim() || '');
+                            answers[originalIndex] = selectedTexts;
+                        }
+                    });
+                    localStorage.setItem(PROGRESS_KEY, JSON.stringify(answers));
+                };
+
+                /**
+                 * CẬP NHẬT: Tải tiến trình bằng cách so sánh text của đáp án đã lưu.
+                 * Tìm và tick vào các input có text khớp với dữ liệu đã lưu.
+                 */
+                const loadQuizProgress = () => {
+                    const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                        const originalIndex = qElem.dataset.originalIndex;
+                        if (savedAnswers[originalIndex] == null) return;
+
+                        if (qElem.dataset.inputType === 'radio') {
+                            // Tìm input bằng cách khớp text của đáp án
+                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (input) {
+                                    input.checked = (optionText === savedAnswers[originalIndex]);
+                                }
+                            });
+                        } else {
+                            const savedTexts = savedAnswers[originalIndex] || [];
+                             // Tìm các input bằng cách khớp text của đáp án
+                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (input) {
+                                    input.checked = savedTexts.includes(optionText);
+                                }
+                            });
+                        }
+                    });
+                };
+                
+const saveStudyProgress = () => localStorage.setItem(PROGRESS_KEY, JSON.stringify(studyState));
+                
+
     if (lessonType === 'quiz' && contentWrapper) {
         let masterQuizData = [];
         try {
@@ -492,66 +555,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let isReviewingIncorrect = false;
                 const PROGRESS_KEY = `reviewProgress_${lessonId}`;
 
-                /**
-                 * CẬP NHẬT: Lưu tiến trình làm bài bằng cách lưu text của đáp án.
-                 * Điều này giúp khôi phục lựa chọn chính xác ngay cả khi thứ tự đáp án bị xáo trộn.
-                 */
-                const saveQuizProgress = () => {
-                    const answers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
-                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
-                        const originalIndex = qElem.dataset.originalIndex;
-                        const inputType = qElem.dataset.inputType;
-                        if (inputType === 'radio') {
-                            const selected = qElem.querySelector('input:checked');
-                            if (selected) {
-                                // Lưu text của đáp án thay vì value (chỉ số)
-                                const optionText = selected.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent || '';
-                                answers[originalIndex] = optionText.trim();
-                            } else {
-                                answers[originalIndex] = null;
-                            }
-                        } else {
-                            const selected = qElem.querySelectorAll('input:checked');
-                            const selectedTexts = Array.from(selected).map(cb => cb.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent.trim() || '');
-                            answers[originalIndex] = selectedTexts;
-                        }
-                    });
-                    localStorage.setItem(PROGRESS_KEY, JSON.stringify(answers));
-                };
-
-                /**
-                 * CẬP NHẬT: Tải tiến trình bằng cách so sánh text của đáp án đã lưu.
-                 * Tìm và tick vào các input có text khớp với dữ liệu đã lưu.
-                 */
-                const loadQuizProgress = () => {
-                    const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
-                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
-                        const originalIndex = qElem.dataset.originalIndex;
-                        if (savedAnswers[originalIndex] == null) return;
-
-                        if (qElem.dataset.inputType === 'radio') {
-                            // Tìm input bằng cách khớp text của đáp án
-                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
-                                const input = opt.querySelector('input');
-                                if (input) {
-                                    input.checked = (optionText === savedAnswers[originalIndex]);
-                                }
-                            });
-                        } else {
-                            const savedTexts = savedAnswers[originalIndex] || [];
-                             // Tìm các input bằng cách khớp text của đáp án
-                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
-                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
-                                const input = opt.querySelector('input');
-                                if (input) {
-                                    input.checked = savedTexts.includes(optionText);
-                                }
-                            });
-                        }
-                    });
-                };
-                
                 const renderCurrentPage = () => {
                     if (!quizContainer) return;
                     quizContainer.innerHTML = '';
@@ -827,7 +830,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 };
 
-                const saveStudyProgress = () => localStorage.setItem(PROGRESS_KEY, JSON.stringify(studyState));
                 
                 const updateStats = () => {
                     const total = masterQuizData.length;
