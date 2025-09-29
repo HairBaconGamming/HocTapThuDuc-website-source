@@ -376,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- QUIZ LOGIC (ALL MODES) ---
+    let activeMode = 'review';
     if (lessonType === 'quiz' && contentWrapper) {
         let masterQuizData = [];
         try {
@@ -391,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const modeTabs = document.querySelectorAll('.mode-tab-btn');
         const studyPanel = document.getElementById('study-mode-container');
         const reviewPanel = document.getElementById('review-mode-container');
-        let activeMode = 'review';
         let isAnimating = false;
 
         function switchMode(targetMode) {
