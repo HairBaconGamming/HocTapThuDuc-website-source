@@ -346,7 +346,6 @@ window.lessonData = {
 <!-- Page Specific JS -->
 <script>
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
-// --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- Config & Refs ---
     if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
@@ -465,7 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 scoreRequirementMsg.style.display = completeBtn.disabled ? 'inline' : 'none';
             }
         };
-// ===================================
+
+        // ===================================
         // ===== REVIEW MODE LOGIC (ENHANCED) =========
         // ===================================
         const initReviewMode = (() => {
@@ -492,6 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let isReviewingIncorrect = false;
                 const PROGRESS_KEY = `reviewProgress_${lessonId}`;
 
+                /**
+                 * CẬP NHẬT: Lưu tiến trình làm bài bằng cách lưu text của đáp án.
+                 * Điều này giúp khôi phục lựa chọn chính xác ngay cả khi thứ tự đáp án bị xáo trộn.
+                 */
                 const saveQuizProgress = () => {
                     const answers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
                     quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
@@ -499,27 +503,50 @@ document.addEventListener('DOMContentLoaded', () => {
                         const inputType = qElem.dataset.inputType;
                         if (inputType === 'radio') {
                             const selected = qElem.querySelector('input:checked');
-                            answers[originalIndex] = selected ? selected.value : null;
+                            if (selected) {
+                                // Lưu text của đáp án thay vì value (chỉ số)
+                                const optionText = selected.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent || '';
+                                answers[originalIndex] = optionText.trim();
+                            } else {
+                                answers[originalIndex] = null;
+                            }
                         } else {
                             const selected = qElem.querySelectorAll('input:checked');
-                            answers[originalIndex] = Array.from(selected).map(cb => cb.value);
+                            const selectedTexts = Array.from(selected).map(cb => cb.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent.trim() || '');
+                            answers[originalIndex] = selectedTexts;
                         }
                     });
                     localStorage.setItem(PROGRESS_KEY, JSON.stringify(answers));
                 };
 
+                /**
+                 * CẬP NHẬT: Tải tiến trình bằng cách so sánh text của đáp án đã lưu.
+                 * Tìm và tick vào các input có text khớp với dữ liệu đã lưu.
+                 */
                 const loadQuizProgress = () => {
                     const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
                     quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
                         const originalIndex = qElem.dataset.originalIndex;
                         if (savedAnswers[originalIndex] == null) return;
+
                         if (qElem.dataset.inputType === 'radio') {
-                            const radio = qElem.querySelector(`input[value="${savedAnswers[originalIndex]}"]`);
-                            if (radio) radio.checked = true;
+                            // Tìm input bằng cách khớp text của đáp án
+                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (input) {
+                                    input.checked = (optionText === savedAnswers[originalIndex]);
+                                }
+                            });
                         } else {
-                            (savedAnswers[originalIndex] || []).forEach(val => {
-                                const checkbox = qElem.querySelector(`input[value="${val}"]`);
-                                if (checkbox) checkbox.checked = true;
+                            const savedTexts = savedAnswers[originalIndex] || [];
+                             // Tìm các input bằng cách khớp text của đáp án
+                            qElem.querySelectorAll('.quiz-option-v2').forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (input) {
+                                    input.checked = savedTexts.includes(optionText);
+                                }
                             });
                         }
                     });
@@ -536,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         quizContainer.appendChild(card);
                     });
                     attachOptionListeners();
-                    loadQuizProgress();
+                    loadQuizProgress(); // Tải tiến trình sau khi render
                     renderNavigation();
                     if (quizSubmitted) applyQuizFeedback();
                     if(!prefersReducedMotion) gsap.from(quizContainer.children, { duration: 0.4, y: 20, opacity: 0, stagger: 0.08, ease: 'power2.out' });
@@ -633,9 +660,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 quizForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     if (quizSubmitted && !isReviewingIncorrect) return;
-                    
+
                     const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
-                    if (Object.keys(savedAnswers).length < workingQuizData.length) {
+                    const allAnswered = workingQuizData.every(q => {
+                        const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
+                        const ans = savedAnswers[originalIndex];
+                        return ans != null && (!Array.isArray(ans) || ans.length > 0);
+                    });
+                    if (!allAnswered) {
                         return showAlert('Vui lòng trả lời tất cả các câu hỏi.', 'warning');
                     }
 
@@ -645,19 +677,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     workingQuizData.forEach(q => {
                         const originalIndex = masterQuizData.findIndex(item => item.id === q.id);
-                        const correctIndices = q.options.map((opt, idx) => opt.isCorrect ? idx : null).filter(idx => idx !== null).sort();
+                        const correctOptionsText = q.options.filter(opt => opt.isCorrect).map(opt => opt.text).sort();
                         let isCorrectOverall = false;
                         const inputType = q.options.filter(o => o.isCorrect).length > 1 ? 'checkbox' : 'radio';
+
                         if (inputType === 'radio') {
-                             if (correctIndices.includes(parseInt(savedAnswers[originalIndex], 10))) isCorrectOverall = true;
+                            const savedText = savedAnswers[originalIndex];
+                            if (savedText && correctOptionsText.includes(savedText)) {
+                                isCorrectOverall = true;
+                            }
                         } else {
-                            const userAnswers = (savedAnswers[originalIndex] || []).map(Number).sort();
-                            if (JSON.stringify(userAnswers) === JSON.stringify(correctIndices)) isCorrectOverall = true;
+                            const savedTexts = (savedAnswers[originalIndex] || []).sort();
+                            if (JSON.stringify(savedTexts) === JSON.stringify(correctOptionsText)) {
+                                isCorrectOverall = true;
+                            }
                         }
 
                         if(isCorrectOverall) correctCount++;
                         else currentIncorrectIndices.push(originalIndex);
-                        
+
                         quizFeedback[originalIndex] = { isCorrect: isCorrectOverall, explanation: q.explanation };
                     });
                     
@@ -722,12 +760,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         incorrectLinks.forEach(link => {
                             link.onclick = () => {
                                 const qIdx = parseInt(link.dataset.idx, 10);
-                                const targetPage = Math.floor(qIdx / ITEMS_PER_PAGE) + 1;
+                                const originalMasterIndex = masterQuizData.findIndex(q => q.id === masterQuizData[qIdx].id);
+                                const targetPage = Math.floor(workingQuizData.findIndex(q => q.id === masterQuizData[qIdx].id) / ITEMS_PER_PAGE) + 1;
                                 currentPage = targetPage;
                                 renderCurrentPage();
                                 renderPagination();
                                 // Highlight the specific question
-                                const cardToHighlight = quizContainer.querySelector(`[data-original-index="${qIdx}"]`);
+                                const cardToHighlight = quizContainer.querySelector(`[data-original-index="${originalMasterIndex}"]`);
                                 if (cardToHighlight) {
                                     cardToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     gsap.fromTo(cardToHighlight, {boxShadow: "0 0 0px 0px rgba(255, 223, 186, 0)"}, {boxShadow: "0 0 15px 5px rgba(245, 158, 11, 0.6)", duration: 0.5, yoyo: true, repeat: 1});
@@ -1159,14 +1198,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveBtn = document.getElementById('lessonProgressBtnV2');
     saveBtn?.addEventListener('click', function () {
         let saved = false;
-        if (lessonType === 'essay') { /* saveEssayProgress(); */ saved = true; }
+        if (lessonType === 'essay') { saveEssayProgress(); saved = true; } // saveEssayProgress is now called on input, but this provides explicit save feedback.
         if (lessonType === 'quiz') {
             if (activeMode === 'study') {
-                // Save current study progress explicitly
                 saveStudyProgress();
                 saved = true;
             } else if (activeMode === 'review') {
-                // Save review progress if needed
+                saveQuizProgress(); // Explicitly save review progress
                 saved = true;
             }
         }

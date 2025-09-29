@@ -1,2 +1,4 @@
-- [x] Add author display in views/news.ejs news cards
-- [x] Fix author display in views/newsDetail.ejs to use postedBy
+- [ ] Update saveQuizProgress to save option texts instead of indices
+- [ ] Update loadQuizProgress to load by matching option texts
+- [ ] Update quiz submission logic to find user indices by matching texts
+- [ ] Update the check for all questions answered to handle text-based answers
