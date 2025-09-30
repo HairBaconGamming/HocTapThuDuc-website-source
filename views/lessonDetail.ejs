@@ -346,6 +346,7 @@ window.lessonData = {
 <!-- Page Specific JS -->
 <script>
 // --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
+// --- LESSON DETAIL PAGE SCRIPT V3 (with Study & Review Modes) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- Config & Refs ---
     if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
@@ -360,62 +361,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentWrapper = document.querySelector('.lesson-content-wrapper');
 
     // --- General Animations ---
-    if (!prefersReducedMotion) {
-        gsap.from('[data-animate="header-fade-in"]', { duration: 0.8, y: -40, autoAlpha: 0, ease: 'power3.out', delay: 0.2 });
-        gsap.from('.lesson-type-icon', { duration: 0.6, scale: 0, rotation: -90, ease: 'back.out(1.7)', delay: 0.4 });
-        gsap.from('.lesson-title-area > *', { duration: 0.7, x: -30, autoAlpha: 0, stagger: 0.1, ease: 'power2.out', delay: 0.5 });
-        gsap.from('[data-animate="content-fade-up"]', { duration: 1.0, y: 50, autoAlpha: 0, ease: 'power3.out', delay: 0.4 });
-        gsap.from('[data-animate="action-bar-slide-up"]', { duration: 0.8, y: 40, autoAlpha: 0, ease: 'power2.out', delay: 0.8 });
-    } else {
-        gsap.set('[data-animate="header-fade-in"], [data-animate="content-fade-up"], [data-animate="action-bar-slide-up"]', {autoAlpha: 1});
-    }
+    if (!prefersReducedMotion) { gsap.from('[data-animate="header-fade-in"]', { duration: 0.8, y: -40, autoAlpha: 0, ease: 'power3.out', delay: 0.2 }); gsap.from('.lesson-type-icon', { duration: 0.6, scale: 0, rotation: -90, ease: 'back.out(1.7)', delay: 0.4 }); gsap.from('.lesson-title-area > *', { duration: 0.7, x: -30, autoAlpha: 0, stagger: 0.1, ease: 'power2.out', delay: 0.5 }); gsap.from('[data-animate="content-fade-up"]', { duration: 1.0, y: 50, autoAlpha: 0, ease: 'power3.out', delay: 0.4 }); gsap.from('[data-animate="action-bar-slide-up"]', { duration: 0.8, y: 40, autoAlpha: 0, ease: 'power2.out', delay: 0.8 }); } else { gsap.set('[data-animate="header-fade-in"], [data-animate="content-fade-up"], [data-animate="action-bar-slide-up"]', {autoAlpha: 1}); }
 
     // --- Markdown Specific Processing ---
     if (lessonType === 'markdown' && contentWrapper) {
          const contentAreaMd = document.getElementById("lessonContentV2");
-         if (contentAreaMd && typeof renderMathInElement === 'function') {
-             try {
-                 renderMathInElement(contentAreaMd, { delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true } ], throwOnError: false });
-             } catch (error) {
-                 console.error("KaTeX error:", error);
-             }
-         }
-         const markdownImages = contentAreaMd ? contentAreaMd.querySelectorAll('img') : [];
-         markdownImages.forEach(img => {
-             img.style.cursor = 'pointer';
-             img.addEventListener('click', () => openLessonLightbox(img.src, img.alt || 'Hình ảnh'));
-         });
-         const estimatedTimeSeconds = <%= (lesson?.estimatedReadingTime ?? 0) * 60 %>;
-         const countdownTextEl = document.getElementById("countdownTextV2");
-         const countdownProgressCircle = document.getElementById("countdownProgressCircle");
-         const countdownContainer = document.getElementById("countdownContainerV2");
-         if (estimatedTimeSeconds > 0 && countdownTextEl && countdownProgressCircle && completeBtn && countdownContainer) {
-             let remaining = estimatedTimeSeconds;
-             countdownTextEl.textContent = remaining;
-             gsap.set(countdownProgressCircle, { strokeDashoffset: 100 });
-             if (!prefersReducedMotion) {
-                 const interval = setInterval(() => {
-                     remaining--;
-                     countdownTextEl.textContent = remaining > 0 ? remaining : "✓";
-                     const progress = Math.max(0, (remaining / estimatedTimeSeconds));
-                     const dashoffset = progress * 100;
-                     gsap.to(countdownProgressCircle, { strokeDashoffset: dashoffset, duration: 1, ease: 'linear' });
-                     if (remaining <= 0) {
-                         clearInterval(interval);
-                         completeBtn.disabled = false;
-                         gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' });
-                         gsap.to(countdownContainer, { scale: 1.1, autoAlpha: 0.7, duration: 0.3, ease: 'power2.out'});
-                     }
-                 }, 1000);
-                 completeBtn.disabled = true;
-             } else {
-                 completeBtn.disabled = false;
-                 countdownContainer.style.display = 'none';
-             }
-         } else if(completeBtn) {
-             completeBtn.disabled = false;
-             if(countdownContainer) countdownContainer.style.display = 'none';
-         }
+         if (contentAreaMd && typeof renderMathInElement === 'function') { try { renderMathInElement(contentAreaMd, { delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true } ], throwOnError: false }); } catch (error) { console.error("KaTeX error:", error); } }
+         const markdownImages = contentAreaMd ? contentAreaMd.querySelectorAll('img') : []; markdownImages.forEach(img => { img.style.cursor = 'pointer'; img.addEventListener('click', () => openLessonLightbox(img.src, img.alt || 'Hình ảnh')); });
+         const estimatedTimeSeconds = <%= (lesson?.estimatedReadingTime ?? 0) * 60 %>; const countdownTextEl = document.getElementById("countdownTextV2"); const countdownProgressCircle = document.getElementById("countdownProgressCircle"); const countdownContainer = document.getElementById("countdownContainerV2");
+         if (estimatedTimeSeconds > 0 && countdownTextEl && countdownProgressCircle && completeBtn && countdownContainer) { let remaining = estimatedTimeSeconds; countdownTextEl.textContent = remaining; gsap.set(countdownProgressCircle, { strokeDashoffset: 100 }); if (!prefersReducedMotion) { const interval = setInterval(() => { remaining--; countdownTextEl.textContent = remaining > 0 ? remaining : "✓"; const progress = Math.max(0, (remaining / estimatedTimeSeconds)); const dashoffset = progress * 100; gsap.to(countdownProgressCircle, { strokeDashoffset: dashoffset, duration: 1, ease: 'linear' }); if (remaining <= 0) { clearInterval(interval); completeBtn.disabled = false; gsap.to(completeBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1, ease: 'back.out(3)' }); gsap.to(countdownContainer, { scale: 1.1, autoAlpha: 0.7, duration: 0.3, ease: 'power2.out'}); } }, 1000); completeBtn.disabled = true; } else { completeBtn.disabled = false; countdownContainer.style.display = 'none'; } } else if(completeBtn) { completeBtn.disabled = false; if(countdownContainer) countdownContainer.style.display = 'none'; }
     } else if (completeBtn) {
          completeBtn.disabled = false;
     }
@@ -537,171 +491,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 let incorrectQuestionIndices = [];
                 let isReviewingIncorrect = false;
                 const PROGRESS_KEY = `reviewProgress_${lessonId}`;
-                let savedProgressData = null;
 
-                /**
-                 * LƯU TIẾN TRÌNH LÀM BÀI QUIZ (PHIÊN BẢN CẢI TIẾN)
-                 * Lưu trạng thái đã chọn của các câu trả lời, và quan trọng hơn là
-                 * lưu cả trạng thái đã nộp bài (isSubmitted) và điểm số.
-                 */
                 const saveQuizProgress = () => {
-                    // 1. Lấy container chính của quiz
-                    const quizContainer = document.getElementById('quizContainerV2');
-                    const quizForm = document.getElementById('quizFormV2');
-                    if (!quizContainer || !quizForm) return;
-
-                    // 2. Chuẩn bị cấu trúc dữ liệu để lưu
-                    const progressData = {
-                        answers: {},
-                        isSubmitted: quizForm.classList.contains('submitted'), // Kiểm tra xem form đã nộp chưa
-                        score: null,
-                    };
-
-                    // 3. Lặp qua từng câu hỏi để lấy câu trả lời đã chọn
-                    quizContainer.querySelectorAll('.quiz-question-card').forEach(questionCard => {
-                        const originalIndex = questionCard.dataset.originalIndex;
-                        if (originalIndex === undefined) return;
-
-                        const isMultipleChoice = questionCard.dataset.inputType === 'checkbox';
-
-                        if (isMultipleChoice) {
-                            // Lấy tất cả các checkbox đã được chọn
-                            const selectedCheckboxes = questionCard.querySelectorAll('input[type="checkbox"]:checked');
-                            // Lưu một mảng các text của đáp án đã chọn
-                            progressData.answers[originalIndex] = Array.from(selectedCheckboxes).map(cb => {
-                                const optionTextElement = cb.closest('.quiz-option-v2')?.querySelector('.option-text');
-                                // Chuẩn hóa text để tránh lỗi khoảng trắng
-                                return optionTextElement ? optionTextElement.textContent.replace(/\s+/g, ' ').trim() : '';
-                            });
-                        } else {
-                            // Chỉ lấy radio button đã được chọn
-                            const selectedRadio = questionCard.querySelector('input[type="radio"]:checked');
-                            if (selectedRadio) {
-                                const optionTextElement = selectedRadio.closest('.quiz-option-v2')?.querySelector('.option-text');
-                                progressData.answers[originalIndex] = optionTextElement ? optionTextElement.textContent.replace(/\s+/g, ' ').trim() : null;
+                    const answers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                        const originalIndex = qElem.dataset.originalIndex;
+                        const inputType = qElem.dataset.inputType;
+                        if (inputType === 'radio') {
+                            const selected = qElem.querySelector('input:checked');
+                            if (selected) {
+                                // Save option text instead of value
+                                const optionText = selected.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent || '';
+                                answers[originalIndex] = optionText.trim();
                             } else {
-                                progressData.answers[originalIndex] = null; // Chưa chọn câu trả lời
+                                answers[originalIndex] = null;
                             }
+                        } else {
+                            const selected = qElem.querySelectorAll('input:checked');
+                            const selectedTexts = Array.from(selected).map(cb => cb.closest('.quiz-option-v2')?.querySelector('.option-text')?.textContent.trim() || '');
+                            answers[originalIndex] = selectedTexts;
                         }
                     });
-
-                    // 4. Nếu bài đã nộp, lưu lại điểm số và kết quả
-                    if (progressData.isSubmitted) {
-                        const resultDiv = document.getElementById('quizResultV2');
-                        if (resultDiv) {
-                            progressData.resultHTML = resultDiv.innerHTML;
-                        }
-                    }
-
-                    // 5. Lưu vào localStorage
-                    try {
-                        localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
-                        console.log('Quiz progress saved:', progressData);
-                    } catch (e) {
-                        console.error("Failed to save quiz progress to localStorage:", e);
-                    }
+                    localStorage.setItem(PROGRESS_KEY, JSON.stringify(answers));
                 };
 
-
-                /**
-                 * TẢI LẠI TIẾN TRÌNH LÀM BÀI QUIZ (PHIÊN BẢN CẢI TIẾN)
-                 * Khôi phục các lựa chọn của người dùng và trạng thái đã nộp bài.
-                 */
                 const loadQuizProgress = () => {
-                    const quizContainer = document.getElementById('quizContainerV2');
-                    if (!quizContainer) {
-                        console.error('Debug: Quiz container not found in loadQuizProgress.');
-                        return;
-                    }
-
-                    // 1. Đọc dữ liệu từ localStorage
-                    const savedProgressJSON = localStorage.getItem(PROGRESS_KEY);
-                    if (!savedProgressJSON) {
-                        console.log('Debug: No saved progress found.');
-                        return;
-                    }
-
-                    let progressData;
-                    try {
-                        progressData = JSON.parse(savedProgressJSON);
-                    } catch (e) {
-                        console.error('Error parsing saved quiz progress:', e);
-                        return;
-                    }
-
-                    if (!progressData || !progressData.answers) return;
-
-                    console.log('Debug: Loading progress data:', progressData);
-                    savedProgressData = progressData;
-
-                    // 2. Lặp qua từng câu hỏi trong giao diện để khôi phục các lựa chọn
-                    quizContainer.querySelectorAll('.quiz-question-card').forEach(questionCard => {
-                        const originalIndex = questionCard.dataset.originalIndex;
-                        const savedAnswer = progressData.answers[originalIndex];
-
-                        // Nếu không có câu trả lời đã lưu cho câu hỏi này, bỏ qua
-                        if (savedAnswer === null || savedAnswer === undefined) return;
-
-                        const isMultipleChoice = questionCard.dataset.inputType === 'checkbox';
-
-                        if (isMultipleChoice) {
-                            // Đối với checkbox, savedAnswer là một mảng các text
-                            if (Array.isArray(savedAnswer)) {
-                                questionCard.querySelectorAll('.quiz-option-v2').forEach(optionElement => {
-                                    const input = optionElement.querySelector('input[type="checkbox"]');
-                                    const optionTextElement = optionElement.querySelector('.option-text');
-                                    if (input && optionTextElement) {
-                                        const currentOptionText = optionTextElement.textContent.replace(/\s+/g, ' ').trim();
-                                        // Nếu text của lựa chọn này có trong mảng đã lưu, check vào nó
-                                        if (savedAnswer.includes(currentOptionText)) {
-                                            input.checked = true;
-                                        }
-                                    }
-                                });
-                            }
+                    console.log('Debug: loadQuizProgress called');
+                    const savedAnswers = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+                    quizContainer.querySelectorAll('.quiz-question-card').forEach(qElem => {
+                        const originalIndex = qElem.dataset.originalIndex;
+                        if (savedAnswers[originalIndex] == null) return;
+                        if (qElem.dataset.inputType === 'radio') {
+                            // Find input by matching option text
+                            const options = qElem.querySelectorAll('.quiz-option-v2');
+                            options.forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (optionText === savedAnswers[originalIndex] && input) {
+                                    input.checked = true;
+                                } else if (input) {
+                                    input.checked = false;
+                                }
+                            });
                         } else {
-                            // Đối với radio, savedAnswer là một chuỗi text
-                            questionCard.querySelectorAll('.quiz-option-v2').forEach(optionElement => {
-                                const input = optionElement.querySelector('input[type="radio"]');
-                                const optionTextElement = optionElement.querySelector('.option-text');
-                                if (input && optionTextElement) {
-                                    const currentOptionText = optionTextElement.textContent.replace(/\s+/g, ' ').trim();
-                                    // Nếu text của lựa chọn này khớp với text đã lưu, check vào nó
-                                    if (currentOptionText === savedAnswer) {
-                                        input.checked = true;
-                                    }
+                            const savedTexts = savedAnswers[originalIndex] || [];
+                            const options = qElem.querySelectorAll('.quiz-option-v2');
+                            options.forEach(opt => {
+                                const optionText = opt.querySelector('.option-text')?.textContent.trim() || '';
+                                const input = opt.querySelector('input');
+                                if (savedTexts.includes(optionText) && input) {
+                                    input.checked = true;
+                                } else if (input) {
+                                    input.checked = false;
                                 }
                             });
                         }
                     });
-
-                    // 3. QUAN TRỌNG: Nếu trạng thái đã lưu là "đã nộp bài", gọi lại hàm hiển thị kết quả
-                    if (progressData.isSubmitted) {
-                        console.log('Debug: Re-triggering showResults because quiz was already submitted.');
-                        // Giả sử bạn có hàm `showResults` để hiển thị đáp án và điểm
-                        if (typeof showResults === 'function') {
-                            showResults();
-                        } else {
-                            console.error('Error: showResults function is not defined. Cannot restore graded state.');
-                        }
-                    }
-                };
-
-                const showResults = () => {
-                    if (savedProgressData && savedProgressData.isSubmitted) {
-                        quizSubmitted = true;
-                        const quizForm = document.getElementById('quizFormV2');
-                        if (quizForm) {
-                            quizForm.classList.add('submitted');
-                            const submitBtn = quizForm.querySelector('.submit-quiz-btn');
-                            if (submitBtn) submitBtn.disabled = true;
-                        }
-                        if (savedProgressData.resultHTML) {
-                            const resultDiv = document.getElementById('quizResultV2');
-                            if (resultDiv) resultDiv.innerHTML = savedProgressData.resultHTML;
-                        }
-                        applyQuizFeedback();
-                    }
                 };
                 
                 const renderCurrentPage = () => {
@@ -790,10 +635,10 @@ document.addEventListener('DOMContentLoaded', () => {
                      });
                 };
                 
-                const resetQuiz = () => {
+                const resetQuiz = (firstr) => {
                     isReviewingIncorrect = false;
                     incorrectQuestionIndices = [];
-                    localStorage.removeItem(PROGRESS_KEY);
+                    if (!firstr) localStorage.removeItem(PROGRESS_KEY);
                     resultDiv.innerHTML = '';
                     quizForm.classList.remove('submitted');
                     const submitBtn = quizForm.querySelector('.submit-quiz-btn');
@@ -934,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 randomQuestionsToggle.addEventListener("change", resetQuiz);
                 randomChoicesToggle.addEventListener("change", resetQuiz);
 
-                //resetQuiz();
+                resetQuiz(true);
             };
         })();
         
