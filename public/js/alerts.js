@@ -1,24 +1,20 @@
 // public/js/alerts.js
 
-// Ensure GSAP and tsParticles are available globally or handle potential errors
-// FIX: Check if the variable is already declared before attempting to declare it again.
-if (typeof gsapExists === 'undefined') {
-  const gsapExists = typeof gsap !== "undefined";
-  const tsParticlesExists = typeof tsParticles !== "undefined";
-  const prefersReducedMotion =
-    gsapExists && window.matchMedia
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : true;
+// --- FIXED: proper top-level guards and reduced-motion detection ---
+const gsapExists = typeof gsap !== "undefined";
+const tsParticlesExists = typeof tsParticles !== "undefined";
+const prefersReducedMotion =
+  (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+  false;
 
-  if (!gsapExists)
-    console.error(
-      "GSAP library not loaded! Animations in alerts.js will be affected."
-    );
-  if (!tsParticlesExists)
-    console.warn(
-      "tsParticles library not loaded! Particle effects in achievement notifications will not work."
-    );
-}
+if (!gsapExists)
+  console.error(
+    "GSAP library not loaded! Animations in alerts.js will be affected."
+  );
+if (!tsParticlesExists)
+  console.warn(
+    "tsParticles library not loaded! Particle effects in achievement notifications will not work."
+  );
 
 
 /**
@@ -260,54 +256,7 @@ function createAndShowNotification(achievement) {
   document.body.appendChild(notif);
 
   // --- Particle Config ---
-  const particleConfig = {
-    fpsLimit: 60,
-    particles: {
-      number: { value: 50 },
-      color: { value: ["#FFD700", "#FF6EC4", "#7873F5", "#FFFFFF", "#a0a0c0"] },
-      shape: { type: "star" },
-      opacity: {
-        value: { min: 0.4, max: 0.9 },
-        random: true,
-        anim: { enable: true, speed: 1, minimumValue: 0.2 },
-      },
-      size: {
-        value: { min: 1.5, max: 4 },
-        random: true,
-        anim: {
-          enable: true,
-          speed: 3,
-          minimumValue: 0.5,
-          sync: false,
-          destroy: "min",
-        },
-      },
-      move: {
-        enable: true,
-        speed: { min: 2, max: 5 },
-        direction: "top",
-        random: true,
-        straight: false,
-        outModes: { default: "destroy" },
-        attract: { enable: false },
-        angle: { value: 90, offset: 45 },
-        gravity: { enable: true, acceleration: -5 },
-      },
-      collisions: { enable: false },
-      links: { enable: false },
-      life: { duration: { value: 2.5, sync: false }, count: 1 },
-    },
-    interactivity: { enabled: false },
-    detectRetina: true,
-    background: { color: "transparent" },
-    fullScreen: { enable: false },
-    emitters: {
-      position: { x: 50, y: 100 },
-      rate: { quantity: 8, delay: 0.05 },
-      life: { duration: 0.4, count: 1 },
-      size: { width: 80, height: 0 },
-    },
-  };
+  const particleConfig = getParticleConfigForNotification(prefersReducedMotion);
 
   // --- Initialize Particles ---
   let particlesInstance = null;
@@ -587,6 +536,7 @@ function showArtisticTreeLevelUpNotification(data) {
   const closeBtn = notif.querySelector(".achievement-close-btn");
   closeBtn?.addEventListener("click", () => hideNotification(notif));
 } // End showArtisticTreeLevelUpNotification
+
 // --- Socket.IO Listener Setup ---
 const loggedInUserId = document.body.dataset.userId; // Assuming you add data-user-id to body
 (() => {
@@ -600,6 +550,11 @@ const loggedInUserId = document.body.dataset.userId; // Assuming you add data-us
     const socket = io(); // Initialize connection
     let hasListener = false; // Prevent adding listener multiple times
 
+    // Throttle / aggregate tree updates
+    let lastTreeUpdateAt = 0;
+    let pendingTreeUpdate = null;
+    const TREE_THROTTLE_MS = 1500; // allow update every ~1.5s
+
     socket.on("connect", () => {
       console.log("Alerts: Socket connected for achievements", socket.id);
       socket.emit('userConnect', loggedInUserId);
@@ -609,6 +564,28 @@ const loggedInUserId = document.body.dataset.userId; // Assuming you add data-us
           console.log("Received achievement via socket:", achievement);
           showAchievementNotification(achievement); // Call the display function
         });
+        // Throttled handler for frequent updates
+        socket.on("treePointsUpdate", (data) => {
+          const now = Date.now();
+          if (now - lastTreeUpdateAt < TREE_THROTTLE_MS) {
+            // keep latest pending, but avoid immediate DOM/animation
+            pendingTreeUpdate = data;
+            return;
+          }
+          lastTreeUpdateAt = now;
+          // process immediately
+          handleTreeUpdate(data);
+
+          // schedule processing of any pending update after throttle window
+          setTimeout(() => {
+            if (pendingTreeUpdate) {
+              handleTreeUpdate(pendingTreeUpdate);
+              pendingTreeUpdate = null;
+              lastTreeUpdateAt = Date.now();
+            }
+          }, TREE_THROTTLE_MS + 50);
+        });
+
         hasListener = true; // Mark listener as added
       }
       // Join user room if user ID is available (requires user ID on client)
@@ -623,44 +600,34 @@ const loggedInUserId = document.body.dataset.userId; // Assuming you add data-us
       console.error("Alerts: Socket connection error.", err)
     );
 
-    socket.on("treePointsUpdate", (data) => {
-      console.log("Tree Points Update Received:", data);
-      // Decide if you want a notification for *every* point gain,
-      // or maybe only if it pushes progress significantly.
-      // For now, let's show a simpler notification for points gain.
-
-      // Use the existing showAlert or create a more subtle one
-      // showAlert(
-      //     `+${data.pointsGained} điểm tăng trưởng! (${data.progressPercent.toFixed(0)}% tới cấp ${data.treeLevel + 1})`,
-      //     "Cây Lớn Lên!", // Title
-      //     'info', // Type
-      //     3000    // Duration
-      // );
-
-      // --- OR: Trigger a subtle visual effect on the tree page instead ---
-      // Check if the user is currently *on* the tree page
-      const treeContainer = document.getElementById("cssTreeContainer"); // Check if tree element exists
+    function handleTreeUpdate(data) {
+      // Lightweight handling: avoid heavy GSAP unless visible and allowed
+      const treeContainer = document.getElementById("cssTreeContainer");
       if (treeContainer) {
-        // Example: Trigger a quick particle burst using the existing function
-        if (typeof triggerGrowthParticles === "function") {
-          triggerGrowthParticles(false); // false = not a level up burst
+        if (!prefersReducedMotion && gsapExists) {
+          // small visual pulse
+          const progressBar = document.getElementById("treeProgressBarFill");
+          if (progressBar) {
+            try {
+              gsap.fromTo(
+                progressBar,
+                { scaleY: 1 },
+                {
+                  scaleY: 1.12,
+                  duration: 0.18,
+                  yoyo: true,
+                  repeat: 1,
+                  transformOrigin: "center bottom",
+                  ease: "power2.out",
+                }
+              );
+            } catch (e) {
+              /* swallow animation errors */
+            }
+          }
         }
-        // Example: Briefly pulse the progress bar
-        const progressBar = document.getElementById("treeProgressBarFill");
-        if (progressBar && typeof gsap !== "undefined") {
-          gsap.to(progressBar, {
-            scaleY: 1.5,
-            duration: 0.2,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out",
-            transformOrigin: "center bottom",
-          });
-        }
-        // You might also want to update the progress bar/text immediately here
-        // if the main update function isn't called elsewhere for this event
+        // update textual values using lightweight DOM ops
         if (typeof animateProgressBar === "function") {
-          // Check if function exists
           animateProgressBar(
             data.newGrowthPoints,
             data.treeLevel,
@@ -669,49 +636,15 @@ const loggedInUserId = document.body.dataset.userId; // Assuming you add data-us
           );
         }
         if (typeof animateTotalPoints === "function") {
-          // Check if function exists
           animateTotalPoints(data.newGrowthPoints);
         }
       } else {
-        // If not on tree page, maybe show a simple toast?
+        // not on tree page: show a brief toast (non-blocking)
         if (typeof showAlert === "function") {
-          showAlert(
-            `+${data.pointsGained} điểm tăng trưởng!`,
-            "Tiến Độ",
-            "info",
-            3000
-          );
+          showAlert(`+${data.pointsGained} điểm tăng trưởng!`, "info", 2500);
         }
       }
-    });
-
-    // --- Level Up Notification ---
-    socket.on("treeLevelUp", (data) => {
-      console.log("Tree Level Up Received:", data);
-      // Trigger the full artistic achievement notification
-      showArtisticTreeLevelUpNotification(data);
-
-      // Update UI elements immediately on the tree page if visible
-      const treeContainer = document.getElementById("cssTreeContainer");
-      if (treeContainer) {
-        if (typeof setTreeVisualLevel === "function") {
-          setTreeVisualLevel(data.newLevel); // Update CSS variable/class
-        }
-        if (typeof animateLevelUpVisual === "function") {
-          // The main visual animation might be triggered by the notification itself
-          // or called here depending on desired flow. Let's assume the notification
-          // handles the main *pop*, and this updates the state.
-        }
-        if (typeof animateProgressBar === "function") {
-          animateProgressBar(
-            data.newGrowthPoints || currentPoints,
-            data.newLevel,
-            data.pointsForCurrentLevel,
-            data.pointsForNextLevel
-          ); // Update bar for new level
-        }
-      }
-    });
+    }
   } catch (error) {
     console.error("Failed to initialize Socket.IO for achievements:", error);
   }

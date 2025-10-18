@@ -15,6 +15,7 @@ const rateLimit = require("express-rate-limit");
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const fetch = require("node-fetch");
+const compression = require('compression'); // <-- NEW: enable compression
 global.fetch = fetch;
 global.Headers = fetch.Headers;
 global.Request = fetch.Request;
@@ -101,6 +102,9 @@ app.set("trust proxy", 1);
 
 // Middleware
 const allowedOrigins = ['https://hoctapthuduc.onrender.com']; // Thêm URL frontend React của bạn vào đây
+
+// --- NEW: Use compression early to reduce payload size ---
+app.use(compression());
 
 const corsOptions = {
   origin: function (origin, callback) {

@@ -181,17 +181,6 @@ body {
   flex-direction: column;
 }
 
-body,
-a,
-button,
-[role="button"],
-input,
-textarea,
-select {
-  cursor: none;
-}
-
-
 /* --- Artistic Cursor Container --- */
 .artistic-cursor {
   position: fixed; /* Luôn hiển thị trên màn hình */
@@ -2837,7 +2826,7 @@ body[data-page="home"] h2 {
   padding: 12px 35px; /* Increase padding */
   border-radius: var(--border-radius-pill);
   text-decoration: none;
-  transition: all var(--transition-elastic); /* Use elastic default */
+  transition: all var(--transition-elastic); /* Use elastic by default */
   font-family: var(--font-main);
   font-weight: 700; /* Bolder */
   cursor: pointer;
@@ -2978,7 +2967,7 @@ body[data-page="home"] h2 {
 .notification-particle-canvas {
   position: absolute;
   inset: 0;
-  z-index: 1; /* Above glow, below content */
+  z-index: 1;
   pointer-events: none;
 }
 .notification-particle-canvas canvas {
@@ -3311,201 +3300,4 @@ body[data-page="home"] h2 {
 
 .site-footer a:hover {
   text-decoration: underline;
-}
-
-
-/* --- Responsive --- */
-@media (max-width: 480px) {
-  .tree-level-up-notification {
-    right: 10px;
-    bottom: 10px;
-    max-width: calc(100% - 20px);
-  }
-  .level-up-content {
-    padding: 15px 20px;
-    gap: 15px;
-  }
-  .level-up-icon-container {
-    width: 50px;
-    height: 50px;
-  }
-  .level-up-icon {
-    font-size: 2rem;
-  }
-  .level-up-number {
-    width: 20px;
-    height: 20px;
-    font-size: 0.8rem;
-    border-width: 1px;
-  }
-  .level-up-title {
-    font-size: 1.1rem;
-  }
-  .level-up-description {
-    font-size: 0.85rem;
-  }
-  .tree-level-up-notification .achievement-close-btn {
-    top: 6px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    font-size: 1rem;
-  }
-}
-
-/* --- Responsive --- */
-@media (max-width: 480px) {
-  .achievement-masterpiece {
-    right: 15px;
-    bottom: 15px;
-    max-width: calc(100% - 30px); /* Adjust width */
-    border-radius: 12px;
-  }
-  .achievement-content {
-    padding: 18px 20px;
-    gap: 15px;
-  }
-  .achievement-main-icon {
-    width: 45px;
-    height: 45px;
-  }
-  .achievement-announcement {
-    font-size: 0.7rem;
-    margin-bottom: 5px;
-  }
-  .achievement-main-title {
-    font-size: 1.1rem;
-    margin-bottom: 5px;
-  }
-  .achievement-main-description {
-    font-size: 0.85rem;
-  }
-  .achievement-close-btn {
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
-    font-size: 1rem;
-  }
-}
-
-/* --- Responsive Adjustments --- */
-@media (max-width: 768px) {
-  h1,
-  h2 {
-    font-size: calc(1.5rem + 1vw);
-  } /* Slightly smaller headings on mobile */
-  .container {
-    padding: 30px 15px;
-  }
-  .container h2 {
-    font-size: 1.6rem;
-    margin-bottom: 1.5rem;
-  }
-  .hero-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  } /* Stack cards in hero */
-  .interactive-card {
-    padding: 20px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  .interactive-card:hover {
-    transform: translateY(-5px) scale(1.01);
-  } /* Less dramatic hover */
-  .subjects-grid,
-  .lessons-list,
-  .vocab-list {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  .lesson-content {
-    padding: 30px 20px;
-  }
-  .lesson-container {
-    padding: 30px 20px;
-    margin: 40px auto;
-  }
-  .auth-container {
-    padding: 40px 30px;
-  }
-  .confirm-modal-box {
-    padding: 30px 25px;
-  }
-  #customConfirmMessage {
-    font-size: 1.1rem;
-    margin-bottom: 25px;
-  }
-  .confirm-buttons {
-    gap: 15px;
-  }
-  #customConfirmOk,
-  #customConfirmCancel {
-    padding: 10px 25px;
-    font-size: 0.9rem;
-  }
-  #alert-container {
-    right: 10px;
-    max-width: calc(100% - 20px);
-  }
-  .alert-toast {
-    min-width: auto;
-    width: 100%;
-  }
-  /* 1. Ẩn hoàn toàn con trỏ nghệ thuật */
-  #artistic-cursor {
-    display: none !important; /* Quan trọng để ghi đè */
-    visibility: hidden;
-  }
-}
-
-@media (max-width: 480px) {
-  .btn,
-  #customConfirmOk,
-  #customConfirmCancel {
-    padding: 10px 20px;
-    font-size: 0.9rem;
-  }
-  .hero-title {
-    font-size: clamp(2rem, 8vw, 2.8rem);
-  }
-  .big-text {
-    font-size: clamp(4rem, 15vw, 6rem);
-  }
-  .hero-subtitle {
-    font-size: clamp(1rem, 4vw, 1.3rem);
-  }
-  .lesson-type-selector {
-    border-radius: var(--border-radius-medium);
-    flex-direction: column;
-  } /* Stack tabs */
-  .lesson-type-selector .tab-btn {
-    border-right: none;
-    border-bottom: 1px solid var(--border-color-light);
-  }
-  .lesson-type-selector .tab-btn:last-child {
-    border-bottom: none;
-  }
-  .quiz-question {
-    padding: 20px;
-  }
-  .quiz-option {
-    padding: 12px;
-    gap: 10px;
-  }
-  .confirm-modal-box {
-    padding: 25px 20px;
-  }
-  #customConfirmMessage {
-    font-size: 1rem;
-  }
-  .confirm-buttons {
-    flex-direction: column;
-    gap: 10px;
-  } /* Stack buttons */
-  #customConfirmOk,
-  #customConfirmCancel {
-    width: 100%;
-  }
 }

@@ -32,13 +32,6 @@
         <img id="modalImg" class="modal-content" alt="Full screen image">
     </div>
           
-    <!-- Đặt ngay sau thẻ <body> -->
-    <div id="artistic-cursor" class="artistic-cursor">
-      <div class="cursor-core"></div>
-      <div class="cursor-glow"></div>
-      <!-- Các phần tử hạt sẽ được tạo động bằng JS -->
-    </div>
-
     <!-- === JAVASCRIPT LIBRARIES === -->
     <!-- Load jQuery & Bootstrap Bundle if needed by other parts of your site, NOT required for this header -->
     <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
@@ -50,15 +43,74 @@
     <script src="https://unpkg.com/split-type"></script> <!-- SplitType Library -->
 
     <!-- Other Libraries -->
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-    <!-- === YOUR CUSTOM SCRIPTS === -->
-    <script src="/js/customcursor.js"></script>  
+    <!-- === YOUR CUSTOM SCRIPTS (defer to avoid blocking) === -->
     <script src="/js/alerts.js" defer></script>    <%# For showAlert function %>
-    <script src="/js/confirm.js"></script>   <%# For custom confirm modal %>
-    <script src="/js/animations.js"></script> <%# Your main animation logic %>
+    <script src="/js/confirm.js" defer></script>   <%# For custom confirm modal %>
+    <script src="/js/animations.js" defer></script> <%# Your main animation logic %>
+    <script src="/js/customcursor.js" defer></script> <%# stub already present %>
     <!-- Include other global scripts -->
+
+    <!-- Lightweight dynamic loader: only pull heavy libs (GSAP, tsParticles, SplitType) when needed -->
+    <script>
+      // Minimal safe loader - executes after DOM parsing because scripts above are deferred
+      (function(){
+        function loadScript(src, attrs = {}) {
+          return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) return resolve(src);
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = !!attrs.async;
+            s.defer = !!attrs.defer;
+            if(attrs.type) s.type = attrs.type;
+            s.onload = () => resolve(src);
+            s.onerror = () => reject(new Error('Failed to load ' + src));
+            document.head.appendChild(s);
+          });
+        }
+        function loadStyle(href) {
+          return new Promise((resolve, reject) => {
+            if (document.querySelector(`link[href="${href}"]`)) return resolve(href);
+            const l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = href;
+            l.onload = () => resolve(href);
+            l.onerror = () => reject(new Error('Failed to load ' + href));
+            document.head.appendChild(l);
+          });
+        }
+
+        // Decision heuristics: only load heavy libs when element exists AND user didn't request reduced motion
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // If page has particles container or hero with particles
+        const needParticles = !!document.getElementById('particles-js') || !!document.getElementById('tsparticles-error') || !!document.querySelector('.achievement-masterpiece');
+        // If page uses GSAP animations or data-animate attributes
+        const needGSAP = !!document.querySelector('[data-animate], [data-animate-children], .dashboard-tabs, .hero, .achievement-masterpiece');
+
+        // Load GSAP when needed
+        if (needGSAP && !prefersReducedMotion) {
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js', { defer: true })
+            .catch(e => console.warn('GSAP load failed:', e));
+          // only load ScrollTrigger if GSAP likely to use it
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js', { defer: true }).catch(()=>{});
+        }
+
+        // Load tsParticles only for pages that really have particle targets and only if not reduced motion
+        if (needParticles && !prefersReducedMotion) {
+          loadScript('https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js', { defer: true })
+            .catch(e => console.warn('tsParticles load failed:', e));
+        }
+
+        // SplitType is only for text-splitting; load only if class present
+        if (document.querySelector('.split-type') || document.querySelector('[data-split]')) {
+          loadScript('https://unpkg.com/split-type', { defer: true }).catch(()=>{});
+        }
+
+        // Note: local scripts (alerts.js, animations.js, confirm.js) are deferred above; they should check for global libs before using them.
+      })();
+    </script>
 
     <!-- Flash Message Handling -->
     <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
