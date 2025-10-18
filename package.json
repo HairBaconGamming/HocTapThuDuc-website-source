@@ -36,7 +36,8 @@
     "pdf-parse": "^1.1.1",
     "socket.io": "^4.7.5",
     "string-similarity": "^4.0.4",
-    "tmp": "^0.2.3"
+    "tmp": "^0.2.3",
+    "compression": "^1.7.4"
   },
   "engines": {
     "node": "18.x"
