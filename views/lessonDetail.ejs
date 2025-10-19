@@ -23,6 +23,7 @@
 <%# KaTeX CSS %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
 <section class="lesson-detail-page-section">
 
     <!-- Background Elements -->
@@ -324,7 +325,6 @@
 <!-- JS Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload="console.log('KaTeX auto-render loaded for lesson detail.')"></script>
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.inputType = inputType;
             const optionsHtml = (q.options || []).map((option, oIdx) => {
                 const optionId = `q${originalIndex}o${oIdx}_${Math.random()}`;
-                return `<div class="quiz-option-v2" data-option-index="${oIdx}" data-is-correct="${option.isCorrect}"><input type="${inputType}" name="question-${originalIndex}-${inputType}" id="${optionId}" value="${oIdx}" class="visually-hidden quiz-input"><label for="${optionId}" class="option-label"><span class="option-indicator ${inputType}"></span><span class="option-text prose-styling">${marked.parseInline(option.text || "")}</span><span class="option-feedback-icon"></span></label></div>`;
+                return `<div class="quiz-option-v2" data-option-index="${oIdx}" data-is-correct="${option.isCorrect}"><input type="${inputType}" name="question-${originalIndex}-${inputType}" id="${optionId}" value="${oIdx}" class="visually-hidden quiz-input"><label for="${optionId}" class="option-label"><span class="option-indicator ${inputType}"></span><span class="option-text prose-styling">${marked.parse(option.text || "")}</span><span class="option-feedback-icon"></span></label></div>`;
             }).join('');
             card.innerHTML = `<div class="question-header"><div class="question-number">Câu ${originalIndex + 1}</div></div><div class="question-content-markdown prose-styling">${marked.parse(q.question || "")}</div><div class="quiz-options-list">${optionsHtml}</div><div class="question-feedback"></div>`;
             return card;
@@ -629,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          });
                          if (!feedback.isCorrect && feedback.explanation) {
                              const feedbackDiv = card.querySelector('.question-feedback');
-                             feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${marked.parseInline(feedback.explanation)}</p>`;
+                             feedbackDiv.innerHTML = `<p class="feedback-explanation"><em>Giải thích:</em> ${marked.parse(feedback.explanation)}</p>`;
                              gsap.from(feedbackDiv, { autoAlpha: 0, y: 10, duration: 0.4 });
                          }
                      });
