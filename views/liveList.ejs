@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  throw new Error(data.error || `Lỗi ${res.status}`);
             }
              // Redirect with token
-             window.location.href = `https://hoctapthuduc.onrender.com/room/${roomId}?token=${data.token}`;
+             window.location.href = `https://live-hoctapthuduc.onrender.com/room/${roomId}?token=${data.token}`;
              // No need to remove loading state here as page redirects
         } catch (error) {
             console.error("Error getting join token:", error);
