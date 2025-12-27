@@ -1,0 +1,545 @@
+/* public/css/styleManageLessonV3.css */
+
+:root {
+    --studio-bg: #f8f9fa;
+    --studio-card: #ffffff;
+    --studio-border: #2d3436;
+    --studio-shadow: 6px 6px 0px rgba(45, 52, 54, 0.15);
+    
+    --type-md: #a2d2ff;
+    --type-quiz: #ffc8dd;
+    --type-essay: #b9fbc0;
+    --type-doc: #fff5ba;
+}
+
+.studio-wrapper {
+    max-width: 1100px;
+    margin: 40px auto;
+    font-family: 'Quicksand', sans-serif;
+}
+
+/* --- Header Studio --- */
+.studio-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.studio-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--studio-border);
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin-bottom: 5px;
+}
+
+.studio-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    background: #e9ecef;
+    padding: 5px 15px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+/* --- Layout Grid --- */
+.studio-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* --- Cột Trái: Settings --- */
+.studio-sidebar {
+    background: var(--studio-card);
+    border: 3px solid var(--studio-border);
+    border-radius: 25px;
+    padding: 25px;
+    box-shadow: var(--studio-shadow);
+    position: sticky;
+    top: 100px;
+}
+
+.sidebar-section {
+    margin-bottom: 25px;
+}
+
+.section-label {
+    font-weight: 800;
+    color: var(--studio-border);
+    margin-bottom: 10px;
+    display: block;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+}
+
+/* Custom Input */
+.studio-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    transition: 0.2s;
+    background: #fafafa;
+}
+
+.studio-input:focus {
+    border-color: var(--studio-border);
+    background: #fff;
+    box-shadow: 3px 3px 0px var(--type-md);
+    outline: none;
+}
+
+/* Type Selector (Radio Cards) */
+.type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.type-option input { display: none; }
+
+.type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    border: 2px solid #eee;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.type-card i { font-size: 1.5rem; margin-bottom: 5px; color: #888; }
+.type-card span { font-size: 0.85rem; font-weight: 700; color: #666; }
+
+/* Active States */
+.type-option input:checked + .type-card {
+    border-color: var(--studio-border);
+    box-shadow: 3px 3px 0px var(--studio-border);
+    transform: translate(-2px, -2px);
+}
+
+.type-option input[value="markdown"]:checked + .type-card { background: var(--type-md); }
+.type-option input[value="quiz"]:checked + .type-card { background: var(--type-quiz); }
+.type-option input[value="essay"]:checked + .type-card { background: var(--type-essay); }
+.type-option input[value="document"]:checked + .type-card { background: var(--type-doc); }
+
+.type-option input:checked + .type-card i,
+.type-option input:checked + .type-card span { color: var(--studio-border); }
+
+/* Toggle Switch PRO */
+.pro-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    background: #fff0f5;
+    padding: 10px;
+    border-radius: 15px;
+    border: 2px dashed #ffc8dd;
+}
+
+.toggle-box {
+    width: 20px; height: 20px;
+    border: 2px solid var(--studio-border);
+    border-radius: 5px;
+    background: white;
+    position: relative;
+}
+
+.pro-toggle input:checked + .toggle-box { background: gold; }
+.pro-toggle input:checked + .toggle-box::after {
+    content: '👑'; position: absolute; top: -3px; left: -2px; font-size: 14px;
+}
+
+/* --- Cột Phải: Main Editor --- */
+.studio-main {
+    background: var(--studio-card);
+    border: 3px solid var(--studio-border);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: var(--studio-shadow);
+    min-height: 600px;
+    position: relative;
+}
+
+/* Header của Editor */
+.editor-top-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.title-input {
+    flex-grow: 1;
+    font-size: 1.5rem;
+    padding: 15px;
+    border: none;
+    border-bottom: 3px solid #eee;
+    font-weight: 800;
+    color: var(--studio-border);
+    background: transparent;
+}
+
+.title-input:focus { outline: none; border-color: var(--studio-border); }
+
+/* Dynamic Editor Container */
+.dynamic-editor-container {
+    background: #f8f9fa;
+    border-radius: 15px;
+    border: 2px dashed #ccc;
+    padding: 20px;
+    min-height: 400px;
+}
+
+/* Action Bar (Footer) */
+.studio-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    align-items: center;
+}
+
+.btn-studio {
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-save {
+    background: var(--studio-border);
+    color: white;
+    box-shadow: 4px 4px 0px var(--type-essay);
+}
+
+.btn-save:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0px var(--type-essay);
+}
+
+.btn-draft {
+    background: white;
+    border: 2px solid #ddd;
+    color: #666;
+}
+
+.btn-draft:hover { background: #eee; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .studio-grid { grid-template-columns: 1fr; }
+    .studio-sidebar { position: static; margin-bottom: 30px; }
+}
+
+/* --- PHẦN BỔ SUNG CHO GIAI ĐOẠN 2 --- */
+
+/* Quiz Builder Styles */
+.quiz-builder-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.qb-question-card {
+    background: #fff;
+    border: 2px solid #eee;
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    transition: 0.2s;
+    border-left: 5px solid var(--type-quiz); /* Màu hồng */
+}
+
+.qb-question-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border-color: #ddd;
+    border-left-color: var(--type-quiz);
+}
+
+.qb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.qb-label {
+    font-weight: 800;
+    color: var(--studio-border);
+    background: #fff0f5;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+}
+
+.qb-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-icon-small {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    background: #eee;
+    color: #666;
+}
+
+.btn-icon-small:hover { background: #ffc8dd; color: #c62828; transform: scale(1.1); }
+
+/* Option List */
+.qb-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+    padding-left: 10px;
+    border-left: 2px dashed #eee;
+}
+
+.qb-option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qb-radio {
+    width: 20px; height: 20px;
+    cursor: pointer;
+    accent-color: var(--studio-border);
+}
+
+.qb-btn-add-opt {
+    background: none;
+    border: 2px dashed #ccc;
+    color: #888;
+    padding: 8px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    transition: 0.2s;
+    width: fit-content;
+}
+
+.qb-btn-add-opt:hover {
+    border-color: var(--type-quiz);
+    color: var(--studio-border);
+    background: #fff0f5;
+}
+
+.btn-add-question {
+    background: var(--studio-border);
+    color: white;
+    padding: 15px;
+    border-radius: 15px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: 0.2s;
+    box-shadow: 4px 4px 0px #ccc;
+}
+
+.btn-add-question:hover { transform: translateY(-2px); box-shadow: 6px 6px 0px #ccc; }
+
+/* Document Upload Styles */
+.doc-preview-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 15px;
+    border: 2px solid var(--type-doc);
+    margin-top: 20px;
+}
+
+.doc-icon-large { font-size: 2.5rem; color: #f39c12; }
+.doc-info h4 { margin: 0 0 5px 0; font-size: 1rem; color: var(--studio-border); }
+.doc-info p { margin: 0; font-size: 0.8rem; color: #888; }
+.btn-remove-doc { color: #c62828; cursor: pointer; margin-left: auto; }
+
+/* --- TOAST NOTIFICATION (GEN Z STYLE) --- */
+.genz-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: white;
+    border: 3px solid var(--dark-ink);
+    padding: 15px 25px;
+    border-radius: 15px;
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 700;
+    color: var(--dark-ink);
+    min-width: 300px;
+}
+
+.genz-toast.active { transform: translateY(0); opacity: 1; }
+.genz-toast.success { border-color: var(--type-essay); background: #f0fff4; }
+.genz-toast.error { border-color: var(--type-quiz); background: #fff0f5; }
+.genz-toast.info { border-color: var(--type-md); background: #f0f8ff; }
+
+.toast-icon { font-size: 1.5rem; }
+
+/* --- QUIZ: Question Type Switcher --- */
+.type-switch-wrapper {
+    display: flex;
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 3px;
+    width: fit-content;
+}
+
+.type-btn {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    color: #888;
+    background: transparent;
+    transition: 0.2s;
+}
+
+.type-btn.active {
+    background: white;
+    color: var(--studio-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* --- ESSAY BUILDER --- */
+.essay-builder-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.essay-context-card {
+    background: #f0f8ff; /* Xanh nhạt */
+    border: 2px dashed #a2d2ff;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.essay-q-card {
+    background: white;
+    border: 2px solid #eee;
+    border-left: 5px solid var(--type-essay); /* Màu xanh lá */
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+}
+
+.ai-hint-box {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 10px;
+    border: 1px solid #eee;
+}
+
+.ai-hint-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* --- VIDEO EDITOR STYLES --- */
+.video-input-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.video-preview-box {
+    margin-top: 20px;
+    background: #000;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    padding-top: 56.25%; /* Aspect Ratio 16:9 */
+    display: none; /* Ẩn mặc định */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.video-preview-box iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.video-placeholder {
+    margin-top: 20px;
+    background: #f0f0f0;
+    border-radius: 15px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    flex-direction: column;
+    border: 2px dashed #ccc;
+}
+
+/* --- DOCUMENT UPLOAD STATES --- */
+.doc-preview-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid var(--type-doc);
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    animation: slideUp 0.3s ease-out;
+}
+
+.doc-preview-card.loading {
+    border-color: #ccc;
+    background: #fafafa;
+    border-style: dashed;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

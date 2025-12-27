@@ -1,26 +1,43 @@
-// models/Lesson.js
 const mongoose = require('mongoose');
+const slug = require('mongoose-slug-updater'); // <-- Đổi thành updater
 
-const LessonSchema = new mongoose.Schema({
-  subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
-  title: { type: String, required: true },
-  content: { type: String }, // Dùng để lưu câu hỏi hoặc nội dung hiển thị chung
-  category: { 
-    type: String, 
-    required: true, 
-    enum: ['grammar', 'vocabulary', 'exercise', 'theory', 'reading', 'listening', 'other'] 
-  },
-  type: { 
-    type: String, 
-    enum: ['markdown', 'quiz', 'video', 'essay', 'document'],
-    default: 'markdown' 
-  },
-  editorData: { type: mongoose.Schema.Types.Mixed }, // Đối với markdown, quiz, video, hoặc essay (đáp án mẫu)
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now },
-  tags: [{ type: String, trim: true, index: true }], 
-  isProOnly: { type: Boolean, default: false },
-  isAIGenerated: { type: Boolean, default: false }
-});
+// Kích hoạt plugin tạo slug tự động
+mongoose.plugin(slug);
 
-module.exports = mongoose.model('Lesson', LessonSchema);
+const lessonSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    slug: { type: String, slug: "title", unique: true },
+    content: { type: String },
+    
+    // --- QUAN TRỌNG: FIX LỖI POPULATE ---
+    // Phải có dòng này thì .populate('subject') mới hoạt động
+    subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }, 
+    
+    // --- CẤU TRÚC PHÂN CẤP MỚI ---
+    // (Dùng cho tính năng Tree/Course/Unit vừa nâng cấp)
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+    unitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit' },
+    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }, // Backup field nếu cần query theo id trực tiếp
+    
+    order: { type: Number, default: 0 }, // Thứ tự bài học trong chương
+
+    // --- PHÂN LOẠI & NỘI DUNG ---
+    category: { type: String },
+    type: { type: String, default: 'theory' }, // theory, video, quiz, essay, document...
+    
+    // --- DỮ LIỆU EDITOR ---
+    editorData: { type: Object }, // Lưu JSON từ Editor mới
+    quizData: { type: Array },    // Dữ liệu câu hỏi (Legacy)
+    essayData: { type: Array },   // Dữ liệu tự luận
+    
+    // --- META DATA ---
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    isPro: { type: Boolean, default: false },      // Yêu cầu VIP (Mới)
+    isProOnly: { type: Boolean, default: false },  // Yêu cầu VIP (Cũ - giữ để tương thích)
+    isPublished: { type: Boolean, default: true }, // Trạng thái đăng bài
+    
+    tags: [String],
+    views: { type: Number, default: 0 }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Lesson', lessonSchema);

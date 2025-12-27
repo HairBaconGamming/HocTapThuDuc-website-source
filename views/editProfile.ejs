@@ -1,252 +1,111 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleEditProfile.css">
 
-    <%- include('partials/header', { user: user, activePage: 'profile' }) %>
-        <link rel="stylesheet" href="/styleEditProfile.css">
-    
-    <!-- New Avatar Stylesheet -->
-    <link rel="stylesheet" href="/css/styleAvatarUpload.css"> 
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-
-    <main class="profile-edit-page-section">
-        <div class="profile-edit-background">
-            <div class="bg-shape edit-shape-1"></div>
-            <div class="bg-shape edit-shape-2"></div>
-            <div class="bg-grid-pattern-faint"></div>
+<section class="edit-profile-section">
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 40px;" data-animate="fade-down">
+            <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--dark-ink);">Hồ Sơ Của Bạn 🛠️</h1>
+            <p style="color: #666;">Cập nhật thông tin để "ngầu" hơn trên bảng xếp hạng nhé!</p>
         </div>
 
-        <div class="profile-edit-container">
-            <form action="/profile/edit" method="POST" class="profile-edit-form-v2" id="editProfileForm">
-                
-                <header class="composer-header">
-                     <h2><i class="fas fa-user-edit"></i> Chỉnh Sửa Hồ Sơ</h2>
-                     <p>Cập nhật thông tin cá nhân và mật khẩu của bạn tại đây.</p>
-                </header>
-                
-                <% if (locals.message && message.message) { %>
-                    <div class="composer-flash-message alert-<%= message.type %>">
-                        <%= message.message %>
-                    </div>
-                <% } %>
-                
-                <!-- === NEW AVATAR MANAGEMENT SECTION (FOR PRO USERS ONLY) === -->
-                <% if (user.isPro) { %>
-                <fieldset class="form-section">
-                    <legend class="form-section-title">Ảnh Đại Diện PRO</legend>
-                    <div class="avatar-management-area">
-                        
-                        <!-- Uploader & Preview Card -->
-                        <div class="avatar-preview-card">
-                            <div class="avatar-preview-wrapper" id="avatar-preview-wrapper" title="Nhấn hoặc kéo thả ảnh vào đây">
-                                <img src="<%= user.avatar %>" alt="Current Avatar" id="current-avatar-preview" class="current-avatar-img">
-                                
-                                <!-- Overlay for Hover/Drag -->
-                                <div class="upload-overlay">
-                                    <div class="upload-prompt">
-                                        <i class="fas fa-upload"></i>
-                                        <i class="fas fa-file-import"></i>
-                                        <span id="upload-prompt-text">Đổi ảnh</span>
-                                    </div>
-                                </div>
-
-                                <!-- Circular Progress Bar -->
-                                <svg class="progress-ring" viewBox="0 0 120 120">
-                                    <circle class="progress-ring__circle-bg" cx="60" cy="60" r="54" />
-                                    <circle class="progress-ring__circle-fill" cx="60" cy="60" r="54" />
-                                </svg>
-
-                                <input type="file" id="avatar-file-input" class="visually-hidden" accept="image/png, image/jpeg, image/gif, image/webp">
-                            </div>
-                            
-                            <div class="avatar-action-buttons" id="avatar-action-buttons">
-                                <button type="button" id="cancel-avatar-btn" class="action-btn cancel-btn">Hủy</button>
-                                <button type="button" id="save-avatar-btn" class="action-btn success"><i class="fas fa-check"></i> Lưu ảnh này</button>
-                            </div>
-                            
-                            <small class="upload-hint">Chọn ảnh (JPG, PNG, GIF, WEBP) dưới 5MB.</small>
-                        </div>
-
-                        <!-- Gallery -->
-                        <div class="avatar-gallery-wrapper">
-                            <h4>Hoặc chọn từ kho ảnh của bạn</h4>
-                            <div id="pro-image-gallery" class="gallery-grid">
-                                <div class="gallery-loader"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
-                            </div>
-                        </div>
-                    </div>
-                </fieldset>
-                <hr class="form-divider">
-                <% } %>
-                
-                <fieldset class="form-section">
-                    <legend class="form-section-title">Thông Tin Cá Nhân</legend>
-                    <div class="form-grid">
-                        <div class="input-field-group">
-                             <i class="fas fa-envelope input-icon"></i>
-                             <input type="email" name="email" id="email" class="form-input-v2" value="<%= user.email %>" placeholder=" ">
-                             <label for="email" class="form-label-v2">Email</label>
-                        </div>
-                         <div class="input-field-group">
-                             <i class="fas fa-graduation-cap input-icon"></i>
-                             <input type="text" name="class" id="class" class="form-input-v2" value="<%= user.class %>" placeholder=" ">
-                             <label for="class" class="form-label-v2">Lớp</label>
-                        </div>
-                    </div>
-                     <!-- New THPT School List -->
-                    <div class="select-group-styled" id="school-group">
-                        <i class="fas fa-school input-icon select-icon"></i>
-                        <select name="school" id="school" class="form-select-v2" required>
-                            <option value="" disabled <%= !user.school ? 'selected' : '' %>>Chọn trường THPT của bạn...</option>
-                             <optgroup label="Trường Công Lập">
-                                <option value="THPT Thủ Đức" <%= user.school === 'THPT Thủ Đức' ? 'selected' : '' %>>THPT Thủ Đức</option>
-                                <option value="THPT Nguyễn Hữu Huân" <%= user.school === 'THPT Nguyễn Hữu Huân' ? 'selected' : '' %>>THPT Nguyễn Hữu Huân</option>
-                                <option value="THPT Tam Phú" <%= user.school === 'THPT Tam Phú' ? 'selected' : '' %>>THPT Tam Phú</option>
-                                <option value="THPT Hiệp Bình" <%= user.school === 'THPT Hiệp Bình' ? 'selected' : '' %>>THPT Hiệp Bình</option>
-                                <option value="THPT Đào Sơn Tây" <%= user.school === 'THPT Đào Sơn Tây' ? 'selected' : '' %>>THPT Đào Sơn Tây</option>
-                                <option value="THPT Linh Trung" <%= user.school === 'THPT Linh Trung' ? 'selected' : '' %>>THPT Linh Trung</option>
-                                <option value="THPT Bình Chiểu" <%= user.school === 'THPT Bình Chiểu' ? 'selected' : '' %>>THPT Bình Chiểu</option>
-                            </optgroup>
-                            <optgroup label="Trường Chuyên & Năng Khiếu">
-                                <option value="THPT Chuyên Trần Đại Nghĩa (cơ sở 2)" <%= user.school === 'THPT Chuyên Trần Đại Nghĩa (cơ sở 2)' ? 'selected' : '' %>>THPT Chuyên Trần Đại Nghĩa (cơ sở 2)</option>
-                                <option value="THPT Năng khiếu (ĐHQG)" <%= user.school === 'THPT Năng khiếu (ĐHQG)' ? 'selected' : '' %>>THPT Năng khiếu (ĐHQG)</option>
-                            </optgroup>
-                            <optgroup label="Trường Tư Thục">
-                                <option value="THPT Tư thục Nguyễn Khuyến" <%= user.school === 'THPT Tư thục Nguyễn Khuyến' ? 'selected' : '' %>>THPT Tư thục Nguyễn Khuyến</option>
-                                <option value="THPT Tư thục Ngô Thời Nhiệm" <%= user.school === 'THPT Tư thục Ngô Thời Nhiệm' ? 'selected' : '' %>>THPT Tư thục Ngô Thời Nhiệm</option>
-                                <option value="THPT Bách Việt" <%= user.school === 'THPT Bách Việt' ? 'selected' : '' %>>THPT Bách Việt</option>
-                            </optgroup>
-                        </select>
-                        <label for="school" class="form-label-v2 form-label-select-v2">Trường học</label>
-                        <i class="fas fa-chevron-down select-arrow"></i>
-                    </div>
-                    <div class="input-field-group textarea-group">
-                         <i class="fas fa-feather-alt input-icon"></i>
-                         <textarea name="bio" id="bio" class="form-input-v2 bio-textarea" placeholder=" "><%= user.bio %></textarea>
-                         <label for="bio" class="form-label-v2">Tiểu sử</label>
-                    </div>
-                </fieldset>
-                
-                <hr class="form-divider">
-
-                <fieldset class="form-section">
-                    <legend class="form-section-title">Thay Đổi Mật Khẩu</legend>
-                    <label class="fancy-toggle-switch">
-                        <input type="checkbox" name="resetPassword" value="true" id="resetPasswordToggle">
-                        <span class="switch-label">
-                            <span class="switch-rail"><span class="switch-handle"></span></span>
-                            <span class="switch-text">Kích hoạt thay đổi mật khẩu</span>
-                        </span>
+        <form action="/profile/edit" method="POST" enctype="multipart/form-data" class="edit-grid">
+            
+            <div class="profile-card avatar-zone">
+                <div class="avatar-wrapper">
+                    <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
+                         class="avatar-preview" id="avatarPreview">
+                    
+                    <label for="avatarInput" class="camera-btn" title="Đổi ảnh">
+                        <i class="fas fa-camera"></i>
                     </label>
-                    <div class="password-fields-container" id="passwordFields">
-                        <div class="input-field-group">
-                            <i class="fas fa-lock-open input-icon"></i>
-                            <input type="password" name="currentPassword" id="currentPassword" class="form-input-v2" placeholder=" " disabled>
-                            <label for="currentPassword" class="form-label-v2">Mật khẩu hiện tại</label>
+                    <input type="file" id="avatarInput" name="avatar" accept="image/*" hidden>
+                </div>
+
+                <div class="user-display-name"><%= user.username %></div>
+                <div class="user-role-badge">
+                    <%= user.isPro ? '👑 VIP Member' : '🌱 Newbie' %>
+                </div>
+
+                <% if (user.isPro) { %>
+                    <a href="/pro-images" class="pro-link"><i class="fas fa-images"></i> Chọn từ Kho Ảnh PRO</a>
+                <% } %>
+            </div>
+
+            <div class="profile-card form-zone">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> Thông Tin Cá Nhân</h3>
+
+                <div class="input-group-v3">
+                    <label class="label-v3">Email liên hệ</label>
+                    <input type="email" name="email" class="input-v3" value="<%= user.email || '' %>" placeholder="ví dụ: tenban@gmail.com">
+                </div>
+
+                <div class="input-group-v3">
+                    <label class="label-v3">Tiểu sử (Bio)</label>
+                    <textarea name="bio" class="input-v3 textarea-v3" placeholder="Hãy viết gì đó thật 'chất' về bản thân..."><%= user.bio || '' %></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="input-group-v3">
+                        <label class="label-v3">Lớp</label>
+                        <input type="text" name="class" class="input-v3" value="<%= user.class || '' %>" placeholder="VD: 12A1">
+                    </div>
+                    <div class="input-group-v3">
+                        <label class="label-v3">Trường</label>
+                        <select name="school" class="input-v3">
+                            <option value="" disabled <%= !user.school ? 'selected' : '' %>>Chọn trường...</option>
+                            <option value="THPT Thủ Đức" <%= user.school === 'THPT Thủ Đức' ? 'selected' : '' %>>THPT Thủ Đức</option>
+                            <option value="THPT Nguyễn Hữu Huân" <%= user.school === 'THPT Nguyễn Hữu Huân' ? 'selected' : '' %>>THPT Nguyễn Hữu Huân</option>
+                            <option value="Khác" <%= user.school === 'Khác' ? 'selected' : '' %>>Khác...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="profile-card password-toggle-card" id="passwordCard">
+                    <div class="toggle-header" id="pwToggleHeader">
+                        <div class="toggle-title">
+                            <i class="fas fa-lock-open"></i>
+                            <h4>Đổi Mật Khẩu</h4>
                         </div>
-                        <div class="input-field-group">
-                            <i class="fas fa-lock input-icon"></i>
-                            <input type="password" name="newPassword" id="newPassword" class="form-input-v2" placeholder=" " disabled>
-                            <label for="newPassword" class="form-label-v2">Mật khẩu mới</label>
-                        </div>
-                        <div class="input-field-group">
-                            <i class="fas fa-check-circle input-icon"></i>
-                            <input type="password" name="confirmNewPassword" id="confirmNewPassword" class="form-input-v2" placeholder=" " disabled>
-                            <label for="confirmNewPassword" class="form-label-v2">Xác nhận mật khẩu mới</label>
-                        </div>
-                        <div class="turnstile-group">
-                            <div class="cf-turnstile" data-sitekey="<%= process.env.TURNSTILE_SITE_KEY %>"></div>
+                        <div class="toggle-status-icon">
+                            <i class="fas fa-chevron-down toggle-arrow"></i>
                         </div>
                     </div>
-                </fieldset>
 
-                <div class="profile-edit-actions">
-                    <a href="/profile" class="btn btn-secondary-outline">Hủy Bỏ</a>
-                    <button type="submit" class="btn btn-submit-v2 profile-submit-btn">
-                        <span class="btn-text"><i class="fas fa-save"></i> Lưu Thay Đổi</span>
-                        <span class="btn-liquid-effect profile-liquid"></span>
+                    <div id="pwFields" class="password-content">
+                        <div class="input-group-v3">
+                            <label class="label-v3">Mật khẩu hiện tại</label>
+                            <div class="password-wrapper">
+                                <input type="password" name="currentPassword" class="input-v3" placeholder="Nhập mật khẩu cũ..." disabled>
+                                <button type="button" class="eye-btn"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="input-group-v3">
+                            <label class="label-v3">Mật khẩu mới</label>
+                            <div class="password-wrapper">
+                                <input type="password" name="newPassword" class="input-v3" placeholder="Tối thiểu 8 ký tự..." disabled>
+                                <button type="button" class="eye-btn"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="input-group-v3">
+                            <label class="label-v3">Xác nhận mật khẩu mới</label>
+                            <input type="password" name="confirmNewPassword" class="input-v3" placeholder="Nhập lại mật khẩu mới..." disabled>
+                        </div>
+                        <div id="pwMatchMessage" class="match-message"></div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <a href="/profile" class="btn-cancel">Hủy</a>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Lưu Thay Đổi
                     </button>
                 </div>
-            </form>
-        </div>
-    </main>
-    
-    <%- include('partials/footer') %>
-    
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <script src="/js/avatarUpload.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggle = document.getElementById('resetPasswordToggle');
-            const passwordFieldsContainer = document.getElementById('passwordFields');
-            const passwordInputs = passwordFieldsContainer.querySelectorAll('input[type="password"]');
+            </div>
+        </form>
+    </div>
+</section>
 
-            // Hàm mới, đơn giản hơn, chỉ quản lý class 'active'
-            function setPasswordFieldsState(enabled) {
-                if (enabled) {
-                    passwordFieldsContainer.classList.add('active');
-                } else {
-                    passwordFieldsContainer.classList.remove('active');
-                }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="/js/profileEditor.js"></script>
 
-                // Bật/tắt và xóa giá trị của các trường input
-                passwordInputs.forEach(input => {
-                    input.disabled = !enabled;
-                    if (!enabled) {
-                        input.value = ''; // Xóa giá trị khi ẩn đi
-                        // Kích hoạt sự kiện 'blur' để label quay về vị trí cũ nếu cần
-                        input.dispatchEvent(new Event('blur')); 
-                    }
-                });
-            }
-            
-            // Gắn sự kiện 'change' vào nút gạt
-            toggle.addEventListener('change', () => {
-                setPasswordFieldsState(toggle.checked);
-            });
-
-            // Thiết lập trạng thái ban đầu khi tải trang
-            setPasswordFieldsState(toggle.checked);
-
-            // Xử lý trạng thái 'filled' cho các label
-            document.querySelectorAll('.form-input-v2, .form-select-v2').forEach(input => {
-                const group = input.closest('.input-field-group, .select-group-styled');
-                if(!group) return;
-
-                const checkFilled = () => {
-                    // Thêm điều kiện kiểm tra autofill của trình duyệt
-                    if ((input.value && input.value !== "") || input.matches(':-webkit-autofill')) {
-                        group.classList.add('filled');
-                    } else {
-                        group.classList.remove('filled');
-                    }
-                };
-
-                input.addEventListener('input', checkFilled);
-                input.addEventListener('blur', checkFilled);
-                // Thêm một chút delay để trình duyệt có thời gian xử lý autofill
-                setTimeout(checkFilled, 100);
-            });
-
-            // Xử lý nút bật/tắt hiển thị mật khẩu
-            document.querySelectorAll('.password-toggle-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const targetId = this.getAttribute('data-target');
-                    const passwordInput = document.getElementById(targetId);
-                    const icon = this.querySelector('i');
-
-                    if (passwordInput && icon) {
-                        if (passwordInput.type === 'password') {
-                            passwordInput.type = 'text';
-                            icon.classList.remove('fa-eye');
-                            icon.classList.add('fa-eye-slash');
-                        } else {
-                            passwordInput.type = 'password';
-                            icon.classList.remove('fa-eye-slash');
-                            icon.classList.add('fa-eye');
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+<%- include('partials/footer') %>

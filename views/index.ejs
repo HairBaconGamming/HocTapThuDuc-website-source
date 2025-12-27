@@ -1,402 +1,123 @@
-<%- include('partials/header', { title: 'Trang Chủ - Học Sinh Thủ Đức', user: user, activePage: "home" }) %>
-<style>body {
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-  font-family: var(--font-main);
-  margin: 0;
-  overflow-x: hidden; /* Ngăn cuộn ngang */
-}</style>
-<link rel="stylesheet" href="/poster.css"> 
-<body data-mode="home">
+<%- include('partials/header') %>
 
-  <div id="particles-js"></div>
+<style>
+    .hero-section {
+        text-align: center;
+        padding: 80px 20px 40px;
+    }
+    .hero-badge {
+        background: var(--yellow);
+        color: #d63384;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 15px;
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+    }
+    .hero-title {
+        font-size: 3rem;
+        color: var(--text-main);
+        line-height: 1.2;
+        margin-bottom: 20px;
+    }
+    .hero-title span { color: var(--primary); }
+    .hero-desc {
+        font-size: 1.1rem;
+        color: var(--text-light);
+        max-width: 600px;
+        margin: 0 auto 40px;
+    }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 30px;
+        padding: 40px 0;
+    }
+    .feature-card {
+        text-align: center;
+        background: white;
+        border-radius: var(--radius);
+        padding: 30px;
+        border: 2px solid #eee;
+        transition: 0.3s;
+    }
+    .feature-card:hover {
+        border-color: var(--secondary);
+        transform: translateY(-10px);
+    }
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: block;
+    }
+</style>
 
-  <section class="hero" id="hero-section">
-    <div class="hero-overlay"></div>
-
-    <div class="hero-container">
-      <% if (!user) { %>
-        <div class="hero-content guest">
-          <div class="hero-inner">
-            <h1 class="hero-title">
-              <span class="line"><span class="word">Chào</span> <span class="word">mừng</span> <span class="word">đến</span> <span class="word">với</span></span>
-              <span class="line">
-                <span class="word accent-word">CỘNG</span> 
-                <span class="word accent-word">ĐỒNG</span> 
-                <span class="word accent-word">HỌC</span> 
-                <span class="word accent-word">TẬP</span>
-              </span>
-              <span class="big-text-wrapper">
-                <span class="big-text">THỦ ĐỨC</span>
-              </span>
-            </h1>
-            <p class="hero-subtitle">
-              <span class="char">N</span><span class="char">ơ</span><span class="char">i</span> <span class="char">k</span><span class="char">ế</span><span class="char">t</span> <span class="char">n</span><span class="char">ố</span><span class="char">i</span><span class="char">,</span> <span class="char">c</span><span class="char">h</span><span class="char">i</span><span class="char">a</span> <span class="char">s</span><span class="char">ẻ</span> <span class="char">v</span><span class="char">à</span> <span class="char">c</span><span class="char">ù</span><span class="char">n</span><span class="char">g</span> <span class="char">n</span><span class="char">h</span><span class="char">a</span><span class="char">u</span> <span class="char">p</span><span class="char">h</span><span class="char">á</span><span class="char">t</span> <span class="char">t</span><span class="char">r</span><span class="char">i</span><span class="char">ể</span><span class="char">n</span><span class="char">.</span>
+<div class="container">
+    <section class="hero-section">
+        <% if (!user) { %>
+            <div class="hero-badge">🚀 THPT Thủ Đức</div>
+            <h1 class="hero-title">Học tập chill chill <br> <span>Kiến thức siêu iu</span></h1>
+            <p class="hero-desc">
+                Cộng đồng học tập dành riêng cho dân Thủ Đức. <br>
+                Nơi chia sẻ tài liệu, thi đua top và giải trí sau giờ học căng thẳng.
             </p>
-            <a href="/register"
-               class="btn btn-primary btn-glow stagger-in"
-               style="animation-delay: 1s;">
-              <span class="btn-text">Tham gia ngay</span>
-              <span class="btn-liquid"></span>
-            </a>
-          </div>
-        </div>
-      <% } else { %>
-        <div class="hero-content logged-in">
-          <div class="hero-grid">
-            <div class="stat-card interactive-card" data-tilt>
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <h2 class="card-title">Thống Kê Cộng Đồng</h2>
-                <p><i class="fas fa-users card-icon"></i> Tổng thành viên: <strong><%= totalUsers.toLocaleString('vi-VN') %></strong></p>
-                <p><i class="fas fa-eye card-icon"></i> Lượt truy cập hôm nay: <strong><%= dailyVisits.toLocaleString('vi-VN') %></strong></p>
-                <p><i class="fas fa-chart-line card-icon"></i> Tổng lượt truy cập: <strong><%= totalVisits.toLocaleString('vi-VN') %></strong></p>
-              </div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <a href="/register" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.1rem;">
+                    ✨ Nhập hộ khẩu ngay
+                </a>
+                <a href="/login" class="btn btn-secondary">
+                    👋 Đã có nick rồi
+                </a>
             </div>
-
-            <div class="latest-card interactive-card lessons-card" data-tilt>
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <h2 class="card-title">Bài Học Mới Nhất</h2>
-                <% if (latestLessons && latestLessons.length > 0) { %>
-                  <ul class="content-list">
-                    <% latestLessons.forEach(function(lesson) { %>
-                      <li class="list-item">
-                        <a href="/lesson/<%= lesson._id %>" class="item-link">
-                          <h3 class="item-title"><%= lesson.title %></h3>
-                          <span class="item-date"><%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                        </a>
-                      </li>
-                    <% }); %>
-                  </ul>
-                <% } else { %>
-                  <p class="no-content">Chưa có bài học nào được đăng.</p>
-                <% } %>
-              </div>
-            </div>
-
-             <div class="latest-card interactive-card news-card" data-tilt>
-                <div class="card-glow"></div>
-                <div class="card-content">
-                  <h2 class="card-title">Thông Báo & Tin Tức</h2>
-                  <% if (latestNews && latestNews.length > 0) { %>
-                    <ul class="content-list">
-                      <% latestNews.forEach(function(news) { %>
-                        <li class="list-item">
-                          <a href="/news/<%= news._id %>" class="item-link">
-                            <h3 class="item-title"><%= news.title %></h3>
-                            <span class="item-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
-                          </a>
-                        </li>
-                      <% }); %>
-                    </ul>
-                  <% } else { %>
-                    <p class="no-content">Chưa có tin tức mới.</p>
-                  <% } %>
+        <% } else { %>
+            <div class="hero-badge">👋 Hello, <%= user.username %>!</div>
+            <h1 class="hero-title">Hôm nay bạn muốn <br> <span>"xử đẹp"</span> môn nào?</h1>
+            
+            <div class="dashboard-preview" style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <div class="stat-bubble" style="background: #e3f2fd; padding: 15px 25px; border-radius: 15px;">
+                    <i class="fas fa-star" style="color: #fbc02d;"></i> <b><%= typeof totalVisits !== 'undefined' ? totalVisits : 0 %></b> lượt truy cập
                 </div>
-              </div>
-          </div>
+                <div class="stat-bubble" style="background: #fce4ec; padding: 15px 25px; border-radius: 15px;">
+                    <i class="fas fa-user-graduate" style="color: #d81b60;"></i> <b><%= typeof totalUsers !== 'undefined' ? totalUsers : 0 %></b> thành viên
+                </div>
+            </div>
+        <% } %>
+    </section>
 
-          <div id="liveFeedContainer">
-            <div id="liveFeed">
-              </div>
-          </div>
+    <section class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">📚</span>
+            <h3>Tài liệu Chất</h3>
+            <p>Tổng hợp đề thi, bài giảng xịn sò từ các trường top.</p>
         </div>
-      <% } %>
-    </div> <div class="decorative-elements">
+        <div class="feature-card">
+            <span class="feature-icon">🌵</span>
+            <h3>Nuôi Cây</h3>
+            <p>Học chăm chỉ để tích điểm nuôi cây ảo, đổi quà thật.</p>
         </div>
-
-  </section>
-  
-  <script src="/socket.io/socket.io.js"></script>           
-  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.7.2/vanilla-tilt.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/MotionPathPlugin.min.js"></script>
-  
-  <script>
-    // ----- Khởi tạo tsParticles -----
-    tsParticles.load("particles-js", {
-        preset: "links",
-        background: {
-            color: "transparent",
-        },
-        particles: {
-            number: {
-                value: 80,
-                density: {
-                    enable: true,
-                    value_area: 800
-                }
-            },
-            color: {
-                value: ["#ff6ec4", "#7873f5", "#ffffff", "#ffdd57"]
-            },
-            shape: {
-                type: "circle",
-            },
-            opacity: {
-                value: { min: 0.1, max: 0.6 },
-                animation: {
-                  enable: true,
-                  speed: 1,
-                  minimumValue: 0.1,
-                  sync: false
-                }
-            },
-            size: {
-                value: { min: 1, max: 4 },
-                 animation: {
-                    enable: true,
-                    speed: 3,
-                    minimumValue: 0.5,
-                    sync: false
-                 }
-            },
-            links: {
-                enable: true,
-                distance: 150,
-                color: "#ffffff",
-                opacity: 0.4,
-                width: 1
-            },
-            move: {
-                enable: true,
-                speed: 2,
-                direction: "none",
-                random: true,
-                straight: false,
-                out_mode: "out",
-                bounce: false,
-                attract: {
-                    enable: true,
-                    rotateX: 600,
-                    rotateY: 1200
-                }
-            }
-        },
-        interactivity: {
-            detect_on: "canvas",
-            events: {
-                onhover: {
-                    enable: true,
-                    mode: "repulse"
-                },
-                onclick: {
-                    enable: true,
-                    mode: "push"
-                },
-                resize: true
-            },
-            modes: {
-                repulse: {
-                    distance: 150,
-                    duration: 0.4
-                },
-                push: {
-                    particles_nb: 4
-                },
-            }
-        },
-        detectRetina: true,
-    });
-
-    // ----- GSAP Animations -----
-    document.addEventListener("DOMContentLoaded", () => {
-      const isGuest = document.querySelector('.hero-content.guest');
-      const isLoggedIn = document.querySelector('.hero-content.logged-in');
-
-      // --- Animation cho Khách ---
-      if (isGuest) {
-        const tlGuest = gsap.timeline({ delay: 0.5 });
-
-        tlGuest
-          .from(".hero-title .line .word", {
-            yPercent: 110,
-            opacity: 0,
-            rotationX: -90,
-            stagger: 0.1,
-            duration: 0.8,
-            ease: "power3.out"
-          })
-          .from(".big-text", {
-            scale: 0.5,
-            opacity: 0,
-            rotation: -30,
-            duration: 1,
-            ease: "elastic.out(1, 0.5)"
-          }, "-=0.5")
-          .from(".hero-subtitle .char", {
-              y: 50,
-              opacity: 0,
-              stagger: 0.03, // Tăng tốc độ một chút cho câu dài hơn
-              duration: 0.5,
-              ease: "back.out(1.7)"
-          }, "-=0.7")
-          .from(".btn-glow", {
-            scale: 0.8,
-            opacity: 0,
-            duration: 1,
-            ease: "power4.out"
-          }, "-=0.5");
-      }
-
-      // --- Animation cho Người dùng đã đăng nhập ---
-      if (isLoggedIn) {
-          const tlLoggedIn = gsap.timeline({ delay: 0.3 });
-          
-          // Sử dụng `querySelectorAll` và `forEach` để stagger hoạt động chính xác
-          const cards = gsap.utils.toArray('.hero-grid .interactive-card');
-          tlLoggedIn
-              .from(cards, {
-                  y: 100,
-                  opacity: 0,
-                  scale: 0.9,
-                  rotationX: -45,
-                  duration: 0.8,
-                  ease: "power3.out",
-                  stagger: 0.2 // Xuất hiện lần lượt
-              })
-              .from("#liveFeedContainer", {
-                  y: 50,
-                  opacity: 0,
-                  duration: 0.6,
-                  ease: "power2.out"
-              }, "-=0.4");
-
-          // Khởi tạo hiệu ứng Tilt cho card
-          if (typeof VanillaTilt !== 'undefined') {
-              VanillaTilt.init(document.querySelectorAll('[data-tilt]'), {
-                  max: 15,
-                  speed: 400,
-                  glare: true,
-                  "max-glare": 0.3
-              });
-          }
-      }
-    });
-
-    // ----- Socket.IO cho Live Feed -----
-    const socket = io();
-    const liveFeed = document.getElementById("liveFeed");
-    const liveFeedContainer = document.getElementById("liveFeedContainer");
-
-    if (liveFeedContainer) {
-      liveFeedContainer.style.opacity = 0; // Ẩn ban đầu
-      liveFeedContainer.hideTimeout = null;
-    }
-
-    socket.on("liveAccess", (data) => {
-        if (!liveFeed || !liveFeedContainer) return;
-
-        let message = "";
-        let iconClass = "";
-        if (data.type === "login") {
-            message = `<strong>${data.username}</strong> vừa truy cập.`;
-            iconClass = "fas fa-sign-in-alt";
-        } else if (data.type === "register") {
-            message = `Chào mừng thành viên mới <strong>${data.username}</strong>!`;
-            iconClass = "fas fa-user-plus";
-        }
-
-        const liveItem = document.createElement("div");
-        liveItem.className = "live-item";
-        liveItem.innerHTML = `<i class="${iconClass} live-icon"></i> ${message} <span class="time">${data.time}</span>`;
-
-        liveFeed.insertBefore(liveItem, liveFeed.firstChild);
-
-        gsap.from(liveItem, {
-            opacity: 0,
-            x: -50,
-            duration: 0.5,
-            ease: "power3.out"
-        });
-
-        const maxItems = 5;
-        while (liveFeed.children.length > maxItems) {
-            const oldItem = liveFeed.lastChild;
-            gsap.to(oldItem, {
-                opacity: 0, height: 0, padding: 0, margin: 0,
-                duration: 0.4,
-                ease: "power2.in",
-                onComplete: () => oldItem.remove()
-            });
-        }
-        
-        // Hiển thị và đặt hẹn giờ để ẩn
-        clearTimeout(liveFeedContainer.hideTimeout);
-        gsap.to(liveFeedContainer, { opacity: 1, duration: 0.5 });
-        liveFeedContainer.hideTimeout = setTimeout(() => {
-            gsap.to(liveFeedContainer, { opacity: 0, duration: 1 });
-        }, 15000);
-
-    });
-                    
-    // Hiệu ứng glow theo chuột cho các card
-    const interactiveCards = document.querySelectorAll('.interactive-card');
-    interactiveCards.forEach(card => {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            card.style.setProperty('--mouse-x', `${x}px`);
-            card.style.setProperty('--mouse-y', `${y}px`);
-        });
-    });
-
-  </script>
-
-  <%# The second script block for poster animations seems separate and can be kept as is %>
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const posterSection = document.querySelector('.showcase-poster-section');
-    if (!posterSection) return; // Thoát nếu không có section này
-
-    const images = document.querySelectorAll('.poster-images-layer .image-float');
-    const features = document.querySelectorAll('.poster-features-layer .feature-highlight');
-
-    const handleScroll = () => {
-        const sectionRect = posterSection.getBoundingClientRect();
-        const start = window.innerHeight;
-        const end = -sectionRect.height;
-        const current = sectionRect.top;
-        let progress = Math.max(0, Math.min(1, (start - current) / (start - end)));
-
-        images.forEach(img => {
-            const depth = parseFloat(img.dataset.depth) || 0.2;
-            const moveY = (progress - 0.5) * -100 * depth;
-            img.style.transform = `translateY(${moveY}px) translateZ(0)`;
-        });
-
-        features.forEach(feat => {
-             const depth = parseFloat(feat.dataset.depth) || 0.15;
-             const moveY = (progress - 0.5) * -80 * depth;
-             feat.style.transform = `translateY(${moveY}px) translateZ(0)`;
-        });
-
-        posterSection.style.setProperty('--scroll-progress', progress);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // --- Entrance Animations using Intersection Observer ---
-    const animatedElements = document.querySelectorAll('.showcase-poster-section [data-animate]');
-    if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver((entries, observerInstance) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-in');
-                    observerInstance.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.2 });
-
-        animatedElements.forEach(el => observer.observe(el));
-    } else {
-        animatedElements.forEach(el => el.classList.add('animate-in'));
-    }
-  });
-  </script>
+        <div class="feature-card">
+            <span class="feature-icon">💬</span>
+            <h3>Hỏi đáp 24/7</h3>
+            <p>Bí bài thì hỏi, cộng đồng vào cứu net ngay lập tức.</p>
+        </div>
+    </section>
+    
+    <% if (latestNews && latestNews.length > 0) { %>
+        <section style="margin-top: 40px;">
+            <h3 class="text-center mb-2">📰 Bảng Tin Mới Nhất</h3>
+            <div class="features-grid">
+                <% latestNews.forEach(news => { %>
+                    <div class="card news-mini-card">
+                        <span class="badge" style="background: #eee; margin-bottom: 10px; display: inline-block;"><%= news.category %></span>
+                        <h4><%= news.title %></h4>
+                        <a href="/news/<%= news._id %>" class="btn-link" style="color: var(--primary); font-weight: bold; margin-top: 10px; display: block;">Xem chi tiết &rarr;</a>
+                    </div>
+                <% }) %>
+            </div>
+        </section>
+    <% } %>
+</div>
 
 <%- include('partials/footer') %>

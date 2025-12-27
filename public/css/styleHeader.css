@@ -1,0 +1,267 @@
+/* public/css/styleHeader.css */
+
+/* --- Header Container --- */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    padding: 15px 0;
+}
+
+/* Hiệu ứng khi cuộn trang (JS sẽ thêm class này) */
+.header.scrolled {
+    padding: 10px 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 95%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.6); /* Nền mặc định nhẹ */
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 8px 25px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+/* Khi cuộn, Navbar sẽ hòa vào Header nền trắng */
+.header.scrolled .navbar {
+    background: transparent;
+    box-shadow: none;
+    border-color: transparent;
+    padding: 0 25px;
+}
+
+/* --- Logo --- */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-main, #333);
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+    transition: 0.3s;
+}
+
+.logo-text {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+}
+
+/* --- Navigation Menu --- */
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-item {
+    position: relative;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    color: #555;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 25px;
+    transition: all 0.2s ease;
+}
+
+.nav-link i.icon {
+    font-size: 1.1rem;
+    color: #888;
+    transition: 0.2s;
+}
+
+/* Hover & Active States */
+.nav-link:hover, .nav-item.active .nav-link {
+    background-color: #fff0f5; /* Hồng phấn nhạt */
+    color: #d63384;
+}
+
+.nav-link:hover i.icon, .nav-item.active .nav-link i.icon {
+    color: #d63384;
+    transform: translateY(-2px);
+}
+
+/* Dropdown Indicator */
+.dropdown-indicator {
+    font-size: 0.8rem;
+    margin-left: 3px;
+    transition: transform 0.3s;
+}
+
+.nav-item:hover .dropdown-indicator {
+    transform: rotate(180deg);
+}
+
+/* --- Dropdown Menu --- */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0; /* Canh phải cho đẹp */
+    background: #fff;
+    min-width: 220px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 2px solid #f0f0f0;
+    padding: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+}
+
+.nav-item:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(15px); /* Khoảng cách từ menu item */
+}
+
+.tool-dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    color: #444;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.tool-dropdown-link:hover {
+    background-color: #f0f8ff; /* Xanh nhạt */
+    color: #007bff;
+    transform: translateX(5px);
+}
+
+.tool-dropdown-link .icon {
+    width: 24px;
+    text-align: center;
+}
+
+/* User Avatar in Menu */
+.user-avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Mobile Toggle Button */
+.mobile-nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+}
+
+.hamburger-icon {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: #333;
+    position: relative;
+    border-radius: 3px;
+    transition: 0.3s;
+}
+
+.hamburger-icon::before, .hamburger-icon::after {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 3px;
+    background: #333;
+    border-radius: 3px;
+    transition: 0.3s;
+}
+
+.hamburger-icon::before { top: -8px; }
+.hamburger-icon::after { bottom: -8px; }
+
+/* Active Hamburger */
+.mobile-nav-toggle.active .hamburger-icon { background: transparent; }
+.mobile-nav-toggle.active .hamburger-icon::before { top: 0; transform: rotate(45deg); }
+.mobile-nav-toggle.active .hamburger-icon::after { bottom: 0; transform: rotate(-45deg); }
+
+/* --- Responsive Mobile --- */
+@media (max-width: 992px) {
+    .mobile-nav-toggle { display: block; }
+    
+    .nav-menu {
+        position: fixed;
+        top: 0; right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: #fff;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 20px;
+        box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+    }
+
+    .nav-menu.active { right: 0; }
+
+    .nav-item { width: 100%; margin-bottom: 5px; }
+    .nav-link { width: 100%; justify-content: flex-start; padding: 12px; }
+    
+    /* Mobile Dropdown */
+    .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: none;
+        padding-left: 20px;
+        display: none; /* Ẩn mặc định trên mobile */
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        background: #f9f9f9;
+        margin-top: 5px;
+    }
+
+    .nav-item.dropdown-active .dropdown-menu {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+    
+    .dropdown-indicator { margin-left: auto; }
+    .nav-item.dropdown-active .dropdown-indicator { transform: rotate(180deg); }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

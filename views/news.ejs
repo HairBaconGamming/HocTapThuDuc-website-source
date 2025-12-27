@@ -1,338 +1,114 @@
-<!-- views/news.ejs -->
-<%- include('partials/header', { title: 'Tin tức Cộng đồng', user: user, activePage: 'news' }) %>
-<link rel="stylesheet" href="/styleNews.css"> 
-<%
-// HELPER FUNCTIONS FOR PLAIN TEXT EXCERPT
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleNewsFeed.css">
 
-// Function to strip Markdown and basic HTML remnants effectively
-function stripMarkdownAndHtml(text = '') {
-  // --- Add checks inside the function ---
-  if (typeof text !== 'string') return ''; // Handle non-string input
-
-  // 1. Remove specific Markdown patterns first
-  try {
-    text = text
-      // Code blocks (```...``` or ~~~...~~~) - handle multiline with /s flag
-      .replace(/```[\s\S]*?```/gs, '') // Check browser support for /s flag if old env
-      .replace(/~~~[\s\S]*?~~~/gs, '')
-      // Inline code (`...`)
-      .replace(/`([^`]+)`/g, '$1')
-      // Images (![alt](url))
-      .replace(/!\[.*?\]\(.*?\)/g, '')
-      // Links ([text](url)) - keep only the text part
-      .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
-      // Headings (# ...), Horizontal Rules (---, ***, ___), Blockquotes (> ...)
-      .replace(/^#{1,6}\s+/gm, '')
-      .replace(/^(?:-{3,}|\*{3,}|_{3,})\s*$/gm, '')
-      .replace(/^>\s+/gm, '')
-      // Bold/Italic (* or _) - Handle nested cases simply
-      .replace(/(\*\*|__)(.*?)\1/g, '$2')
-      .replace(/(\*|_)(.*?)\1/g, '$2')
-      // Strikethrough (~~...~~)
-      .replace(/~{2}(.*?)\~{2}/g, '$1')
-      // Lists (*, -, +, 1.) - remove list markers
-      .replace(/^[\*\-\+]\s+/gm, '')
-      .replace(/^\d+\.\s+/gm, '');
-
-    // 2. Remove remaining HTML tags
-    text = text.replace(/<[^>]*>/g, '');
-
-    // 3. Decode HTML entities
-    text = text.replace(/ /g, ' ')
-             .replace(/&/g, '&')
-             .replace(/</g, '<')
-             .replace(/>/g, '>')
-             .replace(/"/g, '"')
-             .replace(/'/g, "'"); // <-- POTENTIAL ISSUE HERE? Needs semicolon
-
-   // 4. Normalize whitespace
-   text = text.replace(/\s+/g, ' ').trim();
-
-  } catch (error) {
-      console.error("Error stripping markdown/html:", error);
-      return (typeof text === 'string' ? text.substring(0, 200) : ''); // Fallback
-  }
-
-  return text;
-}
-
-// Function to get a plain text excerpt
-function getPlainTextExcerpt(content = '', maxLength = 180) {
-  // --- Add check inside ---
-  if (typeof content !== 'string') content = '';
-
-  const plainText = stripMarkdownAndHtml(content);
-  if (plainText.length <= maxLength) {
-    return plainText;
-  } else {
-    let truncated = plainText.substring(0, maxLength);
-    let lastSpace = truncated.lastIndexOf(' ');
-    // Ensure lastSpace check is valid
-    if (lastSpace > Math.max(0, maxLength - 50)) {
-        truncated = truncated.substring(0, lastSpace);
-    }
-    return truncated + '...';
-  }
-}
-  
-%>
-
-<section class="news-page-section">
-
-    <!-- Background Elements -->
-    <div class="news-background">
-        <div class="bg-gradient-overlay"></div>
-        <div class="bg-lines"></div>
+<div class="container" style="max-width: 1200px; padding: 40px 20px;">
+    
+    <div style="text-align: center; margin-bottom: 50px;" data-animate="fade-down">
+        <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 10px;">📰 Bản Tin HTTD</h1>
+        <p style="color: #666; max-width: 600px; margin: 0 auto;">
+            Cập nhật những thông tin nóng hổi, sự kiện và bí kíp học tập mới nhất.
+        </p>
+        
+        <% if(user && user.isPro) { %>
+            <div style="margin-top: 30px;">
+                <a href="/news/post" class="btn btn-primary">
+                    <i class="fas fa-pen-nib"></i> Viết bài mới
+                </a>
+            </div>
+        <% } %>
     </div>
 
-    <div class="container news-page-container">
-        <!-- Page Header -->
-        <div class="news-page-header" data-animate="header-fade-in">
-            <h1 class="news-main-title">Tin Tức Cộng Đồng</h1>
-            <p class="news-page-subtitle">Cập nhật thông tin mới nhất về học tập, tuyển sinh và các sự kiện.</p>
-        </div>
+    <div class="news-grid">
+        <% if(newsList && newsList.length > 0) { %>
+            <% newsList.forEach((news, idx) => { %>
+                <article class="news-card" data-animate="fade-up" style="animation-delay: <%= idx * 0.1 %>s">
+                    
+                    <div class="news-thumb-wrapper">
+                        <img src="<%= news.image || 'https://media.istockphoto.com/id/1197831888/vector/male-hand-holding-megaphone-with-breaking-news-speech-bubble-loudspeaker-banner-for-business.jpg?s=612x612&w=0&k=20&c=4CvdND_C8H3AxDMlEAZ8j9oagSvlmMcNHlrVoqoc9KQ=' %>" 
+                             class="news-thumb" 
+                             alt="Thumbnail">
+                        <span class="news-cat-badge"><%= news.category || 'Tin tức' %></span>
+                    </div>
 
-        <!-- Filter Bar - Redesigned -->
-        <form method="GET" action="/news" class="news-filter-bar" data-animate="filter-slide-in">
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label for="newsSubjectFilter"><i class="fas fa-book"></i></label>
-                    <select name="subject" id="newsSubjectFilter" class="filter-select-styled">
-                        <option value="">Theo Môn Học</option>
-                        <% if (typeof subjects !== 'undefined' && subjects.length > 0) { %>
-                            <% subjects.forEach(function(subj) { %>
-                                <option value="<%= subj._id %>" <%= (typeof currentSubject !== 'undefined' && currentSubject === subj._id.toString()) ? 'selected' : '' %>><%= subj.name %></option>
-                            <% }); %>
-                        <% } %>
-                    </select>
-                </div>
-                <div class="filter-group">
-                     <label for="newsCategoryFilter"><i class="fas fa-tags"></i></label>
-                     <select name="category" id="newsCategoryFilter" class="filter-select-styled">
-                         <option value="">Theo Thể Loại</option>
-                         <option value="Học tập" <%= (typeof currentCategory !== 'undefined' && currentCategory === 'Học tập') ? 'selected' : '' %>>Học tập</option>
-                         <option value="Tuyển sinh" <%= (typeof currentCategory !== 'undefined' && currentCategory === 'Tuyển sinh') ? 'selected' : '' %>>Tuyển sinh</option>
-                         <option value="Thông báo" <%= (typeof currentCategory !== 'undefined' && currentCategory === 'Thông báo') ? 'selected' : '' %>>Thông báo</option>
-                         <option value="Tài khoản PRO" <%= (typeof currentCategory !== 'undefined' && currentCategory === 'Tài khoản PRO') ? 'selected' : '' %>>Tài khoản PRO</option>
-                     </select>
-                 </div>
-                 <div class="filter-group">
-                      <label for="newsSortFilter"><i class="fas fa-sort-amount-down"></i></label>
-                      <select name="sort" id="newsSortFilter" class="filter-select-styled">
-                          <option value="desc" <%= (typeof currentSort !== 'undefined' && currentSort === 'desc') ? 'selected' : '' %>>Mới nhất</option>
-                          <option value="asc" <%= (typeof currentSort !== 'undefined' && currentSort === 'asc') ? 'selected' : '' %>>Cũ nhất</option>
-                      </select>
-                  </div>
+                    <div class="news-content">
+                        <div class="news-date">
+                            <i class="far fa-clock"></i> 
+                            <%= new Date(news.createdAt).toLocaleDateString('vi-VN') %>
+                        </div>
+                        
+                        <a href="/news/<%= news._id %>" style="text-decoration: none;">
+                            <h2 class="news-title"><%= news.title %></h2>
+                        </a>
+
+                        <p class="news-excerpt">
+                            <%= news.content.replace(/[#*`]/g, '').substring(0, 150) %>...
+                        </p>
+
+                        <div class="news-footer">
+                            <div class="author-info">
+                                <img src="<%= news.author && news.author.avatar ? news.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="author-avatar">
+                                <span><%= news.author ? news.author.username : 'Admin' %></span>
+                            </div>
+                            <a href="/news/<%= news._id %>" class="read-more-link">Đọc tiếp &rarr;</a>
+                        </div>
+                    </div>
+
+                </article>
+            <% }) %>
+        <% } else { %>
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
+                <i class="far fa-newspaper" style="font-size: 4rem; margin-bottom: 20px;"></i>
+                <h3>Chưa có tin tức nào.</h3>
+                <p>Hãy trở thành người đầu tiên viết bài!</p>
             </div>
-             <div class="filter-section search-section">
-                  <div class="filter-group search-group-styled">
-                      <input type="text" name="q" class="filter-search-styled" placeholder="Tìm kiếm tin tức..." value="<%= typeof currentQuery !== 'undefined' ? currentQuery : '' %>">
-                      <button type="submit" class="search-submit-btn" aria-label="Tìm kiếm"><i class="fas fa-search"></i></button>
-                  </div>
-                  <button type="submit" class="btn btn-secondary filter-apply-btn-v2 loading-link">Lọc</button>
-            </div>
-        </form>
+        <% } %>
+    </div>
 
-        <!-- News Listing - Masonry/Grid Layout -->
-        <div class="news-listing-grid" data-animate-children="news-item-stagger">
-            <% if (typeof newsItems !== 'undefined' && newsItems.length > 0) { %>
-                <% newsItems.forEach((item, index) => { %>
-                  <article class="news-article-card" data-animate="news-item-stagger" style="--stagger-index: <%= index %>;">
-                      <a href="/news/<%= item._id %>" class="card-link-wrapper loading-link">
-                          <div class="card-content-area">
-                              <header class="card-article-header">
-                                   <div class="card-meta-info">
-                                      <%# Category Badge %>
-                                      <% if(item.category) { %>
-                                          <% if(item.category === "Tài khoản PRO") { %>
-                                              <span class="news-badge pro-badge-news"><i class="fas fa-crown"></i> PRO</span>
-                                          <% } else { %>
-                                              <%# Generate class name from category %>
-                                              <%# Check if item.category exists and is a string before calling methods %>
-                                              <% const categoryClass = typeof item.category === 'string' ? item.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : 'unknown'; %>
-                                              <span class="news-badge category-badge-news news-cat-<%= categoryClass %>"><%= item.category %></span>
-                                          <% } %>
-                                      <% } %>
-                                      <%# Author %>
-                                      <% if (item.postedBy && item.postedBy.username) { %>
-                                          <span class="news-post-author"><i class="fas fa-user"></i> <%= item.postedBy.username %></span>
-                                      <% } %>
-                                      <%# Date %>
-                                      <% if (item.createdAt && typeof item.createdAt.toLocaleDateString === 'function') { %> <%# Check if it's a date object %>
-                                           <span class="news-post-date"><i class="far fa-clock"></i> <%= item.createdAt.toLocaleDateString('vi-VN') %></span>
-                                      <% } else if (item.createdAt) { %>
-                                           <%# Attempt to parse if it's a string, otherwise show placeholder %>
-                                           <span class="news-post-date"><i class="far fa-clock"></i> <%= new Date(item.createdAt).toLocaleDateString('vi-VN') || 'N/A' %></span>
-                                      <% } %>
-                                   </div>
-                                   <%# Title %>
-                                  <h3 class="news-article-title"><%= item.title || 'Tiêu đề không có sẵn' %></h3>
-                              </header>
-                              <div class="news-article-excerpt">
-                                  <% const excerptLength = 180; %>
-                                  <% if(item.category === "Tài khoản PRO") { %>
-                                      <% if(user && user.isPro) { %>
-                                          <p><%= getPlainTextExcerpt(item.content, excerptLength) %></p>
-                                      <% } else { %>
-                                          <p class="pro-locked-excerpt">
-                                              <i class="fas fa-lock"></i> Nội dung này dành cho thành viên <span class="pro-text-inline">PRO</span>.
-                                              <span class="unlock-prompt">Nâng cấp để xem.</span>
-                                          </p>
-                                      <% } %>
-                                  <% } else { %>
-                                       <p><%= getPlainTextExcerpt(item.content, excerptLength) %></p>
-                                  <% } %>
-                              </div>
-                          </div>
-                          <div class="card-read-more-indicator">
-                              <span>Xem Thêm</span>
-                              <i class="fas fa-arrow-right"></i>
-                          </div>
-                      </a>
-                  </article>
-              <% }) %>
-            <% } else { %>
-                <%# No News Found Message %>
-                <div class="no-news-found">
-                     <i class="far fa-newspaper"></i>
-                     <p>Không tìm thấy tin tức nào phù hợp với bộ lọc hiện tại.</p>
-                     <% if ((typeof currentSubject !== 'undefined' && currentSubject) || (typeof currentCategory !== 'undefined' && currentCategory) || (typeof currentQuery !== 'undefined' && currentQuery)) { %>
-                        <a href="/news" class="btn btn-primary loading-link">Hiển thị tất cả tin tức</a>
-                     <% } %>
-                </div>
-            <% } %>
-        </div>
+</div>
 
-    </div> <!-- End .news-page-container -->
-</section>
-
-<%- include('partials/footer') %>
-
-<!-- Page Specific JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-<%# Remove marked include unless you *really* need client-side rendering %>
-<!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -->
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GSAP & Config ---
-    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
-    gsap.registerPlugin(ScrollTrigger);
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // --- Initial Page Animations ---
-    if (!prefersReducedMotion) {
-        const tl = gsap.timeline({delay: 0.1}); // Master timeline for entry
-
-        // Animate Header
-        tl.from('.news-page-header', {
-            duration: 0.8, // Slightly faster
-            y: -30,
-            autoAlpha: 0,
-            ease: 'power2.out',
-        });
-        // Stagger Title & Subtitle
-        tl.from('.news-page-header > *', {
-             duration: 0.6,
-             y: 15,
-             autoAlpha: 0,
-             ease: 'power1.out',
-             stagger: 0.1,
-        }, "-=0.5"); // Overlap slightly
-
-        // Animate Filter Bar Wrapper
-        tl.from('.news-filter-bar', {
-            duration: 0.7,
-            y: 30,
-            autoAlpha: 0,
-            ease: 'power2.out',
-        }, "-=0.4"); // Overlap more
-        // Stagger Filter Sections inside
-         tl.from('.news-filter-bar .filter-section', {
-             duration: 0.5,
-             y: 15,
-             autoAlpha: 0,
-             ease: 'power1.out',
-             stagger: 0.1,
-         }, "-=0.4"); // Overlap
-
-        // --- Stagger Animation for News Cards ---
-        // Select only cards within the main grid
-        const newsCards = gsap.utils.toArray('.news-listing-grid .news-article-card[data-animate="news-item-stagger"]');
-        if (newsCards.length > 0) {
-            gsap.from(newsCards, {
-                duration: 0.8,
-                autoAlpha: 0,
-                y: 70,
-                scale: 0.95,
-                rotationX: -10, // Slight tilt up
-                transformOrigin: 'top center',
-                ease: "power3.out",
-                stagger: {
-                    amount: Math.min(0.8, newsCards.length * 0.08),
-                    from: "start",
-                    // grid: "auto", // Enable if your grid is always uniform
-                },
-                // Trigger this animation separately, possibly slightly later
-                // or when the grid scrolls into view
-                 scrollTrigger: {
-                     trigger: ".news-listing-grid",
-                     start: "top 88%",
-                     // markers: true, // DEBUG
-                     toggleActions: "play none none none",
-                     once: true
-                 },
-                 // Add a small delay relative to the timeline if desired
-                 // delay: 0.2 // Add to the main timeline if not using ScrollTrigger
-            });
-        } else {
-             console.warn("GSAP: No news cards found for stagger animation.");
-        }
-
-    } // End !prefersReducedMotion
-
-
-    // --- Optional: Parallax Background Lines ---
-    if (!prefersReducedMotion) {
-        gsap.to(".bg-lines", {
-            backgroundPosition: "0% 200%",
-            ease: "none",
-            scrollTrigger: {
-                trigger: ".news-page-section", // Trigger based on the whole section
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 3 // Slower, more subtle scrub
+    document.addEventListener("DOMContentLoaded", () => {
+        
+        // Kiểm tra xem GSAP có hoạt động không
+        if (typeof gsap !== 'undefined') {
+            
+            // 1. Header & Nút "Viết bài mới"
+            const header = document.querySelector('[data-animate="fade-down"]');
+            if(header) {
+                gsap.fromTo(header, 
+                    { y: -30, opacity: 0 }, 
+                    { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out', clearProps: 'all' }
+                );
             }
-        });
-    }
 
-    // --- Existing Loading Link Script ---
-     document.querySelectorAll(".loading-link").forEach(anchor => {
-         anchor.addEventListener("click", function(e) {
-             const overlay = document.getElementById("loading-overlay");
-             // Check if overlay exists and isn't already active, prevent default on # links
-             if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
-                  if (this.href !== window.location.href + '#' && this.href !== window.location.href) { // Avoid on same page hash links or reloads
-                       overlay.classList.add("active");
-                  }
-             } else if (this.href.endsWith('#')) {
-                  // Optionally prevent default for links that are just '#'
-                  // e.preventDefault();
-             }
-           });
-     });
+            // 2. Danh sách tin tức (News Cards)
+            const cards = document.querySelectorAll('.news-card');
+            if(cards.length > 0) {
+                gsap.fromTo(cards, 
+                    { y: 50, opacity: 0 }, 
+                    { 
+                        y: 0, 
+                        opacity: 1, 
+                        duration: 0.6, 
+                        stagger: 0.1, // Hiệu ứng xuất hiện lần lượt
+                        ease: 'power2.out', 
+                        clearProps: 'all' // Quan trọng: Xóa style inline sau khi xong để hover hoạt động tốt
+                    }
+                );
+            }
 
-    // --- Filter Form Loading State ---
-      const filterForm = document.querySelector(".news-filter-bar");
-      if (filterForm) {
-          filterForm.addEventListener('submit', () => {
-              const overlay = document.getElementById("loading-overlay");
-              if (overlay && !overlay.classList.contains('active')) {
-                  overlay.classList.add("active");
-              }
-          });
-      }
-
-}); // End DOMContentLoaded
+        } else {
+            // FALLBACK: Nếu GSAP lỗi, ép hiển thị tất cả ngay lập tức
+            console.warn("GSAP not detected. Forcing visibility.");
+            document.querySelectorAll('[data-animate], .news-card').forEach(el => {
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+                el.style.visibility = 'visible';
+            });
+        }
+    });
 </script>
+
+<%- include('partials/footer') %>

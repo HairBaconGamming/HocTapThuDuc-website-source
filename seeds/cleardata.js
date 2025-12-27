@@ -1,41 +1,50 @@
 const mongoose = require('mongoose');
-const User = require('../models/User');
-const Achievement = require('../models/Achievement');
-const BanEntry = require('../models/BanEntry');
-const Lesson = require('../models/Lesson');
-const LessonCompletion = require('../models/LessonCompletion');
-const News = require('../models/News');
-const ProImage = require('../models/ProImage');
+require('dotenv').config(); // Load biến môi trường từ file .env
+
+// Import các Models
 const Subject = require('../models/Subject');
-const VisitStats = require('../models/VisitStats');
+const Course = require('../models/Course');
+const Unit = require('../models/Unit');
+const Lesson = require('../models/Lesson');
 
-const MONGODB_URI = process.env.MONGO_URI; // Thay đổi URI phù hợp
+const clearDatabase = async () => {
+    try {
+        console.log('⏳ Đang kết nối tới MongoDB...');
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('🔌 Kết nối thành công!');
 
-async function clearDatabase() {
-  await Achievement.deleteMany({});
-  await BanEntry.deleteMany({});
-  await Lesson.deleteMany({});
-  await LessonCompletion.deleteMany({});
-  await News.deleteMany({});
-  await ProImage.deleteMany({});
-  await Subject.deleteMany({});
-  await User.deleteMany({});
-  await VisitStats.deleteMany({});
-  console.log('Đã xóa toàn bộ dữ liệu.');
-}
+        console.log('====================================');
+        console.log('🗑️  ĐANG XÓA TOÀN BỘ DỮ LIỆU HỌC TẬP...');
+        console.log('====================================');
 
-async function seedDatabase() {
-  await User.create({ username: 'admin', password: '123456' });
-  // Thêm dữ liệu seed khác nếu cần
-  console.log('Đã seed dữ liệu mẫu.');
-}
+        // 1. Xóa Bài học (Cấp thấp nhất)
+        const deletedLessons = await Lesson.deleteMany({});
+        console.log(`✅ Đã xóa ${deletedLessons.deletedCount} bài học (Lessons).`);
 
-mongoose.connect(MONGODB_URI)
-  .then(async () => {
-    await clearDatabase();
-    mongoose.disconnect();
-  })
-  .catch(err => {
-    console.error(err);
-    mongoose.disconnect();
-  });
+        // 2. Xóa Chương
+        const deletedUnits = await Unit.deleteMany({});
+        console.log(`✅ Đã xóa ${deletedUnits.deletedCount} chương (Units).`);
+
+        // 3. Xóa Khóa học
+        const deletedCourses = await Course.deleteMany({});
+        console.log(`✅ Đã xóa ${deletedCourses.deletedCount} khóa học (Courses).`);
+
+        // 4. Xóa Môn học (Cấp cao nhất)
+        const deletedSubjects = await Subject.deleteMany({});
+        console.log(`✅ Đã xóa ${deletedSubjects.deletedCount} môn học (Subjects).`);
+
+        console.log('====================================');
+        console.log('✨ DATABASE ĐÃ ĐƯỢC DỌN SẠCH SẼ! ✨');
+        console.log('====================================');
+
+    } catch (err) {
+        console.error('❌ Lỗi khi dọn dẹp database:', err);
+    } finally {
+        await mongoose.disconnect();
+        console.log('👋 Đã ngắt kết nối.');
+        process.exit();
+    }
+};
+
+// Chạy hàm
+clearDatabase();

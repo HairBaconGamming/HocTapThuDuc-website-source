@@ -1,10 +1,32 @@
 // routes/news.js
 const express = require("express");
 const marked = require("marked");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const router = express.Router();
 const News = require("../models/News");
 const Subject = require("../models/Subject");
 const { isLoggedIn, isPro } = require("../middlewares/auth");
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "../public/uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer to store files on disk under public/uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Basic sanitization for filename
+    const safeName = Date.now() + "-" + file.originalname.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
+    cb(null, safeName);
+  }
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.use(async (req, res, next) => {
   const errorMessages = req.flash('error');
@@ -38,16 +60,28 @@ router.get("/", async (req, res) => {
 
     const newsItems = await News.find(filter)
       .populate("subject", "name")
-      .populate("postedBy", "username") // Populate posting user's username
+      .populate("postedBy", "username avatar _id") // Include avatar for poster
       .sort({ createdAt: sortOrder })
       .limit(10);
 
     // For filter dropdown, get subjects
     const subjects = await Subject.find({});
 
+    // Map newsItems into the shape expected by the template (`newsList`)
+    const newsList = newsItems.map(n => ({
+      _id: n._id,
+      title: n.title,
+      content: n.content,
+      category: n.category,
+      createdAt: n.createdAt,
+      image: n.image || '',
+      author: n.postedBy || null
+    }));
+
     res.render("news", {
       user: req.user,
       newsItems,
+      newsList,
       subjects,
       currentSubject: subject || "",
       currentCategory: category || "",
@@ -66,6 +100,8 @@ router.get("/post", isLoggedIn, isPro, (req, res) => {
   res.render("newsPost", {
     user: req.user,
     editMode: false,
+    mode: 'create',
+    newsItem: null
   });
 });
 
@@ -85,6 +121,7 @@ router.get("/:id/edit", isLoggedIn, isPro, async (req, res) => {
     res.render("newsPost", {
       user: req.user,
       editMode: true,
+      mode: 'edit',
       newsItem,
     });
   } catch (err) {
@@ -95,15 +132,36 @@ router.get("/:id/edit", isLoggedIn, isPro, async (req, res) => {
 });
 
 // POST /news/post - Handle posting news (only for PRO users)
-router.post("/post", isLoggedIn, isPro, async (req, res) => {
+router.post("/post", isLoggedIn, isPro, upload.single("image"), async (req, res) => {
   try {
-    const { title, content, category } = req.body;
-    // Save the ID of the user posting the news
+    const { title, content, category, imageUrl } = req.body;
+
+    // Determine final image: prefer uploaded file, fall back to provided URL
+    let finalImage = imageUrl || "";
+
+    if (req.file) {
+      // Backend guard: do not accept uploaded files from non-PRO users
+      if (!req.user || !req.user.isPro) {
+        // remove the uploaded file from disk if present
+        try {
+          if (req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        } catch (unlinkErr) {
+          console.error("Error removing unauthorized upload:", unlinkErr);
+        }
+        if (req.flash) req.flash("error", "Chỉ tài khoản PRO mới được upload ảnh!");
+        return res.status(403).redirect("/news/post");
+      }
+
+      // If allowed, set the finalImage to the public URL path
+      finalImage = "/uploads/" + req.file.filename;
+    }
+
     const newNews = new News({
       title,
       content,
       category,
       postedBy: req.user._id,
+      image: finalImage,
     });
     await newNews.save();
     if (req.flash) req.flash("success", "Tin tức đã được đăng thành công!");
@@ -116,9 +174,9 @@ router.post("/post", isLoggedIn, isPro, async (req, res) => {
 });
 
 // POST /news/:id/edit - Handle updating an existing news post
-router.post("/:id/edit", isLoggedIn, isPro, async (req, res) => {
+router.post("/:id/edit", isLoggedIn, isPro, upload.single("image"), async (req, res) => {
   try {
-    const { title, content, category } = req.body;
+    const { title, content, category, imageUrl } = req.body;
     const newsItem = await News.findById(req.params.id);
     if (!newsItem) {
       req.flash("error", "Tin tức không tồn tại.");
@@ -134,10 +192,29 @@ router.post("/:id/edit", isLoggedIn, isPro, async (req, res) => {
       req.flash("error", "Tính năng này chỉ dành cho tài khoản PRO.");
       return res.redirect("/news");
     }
+
+    // Determine final image
+    let finalImage = imageUrl || newsItem.image || '';
+
+    if (req.file) {
+      if (!req.user || !req.user.isPro) {
+        // remove uploaded file
+        try {
+          if (req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        } catch (unlinkErr) {
+          console.error("Error removing unauthorized upload:", unlinkErr);
+        }
+        if (req.flash) req.flash("error", "Chỉ tài khoản PRO mới được upload ảnh!");
+        return res.redirect(`/news/${req.params.id}/edit`);
+      }
+      finalImage = "/uploads/" + req.file.filename;
+    }
+
     // Cập nhật thông tin tin tức
     newsItem.title = title;
     newsItem.content = content;
     newsItem.category = category;
+    newsItem.image = finalImage;
     await newsItem.save();
     req.flash("success", "Tin tức đã được cập nhật thành công.");
     res.redirect(`/news/${req.params.id}`);
@@ -182,7 +259,7 @@ router.get("/:id", async (req, res) => {
   try {
     const newsItem = await News.findById(req.params.id)
       .populate("subject", "name")
-      .populate("postedBy", "username");
+      .populate("postedBy", "username avatar _id");
     if (!newsItem) return res.send("Tin tức không tồn tại.");
 
     // Nếu tin thuộc "Tài khoản PRO", chỉ hiển thị nếu user là PRO

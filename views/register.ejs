@@ -1,341 +1,51 @@
-<!-- views/register.ejs -->
-<%- include('partials/header', { title: 'Đăng ký Tài khoản Mới', user: user, activePage: "register" }) %>
-<link rel="stylesheet" href="/styleRegister.css"> 
-<section class="register-page-section"> <%# Unique class %>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleLogin.css">
 
-    <!-- Layer 1: Animated Background -->
-    <div class="register-background">
-        <div class="bg-shape shape-reg-1"></div>
-        <div class="bg-shape shape-reg-2"></div>
-        <div class="bg-shape shape-reg-3"></div>
-        <div class="grid-pattern-light"></div>
-    </div>
+<section class="login-page-section">
+    <div class="login-form-container" style="max-width: 500px;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">✨</div>
+        <h2 class="form-title">Nhập hộ khẩu!</h2>
+        <p class="form-subtitle">Trở thành cư dân ưu tú của HTTD ngay hôm nay.</p>
 
-    <!-- Layer 2: Register Form Container -->
-    <div class="register-form-container-wrapper"> <%# Wrapper for perspective/tilt %>
-        <div class="register-form-container" id="registerContainer">
-            <div class="form-border-glow-register"></div>
-            <div class="form-content">
-                <div class="form-header">
-                    <h2 class="form-title" data-animate="text-reveal-chars">Tạo tài khoản</h2>
-                    <p class="form-subtitle" data-animate="fade-up-delay">Tham gia cộng đồng HỌC TẬP THỦ ĐỨC!</p>
-                     <%# Progress Indicator (Optional) %>
-                    <!-- <div class="form-progress">
-                        <div class="progress-step active" data-step="1">1. Tài khoản</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step" data-step="2">2. Thông tin</div>
-                    </div> -->
-                </div>
-
-                <form action="/register" method="POST" class="auth-form" id="registerForm">
-
-                    <%# --- Step 1: Account Credentials (Example if using steps) --- %>
-                    <div class="form-step active" data-step="1">
-                        <!-- Username Input -->
-                        <div class="input-field-group">
-                            <input type="text" name="username" id="username" class="form-input-v2" placeholder=" " required
-                                   pattern="^(?=.{8,})[A-Za-z0-9]+$"
-                                   title="Ít nhất 8 ký tự, chỉ chữ cái (a-z, A-Z) và số (0-9), không dấu, không khoảng trắng."
-                                   autocomplete="username">
-                            <label for="username" class="form-label-v2">Tên đăng nhập</label>
-                            <span class="input-focus-line"></span>
-                            <i class="fas fa-user input-icon"></i>
-                            <div class="validation-hint">Ít nhất 8 ký tự (chữ, số).</div>
-                        </div>
-
-                        <!-- Password Input -->
-                        <div class="input-field-group">
-                            <input type="password" name="password" id="password" class="form-input-v2" placeholder=" " required
-                                   pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                                   title="Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số."
-                                   autocomplete="new-password">
-                            <label for="password" class="form-label-v2">Mật khẩu</label>
-                            <span class="input-focus-line"></span>
-                             <i class="fas fa-lock input-icon"></i>
-                             <button type="button" class="password-toggle-btn" aria-label="Hiển thị mật khẩu">
-                                 <i class="fas fa-eye"></i>
-                             </button>
-                             <div class="validation-hint">Ít nhất 8 ký tự (hoa, thường, số).</div>
-                        </div>
-                         <%# Optional: Add Confirm Password Field %>
-                         <!-- <div class="input-field-group"> ... Confirm Password ... </div> -->
-
-                         <%# Button to proceed to next step (if using steps) %>
-                         <!-- <button type="button" class="btn-next-step" data-next-step="2">Tiếp theo <i class="fas fa-arrow-right"></i></button> -->
-                    </div>
-
-                    <%# --- Step 2: Personal Information (Example if using steps) --- %>
-                    <%# <div class="form-step" data-step="2" style="display: none;"> %>
-                        <!-- Lớp Input -->
-                        <div class="input-field-group">
-                            <input type="text" name="class" id="class" class="form-input-v2" placeholder=" " required autocomplete="off">
-                            <label for="class" class="form-label-v2">Lớp (ví dụ: 8A3, 9A1)</label>
-                            <span class="input-focus-line"></span>
-                            <i class="fas fa-users input-icon"></i>
-                        </div>
-
-<!-- Trường Select (ĐÃ CẬP NHẬT) -->
-                    <div class="select-group-styled" id="school-group">
-                        <i class="fas fa-school select-icon"></i>
-                        <select name="school" id="school" class="form-select-v2" required>
-                            <option value="" disabled selected>-- Chọn trường tại TP. Thủ Đức --</option>
-                            
-                            <optgroup label="TRƯỜNG THPT CÔNG LẬP (TP. THỦ ĐỨC)">
-                                <option value="THPT Thủ Đức">THPT Thủ Đức</option>
-                                <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
-                                <option value="THPT Tam Phú">THPT Tam Phú</option>
-                                <option value="THPT Bình Chiểu">THPT Bình Chiểu</option>
-                                <option value="THPT Linh Trung">THPT Linh Trung</option>
-                                <option value="THPT Đào Sơn Tây">THPT Đào Sơn Tây</option>
-                                <option value="THPT Dương Văn Thì">THPT Dương Văn Thì</option>
-                                <option value="THPT Nguyễn Huệ">THPT Nguyễn Huệ</option>
-                                <option value="THPT Nguyễn Văn Tăng">THPT Nguyễn Văn Tăng</option>
-                                <option value="THPT Long Trường">THPT Long Trường</option>
-                                <option value="THPT Thủ Thiêm">THPT Thủ Thiêm</option>
-                                <option value="THPT Giồng Ông Tố">THPT Giồng Ông Tố</option>
-                                <option value="THPT Phước Long">THPT Phước Long</option>
-                                <option value="THPT Hiệp Bình">THPT Hiệp Bình</option>
-                            </optgroup>
-                            
-                            <optgroup label="TRƯỜNG THPT NGOÀI CÔNG LẬP (TP. THỦ ĐỨC)">
-                                <option value="THCS - THPT Hoa Sen">THCS - THPT Hoa Sen</option>
-                                <option value="TH - THCS - THPT Ngô Thời Nhiệm">TH - THCS - THPT Ngô Thời Nhiệm</option>
-                                <option value="THCS và THPT Việt Thanh">THCS và THPT Việt Thanh</option>
-                                <option value="THPT Bách Việt">THPT Bách Việt</option>
-                                <option value="THPT Vạn Hạnh">THPT Vạn Hạnh</option>
-                                <option value="TH-THCS-THPT Vinschool">TH-THCS-THPT Vinschool</option>
-                                <option value="TH-THCS-THPT Tuệ Đức">TH-THCS-THPT Tuệ Đức</option>
-                            </optgroup>
-                        </select>
-                        <div class="select-arrow">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <label for="school" class="form-label-select-v2">Trường THPT</label>
-                    </div>
-
-                        <!-- Cloudflare Turnstile -->
-                        <div class="form-group turnstile-group">
-                            <div class="cf-turnstile" data-sitekey="0x4AAAAAABBLlduN6HavujOQ" data-theme="light"></div> <%# Use light theme? data-action="register" %>
-                        </div>
-
-                        <!-- Final Submit Button -->
-                         <button type="submit" class="btn-submit-v2 register-submit-btn" id="registerSubmitBtn">
-                            <span class="btn-text">Hoàn tất Đăng ký</span>
-                            <span class="btn-liquid-effect register-liquid"></span>
-                            <span class="btn-particles register-particles"></span>
-                        </button>
-
-                        <%# Button to go back (if using steps) %>
-                        <!-- <button type="button" class="btn-prev-step" data-prev-step="1"><i class="fas fa-arrow-left"></i> Quay lại</button> -->
-                    <%# </div> %> <%# End Step 2 %>
-
-                </form>
-
-                 <%# Link to Login Page %>
-                 <div class="switch-auth-link">
-                     Đã có tài khoản? <a href="/login" class="loading-link">Đăng nhập ngay</a>
-                 </div>
+        <% if (locals.message && message.message) { %>
+            <div style="background: #ffe0e6; color: #d81b60; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem;">
+                <%= message.message %>
             </div>
+        <% } %>
+
+        <form action="/register" method="POST" id="registerForm">
+            <div class="input-field-group">
+                <label class="form-label-v2">Tên đăng nhập (Username)</label>
+                <input type="text" name="username" class="form-input-v2" placeholder="Đặt tên cho ngầu vào..." required>
+                <small style="color: #999; font-size: 0.8rem;">Viết liền không dấu nha</small>
+            </div>
+
+            <div class="input-field-group">
+                <label class="form-label-v2">Mật khẩu</label>
+                <input type="password" name="password" class="form-input-v2" placeholder="Bí mật đừng nói ai nghe..." required>
+            </div>
+
+            <div class="input-field-group">
+                <label class="form-label-v2">Trường THPT</label>
+                <select name="school" class="form-select-v2">
+                    <option value="" disabled selected>-- Chọn trường của bạn --</option>
+                    <option value="THPT Thủ Đức">THPT Thủ Đức</option>
+                    <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
+                    <option value="THPT Tam Phú">THPT Tam Phú</option>
+                    <option value="Khác">Trường khác...</option>
+                </select>
+            </div>
+
+            <div class="cf-turnstile" data-sitekey="<%= process.env.TURNSTILE_SITE_KEY %>" data-theme="light" style="margin: 20px 0;"></div>
+
+            <button type="submit" class="btn-submit-v2" style="background: var(--accent); color: #333;">✨ Đăng ký ngay</button>
+        </form>
+
+        <div class="switch-auth-link">
+            Đã là cư dân rồi? <a href="/login">Về nhà (Đăng nhập)</a>
         </div>
     </div>
-
 </section>
 
-<%# Footer usually excluded %>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <%- include('partials/footer') %>
-
-<!-- Add page-specific JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://unpkg.com/split-type"></script> <%# If using text reveal %>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script> <%# Turnstile API %>
-<script src="/js/alerts.js"></script> <%# If using flash messages %>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GSAP & Config ---
-    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const registerContainer = document.getElementById('registerContainer');
-    const registerForm = document.getElementById('registerForm');
-    const submitButton = document.getElementById('registerSubmitBtn');
-    const passwordInput = document.getElementById('password');
-    const toggleButton = document.querySelector('.password-toggle-btn');
-    const toggleIcon = toggleButton ? toggleButton.querySelector('i') : null;
-    const turnstileGroup = document.querySelector('.turnstile-group'); // Get reference
-
-    // --- Initial Entrance Animation ---
-    if (!prefersReducedMotion && registerContainer) {
-        gsap.set(registerContainer, { autoAlpha: 0, y: 60, scale: 0.95, rotationX: -10 });
-      
-        const containerTl = gsap.timeline({
-            delay: 0.3,
-            // Add onComplete callback
-            onComplete: () => {
-                // Explicitly make Turnstile visible AFTER container is done
-                if (turnstileGroup) {
-                    gsap.to(turnstileGroup, { autoAlpha: 1, duration: 0.4, delay: 0.1 }); // Fade it in gently
-                }
-                console.log("Container animation complete.");
-            }
-        });
-      
-        containerTl.to(registerContainer, {
-            duration: 1.2,
-            autoAlpha: 1,
-            y: 0,
-            scale: 1,
-            rotationX: 0,
-            ease: 'expo.out',
-        });
-
-        // Text reveal/fade for header
-        if (typeof SplitType !== 'undefined') {
-            gsap.utils.toArray('.register-form-container [data-animate="text-reveal-chars"]').forEach(el => { /* Scope to register container */
-                 const split = new SplitType(el, { types: 'chars' });
-                 gsap.set(el, {autoAlpha: 1});
-                 gsap.from(split.chars, {
-                     duration: 0.8, autoAlpha: 0, scale: 0.5, y: 20, rotationZ: gsap.utils.random(-20, 20, true),
-                     stagger: 0.04, ease: 'back.out(1.7)', delay: 0.6
-                 });
-            });
-        } else {
-             gsap.from('.form-title', {duration: 0.8, autoAlpha: 0, y: 15, delay: 0.6 });
-        }
-        gsap.from('.register-form-container [data-animate="fade-up-delay"]', {duration: 0.8, autoAlpha: 0, y: 20, delay: 0.8 });
-
-        // Stagger form elements (adapt if using multi-step)
-        gsap.from('.input-field-group', {duration: 0.8, autoAlpha: 0, y: 30, stagger: 0.1, delay: 0.9 });
-        gsap.from('.register-submit-btn', {duration: 0.7, autoAlpha: 0, scale: 0.8, delay: 1.3 });
-        gsap.from('.switch-auth-link', {duration: 0.7, autoAlpha: 0, y: 10, delay: 1.4 });
-    } else if (registerContainer) {
-        gsap.set(registerContainer, { autoAlpha: 1 });
-    }
-
-    // --- Input Field Focus/Blur & Placeholder Interaction ---
-    const inputs = document.querySelectorAll('.form-input-v2');
-    inputs.forEach(input => {
-        const group = input.closest('.input-field-group');
-        if(!group) return;
-
-        const checkFilled = () => {
-             if (input.value !== "") {
-                 group.classList.add('filled');
-             } else {
-                 group.classList.remove('filled');
-             }
-        };
-
-        input.addEventListener('focus', () => group.classList.add('focused'));
-        input.addEventListener('blur', () => {
-            group.classList.remove('focused');
-            checkFilled();
-        });
-        checkFilled(); // Initial check for autofill
-    });
-
-    // --- Select Field Interaction (Similar logic for label) ---
-    const selects = document.querySelectorAll('.form-select-v2');
-    selects.forEach(select => {
-         const group = select.closest('.select-group-styled');
-         if(!group) return;
-
-          const checkSelected = () => {
-             // Add 'filled' if a non-placeholder option is selected
-             if (select.value !== "") {
-                 group.classList.add('filled');
-             } else {
-                 group.classList.remove('filled');
-             }
-         };
-
-         select.addEventListener('focus', () => group.classList.add('focused'));
-         select.addEventListener('blur', () => {
-             group.classList.remove('focused');
-             checkSelected();
-         });
-         select.addEventListener('change', checkSelected); // Check on change too
-         checkSelected(); // Initial check
-    });
-
-
-     // --- Password Toggle Visibility ---
-     if (toggleButton && passwordInput && toggleIcon) {
-         toggleButton.addEventListener('click', () => {
-             const isPassword = passwordInput.type === 'password';
-             passwordInput.type = isPassword ? 'text' : 'password';
-             toggleIcon.classList.toggle('fa-eye', !isPassword);
-             toggleIcon.classList.toggle('fa-eye-slash', isPassword);
-             toggleButton.setAttribute('aria-label', isPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu');
-             gsap.fromTo(toggleIcon, { scale: 0.8, rotation: isPassword ? 0: -90 }, { scale: 1, rotation: 0, duration: 0.3, ease: 'back.out(2)' });
-         });
-     }
-
-
-    // --- Submit Button Interaction & Loading State ---
-    if (registerForm && submitButton) {
-        registerForm.addEventListener("submit", (e) => {
-            // Basic HTML5 validity check
-             if (registerForm.checkValidity()) {
-                 // Check Turnstile state (requires callback setup if needed)
-                 // const turnstileResponse = turnstile.getResponse(); // Using Turnstile API
-                 // if (!turnstileResponse) {
-                 //     e.preventDefault(); // Stop submission if Turnstile fails
-                 //     showAlert('Vui lòng xác minh bạn không phải robot.', 'error');
-                 //     return;
-                 // }
-
-                 submitButton.classList.add('submitting');
-                 submitButton.disabled = true;
-                 setTimeout(() => {
-                     document.getElementById("loading-overlay")?.classList.add("active");
-                 }, 200);
-                 // Submission proceeds
-             } else {
-                 e.preventDefault(); // Prevent submission if native validation fails
-                 // Shake animation for invalid fields
-                 const invalidFields = registerForm.querySelectorAll(':invalid');
-                 invalidFields.forEach(field => {
-                      // Ensure we target the group for visual feedback
-                      const fieldGroup = field.closest('.input-field-group') || field.closest('.select-group-styled');
-                      if (fieldGroup) {
-                           gsap.fromTo(fieldGroup,
-                              { x: 0 },
-                              { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' }
-                          );
-                      }
-                 });
-                 showAlert('Vui lòng điền đầy đủ và đúng định dạng các trường.', 'warning');
-             }
-        });
-    }
-
-     // --- Optional: Container Tilt Effect ---
-     const wrapper = document.querySelector('.register-form-container-wrapper');
-     if (wrapper && !prefersReducedMotion && window.innerWidth > 768) { // Disable on smaller screens too
-         const tiltIntensity = 2.5; // Even more subtle
-         wrapper.addEventListener('mousemove', (e) => {
-             const rect = wrapper.getBoundingClientRect();
-             const mouseX = e.clientX; const mouseY = e.clientY;
-             const centerX = window.innerWidth / 2; const centerY = window.innerHeight / 2;
-             const relX = (mouseX - centerX) / centerX; const relY = (mouseY - centerY) / centerY;
-
-             gsap.to(registerContainer, { // Target inner container
-                 duration: 1.8, rotationY: relX * tiltIntensity, rotationX: -relY * tiltIntensity * 0.5,
-                 ease: "power2.out", overwrite: 'auto'
-             });
-         });
-          wrapper.addEventListener('mouseleave', () => {
-              gsap.to(registerContainer, { duration: 1.5, rotationY: 0, rotationX: 0, ease: "elastic.out(1, 0.6)" });
-          });
-     }
-
-      // --- Flash Message ---
-      <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
-         if (typeof showAlert === 'function') {
-             showAlert("<%= message.message %>", "<%= message.type %>", 6000);
-         } else { console.error("showAlert func missing"); }
-       <% } %>
-
-}); // End DOMContentLoaded
-</script>

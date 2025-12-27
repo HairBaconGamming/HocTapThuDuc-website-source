@@ -1,0 +1,94 @@
+/* public/css/styleProImages.css */
+
+.gallery-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: #e3f2fd; /* Xanh dương nhạt */
+    border-radius: var(--radius);
+    border: 2px dashed #90caf9;
+}
+
+/* Khu vực Upload */
+.upload-zone {
+    background: white;
+    border: 3px dashed #ccc;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 40px;
+    transition: 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+
+.upload-zone:hover {
+    border-color: var(--primary);
+    background: #f9f9f9;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+
+/* Lưới ảnh */
+.gallery-grid {
+    display: column; /* Masonry layout simulation via columns */
+    column-count: 3;
+    column-gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .gallery-grid { column-count: 2; }
+}
+@media (max-width: 480px) {
+    .gallery-grid { column-count: 1; }
+}
+
+.img-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px; /* Khoảng cách dọc */
+    box-shadow: var(--shadow-hard);
+    border: 2px solid #eee;
+    break-inside: avoid; /* Tránh bị cắt đôi */
+    transition: 0.3s;
+}
+
+.img-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--secondary);
+}
+
+.img-thumb {
+    width: 100%;
+    display: block;
+    border-bottom: 2px solid #eee;
+}
+
+.img-actions {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+}
+
+.btn-icon {
+    width: 35px; height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-copy { background: #e3f2fd; color: #1565c0; }
+.btn-delete { background: #ffebee; color: #c62828; }
+
+.btn-icon:hover { transform: scale(1.1); }

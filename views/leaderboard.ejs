@@ -1,344 +1,124 @@
-<!-- views/leaderboard.ejs -->
-<%- include('partials/header', { title: 'Bảng Xếp Hạng Vinh Danh', user: user, activePage: 'leaderboard' }) %>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleLeaderboard.css">
 
-<link rel="stylesheet" href="/styleLeaderboard.css"> 
-
-<section class="leaderboard-page-section">
-
-    <!-- Background Elements -->
-    <div class="leaderboard-background">
-        <div class="bg-light-beam beam-1" data-parallax-x="-10"></div>
-        <div class="bg-light-beam beam-2" data-parallax-x="10"></div>
-        <!-- tsparticles canvas will be injected here by JS -->
-        <div id="tsparticles-bg"></div>
+<div class="leaderboard-wrapper">
+    
+    <div class="lb-header" data-animate="fade-down">
+        <h1 class="lb-title">🏆 Đấu Trường Danh Vọng</h1>
+        <p style="color: #666;">Vinh danh những chiến thần chăm chỉ nhất Server</p>
     </div>
 
-    <div class="container leaderboard-container">
-
-        <!-- Page Header -->
-        <div class="leaderboard-header" data-animate="header-fade-scale">
-             <div class="header-icon-trophy"><i class="fas fa-trophy"></i></div>
-             <h1>Bảng Xếp Hạng Vinh Danh</h1>
-             <p>Những người học cần cù, siêng năng nhất cộng đồng <strong>HỌC TẬP THỦ ĐỨC</strong></p>
-        </div>
-
-        <!-- Loading Placeholder -->
-        <div class="leaderboard-loading-placeholder" id="leaderboardLoader">
-             <div class="placeholder-spinner">
-                 <div class="ring-outer"></div>
-                 <div class="ring-middle"></div>
-                 <div class="ring-inner"></div>
-             </div>
-             <p>Đang tải bảng xếp hạng...</p>
-        </div>
-
-
-        <!-- Leaderboard List (Initially hidden via JS/CSS) -->
-        <div class="leaderboard-list" data-animate-children="entry-stagger" style="opacity: 0; visibility: hidden;">
-            <%# Check if leaderboard data exists and has items %>
-            <% if (typeof leaderboard !== 'undefined' && leaderboard && leaderboard.length > 0) { %>
-                <% leaderboard.forEach(function(u, idx) { %>
-                    <%
-                        let rank = idx + 1;
-                        let rankClass = '';
-                        let rankIconHtml = rank; // Default to number as string
-                        if (rank === 1) { rankClass = 'rank-1'; rankIconHtml = '<i class="fas fa-crown"></i>'; }
-                        else if (rank === 2) { rankClass = 'rank-2'; rankIconHtml = '<i class="fas fa-medal"></i>'; }
-                        else if (rank === 3) { rankClass = 'rank-3'; rankIconHtml = '<i class="fas fa-award"></i>'; }
-                        else { rankClass = 'rank-other'; }
-
-                        // Calculate points percentage safely
-                        const userPoints = u.points || 0;
-                        const maxPoints = (leaderboard[0]?.points > 0) ? leaderboard[0].points : (userPoints > 0 ? userPoints : 1);
-                        const pointsPercentage = Math.max(1, Math.min(100, (userPoints / maxPoints) * 100));
-
-                        // Default avatar if none provided
-                        const avatarUrl = u.avatar || 'https://cdn-icons-png.flaticon.com/512/7915/7915522.png';
-                        const userId = u._id || idx; // Use _id if available, otherwise index for ID
-                    %>
-                    <%# Add unique ID to entry for particle targeting %>
-                    <div id="entry-<%= userId %>" class="leaderboard-entry <%= rankClass %>" data-animate="entry-stagger" style="--stagger-index: <%= idx %>;">
-                        <div class="entry-border-highlight"></div> <%# Animated border on hover %>
-                        <div class="entry-rank">
-                             <span class="rank-icon"><%- rankIconHtml %></span> <%# Use unescaped output for HTML icon %>
-                             <% if (rank > 3) { %><span class="rank-number"><%= rank %></span><% } %>
-                             <div class="rank-glow"></div>
-                        </div>
-                        <div class="entry-user">
-                             <img src="<%= avatarUrl %>" alt="Avatar của <%= u.username || 'User' %>" class="user-avatar" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/7915/7915522.png';">
-                             <a href="/profile/<%= u._id %>" class="user-name loading-link" title="Xem hồ sơ <%= u.username || 'User' %>"><%= u.username || 'Anonymous' %></a>
-                             <% if(u.isPro) { %>
-                                <span class="user-pro-indicator" title="Tài khoản PRO"><i class="fas fa-check-circle"></i></span>
-                             <% } %>
-                        </div>
-                        <div class="entry-points-v2"> <%# Use the new class for layout %>
-                            <div class="points-info">
-                                <span class="points-value" data-points="<%= userPoints %>">0</span> <%# Start counter at 0 %>
-                                <span class="points-label">Điểm</span>
-                            </div>
-                            <div class="points-bar-bg">
-                                <%# Set target width via data attribute %>
-                                <div class="points-bar-fill" data-target-width="<%= pointsPercentage %>%" style="width: 1%;"></div> <%# Start bar at 1% visually %>
-                            </div>
-                        </div>
-                        <%# Container for tsparticles will be added by JS inside top rank entries %>
+    <div class="podium-container">
+        
+        <% if(top3[1]) { %>
+            <a href="/profile/view/<%= top3[1]._id %>" class="podium-link rank-2">
+                <div class="podium-item">
+                    <div class="podium-avatar-box">
+                        <img src="<%= top3[1].avatar || '/default.png' %>" class="podium-avatar">
                     </div>
-                <% }); %>
-            <% } else { %>
-                <%# "No ranking" message structure - initially hidden %>
-                 <div class="no-ranking-message" style="opacity: 0; visibility: hidden;">
-                     <i class="fas fa-users-slash"></i>
-                     <p>Chưa có ai trên bảng xếp hạng. Hãy bắt đầu học tập!</p>
-                 </div>
-            <% } %>
-        </div>
+                    <div class="podium-name"><%= top3[1].username %></div>
+                    <div class="podium-points"><%= top3[1].points %> pts</div>
+                    <div class="podium-block">2</div>
+                </div>
+            </a>
+        <% } %>
 
-    </div> <!-- End .leaderboard-container -->
-</section>
+        <% if(top3[0]) { %>
+            <a href="/profile/view/<%= top3[0]._id %>" class="podium-link rank-1">
+                <div class="podium-item">
+                    <div class="podium-avatar-box">
+                        <div class="crown">👑</div>
+                        <img src="<%= top3[0].avatar || '/default.png' %>" class="podium-avatar">
+                    </div>
+                    <div class="podium-name">
+                        <%= top3[0].username %> 
+                        <% if(top3[0].isPro) { %><span class="pro-tag">PRO</span><% } %>
+                    </div>
+                    <div class="podium-points"><%= top3[0].points %> pts</div>
+                    <div class="podium-block">1</div>
+                </div>
+            </a>
+        <% } %>
+
+        <% if(top3[2]) { %>
+            <a href="/profile/view/<%= top3[2]._id %>" class="podium-link rank-3">
+                <div class="podium-item">
+                    <div class="podium-avatar-box">
+                        <img src="<%= top3[2].avatar || '/default.png' %>" class="podium-avatar">
+                    </div>
+                    <div class="podium-name"><%= top3[2].username %></div>
+                    <div class="podium-points"><%= top3[2].points %> pts</div>
+                    <div class="podium-block">3</div>
+                </div>
+            </a>
+        <% } %>
+
+    </div>
+
+    <div class="rank-list">
+        <% restOfList.forEach((u, idx) => { %>
+            <a href="/profile/<%= u._id %>" class="rank-link">
+                <div class="rank-card">
+                    <div class="rank-num">#<%= idx + 4 %></div>
+                    <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar">
+                    <div class="rank-info">
+                        <div class="rank-name">
+                            <%= u.username %>
+                            <% if(u.isPro) { %><span class="pro-tag">PRO</span><% } %>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #888;"><%= u.class || 'Lớp ?' %></div>
+                    </div>
+                    <div class="rank-score"><%= u.points %> <span style="font-size:0.7rem; font-weight:400; color:#aaa;">pts</span></div>
+                </div>
+            </a>
+        <% }) %>
+
+        <% if(restOfList.length === 0 && top3.length === 0) { %>
+            <div style="text-align: center; color: #999; padding: 20px;">
+                <i class="fas fa-ghost"></i> Chưa có dữ liệu xếp hạng.
+            </div>
+        <% } %>
+    </div>
+
+</div>
+
+<% if (user && myRank) { %>
+    <a href="/profile" style="text-decoration: none;"> <div class="sticky-rank-bar">
+            <div class="sticky-left">
+                <div class="my-rank-badge">#<%= myRank %></div>
+                <img src="<%= user.avatar || '/default.png' %>" class="my-avatar-circle">
+                <div class="my-info">
+                    <span class="my-label">Hạng của bạn</span>
+                    <span class="my-name"><%= user.username %></span>
+                </div>
+            </div>
+            <div class="sticky-right">
+                <div class="my-points-box">
+                    <%= user.points %> pts
+                </div>
+            </div>
+        </div>
+    </a>
+<% } %>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const safeAnimate = (selector, fromVars, toVars) => {
+            const els = document.querySelectorAll(selector);
+            if(els.length === 0) return;
+            if(typeof gsap === 'undefined') {
+                els.forEach(el => { el.style.opacity='1'; el.style.transform='none'; el.style.visibility='visible'; });
+                return;
+            }
+            gsap.fromTo(els, fromVars, { ...toVars, clearProps: 'all' });
+        };
+
+        // Animation config
+        safeAnimate('.podium-item', { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1, stagger: 0.2, ease: 'elastic.out(1, 0.5)' });
+        safeAnimate('.rank-card', { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, stagger: 0.05, delay: 0.5 });
+        safeAnimate('.lb-header', { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 });
+    });
+</script>
 
 <%- include('partials/footer') %>
-
-<!-- Page Specific JS -->
-<!-- Ensure GSAP & ScrollTrigger are loaded FIRST (ideally in footer partial) -->
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script> -->
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script> -->
-<!-- Load tsparticles Library -->
-<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
-
-<script>
-// --- LEADERBOARD MASTERPIECE SCRIPT ---
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GSAP & Config ---
-    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined' || typeof tsParticles === 'undefined') {
-        console.error("GSAP, ScrollTrigger, or tsParticles not loaded!");
-        return;
-    }
-    gsap.registerPlugin(ScrollTrigger);
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // --- Element Refs ---
-    const leaderboardList = document.querySelector('.leaderboard-list');
-    const leaderboardLoader = document.getElementById('leaderboardLoader');
-    const noRankingMessage = document.querySelector('.no-ranking-message');
-    const entries = gsap.utils.toArray('.leaderboard-entry[data-animate="entry-stagger"]');
-    const trophyIcon = document.querySelector('.header-icon-trophy');
-
-    // --- Helper Functions ---
-    function animateSinglePointsCounter(entryElement) {
-        if (prefersReducedMotion) {
-            const counter = entryElement.querySelector('.points-value');
-            if(counter) counter.textContent = counter.dataset.points || '0';
-            return;
-        }
-        const counter = entryElement.querySelector('.points-value');
-        if (!counter) return;
-        const targetPoints = parseInt(counter.dataset.points, 10) || 0;
-        let startValue = 0; // Always start count from 0 when animating
-
-        gsap.fromTo(counter,
-            { textContent: startValue },
-            {
-                textContent: targetPoints,
-                duration: 1.5 + (Math.abs(targetPoints - startValue) / 6000),
-                ease: "power2.out", // Use smoother ease
-                snap: { textContent: 1 },
-                roundProps: "textContent",
-                onUpdate: function() {
-                     gsap.to(counter, { scale: 1.03, color: 'var(--accent-color)', duration: 0.1, yoyo: true, repeat: 1 });
-                },
-                onComplete: function() {
-                     gsap.to(counter, { scale: 1, color: 'var(--accent-color)', duration: 0.2 });
-                }
-            });
-    }
-
-    function animateSinglePointsBar(entryElement) {
-        const bar = entryElement.querySelector('.points-bar-fill');
-        if (!bar) return;
-        const finalWidth = bar.dataset.targetWidth || '1%';
-        if (prefersReducedMotion) {
-            bar.style.width = finalWidth; return;
-        }
-        gsap.fromTo(bar,
-            { width: '1%' }, // Start from 1% (visually better than 0)
-            {
-                width: finalWidth,
-                duration: 1.5, // Match counter duration closer
-                ease: 'power3.out',
-                delay: 0.1 // Small delay after counter might start
-            }
-        );
-    }
-
-     // --- Function to Init Background Particles ---
-     function initBackgroundParticles() {
-        if (prefersReducedMotion) return;
-        const targetEl = document.getElementById('tsparticles-bg');
-        if (!targetEl) { console.warn("tsparticles-bg element not found"); return; };
-
-        tsParticles.load("tsparticles-bg", {
-            fpsLimit: 60,
-            particles: {
-                number: { value: 50, density: { enable: true, value_area: 900 } },
-                color: { value: ["#FFFFFF", "#aaaacc", "#ccaaff", "#f0e68c"] },
-                shape: { type: "circle" },
-                opacity: { value: {min: 0.05, max: 0.2}, random: true, anim: { enable: true, speed: 0.4, minimumValue: 0.05, sync: false } },
-                size: { value: {min: 0.5, max: 1.5}, random: true, anim: { enable: false } },
-                links: { enable: false },
-                move: {
-                    enable: true, speed: 0.3, direction: "none", random: true, straight: false,
-                    outModes: { default: "out" }, attract: { enable: false }, trail: { enable: false },
-                },
-            },
-            interactivity: { detect_on: "window", events: { onhover: { enable: false }, onclick: { enable: false } } },
-            retina_detect: true,
-            background: { color: "transparent" },
-        }).catch(error => {
-            console.error("tsParticles background load error:", error);
-        });
-     }
-
-    // --- Function to Init Top Rank Auras using tsParticles ---
-    function initTopRankAuras() {
-         if (prefersReducedMotion) return;
-         const topEntries = document.querySelectorAll('.leaderboard-entry.rank-1, .leaderboard-entry.rank-2, .leaderboard-entry.rank-3');
-
-         topEntries.forEach(entry => {
-             const entryId = entry.id;
-             if (!entryId) { console.warn("Top rank entry missing ID:", entry); return; }
-
-             // Check if particles already initialized for this entry
-             if (tsParticles.dom().find(c => c.id === `tsparticles-${entryId}`)) {
-                 console.log(`Particles already loaded for ${entryId}`);
-                 return; // Skip re-initialization
-             }
-
-             let particleColor, particleOpacity, particleValue;
-             if (entry.classList.contains('rank-1')) { particleColor = ["#FFD700", "#FFF8DC", "#F0E68C", "#FFFFFF"]; particleOpacity = {min: 0.4, max: 0.8}; particleValue=40; }
-             else if (entry.classList.contains('rank-2')) { particleColor = ["#C0C0C0", "#E8E8E8", "#FFFFFF"]; particleOpacity = {min: 0.3, max: 0.7}; particleValue=30; }
-             else { particleColor = ["#CD7F32", "#D2691E", "#F4A460"]; particleOpacity = {min: 0.2, max: 0.6}; particleValue=25;}
-
-             let particlesContainer = entry.querySelector('.particles-container');
-             if (!particlesContainer) {
-                 particlesContainer = document.createElement('div');
-                 particlesContainer.id = `tsparticles-${entryId}`; // Use specific ID
-                 particlesContainer.classList.add('particles-container');
-                 entry.appendChild(particlesContainer);
-             }
-
-             tsParticles.load(particlesContainer.id, { // Target the container ID
-                 fpsLimit: 60,
-                 particles: {
-                     number: { value: particleValue, density: { enable: true, value_area: 600 } }, // Adjust density
-                     color: { value: particleColor },
-                     shape: { type: "circle" },
-                     opacity: { value: particleOpacity, random: { enable: true, minimumValue: particleOpacity.min }, anim: { enable: true, speed: 1.8, minimumValue: 0.1, sync: false } }, // Faster opacity anim
-                     size: { value: {min: 1, max: 3}, random: {enable: true} }, // Slightly larger particles
-                     move: {
-                         enable: true, speed: 0.8, // Slightly faster movement
-                         direction: "outside", random: true, straight: false,
-                         outModes: { default: "destroy" }, attract: { enable: true, rotateX: 600, rotateY: 1200 }, // Add slight attraction
-                         gravity: { enable: false }
-                     },
-                     links: { enable: false }
-                 },
-                 interactivity: { enabled: false },
-                 detectRetina: true,
-                 background: { color: "transparent" },
-                 fullScreen: { enable: false }, // Ensure this is false
-             }).then(container => {
-                 if (container) { // Check if container was successfully created
-                    console.log(`Aura Particles loaded for ${entryId}`);
-                 } else {
-                    console.warn(`Failed to get container for ${entryId}`);
-                 }
-             }).catch(error => {
-                  console.error(`Error loading Aura particles for ${entryId}:`, error);
-             });
-         });
-     }
-
-
-    // --- Initial Page Animations ---
-    if (!prefersReducedMotion) {
-        const tl = gsap.timeline({ delay: 0.1 });
-
-        // Header Animation
-        tl.from('.leaderboard-header', { duration: 1, scale: 0.9, autoAlpha: 0, ease: 'expo.out', onStart: () => { if(trophyIcon) gsap.set(trophyIcon, { autoAlpha: 1 }); } });
-        //if (trophyIcon) { tl.from(trophyIcon, { duration: 0.8, scale: 0, rotation: -180, autoAlpha: 0, ease: 'back.out(1.7)'}, "-=0.7"); }
-        tl.from('.leaderboard-header h1', { duration: 0.7, y: 20, autoAlpha: 0, ease: 'power2.out'}, "-=0.6");
-        tl.from('.leaderboard-header p', { duration: 0.7, y: 15, autoAlpha: 0, ease: 'power2.out'}, "-=0.5");
-
-        // Reveal Content AFTER Header
-        tl.add(() => {
-            const revealTl = gsap.timeline();
-            if (leaderboardLoader) { revealTl.to(leaderboardLoader, { duration: 0.4, autoAlpha: 0, scale: 0.9, ease: 'power1.in', onComplete: () => { leaderboardLoader.style.display = 'none'; } }); }
-
-            if (entries.length > 0 && leaderboardList) {
-                revealTl.set(leaderboardList, { autoAlpha: 1, visibility: 'visible'}, "-=0.3");
-                revealTl.from(entries, {
-                    duration: 0.9, autoAlpha: 0, skewX: 8, scale: 0.97,
-                    ease: "power3.out",
-                    stagger: {
-                        amount: Math.min(1.2, entries.length * 0.1), each: 0.1, from: "start",
-                        onStart: function() {
-                            const currentEntry = this.targets()[0];
-                            animateSinglePointsCounter(currentEntry);
-                            animateSinglePointsBar(currentEntry);
-                        },
-                        onComplete: function(){
-                             if(this.targets()[this.targets().length - 1] === entries[entries.length - 1]){
-                                console.log("Stagger complete, init auras");
-                                initTopRankAuras(); // Initialize tsparticles auras AFTER all entries are done
-                             }
-                        }
-                    }
-                }, "-=0.2");
-
-            } else if (noRankingMessage) {
-                revealTl.set(noRankingMessage, { autoAlpha: 1, visibility: 'visible' }, "-=0.3");
-                revealTl.from(noRankingMessage, { duration: 0.8, y: 20, autoAlpha: 0, scale: 0.95, ease:'power2.out' }, "-=0.1");
-            }
-        }, "+=0.2");
-
-    } else { // Reduced Motion Handling
-         gsap.set('.leaderboard-header, .header-icon-trophy, .leaderboard-list, .leaderboard-entry', { autoAlpha: 1, visibility: 'visible' });
-         gsap.set(leaderboardLoader, { autoAlpha: 0, display: 'none' });
-          if (entries.length === 0 && noRankingMessage) {
-             gsap.set(noRankingMessage, { autoAlpha: 1, visibility: 'visible' });
-          } else if (noRankingMessage) {
-              gsap.set(noRankingMessage, { autoAlpha: 0, visibility: 'hidden' });
-          }
-         document.querySelectorAll('.points-value').forEach(el => { el.textContent = el.dataset.points || '0'; });
-         document.querySelectorAll('.points-bar-fill').forEach(el => { el.style.transition = 'none'; el.style.width = el.dataset.targetWidth || '1%'; });
-    }
-
-    // --- Background Parallax ---
-    if(!prefersReducedMotion){
-        gsap.utils.toArray('.bg-light-beam').forEach(beam => {
-            const moveX = parseFloat(beam.dataset.parallaxX) || 0;
-            gsap.to(beam, {
-                xPercent: moveX, ease: "none",
-                scrollTrigger: { trigger: ".leaderboard-page-section", start: "top bottom", end: "bottom top", scrub: 2.5 }
-            });
-            gsap.fromTo(beam, {opacity: 0}, {opacity: 0.08, ease: "power1.inOut", scrollTrigger: { trigger: beam, start:"top 90%", end: "bottom 10%", toggleActions: "play reverse play reverse"}});
-        });
-    }
-
-    // --- Init Background Particles ---
-    initBackgroundParticles();
-
-    // --- Loading Link Script ---
-    document.querySelectorAll(".loading-link").forEach(anchor => {
-        anchor.addEventListener("click", function(e) {
-            const overlay = document.getElementById("loading-overlay");
-            if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
-                 if (this.href !== window.location.href + '#' && this.href !== window.location.href) {
-                      overlay.classList.add("active");
-                 }
-            }
-        });
-    });
-
-}); // End DOMContentLoaded
-</script>

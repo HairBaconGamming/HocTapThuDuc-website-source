@@ -1,217 +1,87 @@
-<!-- views/profileView.ejs -->
-<%- include('partials/header', { title: 'Hồ sơ của ' + profile.username, user: user, activePage: "profileView" }) %> <%# activePage could be empty or specific %>
-<link rel="stylesheet" href="/styleProfile.css">
-<section class="profile-page-section"> <%# Reuse class from profile.ejs %>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleProfile.css">
 
-    <!-- Dynamic Background Element (Same as profile.ejs) -->
-    <div class="profile-background-elements">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="grid-pattern"></div>
-    </div>
-
-    <div class="profile-layout-container"> 
-        <!-- Profile Header Card -->
-        <div class="profile-header-card" data-animate="profile-fade-in">
-            <div class="avatar-container">
-                <img src="<%= profile.avatar || 'https://cdn-icons-png.flaticon.com/512/7915/7915522.png' %>" alt="Avatar của <%= profile.username %>" class="profile-avatar">
-                <div class="avatar-glow"></div>
-                <% if(profile.isPro) { %>
-                    <span class="pro-crown-badge"><i class="fas fa-crown"></i></span>
+<div class="profile-wrapper">
+    
+    <div class="profile-grid">
+        
+        <aside class="bento-card identity-card">
+            <div class="id-avatar-wrapper">
+                <img src="<%= targetUser.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="id-avatar">
+                <% if(targetUser.isPro) { %>
+                    <div class="pro-badge" title="Tài khoản VIP">👑</div>
                 <% } %>
             </div>
-            <div class="user-identity">
-                <h2 class="profile-username"><%= profile.username %></h2>
-                 <% if (profile.createdAt) { %>
-                    <p class="profile-join-date">Tham gia từ: <%= profile.createdAt.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
-                 <% } %>
-            </div>
-             <% if (user && user._id.toString() === profile._id.toString()) { %>
-                <a href="/profile/edit" class="btn btn-secondary edit-profile-btn-header loading-link">
-                    <i class="fas fa-pencil-alt icon"></i> Chỉnh sửa
-                </a>
-             <% } else { %>
-                 <%# Optional: Add a "Follow" or "Message" button here later %>
-             <% } %>
-        </div>
 
-        <!-- Profile Details Grid -->
-        <div class="profile-details-grid">
+            <h1 class="id-name"><%= targetUser.username %></h1>
+            <p class="id-username">@<%= targetUser.username.toLowerCase().replace(/\s+/g, '') %></p>
 
-            <!-- Bio Card -->
-             <% if (profile.bio) { %>
-                <div class="profile-info-card bio-card" data-animate="profile-stagger">
-                    <div class="card-icon-accent"><i class="fas fa-user-circle"></i></div>
-                    <h3>Giới thiệu</h3>
-                    <p class="bio-content"><%= profile.bio %></p>
-                </div>
-            <% } %>
-
-
-            <!-- Contact/Info Card (Show less info for public view?) -->
-            <div class="profile-info-card contact-card" data-animate="profile-stagger" style="--stagger-delay: 0.1s;">
-                 <div class="card-icon-accent"><i class="fas fa-info-circle"></i></div> <%# Changed icon %>
-                 <h3>Thông tin cơ bản</h3>
-                 <ul class="info-list">
-                    <% if (profile.class) { %>
-                        <li><i class="fas fa-users icon"></i> <span>Lớp: <%= profile.class %></span></li>
-                    <% } %>
-                     <% if (profile.school) { %>
-                        <li><i class="fas fa-school icon"></i> <span>Trường: <%= profile.school %></span></li>
-                     <% } %>
-                     <% if (!profile.class && !profile.school) { %>
-                        <li><i class="fas fa-question-circle"></i> <span>Người dùng chưa cập nhật thông tin lớp/trường.</span></li>
-                     <% } %>
-                 </ul>
+            <div class="id-meta">
+                <span class="meta-tag"><i class="fas fa-graduation-cap"></i> <%= targetUser.class || 'Lớp ?' %></span>
+                <span class="meta-tag"><i class="fas fa-school"></i> <%= targetUser.school || 'Trường ?' %></span>
             </div>
 
-            <!-- Points Card -->
-            <div class="profile-info-card points-card" data-animate="profile-stagger" style="--stagger-delay: 0.2s;">
-                <div class="card-icon-accent"><i class="fas fa-star"></i></div>
-                <h3>Điểm thưởng</h3>
-                <div class="points-display">
-                    <span class="points-value" data-points="<%= profile.points %>">0</span>
-                    <span class="points-label">điểm</span>
-                </div>
-                <div class="points-progress-bar">
-
-                    <div class="progress-fill" style="width: <%= Math.min(100, (profile.points / 1000) * 100) %>%"></div>
-                </div>
-                 <%# Different motivation text for viewing others? %>
-                 <p class="points-motivation">Thành tích đáng nể!</p>
+            <div class="id-bio">
+                "<%= targetUser.bio || 'Người dùng này rất bí ẩn...' %>"
             </div>
 
-            <!-- Achievements Card -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn-edit-profile" style="background: var(--pop-blue); color: var(--dark-ink);">
+                    <i class="fas fa-user-plus"></i> Kết bạn
+                </button>
+                <button class="btn-edit-profile" style="background: white; color: var(--dark-ink); border: 2px solid var(--dark-ink);">
+                    <i class="fas fa-comment-dots"></i> Nhắn tin
+                </button>
+            </div>
+            
+            <button class="btn-edit-profile" style="margin-top: 10px; background: #ffebee; color: #c62828; border: none;">
+                <i class="fas fa-flag"></i> Báo cáo
+            </button>
+        </aside>
 
-             <% if (typeof viewedUserAchievements !== 'undefined' && viewedUserAchievements.length > 0) { %>
-                <div class="profile-info-card achievements-card" data-animate="profile-stagger" style="--stagger-delay: 0.3s;">
-                     <div class="card-icon-accent"><i class="fas fa-trophy"></i></div>
-                     <h3>Thành tích đạt được</h3>
-                     <div class="achievements-grid">
-                         <% viewedUserAchievements.forEach((ach, index) => { %>
-                            <%# Determine icon based on achievement name %>
-                            <%
-                               let iconClass = 'fa-star'; // Default
-                               if (ach.name?.toLowerCase().includes('bài học')) iconClass = 'fa-book-open';
-                               else if (ach.name?.toLowerCase().includes('điểm')) iconClass = 'fa-star-half-alt';
-                               else if (ach.name?.toLowerCase().includes('pro')) iconClass = 'fa-crown';
-                               else if (ach.name?.toLowerCase().includes('đóng góp')) iconClass = 'fa-users';
-                            %>
-                             <div class="achievement-badge-v2" title="<%= ach.description || ach.name %>" data-animate="achievement-pop" style="--stagger-index: <%= index %>;">
-                                 <div class="badge-icon"><i class="fas <%= iconClass %>"></i></div>
-                                 <span class="badge-name"><%= ach.name %></span>
-                             </div>
-                         <% }); %>
-                     </div>
+        <main>
+            <div class="stats-row">
+                <div class="stat-box highlight">
+                    <h3><%= targetUser.points || 0 %></h3>
+                    <p>🔥 Điểm số</p>
                 </div>
-             <% } else { %>
-                 <%# Optionally show a card saying "No achievements yet" %>
-                  <div class="profile-info-card achievements-card" data-animate="profile-stagger" style="--stagger-delay: 0.3s;">
-                       <div class="card-icon-accent"><i class="fas fa-trophy"></i></div>
-                       <h3>Thành tích đạt được</h3>
-                       <p class="no-achievements">Người dùng này chưa có thành tích nào.</p>
-                  </div>
-             <% } %>
+                <div class="stat-box">
+                    <h3>??</h3>
+                    <p>📚 Bài học</p>
+                </div>
+                <div class="stat-box">
+                    <h3>??</h3>
+                    <p>🏆 Rank</p>
+                </div>
+            </div>
 
-        </div>
+            <div class="bento-card tree-section">
+                <div class="tree-info">
+                    <h3>🌳 Vườn Của <%= targetUser.username %></h3>
+                    <p style="color: #666;">Một cái cây xanh tốt chứng tỏ sự chăm chỉ.</p>
+                </div>
+                <div class="tree-visual">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2924/2924900.png" alt="Tree"> 
+                </div>
+            </div>
 
-        <!-- Back Button -->
-        <div class="profile-view-actions" data-animate="fade-up" data-anim-delay="0.5">
-            <a href="javascript:history.back()" class="btn btn-secondary-outline back-button-v2">
-                 <i class="fas fa-arrow-left"></i> Quay Lại
-            </a>
-        </div>
+            <div class="bento-card" style="background: #fff0f5; border-color: #ffc8dd; text-align: center;">
+                <h3 style="color: #d81b60;">🥊 Thách Đấu PK</h3>
+                <p style="color: #666; margin-bottom: 20px;">Mời <%= targetUser.username %> vào phòng thi trắc nghiệm đối kháng?</p>
+                <button class="btn-edit-profile" style="background: #d81b60; width: auto; display: inline-block; padding: 10px 30px;">
+                    Gửi lời mời
+                </button>
+            </div>
 
+        </main>
     </div>
-</section>
-<%- include('partials/footer') %>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    gsap.registerPlugin(ScrollTrigger);
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // --- Re-use Animations from profile.ejs ---
-
-    // 1. Header Card Fade In
-    if (!prefersReducedMotion) {
-        gsap.from('[data-animate="profile-fade-in"]', {
-            duration: 1, y: -50, autoAlpha: 0, ease: 'power3.out', delay: 0.2
-        });
-        gsap.from('.profile-avatar', { duration: 1, scale: 0.8, autoAlpha: 0, ease: 'back.out(1.7)', delay: 0.4 });
-        gsap.from('.avatar-glow', { duration: 1.5, scale: 0, autoAlpha: 0, ease: 'power2.out', delay: 0.6 });
-        gsap.from('.pro-crown-badge', { duration: 0.8, scale: 0, rotation: -180, autoAlpha: 0, ease: 'back.out(2)', delay: 0.8 });
-        gsap.from('.profile-username', { duration: 0.8, x: -30, autoAlpha: 0, ease: 'power2.out', delay: 0.5 });
-        gsap.from('.profile-join-date', { duration: 0.8, x: -30, autoAlpha: 0, ease: 'power2.out', delay: 0.6 });
-        gsap.from('.edit-profile-btn-header', { duration: 0.8, x: 30, autoAlpha: 0, ease: 'power2.out', delay: 0.7 }); // Animates if present
-        gsap.from('[data-animate="fade-up"]', { duration: 0.8, y: 30, autoAlpha: 0, ease: 'power2.out', delay: parseFloat(document.querySelector('[data-animate="fade-up"]')?.dataset.animDelay) || 0.9 }); // Animate back button
+    if(typeof gsap !== 'undefined') {
+        gsap.from('.profile-grid > *', { y: 30, opacity: 0, duration: 0.8, stagger: 0.2, ease: 'power2.out' });
     }
-
-    // 2. Stagger Info Cards
-     const infoCards = gsap.utils.toArray('[data-animate="profile-stagger"]');
-     if (infoCards.length > 0 && !prefersReducedMotion) {
-        gsap.from(infoCards, {
-            duration: 0.8, y: 60, autoAlpha: 0, ease: "power3.out",
-            stagger: { // Stagger based on delay defined in inline style
-                amount: 0.4, // Max total stagger time
-                each: 0.15 // Ensure some delay even if inline style missing
-            },
-            delay: 0.3, // Start staggering after header animates
-            // No ScrollTrigger needed if content is likely above the fold
-        });
-     }
-
-    // 3. Animate Points Counter & Bar
-    const pointsValue = document.querySelector('.points-value');
-    if (pointsValue && !prefersReducedMotion) {
-        const targetPoints = parseInt(pointsValue.dataset.points, 10) || 0;
-        const pointsCard = pointsValue.closest('[data-animate="profile-stagger"]');
-        const cardDelay = pointsCard ? parseFloat(pointsCard.style.getPropertyValue('--stagger-delay')) || 0 : 0;
-
-        gsap.to(pointsValue, {
-            textContent: targetPoints, duration: 2, ease: "power1.out", snap: { textContent: 1 }, roundProps: "textContent",
-            delay: cardDelay + 0.7 // Delay relative to card entrance + extra
-        });
-
-        const fill = document.querySelector('.points-progress-bar .progress-fill');
-        if (fill) {
-             gsap.from(fill, {
-                 width: '0%', duration: 1.8, ease: 'power2.out',
-                 delay: cardDelay + 0.8 // Delay relative to card entrance + extra
-             });
-        }
-    } else if (pointsValue) {
-        // Set points instantly if reduced motion
-         pointsValue.textContent = pointsValue.dataset.points || '0';
-    }
-
-
-    // 4. Pop In Achievements Badges
-    const achievementBadges = gsap.utils.toArray('[data-animate="achievement-pop"]');
-     if (achievementBadges.length > 0 && !prefersReducedMotion) {
-          const achievementsCard = document.querySelector('.achievements-card');
-          const cardDelay = achievementsCard ? parseFloat(achievementsCard.style.getPropertyValue('--stagger-delay')) || 0 : 0;
-
-         gsap.from(achievementBadges, {
-             duration: 0.6, scale: 1, rotationZ: gsap.utils.random(-15, 15, true), autoAlpha: 0,
-             ease: "back.out(1.7)",
-             stagger: { amount: 0.5, from: "random" },
-             delay: cardDelay + 0.6 // Delay relative to card entrance + extra
-         });
-     }
-
-
-    // --- Loading Link Script ---
-    document.querySelectorAll(".loading-link").forEach(anchor => {
-        anchor.addEventListener("click", function(e) {
-            const overlay = document.getElementById("loading-overlay");
-            if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
-                 if (this.href !== window.location.href + '#' && this.href !== window.location.href) {
-                      overlay.classList.add("active");
-                 }
-            }
-        });
-    });
-
-}); // End DOMContentLoaded
 </script>
+
+<%- include('partials/footer') %>

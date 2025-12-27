@@ -1,138 +1,15 @@
-<!-- views/partials/footer.ejs -->
-    </main> <!-- Close main content -->
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay">
-        <div class="spinner-complex">
-            <div class="ring-outer"></div>
-            <div class="ring-middle"></div>
-            <div class="ring-inner"></div>
-        </div>
-        <div class="loading-text">Đang xử lí...</div>
-    </div>
-
-    <!-- Alert container -->
-    <div id="alert-container"></div>
-
-    <!-- Custom Confirm Modal -->
-    <!-- Ensure the classes match your confirm.js implementation -->
-    <div id="customConfirm" class="custom-confirm"> <%# Check class if needed %>
-        <div class="confirm-modal-box"> <%# Ensure this wrapper exists if CSS uses it %>
-            <p id="customConfirmMessage">Are you sure?</p>
-            <div class="confirm-buttons">
-                <button id="customConfirmOk" class="btn btn-success">Xác nhận</button> <%# Added btn classes %>
-                <button id="customConfirmCancel" class="btn btn-secondary">Hủy bỏ</button> <%# Added btn classes %>
-            </div>
+</main> <footer style="margin-top: 60px; padding: 40px 20px; text-align: center; border-top: 2px dashed #eee; color: #888;">
+    <div class="container">
+        <h3 style="color: var(--primary); margin-bottom: 10px;">Học Tập Thủ Đức</h3>
+        <p>Nơi kiến thức không bao giờ "ngủ gật" 😴</p>
+        
+        <div style="margin-top: 20px; font-size: 0.9rem;">
+            <p>Code bằng 🍜 Mì tôm và ☕ Cafe phố bởi <b>NAM</b></p>
+            <p>© <%= new Date().getFullYear() %> - Chạy ổn định trên máy của Nam (máy khác hên xui)</p>
         </div>
     </div>
+</footer>
 
-    <!-- Fullscreen Image Modal -->
-    <div id="imgFullscreenModal" class="fullscreen-modal" style="display:none;">
-        <span id="modalCloseBtn" class="modal-close">×</span>
-        <img id="modalImg" class="modal-content" alt="Full screen image">
-    </div>
-          
-    <!-- === JAVASCRIPT LIBRARIES === -->
-    <!-- Load jQuery & Bootstrap Bundle if needed by other parts of your site, NOT required for this header -->
-    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script> -->
-
-    <!-- Load GSAP & Plugins FIRST -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/split-type"></script> <!-- SplitType Library -->
-
-    <!-- Other Libraries -->
-    <script src="/socket.io/socket.io.js" defer></script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-
-    <!-- === YOUR CUSTOM SCRIPTS (defer to avoid blocking) === -->
-    <script src="/js/alerts.js" defer></script>    <%# For showAlert function %>
-    <script src="/js/confirm.js" defer></script>   <%# For custom confirm modal %>
-    <script src="/js/animations.js" defer></script> <%# Your main animation logic %>
-    <script src="/js/customcursor.js" defer></script> <%# stub already present %>
-    <!-- Include other global scripts -->
-
-    <!-- Lightweight dynamic loader: only pull heavy libs (GSAP, tsParticles, SplitType) when needed -->
-    <script>
-      // Minimal safe loader - executes after DOM parsing because scripts above are deferred
-      (function(){
-        function loadScript(src, attrs = {}) {
-          return new Promise((resolve, reject) => {
-            if (document.querySelector(`script[src="${src}"]`)) return resolve(src);
-            const s = document.createElement('script');
-            s.src = src;
-            s.async = !!attrs.async;
-            s.defer = !!attrs.defer;
-            if(attrs.type) s.type = attrs.type;
-            s.onload = () => resolve(src);
-            s.onerror = () => reject(new Error('Failed to load ' + src));
-            document.head.appendChild(s);
-          });
-        }
-        function loadStyle(href) {
-          return new Promise((resolve, reject) => {
-            if (document.querySelector(`link[href="${href}"]`)) return resolve(href);
-            const l = document.createElement('link');
-            l.rel = 'stylesheet';
-            l.href = href;
-            l.onload = () => resolve(href);
-            l.onerror = () => reject(new Error('Failed to load ' + href));
-            document.head.appendChild(l);
-          });
-        }
-
-        // Decision heuristics: only load heavy libs when element exists AND user didn't request reduced motion
-        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        // If page has particles container or hero with particles
-        const needParticles = !!document.getElementById('particles-js') || !!document.getElementById('tsparticles-error') || !!document.querySelector('.achievement-masterpiece');
-        // If page uses GSAP animations or data-animate attributes
-        const needGSAP = !!document.querySelector('[data-animate], [data-animate-children], .dashboard-tabs, .hero, .achievement-masterpiece');
-
-        // Load GSAP when needed
-        if (needGSAP && !prefersReducedMotion) {
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js', { defer: true })
-            .catch(e => console.warn('GSAP load failed:', e));
-          // only load ScrollTrigger if GSAP likely to use it
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js', { defer: true }).catch(()=>{});
-        }
-
-        // Load tsParticles only for pages that really have particle targets and only if not reduced motion
-        if (needParticles && !prefersReducedMotion) {
-          loadScript('https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js', { defer: true })
-            .catch(e => console.warn('tsParticles load failed:', e));
-        }
-
-        // SplitType is only for text-splitting; load only if class present
-        if (document.querySelector('.split-type') || document.querySelector('[data-split]')) {
-          loadScript('https://unpkg.com/split-type', { defer: true }).catch(()=>{});
-        }
-
-        // Note: local scripts (alerts.js, animations.js, confirm.js) are deferred above; they should check for global libs before using them.
-      })();
-    </script>
-
-    <!-- Flash Message Handling -->
-    <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
-        <script>
-          // Ensure DOM is ready before showing alert
-          document.addEventListener('DOMContentLoaded', () => {
-            // Check if showAlert function exists before calling
-            if (typeof showAlert === 'function') {
-                showAlert("<%= message.message %>", "<%= message.type %>", 5000); // Increased duration
-            } else {
-                console.error("showAlert function not found. Cannot display flash message.");
-            }
-          });
-        </script>
-      <% } %>
-
-    <!-- Include page-specific scripts from EJS files AFTER global scripts -->
-    <%# Example: Script block from subjects.ejs or lessons.ejs would execute here %>
-
-    <footer class="site-footer">
-      <p>Made with ❤️ by <strong>Trương Hoàng Nam</strong></p>
-    </footer>
-
+<script src="/js/alerts.js"></script>
 </body>
 </html>

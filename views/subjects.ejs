@@ -1,139 +1,87 @@
-<!-- views/subjects.ejs -->
-<%- include('partials/header', { title: 'Các môn học', user: user, activePage: 'subjects' }) %> <%# Ensure activePage is correct %>
-<link rel="stylesheet" href="/styleSubjects.css">
-<section class="subjects-section">
-  <div class="container">
-    <h2 class="section-title" data-animate="fade-up">
-      Khám phá các môn học
-    </h2>
-    <p class="section-subtitle" data-animate="fade-up" data-anim-delay="0.1">
-      Chọn một môn học để bắt đầu hành trình kiến thức của bạn.
-    </p>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleSubjects.css">
 
-    <div class="subjects-grid">
-      <% subjects.forEach((subject, index) => { %>
-        <%# REMOVED the problematic style attribute %>
-        <div class="subject-card-v2" data-tilt-card data-animate="stagger-subject" style="--stagger-index: <%= index %>;">
-          <div class="card-image-container">
-            <% if(subject.image) { %>
-              <img src="<%= subject.image %>" alt="<%= subject.name %>" class="card-image" />
-              <div class="image-overlay"></div>
-            <% } else { %>
-              <div class="card-image-placeholder">
-                 <i class="fas fa-book-open"></i>
-              </div>
-            <% } %>
-            <h3 class="card-title-overlay"><%= subject.name %></h3>
-          </div>
-          <div class="card-content">
-             <p class="card-description"><%= subject.description %></p>
-             <a href="/subjects/<%= subject._id %>" class="btn btn-primary card-button loading-link">
-                Xem bài học <i class="fas fa-arrow-right"></i>
-             </a>
-          </div>
-          <div class="card-border-glow"></div>
+<section class="subjects-section">
+    <div class="subjects-bg-decor blob-1"></div>
+    <div class="subjects-bg-decor blob-2"></div>
+
+    <div class="container">
+        <div class="subjects-header">
+            <div class="subjects-title">Kho Tàng Kiến Thức</div>
+            <p class="subjects-subtitle">Chọn một "món ăn tinh thần" để thưởng thức hôm nay nào! 😋</p>
         </div>
-      <% }); %>
+
+        <div class="subjects-grid" id="subjectsGrid">
+            <% if (subjects && subjects.length > 0) { %>
+                <% 
+                   const themes = ['theme-blue', 'theme-pink', 'theme-green', 'theme-yellow', 'theme-purple'];
+                %>
+                <% subjects.forEach((subject, index) => { 
+                    const themeClass = themes[index % themes.length];
+                %>
+                    <div class="subject-card-pop <%= themeClass %> subject-card-anim">
+                        <div class="card-visual">
+                            <% if(subject.image) { %>
+                                <img src="<%= subject.image %>" alt="<%= subject.name %>" class="card-img" loading="lazy">
+                            <% } else { %>
+                                <i class="fas fa-book-open" style="font-size: 4rem; color: var(--card-color); opacity: 0.5;"></i>
+                            <% } %>
+                            <div class="card-sticker">Môn học</div>
+                        </div>
+
+                        <div class="card-body">
+                            <h3 class="card-title"><%= subject.name %></h3>
+                            <p class="card-desc">
+                                <%= subject.description ? subject.description : 'Khám phá ngay các bài học thú vị của môn này.' %>
+                            </p>
+                            <a href="/subjects/<%= subject._id %>" class="card-btn">
+                                Vào học ngay <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px;">
+                    <div style="font-size: 4rem;">🌱</div>
+                    <h3 style="color: #888;">Chưa có môn nào được gieo trồng...</h3>
+                </div>
+            <% } %>
+        </div>
     </div>
-  </div>
 </section>
+
 <%- include('partials/footer') %>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-  // --- Existing Loading Link Script ---
-  document.querySelectorAll(".loading-link").forEach(anchor => {
-    anchor.addEventListener("click", function(e) {
-      const overlay = document.getElementById("loading-overlay");
-      if (this.target !== "_blank" && overlay && !overlay.classList.contains('active')) {
-        overlay.classList.add("active");
-      }
-    });
-  });
-</script>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-      console.error("GSAP hoặc ScrollTrigger chưa được tải.");
-      return;
-    }
-    gsap.registerPlugin(ScrollTrigger);
+document.addEventListener('DOMContentLoaded', () => {
+    // Kiểm tra xem thư viện GSAP có load được không
+    if (typeof gsap !== 'undefined') {
+        // Animation Header
+        gsap.from('.subjects-header', {
+            duration: 1,
+            y: -30,
+            opacity: 0,
+            ease: 'power2.out'
+        });
 
-    // Fade up cho title và subtitle
-    gsap.utils.toArray('[data-animate="fade-up"]').forEach(elem => {
-      gsap.from(elem, {
-        duration: 0.8,
-        y: 50,
-        autoAlpha: 0,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: elem,
-          start: 'top 90%',
-          toggleActions: 'play none none none',
-          once: true
-        },
-        delay: parseFloat(elem.dataset.animDelay) || 0
-      });
-    });
-
-    // Stagger animation cho subject cards
-    const cards = gsap.utils.toArray('.subject-card-v2[data-animate="stagger-subject"]');
-    if (cards.length > 0) {
-      gsap.from(cards, {
-        duration: 0.7,
-        y: 60,
-        autoAlpha: 0,
-        ease: "power3.out",
-        stagger: (index) => index * 0.1, // Sử dụng delay theo index
-        scrollTrigger: {
-          trigger: ".subjects-grid",
-          start: "top 90%",
-          // markers: true, // Mở markers để debug
-          toggleActions: "play none none none",
-          once: true
-        }
-      });
+        // Animation Cards (Stagger)
+        // Sử dụng autoAlpha thay vì opacity để GSAP tự xử lý visibility
+        gsap.from('.subject-card-anim', {
+            duration: 0.6,
+            y: 50,
+            autoAlpha: 0, // Tự động set opacity:0 và visibility:hidden lúc đầu
+            stagger: 0.1, 
+            ease: 'back.out(1.2)',
+            delay: 0.2,
+            clearProps: 'all' // Quan trọng: Xóa sạch style sau khi diễn xong để tránh lỗi CSS hover
+        });
     } else {
-      console.warn("GSAP: Không tìm thấy subject cards cho stagger animation.");
+        // Fallback nếu GSAP lỗi: Hiện tất cả ngay lập tức
+        document.querySelectorAll('.subject-card-anim').forEach(el => {
+            el.style.opacity = 1;
+            el.style.transform = 'none';
+        });
     }
-
-    // Hiệu ứng 3D Tilt cho subject cards
-    const tiltIntensity = 12; // Độ nghiêng (độ)
-    const scaleIntensity = 1.03; // Hiệu ứng scale
-
-    gsap.utils.toArray('[data-tilt-card]').forEach(card => {
-      const cardContent = card.querySelector('.card-content');
-      const cardImage = card.querySelector('.card-image');
-
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const relX = (x / rect.width) - 0.5;
-        const relY = (y / rect.height) - 0.5;
-        const rotateY = relX * tiltIntensity;
-        const rotateX = -relY * tiltIntensity;
-
-        gsap.to(card, {
-          duration: 0.8,
-          transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scaleIntensity})`,
-          boxShadow: `${rotateY * 0.8}px ${-rotateX * 0.8}px 30px rgba(0, 0, 0, 0.4)`,
-          ease: "power3.out",
-          overwrite: 'auto'
-        });
-
-        gsap.to(cardContent, { duration: 1, x: -relX * 5, y: -relY * 5, ease: "power3.out", overwrite: 'auto'});
-        gsap.to(cardImage, { duration: 1, x: relX * 3, y: relY * 3, ease: "power3.out", overwrite: 'auto'});
-      });
-
-      card.addEventListener('mouseleave', () => {
-        gsap.to(card, {
-          duration: 1.0,
-          transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-          ease: "elastic.out(1, 0.5)"
-        });
-        gsap.to([cardContent, cardImage], { duration: 0.8, x: 0, y: 0, ease: "elastic.out(1, 0.5)" });
-      });
-    });
-  });
+});
 </script>

@@ -1,0 +1,43 @@
+/* public/css/styleLogin.css */
+
+.login-container {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-box {
+    background: var(--white);
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    border-radius: 30px;
+    box-shadow: 8px 8px 0px var(--secondary); /* Bóng hồng dễ thương */
+    text-align: center;
+}
+
+.login-box h2 {
+    color: var(--primary);
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: 10px;
+    font-size: 0.9rem;
+}
+
+.social-login {
+    margin-top: 20px;
+    border-top: 2px dashed #eee;
+    padding-top: 20px;
+}

@@ -1,276 +1,125 @@
-<!-- views/upgrade.ejs -->
-<%- include('partials/header', { title: 'Nâng cấp Tài khoản PRO', user: user, activePage: 'upgrade' }) %>
-<link rel="stylesheet" href="/styleUpgrade.css">
-<section class="upgrade-page-section"> <%# Changed class %>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleUpgrade.css">
 
-    <!-- Layer 1: Animated Background -->
-    <div class="upgrade-background">
-        <div class="swirl swirl-1"></div>
-        <div class="swirl swirl-2"></div>
-        <div class="particles"></div> <%# Placeholder for particle effect %>
+<div class="upgrade-wrapper">
+    
+    <div class="upgrade-header" data-animate="fade-down">
+        <h1 class="upgrade-title">Mở Khóa Sức Mạnh ⚡</h1>
+        <p class="upgrade-subtitle">
+            Nâng cấp lên tài khoản PRO để sở hữu kho tàng kiến thức không giới hạn và những đặc quyền "chanh sả" nhất!
+        </p>
     </div>
 
-    <!-- Layer 2: Main Content Container -->
-    <div class="upgrade-container" data-animate="container-fade-in">
+    <div class="pricing-grid">
+        
+        <div class="plan-card" data-animate="fade-right">
+            <h3>🌱 Newbie</h3>
+            <div class="plan-price">Miễn phí</div>
+            <ul class="features-list">
+                <li><i class="fas fa-check"></i> Xem bài học cơ bản</li>
+                <li><i class="fas fa-check"></i> Tham gia phòng Live</li>
+                <li><i class="fas fa-check"></i> Tạo hồ sơ cá nhân</li>
+                <li class="disabled"><i class="fas fa-times"></i> Đăng bài viết (News)</li>
+                <li class="disabled"><i class="fas fa-times"></i> Tạo phòng Live Stream</li>
+                <li class="disabled"><i class="fas fa-times"></i> Kho ảnh Avatar PRO</li>
+                <li class="disabled"><i class="fas fa-times"></i> Huy hiệu VIP lấp lánh</li>
+            </ul>
+        </div>
 
-        <!-- Step 1: Advertisement & Feature Showcase -->
-        <div class="upgrade-step" id="step-advertise">
-            <div class="upgrade-header">
-                <i class="fas fa-rocket header-icon"></i>
-                <h2 class="upgrade-title">
-                    Mở Khóa Tiềm Năng <span class="pro-text-gradient">PRO</span>
-                </h2>
-                 <p class="upgrade-subtitle">Nâng tầm trải nghiệm học tập của bạn với các tính năng độc quyền.</p>
-            </div>
+        <div class="plan-card pro" data-animate="zoom-in">
+            <div class="crown-icon">👑</div>
+            <h2 class="pro-title">HTTD PRO</h2>
+            <div class="pro-badge">BEST VALUE</div>
+            
+            <ul class="features-list">
+                <li><i class="fas fa-check-circle"></i> <b>Tất cả quyền lợi Newbie</b></li>
+                <li><i class="fas fa-check-circle"></i> 🚀 Mở phòng Live Stream riêng</li>
+                <li><i class="fas fa-check-circle"></i> ✍️ Đăng bài viết lên bảng tin</li>
+                <li><i class="fas fa-check-circle"></i> 🎨 Sử dụng Kho ảnh PRO xịn xò</li>
+                <li><i class="fas fa-check-circle"></i> ✨ Huy hiệu vương miện cạnh tên</li>
+                <li><i class="fas fa-check-circle"></i> 🤖 Sử dụng AI chấm điểm (Sắp ra mắt)</li>
+            </ul>
 
-            <div class="features-grid">
-                <!-- Feature Card 1 -->
-                <div class="feature-card" data-animate="feature-stagger">
-                     <div class="feature-icon"><i class="fas fa-images"></i></div>
-                     <h3 class="feature-title">Kho Ảnh Cao Cấp</h3>
-                     <p class="feature-desc">Upload ảnh lớn (50MB), ưu tiên lưu trữ.</p>
+            <% if (user && user.isPro) { %>
+                <div class="upgrade-form" style="background: #e8f5e9; border-color: #2ecc71;">
+                    <h3 style="color: #2e7d32; font-size: 1.2rem; margin-bottom: 10px;">🎉 Đã kích hoạt PRO!</h3>
+                    <p style="font-size: 0.9rem;">Vương miện đã ở trên vai bạn.</p>
+                    <a href="/" class="btn-upgrade" style="background: #2e7d32; box-shadow: none;">Về trang chủ</a>
                 </div>
-                 <!-- Feature Card 2 -->
-                 <div class="feature-card" data-animate="feature-stagger" style="--stagger-delay: 0.1s;">
-                     <div class="feature-icon"><i class="fas fa-brain"></i></div>
-                     <h3 class="feature-title">Chấm Điểm AI</h3>
-                     <p class="feature-desc">Đánh giá bài làm chính xác, nhanh chóng.</p>
-                 </div>
-                 <!-- Feature Card 3 -->
-                 <div class="feature-card" data-animate="feature-stagger" style="--stagger-delay: 0.2s;">
-                     <div class="feature-icon"><i class="fas fa-book-reader"></i></div>
-                     <h3 class="feature-title">Nội Dung Độc Quyền</h3>
-                     <p class="feature-desc">Truy cập tài nguyên & công cụ PRO.</p>
-                 </div>
-                  <!-- Feature Card 4 -->
-                  <div class="feature-card" data-animate="feature-stagger" style="--stagger-delay: 0.3s;">
-                     <div class="feature-icon"><i class="fas fa-headset"></i></div>
-                     <h3 class="feature-title">Hỗ Trợ Ưu Tiên</h3>
-                     <p class="feature-desc">Giải đáp nhanh chóng từ chuyên gia.</p>
-                 </div>
-            </div>
+            <% } else { %>
+                <form action="/upgrade" method="POST" class="upgrade-form" id="upgradeForm">
+                    <p style="font-weight: 700; color: #b45309; margin-bottom: 10px;">
+                        <i class="fas fa-key"></i> Nhập Secret Key kích hoạt
+                    </p>
+                    
+                    <div class="key-input-wrapper">
+                        <input type="text" name="secretKey" class="setup-input code-input" 
+                            placeholder="XXXX-XXXX-XXXX" 
+                            required autocomplete="off">
+                    </div>
 
-            <button class="btn btn-primary-glow next-step-btn" id="goToQuestionBtn">
-                Tiếp tục Nâng cấp <i class="fas fa-arrow-right"></i>
-            </button>
+                    <p class="hint-text">Nhập mã bí mật bạn nhận được từ Admin hoặc Event.</p>
+
+                    <button type="submit" class="btn-upgrade">
+                        <i class="fas fa-unlock-alt"></i> MỞ KHÓA NGAY
+                    </button>
+                </form>
+            <% } %>
         </div>
-
-        <!-- Step 2: Qualification Question -->
-        <div class="upgrade-step" id="step-question" style="display: none; opacity: 0;"> <%# Hide initially %>
-             <div class="upgrade-header">
-                <i class="fas fa-question-circle header-icon"></i>
-                <h2 class="upgrade-title">Xác nhận điều kiện</h2>
-                 <p class="upgrade-subtitle">Vui lòng trả lời câu hỏi sau để tiếp tục.</p>
-            </div>
-
-             <div class="qualification-question-container">
-                 <label class="qualification-label">Bạn có đang theo học lớp chuyên hoặc có kế hoạch thi chuyên không?</label>
-                 <div class="qualification-options">
-                     <button class="btn qualification-btn" data-answer="yes">
-                         <i class="fas fa-check-circle icon"></i> Có
-                     </button>
-                     <button class="btn qualification-btn" data-answer="no">
-                          <i class="fas fa-times-circle icon"></i> Không
-                     </button>
-                 </div>
-             </div>
-             <button class="btn btn-secondary-outline back-btn" data-target-step="step-advertise">
-                 <i class="fas fa-arrow-left"></i> Quay lại
-             </button>
-        </div>
-
-        <!-- Step 3a: Secret Key Input -->
-         <div class="upgrade-step" id="step-secret-key" style="display: none; opacity: 0;">
-             <div class="upgrade-header">
-                 <i class="fas fa-key header-icon"></i>
-                 <h2 class="upgrade-title">Nhập Khóa Kích Hoạt</h2>
-                  <p class="upgrade-subtitle">Nhập khóa PRO được cung cấp bởi quản trị viên.</p>
-             </div>
-
-             <form action="/upgrade" method="POST" class="upgrade-form-final" id="upgradeForm">
-                 <div class="input-field-group fancy-input">
-                     <input type="text" id="secretKey" name="secretKey" class="form-input-v2 secret-key-input" placeholder=" " required>
-                     <label for="secretKey" class="form-label-v2">Khóa bí mật PRO</label>
-                     <span class="input-focus-line"></span>
-                     <i class="fas fa-unlock-alt input-icon"></i>
-                 </div>
-
-                 <!-- Hidden input to pass qualification status if needed -->
-                 <input type="hidden" name="isSpecializedConfirmed" value="yes">
-
-                 <button type="submit" class="btn-submit-v2 pro-submit-btn" id="finalUpgradeBtn">
-                     <span class="btn-text"><i class="fas fa-crown"></i> Kích hoạt PRO!</span>
-                     <span class="btn-liquid-effect"></span>
-                     <span class="btn-particles"></span>
-                 </button>
-             </form>
-              <button class="btn btn-secondary-outline back-btn" data-target-step="step-question">
-                  <i class="fas fa-arrow-left"></i> Quay lại
-              </button>
-         </div>
-
-         <!-- Step 3b: Not Eligible Message -->
-         <div class="upgrade-step" id="step-not-eligible" style="display: none; opacity: 0;">
-            <div class="upgrade-header centered">
-                 <h2 class="upgrade-title error-title">Không đủ điều kiện</h2>
-                  <p class="upgrade-subtitle error-message">Rất tiếc, tính năng nâng cấp PRO hiện chỉ dành cho các bạn học lớp chuyên hoặc có kế hoạch thi chuyên tại HỌC TẬP THỦ ĐỨC.</p>
-                  <p class="upgrade-subtitle error-message">Nếu có nhầm lẫn, vui lòng liên hệ quản trị viên.</p>
-             </div>
-              <button class="btn btn-secondary-outline back-btn" data-target-step="step-question">
-                  <i class="fas fa-arrow-left"></i> Quay lại
-              </button>
-               <a href="/" class="btn btn-primary-glow home-link loading-link">Về Trang Chủ</a>
-         </div>
-
-        <!-- Flash Message Area -->
-        <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
-            <div class="flash-message-container" id="flashMessageUpgrade">
-                 <%# Use JS to display this as a toast or styled message %>
-                 <span data-message="<%= message.message %>" data-type="<%= message.type %>"></span>
-            </div>
-        <% } %>
 
     </div>
-</section>
+</div>
 
-<%# Footer might be excluded for dedicated pages like this %>
-<%- include('partials/footer') %>
-
-<!-- Add page-specific JS here -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<!-- Include other necessary libs like alerts.js -->
-<script src="/js/alerts.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GSAP & Config ---
-    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const stepAdvertise = document.getElementById('step-advertise');
-    const stepQuestion = document.getElementById('step-question');
-    const stepSecretKey = document.getElementById('step-secret-key');
-    const stepNotEligible = document.getElementById('step-not-eligible');
-    const allSteps = [stepAdvertise, stepQuestion, stepSecretKey, stepNotEligible].filter(Boolean);
-    const upgradeForm = document.getElementById('upgradeForm');
-    const finalUpgradeBtn = document.getElementById('finalUpgradeBtn');
-
-    // --- Step Transition Function ---
-    const goToStep = (targetStepElement) => {
-        if (!targetStepElement || prefersReducedMotion) {
-            // Simple show/hide fallback
-            allSteps.forEach(step => step.style.display = (step === targetStepElement) ? 'block' : 'none');
-            if(targetStepElement) targetStepElement.style.opacity = 1;
-            return;
+    document.addEventListener("DOMContentLoaded", () => {
+        // Form Loading State
+        const form = document.getElementById('upgradeForm');
+        if(form) {
+            form.addEventListener('submit', (e) => {
+                const btn = form.querySelector('.btn-upgrade');
+                if(btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                }
+            });
         }
 
-        const currentVisibleStep = allSteps.find(step => step.style.display !== 'none' && parseFloat(gsap.getProperty(step, "opacity")) > 0);
-        const tl = gsap.timeline();
+        // --- ANIMATION FIX ---
+        if (typeof gsap !== 'undefined') {
+            // 1. Header
+            gsap.fromTo('.upgrade-header', 
+                { y: -30, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.8, ease: 'back.out(1.7)', clearProps: 'all' }
+            );
 
-        // Animate out current step (if any)
-        if (currentVisibleStep && currentVisibleStep !== targetStepElement) {
-             tl.to(currentVisibleStep, { duration: 0.4, autoAlpha: 0, y: -30, ease: 'power2.in' });
-             tl.set(currentVisibleStep, { display: 'none' }); // Hide after animating out
+            // 2. Card thường (Bên trái)
+            gsap.fromTo('.plan-card:not(.pro)', 
+                { x: -30, opacity: 0 },
+                { x: 0, opacity: 1, duration: 0.8, delay: 0.2, clearProps: 'all' }
+            );
+
+            // 3. Card PRO (Bên phải - Quan trọng)
+            // Lưu ý: scale kết thúc là 1.05 vì trong CSS chúng ta đã set transform: scale(1.05)
+            gsap.fromTo('.plan-card.pro', 
+                { scale: 0.8, opacity: 0 },
+                { scale: 1.05, opacity: 1, duration: 0.8, delay: 0.4, ease: 'elastic.out(1, 0.5)', clearProps: 'opacity,visibility' } 
+                // Chỉ clear opacity, giữ lại transform scale của CSS
+            );
+        } else {
+            // Fallback: Nếu GSAP không tải được, ép hiển thị tất cả
+            console.warn("GSAP not loaded. Forcing display.");
+            document.querySelectorAll('.upgrade-header, .plan-card').forEach(el => {
+                el.style.opacity = '1';
+                el.style.visibility = 'visible';
+                el.style.transform = 'none';
+            });
+            // Riêng thẻ PRO cần scale lại theo CSS gốc
+            const proCard = document.querySelector('.plan-card.pro');
+            if(proCard) proCard.style.transform = 'scale(1.05)';
         }
-
-        // Animate in target step
-         tl.set(targetStepElement, { display: 'block', y: 30, autoAlpha: 0 }); // Set initial state
-         tl.to(targetStepElement, { duration: 0.6, autoAlpha: 1, y: 0, ease: 'power3.out' });
-
-        // Optional: Animate elements within the target step
-        const innerElements = targetStepElement.querySelectorAll('[data-animate-step]'); // Add this attribute to elements if needed
-        if (innerElements.length > 0) {
-             tl.from(innerElements, {
-                 duration: 0.5,
-                 autoAlpha: 0,
-                 y: 20,
-                 stagger: 0.1,
-                 ease: 'power2.out'
-             }, "-=0.3"); // Overlap with step entrance
-        }
-    };
-
-    // --- Initial Page Load Animations ---
-    if (!prefersReducedMotion) {
-         gsap.from('[data-animate="container-fade-in"]', { duration: 1, autoAlpha: 0, ease: 'power2.inOut' });
-         // Stagger feature cards
-         gsap.from('[data-animate="feature-stagger"]', {
-             duration: 0.7,
-             autoAlpha: 0,
-             y: 50,
-             scale: 0.9,
-             stagger: 0.1,
-             ease: 'power3.out',
-             delay: 0.3 // Delay after container fades in
-         });
-         // Animate initial button
-         gsap.from('#goToQuestionBtn', { duration: 0.8, autoAlpha: 0, scale: 0.8, ease: 'back.out(1.7)', delay: 0.8 });
-    }
-
-    // --- Button Click Handlers for Step Navigation ---
-    document.getElementById('goToQuestionBtn')?.addEventListener('click', () => goToStep(stepQuestion));
-
-    document.querySelectorAll('.qualification-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const answer = btn.dataset.answer;
-            if (answer === 'yes') {
-                goToStep(stepSecretKey);
-            } else {
-                goToStep(stepNotEligible);
-            }
-        });
     });
-
-    document.querySelectorAll('.back-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetStepId = btn.dataset.targetStep;
-            const targetStepElement = document.getElementById(targetStepId);
-            goToStep(targetStepElement);
-        });
-    });
-
-    // --- Input Field Handling (reuse from login) ---
-     const inputs = document.querySelectorAll('.form-input-v2');
-     inputs.forEach(input => {
-         input.addEventListener('focus', () => input.closest('.input-field-group')?.classList.add('focused'));
-         input.addEventListener('blur', () => {
-             const group = input.closest('.input-field-group');
-             if (!group) return;
-             group.classList.remove('focused');
-             if (input.value !== "") group.classList.add('filled');
-             else group.classList.remove('filled');
-         });
-         if (input.value !== "") input.closest('.input-field-group')?.classList.add('filled');
-     });
-
-    // --- Final Upgrade Form Submission ---
-     if (upgradeForm && finalUpgradeBtn) {
-         upgradeForm.addEventListener('submit', (e) => {
-             if (upgradeForm.checkValidity()) {
-                 finalUpgradeBtn.classList.add('submitting');
-                 finalUpgradeBtn.disabled = true;
-                 // Optional: Show global overlay
-                 setTimeout(() => { document.getElementById("loading-overlay")?.classList.add("active"); }, 200);
-             } else {
-                  // Optional: Shake animation for invalid fields
-                  const invalidFields = upgradeForm.querySelectorAll(':invalid');
-                  invalidFields.forEach(field => {
-                       gsap.fromTo(field.closest('.input-field-group'), { x: 0 }, { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' });
-                  });
-             }
-         });
-     }
-
-    // --- Display Flash Message (if present) ---
-    const flashData = document.querySelector('#flashMessageUpgrade span');
-    if (flashData && typeof showAlert === 'function') {
-        const message = flashData.dataset.message;
-        const type = flashData.dataset.type || 'info'; // Default to 'info'
-        showAlert(message, type, 6000);
-         // Optionally remove the flash container after showing
-         // document.getElementById('flashMessageUpgrade')?.remove();
-    } else if (flashData) {
-         console.error("showAlert function not found, cannot display flash message:", flashData.dataset.message);
-    }
-
-}); // End DOMContentLoaded
 </script>
+
+<%- include('partials/footer') %>

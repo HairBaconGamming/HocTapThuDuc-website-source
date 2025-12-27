@@ -1,0 +1,78 @@
+/* Container chính */
+.course-layout {
+    max-width: 1000px;
+    margin: 40px auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 40px;
+}
+
+/* Header môn học */
+.subject-hero {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    border: 3px solid var(--dark-ink);
+    box-shadow: 8px 8px 0px var(--pop-blue);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.subject-thumb { width: 100px; height: 100px; border-radius: 15px; object-fit: cover; border: 2px solid var(--dark-ink); }
+
+/* --- ACCORDION (Cây bài học) --- */
+.curriculum-wrapper {
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.unit-item { border-bottom: 1px solid #eee; }
+.unit-item:last-child { border-bottom: none; }
+
+/* Unit Header (Click để mở) */
+.unit-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    color: var(--dark-ink);
+    transition: 0.2s;
+}
+.unit-header:hover { background: #e3f2fd; }
+.unit-header .toggle-icon { transition: 0.3s; }
+.unit-header.active .toggle-icon { transform: rotate(180deg); }
+
+/* Lesson List (Ẩn/Hiện) */
+.lesson-list {
+    display: none; /* Ẩn mặc định */
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    background: white;
+}
+.lesson-list.open { display: block; }
+
+.lesson-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    border-top: 1px solid #f0f0f0;
+    text-decoration: none;
+    color: #555;
+    transition: 0.2s;
+}
+.lesson-item:hover { background: #fafafa; color: var(--primary); padding-left: 30px; }
+
+.lesson-icon { font-size: 0.9rem; width: 20px; text-align: center; }
+.lesson-meta { margin-left: auto; font-size: 0.8rem; color: #999; display: flex; gap: 10px; align-items: center; }
+.badge-pro { background: gold; color: #b45309; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
+
+/* Responsive */
+@media (max-width: 800px) { .course-layout { grid-template-columns: 1fr; } }

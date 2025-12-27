@@ -7,6 +7,7 @@ const NewsSchema = new mongoose.Schema({
   category: { type: String, required: true }, // e.g., "Học tập", "Tuyển sinh", "Tài khoản PRO"
   subject: { type: mongoose.Schema.Types.ObjectId, ref: "Subject" },
   postedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  image: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

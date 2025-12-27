@@ -40,7 +40,9 @@ module.exports.isPro = function (req, res, next) {
   }
 };
 
-// =======================================================
+const User = require('../models/User');
+
+
 // ===== MIDDLEWARES PHÂN QUYỀN ADMIN PANEL MỚI =====
 // =======================================================
 

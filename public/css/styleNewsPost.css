@@ -1,0 +1,270 @@
+/* public/css/styleNewsPost.css */
+
+:root {
+    --news-bg: #fff;
+    --news-border: #2d3436;
+    --news-shadow: 6px 6px 0px rgba(45, 52, 54, 0.2);
+    --tag-study: #a2d2ff;
+    --tag-event: #ffc8dd;
+    --tag-enroll: #b9fbc0;
+}
+
+.newsroom-wrapper {
+    max-width: 900px;
+    margin: 40px auto;
+    font-family: 'Quicksand', sans-serif;
+}
+
+/* Header */
+.newsroom-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.newsroom-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--news-border);
+    text-transform: uppercase;
+}
+
+/* Form Container */
+.news-editor-card {
+    background: var(--news-bg);
+    border: 3px solid var(--news-border);
+    border-radius: 25px;
+    padding: 40px;
+    box-shadow: var(--news-shadow);
+}
+
+/* 1. Cover Image Upload */
+.cover-upload-zone {
+    width: 100%;
+    height: 300px;
+    background: #f8f9fa;
+    border: 3px dashed #ccc;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.cover-upload-zone:hover {
+    border-color: var(--news-border);
+    background: #f0f8ff;
+}
+
+.cover-placeholder {
+    text-align: center;
+    color: #999;
+    pointer-events: none;
+}
+
+/* Nút xóa ảnh */
+.btn-remove-cover {
+    position: absolute;
+    top: 15px; right: 15px;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.9);
+    color: #c62828;
+    border: 2px solid #c62828;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.btn-remove-cover:hover { transform: scale(1.1); background: #c62828; color: white; }
+
+/* 2. Inputs */
+.news-title-input {
+    width: 100%;
+    border: none;
+    border-bottom: 3px solid #eee;
+    font-size: 2rem;
+    font-weight: 800;
+    padding: 10px 0;
+    color: var(--news-border);
+    transition: 0.3s;
+    margin-bottom: 25px;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.news-title-input:focus {
+    outline: none;
+    border-color: var(--news-border);
+}
+
+.news-title-input::placeholder { color: #ccc; font-weight: 600; }
+
+/* 3. Category Selector (Chips) */
+.cat-label {
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 10px;
+    display: block;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.cat-selector {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.cat-option input { display: none; }
+
+.cat-chip {
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 2px solid #eee;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+}
+
+.cat-chip:hover { transform: translateY(-3px); }
+
+/* Active States */
+.cat-option input:checked + .cat-chip {
+    border-color: var(--news-border);
+    color: var(--news-border);
+    box-shadow: 3px 3px 0px var(--news-border);
+}
+
+.cat-option input[value="Học tập"]:checked + .cat-chip { background: var(--tag-study); }
+.cat-option input[value="Hoạt động"]:checked + .cat-chip { background: var(--tag-event); }
+.cat-option input[value="Tuyển sinh"]:checked + .cat-chip { background: var(--tag-enroll); }
+
+/* 4. Action Bar */
+.action-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px dashed #eee;
+}
+
+.btn-post {
+    padding: 12px 35px;
+    border-radius: 50px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    background: var(--news-border);
+    color: white;
+    box-shadow: 4px 4px 0px #aaa;
+    transition: 0.2s;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-post:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0px #aaa;
+}
+
+.btn-cancel {
+    padding: 12px 25px;
+    border-radius: 50px;
+    text-decoration: none;
+    color: #666;
+    font-weight: 700;
+    border: 2px solid #eee;
+    transition: 0.2s;
+}
+.btn-cancel:hover { background: #f5f5f5; }
+
+/* --- SMART THUMBNAIL UPLOADER --- */
+.thumb-switcher {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.thumb-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 2px solid #eee;
+    background: white;
+    color: #888;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.thumb-tab.active {
+    background: var(--news-border);
+    color: white;
+    border-color: var(--news-border);
+}
+
+.thumb-input-group { display: none; }
+.thumb-input-group.active { display: block; }
+
+/* Input URL */
+.url-input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px dashed #ccc;
+    border-radius: 15px;
+    background: #fafafa;
+    text-align: center;
+    color: var(--news-border);
+    font-weight: 600;
+}
+.url-input:focus { border-color: var(--news-border); outline: none; background: white; }
+
+/* Preview Image Adjustment */
+.cover-preview {
+    object-fit: cover; /* Đảm bảo ảnh luôn đẹp dù tỉ lệ nào */
+    border-radius: 18px; /* Bo góc trùng với border cha */
+}
+
+/* Thêm vào styleNewsPost.css */
+
+.thumb-tab.locked {
+    background: #f5f5f5;
+    color: #999;
+    border-color: #ddd;
+    cursor: pointer; /* Vẫn cho click để dẫn sang trang Upgrade */
+    position: relative;
+    padding-right: 30px;
+}
+
+.thumb-tab.locked:hover {
+    background: #fff3cd; /* Màu vàng nhạt cảnh báo */
+    color: #856404;
+    border-color: #ffeeba;
+}
+
+/* Biểu tượng khóa nhỏ */
+.thumb-tab.locked::after {
+    content: ''; 
+    /* Hoặc dùng font awesome trong html như trên */
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .news-editor-card { padding: 20px; }
+    .news-title-input { font-size: 1.5rem; }
+}

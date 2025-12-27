@@ -138,3 +138,5 @@ Thumbs.db
 # Temporary folders
 tmp/
 temp/
+
+package-lock.json

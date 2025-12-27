@@ -1,269 +1,31 @@
-<!-- views/newsDetail.ejs -->
-<%- include('partials/header', { title: newsItem.title, user: user, activePage: 'news' }) %>
-<link rel="stylesheet" href="/styleNewsDetail.css"> 
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleNewsDetail.css">
 
-<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css"> -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script> -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script> -->
-
-<!-- <link href="/css/prism-theme.css" rel="stylesheet" /> -->
-<!-- <script src="/js/prism.js"></script> -->
-
-<%
-// Configure marked (optional, but good practice)
-marked.setOptions({
-  renderer: new marked.Renderer(),
-  highlight: function(code, lang) {
-    // Use Prism.js for highlighting if available
-    const Prism = require('prismjs');
-    // Load languages needed (loadLanguages requires Prism setup)
-    // require('prismjs/components/prism-javascript'); // Example
-    // require('prismjs/components/prism-css'); // Example
-    if (Prism.languages[lang]) {
-      return Prism.highlight(code, Prism.languages[lang], lang);
-    } else {
-      return code; // Return unhighlighted if language not found
-    }
-  },
-  pedantic: false,
-  gfm: true,
-  breaks: false, // Use GFM line breaks
-  smartLists: true,
-  smartypants: false, // Use ' or "
-  xhtml: false
-});
-
-// Function to safely parse markdown
-function parseMarkdownSafe(markdownContent) {
-    if (!markdownContent || typeof markdownContent !== 'string') {
-        return '<p class="placeholder-text">Nội dung không có sẵn.</p>';
-    }
-    try {
-        // Basic sanitization (extremely simple, consider a dedicated library like DOMPurify for production)
-        // This removes <script> tags as a minimal precaution
-        const sanitized = markdownContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        return marked.parse(sanitized);
-    } catch (e) {
-        console.error("Markdown Parsing Error:", e);
-        // Return escaped original content as fallback
-        return `<p class="placeholder-text">Lỗi hiển thị nội dung.</p><pre><code>${markdownContent.replace(/</g, "<").replace(/>/g, ">")}</code></pre>`;
-    }
-}
-%>
-
-<!-- Reading Progress Bar -->
-<div class="reading-progress-bar" id="readingProgressBar"></div>
-
-<section class="news-detail-page-section">
-
-    <!-- Background Elements -->
-    <div class="news-detail-background">
-        <div class="bg-swirl swirl-news-1"></div>
-        <div class="bg-swirl swirl-news-2"></div>
-        <div id="tsparticles-news-detail"></div> 
-    </div>
-
-    <div class="container news-detail-container">
-
-        <!-- Article Header -->
-        <header class="news-article-masthead" data-animate="masthead-fade-in">
-            <div class="masthead-content">
-                 <div class="masthead-meta">
-                     <% if(newsItem.category) { %>
-                         <% const categoryClass = newsItem.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); %>
-                         <span class="news-badge category-badge-news news-cat-<%= categoryClass %>"><%= newsItem.category %></span>
-                      <% } %>
-                     <% if (newsItem.createdAt) { %>
-                        <span class="masthead-date"><i class="far fa-calendar-alt"></i> <%= newsItem.createdAt.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
-                     <% } %>
-                      <% if (newsItem.postedBy) { %>
-                         <span class="masthead-author"><i class="fas fa-user-edit"></i> <a href="/profile/<%= newsItem.postedBy._id %>" class="author-link loading-link"><%= newsItem.postedBy.username || 'Admin' %></a></span>
-                      <% } %>
-                 </div>
-                 <h1 class="news-article-headline"><%= newsItem.title %></h1>
+<div class="container">
+    <div class="article-container">
+        <div class="article-header">
+            <span class="article-cat"><%= newsItem.category %></span>
+            <h1 class="article-title"><%= newsItem.title %></h1>
+            <div class="article-meta">
+                Đăng bởi <b><%= newsItem.postedBy ? newsItem.postedBy.username : 'Admin' %></b> 
+                • <%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN') %>
             </div>
-        </header>
+        </div>
 
-        <!-- Main Article Content -->
-        <article class="news-article-body prose-styling" id="newsContentContainer" data-animate="content-fade-in">
-             <%- parseMarkdownSafe(newsItem.content) %>
-        </article>
+        <div class="article-content">
+            <%- marked.parse(newsItem.content) %>
+        </div>
 
-        <!-- Action/Navigation Footer -->
-        <footer class="news-article-footer" data-animate="footer-fade-up">
-             <!-- <div class="social-share"> ... </div> -->
-
-             <a href="/news" class="btn btn-secondary-outline back-to-news-btn loading-link">
-                 <i class="fas fa-arrow-left"></i> Quay lại Danh sách Tin tức
-             </a>
-        </footer>
-
-    </div> <!-- End .news-detail-container -->
-
-</section>
+        <div class="article-actions">
+            <a href="/news" class="btn btn-secondary">&larr; Quay lại danh sách</a>
+            
+            <% if (user && newsItem.postedBy && user._id.toString() === newsItem.postedBy._id.toString()) { %>
+                <div>
+                    <a href="/news/<%= newsItem._id %>/edit" class="btn btn-sm" style="background:#eee;">Sửa</a>
+                    </div>
+            <% } %>
+        </div>
+    </div>
+</div>
 
 <%- include('partials/footer') %>
-
-<!-- JS Libraries (ensure loaded correctly, preferably in footer) -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -> Assumed Server Side -->
-<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css"> -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script> -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script> -->
-<!-- <link href="/css/prism-theme.css" rel="stylesheet" /> -->
-<!-- <script src="/js/prism.js"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.9.3/tsparticles.bundle.min.js"></script>
-
-<!-- Page Specific JS -->
-<script>
-// --- NEWS DETAIL MASTERPIECE SCRIPT ---
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Config & Refs ---
-    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined' || typeof tsParticles === 'undefined') {
-        console.error("GSAP, ScrollTrigger, or tsParticles not loaded!"); return;
-    }
-    gsap.registerPlugin(ScrollTrigger);
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const contentContainer = document.getElementById('newsContentContainer');
-    const progressBar = document.getElementById('readingProgressBar');
-
-    // --- Reading Progress Bar ---
-    if (progressBar && contentContainer && !prefersReducedMotion) {
-        ScrollTrigger.create({
-            trigger: contentContainer, // Trigger based on content area
-            start: "top top",      // Start when top of content hits top of viewport
-            end: "bottom bottom",  // End when bottom of content hits bottom of viewport
-            scrub: 0.3,            // Smooth scrubbing
-            onUpdate: self => {
-                // Animate width based on progress
-                gsap.to(progressBar, { width: `${self.progress * 100}%`, ease: 'none', duration: 0.1 });
-            }
-        });
-    } else if (progressBar) {
-         // Hide progress bar if reduced motion
-         progressBar.style.display = 'none';
-    }
-
-    // --- Initial Page Animations ---
-    if (!prefersReducedMotion) {
-        const tl = gsap.timeline({ delay: 0.2 });
-
-        // Masthead fade in
-        tl.from('[data-animate="masthead-fade-in"]', { duration: 1, autoAlpha: 0, y: -30, ease: 'power3.out' });
-        // Stagger meta info and title
-        tl.from('.masthead-content > *', { duration: 0.8, autoAlpha: 0, y: 20, stagger: 0.15, ease: 'power2.out'}, "-=0.6");
-
-        // Content fade in (slight delay after header)
-        tl.from('[data-animate="content-fade-in"]', { duration: 1, autoAlpha: 0, y: 40, ease: 'power3.out' }, "-=0.5");
-
-        // Footer fade up
-        tl.from('[data-animate="footer-fade-up"]', { duration: 0.8, autoAlpha: 0, y: 30, ease: 'power2.out'}, "-=0.4");
-
-        // Animate progress bar appearing
-        if(progressBar){
-            tl.from(progressBar, { scaleX: 0, duration: 1, ease: 'power3.out'}, 0.5); // Animate width from 0
-        }
-
-    } else {
-        // Instantly show elements if reduced motion
-        gsap.set('[data-animate="masthead-fade-in"], [data-animate="content-fade-in"], [data-animate="footer-fade-up"]', { autoAlpha: 1 });
-        if(progressBar) progressBar.style.width = '0%'; // Start at 0 but visible
-    }
-
-
-    // --- Post-Render Processing (KaTeX, Highlighting, Lightbox) ---
-    function processRenderedContent() {
-        if (!contentContainer) return;
-
-        // 1. KaTeX Rendering
-        if (typeof renderMathInElement === 'function') {
-            try {
-                 renderMathInElement(contentContainer, {
-                     delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true } ],
-                     throwOnError: false
-                 });
-            } catch (error) { console.error("KaTeX rendering error:", error); }
-        } else { console.warn("KaTeX auto-render function not found."); }
-
-        // 2. Code Highlighting (Prism.js Example)
-        if (typeof Prism !== 'undefined') {
-             Prism.highlightAllUnder(contentContainer);
-         } else { /* console.warn("Prism.js not loaded."); */ }
-
-        // 3. Image Lightbox Setup
-         const images = contentContainer.querySelectorAll('img');
-         images.forEach(img => {
-              // Add cursor pointer only if image has a src
-              if (img.getAttribute('src') && !img.classList.contains('no-lightbox')) { // Add 'no-lightbox' class to exclude specific images
-                 img.style.cursor = 'pointer';
-                 img.addEventListener('click', () => {
-                     // Use the existing lightbox logic if available from another page's JS
-                     if (typeof openLessonLightbox === 'function') { // Reuse function if defined
-                         openLessonLightbox(img.src, img.alt || 'Hình ảnh bài viết');
-                     } else {
-                         // Basic fallback or define lightbox logic here if needed
-                          console.log('Lightbox function not defined, opening image source:', img.src);
-                          window.open(img.src, '_blank'); // Simple fallback
-                     }
-                 });
-              }
-         });
-
-    } // End processRenderedContent
-
-    processRenderedContent(); // Run processing after initial DOM load
-
-    // --- Background Particles (tsparticles) ---
-     function initNewsDetailParticles() {
-        if (prefersReducedMotion) return;
-        const targetEl = document.getElementById('tsparticles-news-detail');
-        if (!targetEl) { console.warn("tsparticles-news-detail element not found"); return; };
-
-        tsParticles.load("tsparticles-news-detail", {
-            fpsLimit: 60,
-            particles: {
-                number: { value: 80, density: { enable: true, value_area: 1000 } }, // More particles
-                color: { value: ["#FFFFFF", "#7873F5", "#FF6EC4", "#FFDD57"] }, // Use theme colors
-                shape: { type: ["circle", "triangle"] }, // Mix shapes
-                opacity: { value: {min: 0.1, max: 0.4}, random: true, anim: { enable: true, speed: 0.6, minimumValue: 0.05, sync: false } },
-                size: { value: {min: 1, max: 2.5}, random: true },
-                links: { enable: true, distance: 100, color: "rgba(255,255,255,0.05)", opacity: 0.1, width: 1 }, // Subtle links
-                move: {
-                    enable: true, speed: 0.5, direction: "none", random: true, straight: false,
-                    outModes: { default: "out" }, attract: { enable: false },
-                     warp: true // Warp particles around edges
-                },
-            },
-            interactivity: {
-                 detect_on: "window",
-                 events: {
-                     onHover: { enable: true, mode: "bubble" }, // Bubble effect on hover
-                     onclick: { enable: false }
-                 },
-                  modes: { // Configure bubble effect
-                     bubble: { distance: 150, duration: 2, opacity: 0.6, size: 3 }
-                 }
-             },
-            retina_detect: true,
-            background: { color: "transparent" },
-        }).catch(error => {
-            console.error("tsParticles background load error:", error);
-        });
-     }
-     initNewsDetailParticles(); // Initialize background particles
-
-    // --- Loading Link Script ---
-    document.querySelectorAll(".loading-link").forEach(anchor => {
-        anchor.addEventListener("click", function(e) {
-            const overlay = document.getElementById("loading-overlay");
-            if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
-                 if (this.href !== window.location.href + '#' && this.href !== window.location.href) {
-                      overlay.classList.add("active");
-                 }
-            }
-        });
-    });
-
-}); // End DOMContentLoaded
-</script>

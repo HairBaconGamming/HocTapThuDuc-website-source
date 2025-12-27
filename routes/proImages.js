@@ -9,10 +9,14 @@ const { isPro } = require("../middlewares/auth");
 const router = express.Router();
 
 // URI kết nối MongoDB từ biến môi trường
-const mongoURI = process.env.IMAGE_MONGO_URI;
+let mongoURI = process.env.IMAGE_MONGO_URI;
+if (typeof mongoURI === 'string') mongoURI = mongoURI.replace(/^"(.*)"$/, '$1');
+if (!mongoURI) {
+  console.warn('IMAGE_MONGO_URI not set; using mongodb://localhost:27017/studypro as fallback for pro-images');
+  mongoURI = 'mongodb://localhost:27017/studypro';
+}
 
 // Tạo kết nối tới MongoDB
-// Các tùy chọn useNewUrlParser và useUnifiedTopology không còn cần thiết
 const conn = mongoose.createConnection(mongoURI);
 
 let bucket;

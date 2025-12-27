@@ -1,408 +1,93 @@
-<!-- views/dashboard.ejs -->
-<%- include('partials/header', { title: 'Bảng điều khiển', user: user, activePage: 'dashboard' }) %>
+<%- include('partials/header') %>
+<style>
+    .dashboard-header {
+        background: white;
+        padding: 30px;
+        border-radius: var(--radius);
+        margin-bottom: 30px;
+        border: 2px dashed var(--primary); /* Viền nét đứt */
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .avatar-large {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--secondary);
+    }
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    .action-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: var(--shadow-hard);
+        border: 2px solid transparent;
+        cursor: pointer;
+    }
+    .action-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-5px);
+    }
+</style>
 
-<link rel="stylesheet" href="/styleDashboard.css">
-<link rel="stylesheet" href="/styleNews.css"> 
-  
-<section class="dashboard-page-section"> <%# New wrapper class %>
-
-    <!-- Optional: Dynamic Background -->
-    <div class="dashboard-background">
-        <div class="bg-shape shape-1"></div>
-        <div class="bg-shape shape-2"></div>
+<div class="container">
+    <div class="dashboard-header">
+        <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/7915/7915522.png' %>" class="avatar-large">
+        <div>
+            <h1>Hi, <%= user.username %>!</h1>
+            <p style="color: #888;">Hôm nay bạn muốn làm gì?</p>
+        </div>
+        <div style="margin-left: auto;">
+            <a href="/profile/edit" class="btn btn-secondary">✏️ Sửa hồ sơ</a>
+        </div>
     </div>
 
-    <div class="container dashboard-container">
+    <div class="action-grid">
+        <a href="/my-tree" class="action-card">
+            <span style="font-size: 2.5rem;">🌱</span>
+            <h3>Cây của tôi</h3>
+            <p>Level: <b><%= user.treeLevel || 0 %></b></p>
+        </a>
+        <a href="/lesson/add" class="action-card">
+            <span style="font-size: 2.5rem;">📝</span>
+            <h3>Soạn bài mới</h3>
+            <p>Chia sẻ kiến thức</p>
+        </a>
+        <a href="/news/post" class="action-card">
+            <span style="font-size: 2.5rem;">📢</span>
+            <h3>Đăng tin</h3>
+            <p>Thông báo cho lớp</p>
+        </a>
+    </div>
 
-        <!-- Dashboard Header -->
-        <div class="dashboard-header-v2" data-animate="fade-down">
-            <div class="header-content">
-                <h1>Bảng Điều Khiển</h1>
-                <p>Chào mừng trở lại, <%= user.username %>! Quản lý nội dung của bạn tại đây.</p>
-            </div>
-            <div class="header-actions">
-                <a href="/lesson/add" class="btn btn-primary-glow loading-link"><i class="fas fa-plus"></i> Tạo Bài Học Mới</a>
-                <a href="/news/post" class="btn btn-secondary-glow loading-link"><i class="fas fa-pen-to-square"></i> Đăng Tin Tức Mới</a>
-            </div>
-        </div>
-
-        <!-- Tab Navigation (Custom Styled) -->
-        <div class="dashboard-tabs" data-animate="fade-up" data-anim-delay="0.2">
-            <button class="tab-button active" data-tab-target="#lessonsPanel">
-                <i class="fas fa-book-open icon"></i> Bài Học Của Tôi
-            </button>
-            <button class="tab-button" data-tab-target="#newsPanel">
-                 <i class="far fa-newspaper icon"></i> Tin Tức Của Tôi
-            </button>
-             <%# Add more tabs here if needed, e.g., Stats %>
-            <!-- <button class="tab-button" data-tab-target="#statsPanel">
-                 <i class="fas fa-chart-line icon"></i> Thống Kê
-            </button> -->
-        </div>
-
-        <!-- Tab Content Panels -->
-        <div class="dashboard-tab-content">
-
-            <!-- Lessons Panel -->
-            <div class="tab-panel active" id="lessonsPanel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-list-ul"></i> Danh sách bài học đã tạo</h3>
-                    <%# Improved Filter Bar for Lessons %>
-                    <div class="dashboard-filter-bar">
-                        <form method="GET" action="/dashboard" class="filter-form-inline">
-                             <input type="hidden" name="tab" value="lessons"> <%# Keep track of tab %>
-                             <div class="filter-group">
-                                 <label for="subjectFilter"><i class="fas fa-filter"></i> Môn:</label>
-                                 <select name="subject" id="subjectFilter" class="filter-select-v2">
-                                      <option value="">Tất cả</option>
-                                      <% subjects.forEach(function(subj) { %>
-                                          <option value="<%= subj._id %>" <%= (currentSubject === subj._id.toString()) ? 'selected' : '' %>><%= subj.name %></option>
-                                      <% }); %>
-                                 </select>
-                             </div>
-                             <div class="filter-group">
-                                  <label for="categoryFilter">Loại:</label>
-                                  <select name="category" id="categoryFilter" class="filter-select-v2">
-                                      <option value="">Tất cả</option>
-                                      <option value="grammar" <%= (currentCategory === 'grammar') ? 'selected' : '' %>>Ngữ pháp</option>
-                                      <option value="vocabulary" <%= (currentCategory === 'vocabulary') ? 'selected' : '' %>>Từ vựng</option>
-                                      <option value="exercise" <%= (currentCategory === 'exercise') ? 'selected' : '' %>>Bài tập</option>
-                                      <option value="theory" <%= (currentCategory === 'theory') ? 'selected' : '' %>>Lí thuyết</option>
-                                  </select>
-                              </div>
-                             <div class="filter-group">
-                                  <label for="sortSelect">Sắp xếp:</label>
-                                  <select name="sort" id="sortSelect" class="filter-select-v2">
-                                      <option value="desc" <%= (currentSort === 'desc') ? 'selected' : '' %>>Mới nhất</option>
-                                      <option value="asc" <%= (currentSort === 'asc') ? 'selected' : '' %>>Cũ nhất</option>
-                                  </select>
-                              </div>
-                            <div class="filter-group search-group">
-                                <input type="text" name="q" class="filter-search-v2" placeholder="Tìm bài học..." value="<%= currentQuery %>">
-                                <button type="submit" class="btn-icon-only" aria-label="Tìm kiếm"><i class="fas fa-search"></i></button>
-                            </div>
-                             <button type="submit" class="btn btn-primary filter-apply-btn loading-link">Áp dụng</button>
-                        </form>
+    <div style="background: white; padding: 20px; border-radius: var(--radius); border: 2px solid #eee;">
+        <h3 style="margin-bottom: 20px;">Bài học của tôi</h3>
+        <% if (lessons && lessons.length > 0) { %>
+            <div style="display: grid; gap: 15px;">
+                <% lessons.forEach(lesson => { %>
+                    <div style="padding: 15px; background: #f9f9f9; border-radius: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="margin-bottom: 5px;"><%= lesson.title %></h4>
+                            <span class="badge" style="background: #e0e0e0;"><%= lesson.subject ? lesson.subject.name : 'Chưa phân loại' %></span>
+                        </div>
+                        <div>
+                            <a href="/lesson/<%= lesson._id %>" class="btn btn-secondary btn-sm">Xem</a>
+                            <a href="/lesson/<%= lesson._id %>/edit" class="btn btn-sm" style="color: #888;">Sửa</a>
+                        </div>
                     </div>
-                </div>
-
-                <%# Use the existing lessons-grid class or a new one %>
-                <div class="dashboard-items-grid lessons-grid" data-animate-children="lesson-stagger">
-                    <% if (lessons && lessons.length > 0) { %>
-                        <% lessons.forEach(function(lesson, index) { %>
-                            <%# Use the existing lesson-card-v2 or adapt styling %>
-                            <div class="lesson-card-v2 dashboard-card" data-animate="lesson-stagger" style="--stagger-index: <%= index %>;">
-                                <div class="card-header">
-                                      <div class="badges">
-                                         <% if (lesson.isProOnly) { %><span class="badge pro-badge"><i class="fas fa-crown"></i> PRO</span><% } %>
-                                         <% if (lesson.isAIGenerated) { %><span class="badge ai-badge"><i class="fas fa-robot"></i> AI</span><% } %>
-                                          <span class="badge category-badge"><%= lesson.category %></span>
-                                          <span class="badge type-badge"><%= lesson.type %></span>
-                                      </div>
-                                      <span class="card-date"><%= lesson.createdAt.toLocaleDateString('vi-VN') %></span>
-                                </div>
-                                <div class="card-body">
-                                      <h4 class="card-title"><%= lesson.title %></h4> <%# Changed to h4 %>
-                                      <p class="card-subtitle">Môn: <%= lesson.subject ? lesson.subject.name : 'N/A' %></p>
-                                </div>
-                                 <div class="card-actions">
-                                     <a href="/lesson/<%= lesson._id %>" class="action-link view-link loading-link" title="Xem chi tiết"><i class="far fa-eye"></i></a>
-                                     <% if (user && lesson.createdBy._id.toString() === user._id.toString()) { %>
-                                         <a href="/lesson/<%= lesson._id %>/edit" class="action-link edit-link loading-link" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></a>
-                                         <form action="/lesson/<%= lesson._id %>/delete" method="POST" class="delete-form delete-lesson-form">
-                                             <button type="submit" class="action-link delete-link" title="Xóa"><i class="fas fa-trash-alt"></i></button>
-                                         </form>
-                                      <% } %>
-                                 </div>
-                                 <div class="card-hover-glow"></div>
-                            </div>
-                        <% }); %>
-                    <% } else { %>
-                         <div class="no-content-panel">
-                             <i class="fas fa-folder-open"></i>
-                             <p>Bạn chưa tạo bài học nào.</p>
-                             <a href="/lesson/add" class="btn btn-secondary loading-link"><i class="fas fa-plus"></i> Tạo ngay</a>
-                         </div>
-                    <% } %>
-                </div>
+                <% }) %>
             </div>
-
-            <!-- News Panel -->
-            <div class="tab-panel" id="newsPanel">
-                 <div class="panel-header">
-                    <h3><i class="fas fa-list-alt"></i> Danh sách tin tức đã đăng</h3>
-                     <%# Improved Filter Bar for News %>
-                     <div class="dashboard-filter-bar">
-                          <form method="GET" action="/dashboard" class="filter-form-inline">
-                              <input type="hidden" name="tab" value="news"> <%# Keep track of tab %>
-                              <div class="filter-group">
-                                  <label for="newsCategoryFilter"><i class="fas fa-filter"></i> Thể loại:</label>
-                                   <select name="newsCategory" id="newsCategoryFilter" class="filter-select-v2">
-                                       <option value="">Tất cả</option>
-                                       <option value="Học tập" <%= (currentNewsCategory === 'Học tập') ? 'selected' : '' %>>Học tập</option>
-                                       <option value="Tuyển sinh" <%= (currentNewsCategory === 'Tuyển sinh') ? 'selected' : '' %>>Tuyển sinh</option>
-                                       <option value="Tài khoản PRO" <%= (currentNewsCategory === 'Tài khoản PRO') ? 'selected' : '' %>>Tài khoản PRO</option>
-                                       <option value="Thông báo" <%= (currentNewsCategory === 'Thông báo') ? 'selected' : '' %>>Thông báo</option> <%# Added option %>
-                                   </select>
-                               </div>
-                              <div class="filter-group">
-                                  <label for="newsSortSelect">Sắp xếp:</label>
-                                   <select name="newsSort" id="newsSortSelect" class="filter-select-v2">
-                                       <option value="desc" <%= (currentNewsSort === 'desc') ? 'selected' : '' %>>Mới nhất</option>
-                                       <option value="asc" <%= (currentNewsSort === 'asc') ? 'selected' : '' %>>Cũ nhất</option>
-                                   </select>
-                               </div>
-                             <div class="filter-group search-group">
-                                 <input type="text" name="newsQuery" class="filter-search-v2" placeholder="Tìm tin tức..." value="<%= currentNewsQuery %>">
-                                 <button type="submit" class="btn-icon-only" aria-label="Tìm kiếm"><i class="fas fa-search"></i></button>
-                             </div>
-                              <button type="submit" class="btn btn-primary filter-apply-btn loading-link">Áp dụng</button>
-                          </form>
-                     </div>
-                 </div>
-
-                 <%# Use a dedicated grid for news items %>
-                 <div class="dashboard-items-grid news-items-grid" data-animate-children="news-stagger">
-                      <% if (userNews && userNews.length > 0) { %>
-                          <% userNews.forEach((news, index) => { %>
-                              <%# Use the existing news-card class or adapt styling %>
-                              <div class="news-card dashboard-card" data-animate="news-stagger" style="--stagger-index: <%= index %>;">
-                                   <div class="card-header">
-                                        <div class="badges">
-                                            <span class="badge category-badge news-cat-<%= news.category.toLowerCase().replace(/\s+/g, '-') %>">
-                                                <%= news.category %>
-                                            </span>
-                                         </div>
-                                        <span class="card-date"><%= news.createdAt.toLocaleDateString('vi-VN') %></span>
-                                   </div>
-                                   <div class="card-body">
-                                       <h4 class="card-title"><%= news.title %></h4>
-                                       <p class="card-excerpt">
-                                            <%= news.content.length > 100 ? news.content.substring(0,100) + '...' : news.content %> <%# Shorter excerpt %>
-                                       </p>
-                                   </div>
-                                   <div class="card-actions">
-                                        <%# News actions might differ - View on site? %>
-                                        <a href="/news/<%= news._id %>" target="_blank" class="action-link view-link" title="Xem trên trang tin"><i class="fas fa-external-link-alt"></i></a>
-                                        <a href="/news/<%= news._id %>/edit" class="action-link edit-link loading-link" title="Chỉnh sửa"><i class="fas fa-pencil-alt"></i></a>
-                                        <form action="/news/<%= news._id %>?_method=DELETE" method="POST" class="delete-form delete-news-form">
-                                            <button type="submit" class="action-link delete-link" title="Xóa"><i class="fas fa-trash-alt"></i></button>
-                                        </form>
-                                   </div>
-                                   <div class="card-hover-glow"></div>
-                              </div>
-                          <% }); %>
-                      <% } else { %>
-                           <div class="no-content-panel">
-                               <i class="far fa-newspaper"></i>
-                               <p>Bạn chưa đăng tin tức nào.</p>
-                               <a href="/news/post" class="btn btn-secondary loading-link"><i class="fas fa-pen-to-square"></i> Đăng tin ngay</a>
-                           </div>
-                      <% } %>
-                 </div>
-            </div>
-
-            <!-- Stats Panel (Example Structure) -->
-            <!-- <div class="tab-panel" id="statsPanel"> -->
-                <!-- <h3>Thống kê nhanh</h3> -->
-                <!-- Add charts or stat cards here -->
-                <!-- <div class="stats-grid"> -->
-                    <!-- Stat card example -->
-                    <!-- <div class="stat-card"> -->
-                        <!--<h4>Tổng số bài học</h4>-->
-                        <!--<span class="stat-value"><%= lessons ? lessons.length : 0 %></span>-->
-                    <!--</div> -->
-                 <!-- </div> -->
-            <!-- </div> -->
-
-        </div> <!-- End dashboard-tab-content -->
-
-    </div> <!-- End dashboard-container -->
-</section>
+        <% } else { %>
+            <p style="text-align: center; color: #999;">Bạn chưa tạo bài học nào. Hãy thử soạn bài mới nhé!</p>
+        <% } %>
+    </div>
+</div>
 
 <%- include('partials/footer') %>
-
-<!-- Dashboard Specific JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-<%# Optional: Chart.js if using stats panel %>
-<%# <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> %>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GSAP & Config ---
-    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
-    gsap.registerPlugin(ScrollTrigger);
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // --- Tab Switching Logic ---
-    const tabs = document.querySelectorAll('.dashboard-tabs .tab-button');
-    const panels = document.querySelectorAll('.dashboard-tab-content .tab-panel');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetPanelId = tab.dataset.tabTarget;
-            const targetPanel = document.querySelector(targetPanelId);
-
-            if (!targetPanel) return;
-
-            // Update button active states
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            // Animate panels (if not reduced motion)
-            if (!prefersReducedMotion) {
-                const tl = gsap.timeline();
-                // Fade out currently active panel(s)
-                panels.forEach(p => {
-                    if (p.classList.contains('active') && p !== targetPanel) {
-                        tl.to(p, { duration: 0.3, autoAlpha: 0, y: -15, ease: 'power1.in' }, 0);
-                        tl.set(p, { display:'none' }); // Hide after fade
-                        p.classList.remove('active');
-                    }
-                });
-                // Fade in target panel
-                tl.set(targetPanel, { display:'block', y: 15, autoAlpha: 0 }); // Prepare for fade in
-                tl.to(targetPanel, { duration: 0.4, autoAlpha: 1, y: 0, ease: 'power2.out' });
-                targetPanel.classList.add('active');
-
-                // Trigger animations within the newly active panel (if needed)
-                ScrollTrigger.refresh(); // Refresh triggers after layout change
-                 // Example: Re-run stagger if elements were hidden
-                 const staggerAttr = targetPanel.querySelector('[data-animate-children]')?.dataset.animateChildren;
-                 if(staggerAttr){
-                     animateDashboardStagger(`.${staggerAttr}`, targetPanel); // Pass panel as context
-                 }
-
-            } else {
-                // Simple show/hide for reduced motion
-                panels.forEach(p => {
-                    p.style.display = (p === targetPanel) ? 'block' : 'none';
-                    p.classList.toggle('active', p === targetPanel);
-                });
-            }
-
-             // Update URL hash (optional, for bookmarking/linking)
-             // window.location.hash = targetPanelId.substring(1);
-
-             // Update hidden tab input in forms (for maintaining filter on submit)
-             document.querySelectorAll('.filter-form-inline input[name="tab"]').forEach(input => {
-                 input.value = targetPanelId.substring(1).replace('Panel',''); // e.g., 'lessons' or 'news'
-             });
-        });
-    });
-
-     // --- Function for Staggering Dashboard Items ---
-     function animateDashboardStagger(selector, context = document) {
-        if(prefersReducedMotion) return;
-        const items = gsap.utils.toArray(context.querySelectorAll(selector));
-        if(items.length === 0) return;
-
-         // Clear previous animations on these items before starting new ones
-         gsap.killTweensOf(items);
-
-         gsap.from(items, {
-             duration: 0.6,
-             autoAlpha: 0,
-             y: 40,
-             scale: 0.95,
-             ease: "power3.out",
-             stagger: 0.08,
-             // No ScrollTrigger needed here if triggered on tab switch,
-             // Or add one if you want scroll animation *within* the tab panel
-             // scrollTrigger: { ... }
-         });
-     }
-
-     // --- Handle Initial Tab State (from URL hash or default) & Initial Animations ---
-     const initialHash = window.location.hash;
-     let activeTabFound = false;
-     if (initialHash) {
-         const initialTargetButton = document.querySelector(`.tab-button[data-tab-target="${initialHash}"]`);
-         if (initialTargetButton) {
-             initialTargetButton.click(); // Simulate click to activate
-             activeTabFound = true;
-         }
-     }
-     // If no hash or hash didn't match, activate the first tab
-     if (!activeTabFound) {
-          tabs[0]?.click(); // Activate first tab by default
-          // Initial stagger for the first panel's items
-          const firstPanel = panels[0];
-          if(firstPanel){
-                const firstStaggerAttr = firstPanel.querySelector('[data-animate-children]')?.dataset.animateChildren;
-                if(firstStaggerAttr){
-                     // Delay slightly to allow tab content to settle
-                     setTimeout(() => animateDashboardStagger(`.${firstStaggerAttr}`, firstPanel), 150);
-                }
-          }
-     }
-
-      // --- Animate Header and Tabs on Load ---
-      if(!prefersReducedMotion){
-          gsap.from('.dashboard-header-v2', { duration: 0.8, y: -40, autoAlpha: 0, ease: 'power3.out', delay: 0.1 });
-          gsap.from('.dashboard-tabs .tab-button', { duration: 0.6, y: 30, autoAlpha: 0, stagger: 0.1, ease: 'power2.out', delay: 0.3 });
-      }
-
-
-    // --- Keep Loading Overlay/Confirm/Delete Logic ---
-    const filterForms = document.querySelectorAll('.filter-form-inline'); // Update selector
-    filterForms.forEach(form => {
-      form.addEventListener('submit', () => {
-          // Check if overlay exists and isn't already active
-         const overlay = document.getElementById("loading-overlay");
-         if (overlay && !overlay.classList.contains('active')) {
-             overlay.classList.add("active");
-         }
-      });
-    });
-
-    document.querySelectorAll(".loading-link").forEach(anchor => {
-        // ... (existing loading link logic) ...
-         anchor.addEventListener("click", function(e) {
-            const overlay = document.getElementById("loading-overlay");
-            if (this.target !== "_blank" && !this.href.endsWith('#') && !this.href.startsWith('javascript:') && overlay && !overlay.classList.contains('active')) {
-                 if (this.href !== window.location.href + '#' && this.href !== window.location.href) { // Avoid on same page hash links or reloads
-                      overlay.classList.add("active");
-                 }
-            }
-          });
-    });
-
-    const deletionForms = document.querySelectorAll('.delete-lesson-form, .delete-news-form');
-    deletionForms.forEach(form => {
-       // ... (existing deletion confirm logic, consider using customConfirm) ...
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const isLesson = form.classList.contains('delete-lesson-form');
-            const confirmMessage = isLesson ? "Bạn có chắc muốn xóa bài học này không?" : "Bạn có chắc muốn xóa tin tức này không?";
-
-             // Use your custom confirm if available, otherwise fallback
-             if (typeof showCustomConfirm === 'function') {
-                 const confirmed = await showCustomConfirm(confirmMessage); // Assuming it returns a promise
-                 if (confirmed) {
-                     document.getElementById("loading-overlay")?.classList.add("active");
-                     form.submit();
-                 }
-             } else {
-                 // Fallback to window.confirm
-                 if (window.confirm(confirmMessage)) {
-                     document.getElementById("loading-overlay")?.classList.add("active");
-                     form.submit();
-                 }
-             }
-        });
-    });
-
-     // --- Flash Message Handling ---
-     const flashData = document.querySelector('#flashMessageDashboard span'); // Check if flash exists
-     if (flashData && typeof showAlert === 'function') {
-         const message = flashData.dataset.message;
-         const type = flashData.dataset.type || 'info';
-         showAlert(message, type, 5000);
-     } else if (flashData) {
-         console.error("showAlert function not found, cannot display dashboard flash message:", flashData.dataset.message);
-     }
-
-}); // End DOMContentLoaded
-</script>

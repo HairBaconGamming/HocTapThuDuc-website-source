@@ -1,0 +1,291 @@
+/* public/css/styleEditProfile.css */
+
+/* --- Layout chính --- */
+.edit-profile-section {
+    padding: 40px 0;
+}
+
+.edit-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* --- Card Chung --- */
+.profile-card {
+    background: #fff;
+    border-radius: 30px;
+    padding: 30px;
+    box-shadow: 8px 8px 0px var(--dark-ink, #2d3436); /* Fallback color */
+    border: 3px solid var(--dark-ink, #2d3436);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--dark-ink, #2d3436);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-title i { color: var(--pop-blue, #a2d2ff); }
+
+/* --- Cột Trái: Avatar Zone --- */
+.avatar-zone {
+    text-align: center;
+}
+
+.avatar-wrapper {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 20px;
+    position: relative;
+    border-radius: 50%;
+    border: 4px solid var(--pop-yellow, #fff5ba);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.avatar-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    transition: 0.3s;
+}
+
+/* Nút Camera Overlay */
+.camera-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 45px;
+    height: 45px;
+    background: var(--dark-ink, #2d3436);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px solid white;
+    transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.camera-btn:hover {
+    transform: scale(1.15) rotate(10deg);
+    background: var(--pop-blue, #a2d2ff);
+    color: var(--dark-ink, #2d3436);
+}
+
+.user-display-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+
+.user-role-badge {
+    background: #eee;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+    display: inline-block;
+}
+
+.pro-link {
+    display: block;
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: var(--primary, #a2d2ff);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* --- Cột Phải: Form Zone --- */
+.input-group-v3 {
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.label-v3 {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--dark-ink, #2d3436);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.input-v3 {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    border-radius: 15px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 1rem;
+    transition: 0.3s;
+    background: #fafafa;
+}
+
+.input-v3:focus {
+    border-color: var(--dark-ink, #2d3436);
+    background: #fff;
+    box-shadow: 4px 4px 0px var(--pop-blue, #a2d2ff);
+    outline: none;
+}
+
+.textarea-v3 {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+/* --- Password Toggle Section --- */
+/* Fix phần Đổi Mật Khẩu */
+.password-toggle-card {
+    background: #fff0f5; /* Nền hồng pastel */
+    border: 3px solid var(--dark-ink, #2d3436);
+    border-radius: 25px;
+    margin-top: 30px;
+    transition: all 0.3s ease;
+    box-shadow: 6px 6px 0px var(--pop-pink, #ffc8dd);
+}
+
+.toggle-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    color: #c2185b;
+}
+
+.toggle-title i { font-size: 1.2rem; }
+
+.toggle-arrow {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Quan trọng: Trạng thái ẩn/hiện */
+.password-content {
+    height: 0; /* Bắt đầu với 0 để JS animate */
+    opacity: 0;
+    overflow: hidden;
+    padding: 0 20px; /* Padding ngang giữ nguyên, dọc bằng 0 */
+    transition: opacity 0.3s ease;
+}
+
+.password-toggle-card.is-open {
+    background: #fff; /* Đổi sang trắng khi mở */
+}
+
+.password-toggle-card.is-open .password-content {
+    height: auto;
+    opacity: 1;
+    padding: 10px 20px 30px;
+    overflow: visible;
+}
+
+.password-toggle-card.is-open .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+/* Tin nhắn kiểm tra mật khẩu khớp */
+.match-message {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: -15px;
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
+.toggle-icon {
+    font-size: 1.2rem;
+    transition: 0.3s;
+}
+
+.toggle-header.active .toggle-icon { transform: rotate(180deg); }
+
+.password-fields {
+    display: none; /* Ẩn mặc định */
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px dashed rgba(0,0,0,0.1);
+}
+
+.password-wrapper { position: relative; }
+
+.eye-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+}
+
+.eye-btn:hover { color: var(--dark-ink, #2d3436); }
+
+/* --- Action Buttons --- */
+.action-bar {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.btn-save {
+    background: var(--dark-ink, #2d3436);
+    color: white;
+    padding: 12px 35px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--pop-green, #b9fbc0);
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-save:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--pop-green, #b9fbc0);
+}
+
+.btn-cancel {
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 700;
+    color: #666;
+    background: white;
+    border: 2px solid #ddd;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.btn-cancel:hover { background: #eee; color: #333; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .edit-grid { grid-template-columns: 1fr; }
+    .avatar-zone { display: flex; flex-direction: column; align-items: center; }
+    .action-bar { justify-content: center; }
+}

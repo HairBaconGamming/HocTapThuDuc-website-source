@@ -1,267 +1,35 @@
-<!-- views/login.ejs -->
-<%- include('partials/header', { title: 'Đăng nhập - Cổng vào Tri thức', user: user, activePage: "login" }) %>
+<%- include('partials/header') %>
 <link rel="stylesheet" href="/styleLogin.css">
+
 <section class="login-page-section">
+    <div class="login-form-container">
+        <div style="font-size: 3rem; margin-bottom: 10px;">👋</div>
+        <h2 class="form-title">Vào lớp thôi!</h2>
+        <p class="form-subtitle">Nhập tên và mật khẩu siêu bí mật của bạn.</p>
 
-    <!-- Layer 1: Animated Background -->
-    <div class="login-background">
-        <div class="aurora aurora-1"></div>
-        <div class="aurora aurora-2"></div>
-        <div class="starfield"></div>
-    </div>
-
-    <!-- Layer 2: Login Form Container -->
-    <div class="login-form-container-wrapper">
-        <div class="login-form-container" id="loginContainer">
-            <div class="form-border-glow"></div>
-            <div class="form-content">
-                <div class="form-header">
-                    <h2 class="form-title" data-animate="text-reveal-chars">Đăng nhập</h2>
-                    <p class="form-subtitle" data-animate="fade-up-delay">Chào mừng trở lại! Nhập thông tin của bạn.</p>
-                </div>
-
-                <form action="/login" method="POST" class="auth-form" id="loginForm">
-                    <!-- Username Input -->
-                    <div class="input-field-group">
-                        <input type="text" name="username" id="username" class="form-input-v2" placeholder=" " required autocomplete="username">
-                        <label for="username" class="form-label-v2">Tên người dùng</label>
-                        <span class="input-focus-line"></span>
-                        <i class="fas fa-user input-icon"></i>
-                    </div>
-
-                    <!-- Password Input -->
-                    <div class="input-field-group">
-                        <input type="password" name="password" id="password" class="form-input-v2" placeholder=" " required autocomplete="current-password">
-                        <label for="password" class="form-label-v2">Mật khẩu</label>
-                        <span class="input-focus-line"></span>
-                         <i class="fas fa-lock input-icon"></i>
-                         <button type="button" class="password-toggle-btn" aria-label="Hiển thị mật khẩu">
-                             <i class="fas fa-eye"></i>
-                         </button>
-                    </div>
-
-                    <div class="form-options">
-                        <!--<a href="/forgot-password" class="forgot-password-link">Quên mật khẩu?</a>-->
-                    </div>
-
-                    <!-- Submit Button with Effects -->
-                    <button type="submit" class="btn-submit-v2" id="loginSubmitBtn">
-                        <span class="btn-text">Đăng nhập</span>
-                        <span class="btn-liquid-effect"></span>
-                        <span class="btn-particles"></span> 
-                    </button>
-                </form>
-
-                 <div class="switch-auth-link">
-                     Chưa có tài khoản? <a href="/register" class="loading-link">Đăng ký ngay</a>
-                 </div>
+        <% if (locals.message && message.message) { %>
+            <div style="background: #ffe0e6; color: #d81b60; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem;">
+                <%= message.message %>
             </div>
+        <% } %>
+
+        <form action="/login" method="POST" id="loginForm">
+            <div class="input-field-group">
+                <label class="form-label-v2">Tên đăng nhập</label>
+                <input type="text" name="username" class="form-input-v2" placeholder="Ví dụ: nam123" required>
+            </div>
+
+            <div class="input-field-group">
+                <label class="form-label-v2">Mật khẩu</label>
+                <input type="password" name="password" class="form-input-v2" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit-v2">🚀 Đăng nhập</button>
+        </form>
+
+        <div class="switch-auth-link">
+            Chưa có tài khoản? <a href="/register">Đăng ký nhập học ngay</a>
         </div>
     </div>
-
 </section>
-
-<%- include('partials/footer') %> %>
-
-<!-- Add page-specific JS here, separate from footer includes if possible -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-<script src="https://unpkg.com/split-type"></script>
-
-<script src="/js/alerts.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Check for GSAP ---
-    if (typeof gsap === 'undefined') {
-        console.error("GSAP not loaded!");
-        return;
-    }
-     // --- Optional: Check for SplitType ---
-     if (typeof SplitType === 'undefined') {
-        console.warn("SplitType not loaded, text reveal animations disabled.");
-     }
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const loginContainer = document.getElementById('loginContainer');
-    const loginForm = document.getElementById('loginForm');
-    const submitButton = document.getElementById('loginSubmitBtn');
-    const passwordInput = document.getElementById('password');
-    const toggleButton = document.querySelector('.password-toggle-btn');
-    const toggleIcon = toggleButton ? toggleButton.querySelector('i') : null;
-
-    // --- Initial Entrance Animation ---
-    if (!prefersReducedMotion && loginContainer) {
-        gsap.set(loginContainer, { autoAlpha: 0, y: 60, scale: 0.95, rotationX: -10 });
-        gsap.to(loginContainer, {
-            duration: 1.2,
-            autoAlpha: 1,
-            y: 0,
-            scale: 1,
-            rotationX: 0,
-            ease: 'expo.out',
-            delay: 0.3
-        });
-
-        // Text reveal for title (if SplitType is loaded)
-        if (typeof SplitType !== 'undefined') {
-            gsap.utils.toArray('[data-animate="text-reveal-chars"]').forEach(el => {
-                 const split = new SplitType(el, { types: 'chars' });
-                 gsap.set(el, {autoAlpha: 1}); // Ensure container visible
-                 gsap.from(split.chars, {
-                     duration: 0.8,
-                     autoAlpha: 0,
-                     scale: 0.5,
-                     y: 20,
-                     rotationZ: gsap.utils.random(-20, 20, true),
-                     stagger: 0.04,
-                     ease: 'back.out(1.7)',
-                     delay: 0.6 // Delay after container appears
-                 });
-            });
-        } else {
-             gsap.from('.form-title', {duration: 0.8, autoAlpha: 0, y: 15, delay: 0.6 });
-        }
-
-        // Fade up subtitle and other elements
-        gsap.from('[data-animate="fade-up-delay"]', {duration: 0.8, autoAlpha: 0, y: 20, delay: 0.8 });
-        gsap.from('.input-field-group', {duration: 0.8, autoAlpha: 0, y: 30, stagger: 0.15, delay: 0.9 });
-        gsap.from('.form-options', {duration: 0.7, autoAlpha: 0, delay: 1.2 });
-        gsap.from('.btn-submit-v2', {duration: 0.7, autoAlpha: 0, scale: 0.8, delay: 1.3 });
-        gsap.from('.switch-auth-link', {duration: 0.7, autoAlpha: 0, y: 10, delay: 1.4 });
-    } else if (loginContainer) {
-        // Instantly show if reduced motion
-        gsap.set(loginContainer, { autoAlpha: 1 });
-    }
-
-    // --- Input Field Focus/Blur & Placeholder Interaction ---
-    const inputs = document.querySelectorAll('.form-input-v2');
-    inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            input.closest('.input-field-group').classList.add('focused');
-        });
-        input.addEventListener('blur', () => {
-            const group = input.closest('.input-field-group');
-            group.classList.remove('focused');
-            // Keep 'filled' class if there's content
-            if (input.value !== "") {
-                group.classList.add('filled');
-            } else {
-                group.classList.remove('filled');
-            }
-        });
-        // Initial check in case of autofill
-        if (input.value !== "") {
-             input.closest('.input-field-group').classList.add('filled');
-        }
-    });
-
-     // --- Password Toggle Visibility ---
-     if (toggleButton && passwordInput && toggleIcon) {
-         toggleButton.addEventListener('click', () => {
-             const isPassword = passwordInput.type === 'password';
-             passwordInput.type = isPassword ? 'text' : 'password';
-             toggleIcon.classList.toggle('fa-eye', !isPassword);
-             toggleIcon.classList.toggle('fa-eye-slash', isPassword);
-             toggleButton.setAttribute('aria-label', isPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu');
-             // Optional: Animate icon change
-             gsap.fromTo(toggleIcon, { scale: 0.8, rotation: isPassword ? 0: -90 }, { scale: 1, rotation: 0, duration: 0.3, ease: 'back.out(2)' });
-         });
-     }
-
-
-    // --- Submit Button Interaction & Loading State ---
-    if (loginForm && submitButton) {
-        loginForm.addEventListener("submit", (e) => {
-            // Prevent multiple clicks & add loading state ONLY if form is valid (basic check)
-             if (loginForm.checkValidity()) {
-                 submitButton.classList.add('submitting');
-                 submitButton.disabled = true;
-                 // Show global loading overlay (if desired) AFTER a short delay
-                 // to allow button animation to start
-                 setTimeout(() => {
-                     const overlay = document.getElementById("loading-overlay");
-                     if (overlay) overlay.classList.add("active");
-                 }, 200); // 200ms delay
-
-                 // Optional: Add particle burst effect here if implemented
-                 // createParticleBurst(submitButton);
-
-                 // Form submission proceeds naturally
-             } else {
-                // Optionally trigger validation feedback animations
-                console.log("Form validation failed.");
-                 // Add shake animation to invalid fields (example)
-                 const invalidFields = loginForm.querySelectorAll(':invalid');
-                 invalidFields.forEach(field => {
-                     gsap.fromTo(field.closest('.input-field-group'),
-                        { x: 0 },
-                        { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' }
-                    );
-                 });
-             }
-        });
-    }
-
-  function isMobile() {
-      return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-    }
-  
-     // --- Optional: Container Tilt Effect (subtle) ---
-     const wrapper = document.querySelector('.login-form-container-wrapper');
-     if (wrapper && !prefersReducedMotion && !isMobile()) { // Disable on mobile
-         const tiltIntensity = 3; // Very subtle tilt
-         wrapper.addEventListener('mousemove', (e) => {
-             const rect = wrapper.getBoundingClientRect();
-             // Calculate position relative to viewport center for smoother effect
-             const mouseX = e.clientX;
-             const mouseY = e.clientY;
-             const centerX = window.innerWidth / 2;
-             const centerY = window.innerHeight / 2;
-             const relX = (mouseX - centerX) / centerX; // -1 to 1
-             const relY = (mouseY - centerY) / centerY; // -1 to 1
-
-             gsap.to(loginContainer, { // Target the inner container
-                 duration: 1.5, // Slow, smooth transition
-                 rotationY: relX * tiltIntensity,
-                 rotationX: -relY * tiltIntensity * 0.5, // Less vertical tilt
-                 ease: "power2.out",
-                 overwrite: 'auto'
-             });
-         });
-          wrapper.addEventListener('mouseleave', () => {
-              gsap.to(loginContainer, {
-                  duration: 1.2,
-                  rotationY: 0,
-                  rotationX: 0,
-                  ease: "elastic.out(1, 0.6)"
-              });
-          });
-     }
-  
-   // --- Thêm logic kiểm tra URL và thêm hidden input ---
-    const currentUrlParams = new URLSearchParams(window.location.search);
-    const shouldRedirectToForum = currentUrlParams.get('redirect_to_forum') === 'true';
-
-    if (shouldRedirectToForum && loginForm) {
-        console.log('Adding hidden input for forum redirect.');
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'redirect_to_forum';
-        hiddenInput.value = 'true';
-        loginForm.appendChild(hiddenInput); // Thêm vào cuối form
-    }
-
-      // --- Flash Message Handling (if applicable on login page) ---
-      // Ensure this runs after alerts.js is loaded
-      <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
-         // Check if showAlert function exists before calling
-         if (typeof showAlert === 'function') {
-             showAlert("<%= message.message %>", "<%= message.type %>", 6000); // Longer duration for errors
-         } else {
-             console.error("showAlert function not found. Cannot display flash message.");
-         }
-       <% } %>
-
-}); // End DOMContentLoaded
-</script>
+<%- include('partials/footer') %>

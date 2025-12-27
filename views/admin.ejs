@@ -3,185 +3,561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-    <script>
-        // Truyền quyền của user hiện tại cho client-side script
-        const currentUser = <%- JSON.stringify({ isAdmin: user.isAdmin, isTeacher: user.isTeacher }) %>;
-    </script>
+    <title>Admin Dashboard | HTTD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styleAdminV2.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="admin-panel-container">
-        <!-- ===== SIDEBAR ===== -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-shield-alt logo-icon"></i>
-                <h1 class="logo-text">Control</h1>
+
+<div class="admin-wrapper">
+    
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">
+                <i class="fas fa-meteor"></i> HTTD <span class="brand-suffix">Admin</span>
             </div>
-            <nav class="sidebar-nav">
-                <a class="nav-link active" data-tab="dashboard">
-                    <i class="fas fa-chart-pie nav-icon"></i><span>Dashboard</span>
-                </a>
-                <a class="nav-link" data-tab="users">
-                    <i class="fas fa-users nav-icon"></i><span>Users</span>
-                </a>
-                <a class="nav-link" data-tab="subjects">
-                    <i class="fas fa-book nav-icon"></i><span>Subjects</span>
-                </a>
-                <% if (user.isAdmin) { %>
-                <a class="nav-link" data-tab="proKeys">
-                    <i class="fas fa-key nav-icon"></i><span>PRO Keys</span>
-                </a>
-                <% } %>
-                <a href="/" class="nav-link nav-link-bottom">
-                    <i class="fas fa-home nav-icon"></i><span>Về trang chính</span>
-                </a>
-            </nav>
+            <div class="brand-badge">PRO v2.0</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-label">QUẢN LÝ CHUNG</p>
+            
+            <div class="menu-item active" onclick="showTab('dashboard', this)">
+                <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
+                <span>Dashboard</span>
+            </div>
+
+            <p class="nav-label">DỮ LIỆU</p>
+
+            <div class="menu-item" onclick="showTab('users', this)">
+                <div class="icon-box"><i class="fas fa-users"></i></div>
+                <span>Cư dân (Users)</span>
+            </div>
+            
+            <div class="menu-item" onclick="showTab('lessons', this)">
+                <div class="icon-box"><i class="fas fa-book-open"></i></div>
+                <span>Kho bài học</span>
+            </div>
+            
+            <div class="menu-item" onclick="showTab('news', this)">
+                <div class="icon-box"><i class="far fa-newspaper"></i></div>
+                <span>Tin tức & Event</span>
+            </div>
+
+            <div class="menu-item" onclick="showTab('units', this)">
+                <div class="icon-box"><i class="fas fa-layer-group"></i></div>
+                <span>Chương (Units)</span>
+            </div>
+
+            <p class="nav-label">HỆ THỐNG</p>
+            
+            <div class="menu-item" onclick="alert('Tính năng đang phát triển!')">
+                <div class="icon-box"><i class="fas fa-cogs"></i></div>
+                <span>Cài đặt</span>
+            </div>
         </aside>
 
-        <!-- ===== MAIN CONTENT ===== -->
-        <main class="main-content">
-            <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-content active">
-                <h2><i class="fas fa-tachometer-alt"></i>Tổng quan</h2>
-                <div id="stats-grid" class="stats-grid"></div>
-                <div class="dashboard-grid">
-                    <div class="activity-list">
-                        <h3><i class="fas fa-user-plus"></i>Người dùng mới</h3>
-                        <ul id="recent-users-list"></ul>
+        <div class="sidebar-footer">
+            <div class="user-mini-profile">
+                <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="mini-avatar">
+                <div class="mini-info">
+                    <div class="mini-name"><%= user.username %></div>
+                    <div class="mini-role">Administrator</div>
+                </div>
+            </div>
+            <button class="btn-mini-logout" onclick="location.href='/logout'" title="Đăng xuất">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <div class="top-bar">
+            <div>
+                <h1 class="page-title">Xin chào, <%= user.username %> 👋</h1>
+                <p style="color: #6b7280;">Hôm nay hệ thống hoạt động thế nào?</p>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-action-sm" style="background:white; width: 40px; height: 40px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
+                     style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            </div>
+        </div>
+
+        <div id="tab-dashboard" class="tab-pane active">
+            <div class="stats-grid">
+                <div class="stat-card sc-blue">
+                    <div class="stat-info">
+                        <h3><%= stats.totalUsers %></h3>
+                        <p>Tổng Thành viên</p>
                     </div>
-                    <div class="activity-list">
-                        <h3><i class="fas fa-book-open"></i>Bài học mới</h3>
-                        <ul id="recent-lessons-list"></ul>
+                    <i class="fas fa-user-friends stat-icon"></i>
+                </div>
+                <div class="stat-card sc-orange">
+                    <div class="stat-info">
+                        <h3><%= stats.proUsers %></h3>
+                        <p>Thành viên VIP</p>
                     </div>
+                    <i class="fas fa-crown stat-icon"></i>
+                </div>
+                <div class="stat-card sc-green">
+                    <div class="stat-info">
+                        <h3><%= stats.totalLessons %></h3>
+                        <p>Bài học</p>
+                    </div>
+                    <i class="fas fa-book-open stat-icon"></i>
+                </div>
+                <div class="stat-card sc-red">
+                    <div class="stat-info">
+                        <h3><%= stats.totalNews %></h3>
+                        <p>Tin tức</p>
+                    </div>
+                    <i class="far fa-newspaper stat-icon"></i>
                 </div>
             </div>
 
-            <!-- Users Tab -->
-            <div id="users" class="tab-content">
-                <h2><i class="fas fa-users-cog"></i>Quản lý Người dùng</h2>
-                <div class="controls-bar">
-                    <input type="search" id="user-search-input" class="search-input" placeholder="Tìm theo username hoặc email...">
-                    <select id="user-pro-filter" class="filter-select">
-                        <option value="all">Tất cả PRO</option>
-                        <option value="true">Tài khoản PRO</option>
-                        <option value="false">Tài khoản thường</option>
-                    </select>
-                    <select id="user-banned-filter" class="filter-select">
-                        <option value="all">Tất cả trạng thái</option>
-                        <option value="true">Đã khóa</option>
-                        <option value="false">Hoạt động</option>
-                    </select>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                <div class="table-card">
+                    <h3 style="margin-bottom: 20px;">📈 Truy cập tuần qua</h3>
+                    <canvas id="trafficChart"></canvas>
                 </div>
-                <div class="table-container">
-                    <table class="data-table">
+                <div class="table-card">
+                    <h3 style="margin-bottom: 20px;">🍰 Tỉ lệ VIP</h3>
+                    <canvas id="userChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-users" class="tab-pane">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Danh sách Cư dân</h3>
+                    <input type="text" class="search-input" placeholder="Tìm theo tên, email..." onkeyup="searchTable('userTable', this.value)">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table" id="userTable">
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Vai trò</th>
-                                <th>PRO</th>
-                                <th>Points</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tham gia</th>
+                                <th>Avatar</th>
+                                <th>Tên hiển thị</th>
+                                <th>Email</th>
+                                <th>Gói</th>
+                                <th>Điểm</th>
                                 <th>Hành động</th>
                             </tr>
                         </thead>
-                        <tbody id="users-table-body"></tbody>
+                        <tbody>
+                            <% users.forEach(u => { %>
+                                <tr>
+                                    <td><img src="<%= u.avatar || '/default.png' %>" style="width: 35px; height: 35px; border-radius: 50%;"></td>
+                                    <td><b><%= u.username %></b></td>
+                                    <td><%= u.email %></td>
+                                    <td>
+                                        <span class="badge <%= u.isPro ? 'badge-pro' : 'badge-free' %>">
+                                            <%= u.isPro ? 'PRO' : 'Free' %>
+                                        </span>
+                                    </td>
+                                    <td><%= u.points %></td>
+                                    <td>
+                                        <button class="btn-action-sm btn-edit" 
+                                                onclick="openEditUser('<%= u._id %>', '<%= u.username %>', '<%= u.points %>', <%= u.isPro %>, <%= u.isBanned %>)">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <button class="btn-action-sm btn-delete" 
+                                                onclick="confirmDelete('users', '<%= u._id %>')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
                     </table>
                 </div>
-                <div id="users-pagination" class="pagination-controls"></div>
             </div>
+        </div>
 
-            <!-- Subjects Tab -->
-            <div id="subjects" class="tab-content">
-                <h2><i class="fas fa-book-reader"></i>Quản lý Môn học</h2>
-                 <div class="controls-bar">
-                    <button class="btn-primary" id="add-subject-btn"><i class="fas fa-plus"></i> Thêm môn học</button>
-                 </div>
-                 <div class="table-container">
-                    <table class="data-table">
-                        <thead><tr><th>Tên</th><th>Mô tả</th><th>Ảnh</th><th>Hành động</th></tr></thead>
-                        <tbody id="subjects-table-body"></tbody>
-                    </table>
+        <div id="tab-lessons" class="tab-pane">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Kho bài học</h3>
+                    <div>
+                        <input type="text" class="search-input" placeholder="Tìm bài học..." onkeyup="searchTable('lessonTable', this.value)">
+                        <a href="/lesson/add" class="badge badge-pro" style="margin-left: 10px; text-decoration: none; font-size: 0.9rem; padding: 10px 15px;">+ Thêm mới</a>
+                    </div>
                 </div>
-            </div>
+                <table class="admin-table" id="lessonTable">
+                    <thead>
+                        <tr>
+                            <th>Tiêu đề</th>
+                            <th>Tác giả</th>
+                            <th>Loại</th>
+                            <th>Ngày tạo</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% lessons.forEach(l => { %>
+                            <tr>
+                                <td style="max-width: 300px;"><%= l.title %></td>
+                                <td><%= l.author ? l.author.username : 'Unknown' %></td>
+                                <td><span class="badge" style="background:#e0e7ff; color:#3730a3"><%= l.type %></span></td>
+                                <td><%= new Date(l.createdAt).toLocaleDateString('vi-VN') %></td>
+                                <td>
+                                    <a href="/lesson/<%= l._id %>/edit" class="btn-action-sm btn-edit"><i class="fas fa-pen"></i></a>
 
-            <% if (user.isAdmin) { %>
-            <!-- PRO Keys Tab (Admin Only) -->
-            <div id="proKeys" class="tab-content">
-                 <h2><i class="fas fa-key"></i>Khóa bí mật PRO</h2>
-                 <div class="controls-bar">
-                    <input type="search" id="pro-keys-search-input" class="search-input" placeholder="Tìm theo username...">
-                 </div>
-                 <div class="table-container">
-                     <table class="data-table">
-                         <thead><tr><th>Username</th><th>Secret Key</th><th>Hành động</th></tr></thead>
-                         <tbody id="pro-keys-table-body"></tbody>
-                     </table>
-                 </div>
-                 <div id="pro-keys-pagination" class="pagination-controls"></div>
+                                    <button class="btn-action-sm btn-delete" onclick="confirmDelete('lessons', '<%= l._id %>')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
             </div>
-            <% } %>
-        </main>
-    </div>
+        </div>
 
-    <!-- ===== MODALS ===== -->
-    <!-- User Edit Modal -->
-    <div id="user-edit-modal" class="modal-container">
+        <div id="tab-news" class="tab-pane">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Quản lý Tin tức</h3>
+                    <input type="text" class="search-input" placeholder="Tìm tin tức..." onkeyup="searchTable('newsTable', this.value)">
+                </div>
+                <table class="admin-table" id="newsTable">
+                    <thead>
+                        <tr>
+                            <th>Ảnh</th>
+                            <th>Tiêu đề</th>
+                            <th>Chuyên mục</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% newsList.forEach(n => { %>
+                            <tr>
+                                <td><img src="<%= n.image %>" style="width: 50px; height: 30px; object-fit: cover; border-radius: 5px;"></td>
+                                <td style="max-width: 350px;"><%= n.title %></td>
+                                <td><%= n.category %></td>
+                                <td>
+                                    <a href="/news/<%= n._id %>/edit" class="btn-action-sm btn-edit"><i class="fas fa-pen"></i></a>
+
+                                    <button class="btn-action-sm btn-delete" onclick="confirmDelete('news', '<%= n._id %>')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-units" class="tab-pane">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Cấu trúc Chương học</h3>
+                    <button class="badge badge-pro" style="border:none; cursor:pointer; font-size: 0.9rem; padding: 10px 15px;" onclick="openCreateUnitModal()">
+                        + Thêm Chương Mới
+                    </button>
+                </div>
+                <table class="admin-table" id="unitTable">
+                    <thead>
+                        <tr>
+                            <th>Tên Chương</th>
+                            <th>Thuộc Môn</th>
+                            <th>Thứ tự</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if(units && units.length > 0) { %>
+                            <% units.forEach(u => { %>
+                                <tr>
+                                    <td><b><%= u.title %></b></td>
+                                    <td><span class="badge" style="background:#e0f2fe; color:#0284c7"><%= u.subjectId ? u.subjectId.name : 'Unknown' %></span></td>
+                                    <td><%= u.order %></td>
+                                    <td>
+                                        <button class="btn-action-sm btn-delete" onclick="confirmDelete('units', '<%= u._id %>')"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="4" style="text-align:center;">Chưa có dữ liệu chương.</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="editUserModal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-btn">&times;</button>
-            <h3>Chỉnh sửa: <span id="modal-username"></span></h3>
-            <form id="user-edit-form" novalidate>
-                <input type="hidden" id="modal-userid">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-cog"></i> Chỉnh sửa Cư dân</h3>
+                <button class="btn-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                
                 <div class="form-group">
-                    <label for="modal-avatar">URL Avatar</label>
-                    <input type="text" id="modal-avatar">
+                    <label>Username</label>
+                    <input type="text" id="editUsername" disabled style="background: #eee; cursor: not-allowed;">
                 </div>
-                 <div class="form-group">
-                    <label for="modal-isTeacher">Vai trò Giáo viên</label>
-                    <select id="modal-isTeacher">
-                        <option value="false">Không</option>
-                        <option value="true">Có</option>
-                    </select>
-                </div>
+
                 <div class="form-group">
-                    <label for="modal-isPro">Trạng thái PRO</label>
-                    <select id="modal-isPro">
-                        <option value="false">Không</option>
-                        <option value="true">Có</option>
-                    </select>
+                    <label>Điểm số (Points)</label>
+                    <input type="number" id="editPoints" class="admin-input">
                 </div>
-                <div class="form-group">
-                    <label for="modal-points">Điểm</label>
-                    <input type="number" id="modal-points">
+
+                <div class="form-row">
+                    <label class="switch-label">
+                        <input type="checkbox" id="editIsPro">
+                        <span class="slider round"></span>
+                        <span class="label-text">Tài khoản PRO</span>
+                    </label>
+
+                    <label class="switch-label">
+                        <input type="checkbox" id="editIsBanned">
+                        <span class="slider round red"></span>
+                        <span class="label-text" style="color: var(--danger)">Cấm (Ban)</span>
+                    </label>
                 </div>
-                <div class="form-group">
-                    <label for="modal-growthPoints">Điểm tăng trưởng (XP)</label>
-                    <input type="number" id="modal-growthPoints">
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn-primary">Lưu thay đổi</button>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Hủy</button>
+                    <button type="submit" class="btn-save">Lưu thay đổi</button>
                 </div>
             </form>
         </div>
     </div>
+</div>
 
-    <!-- Subject Add/Edit Modal -->
-    <div id="subject-edit-modal" class="modal-container">
-        <div class="modal-content">
-            <button class="modal-close-btn">&times;</button>
-            <h3 id="modal-subject-title">Thêm môn học</h3>
-            <form id="subject-edit-form" novalidate>
-                <input type="hidden" id="modal-subject-id">
-                <div class="form-group"><label for="modal-subject-name">Tên</label><input type="text" id="modal-subject-name" required></div>
-                <div class="form-group"><label for="modal-subject-description">Mô tả</label><textarea id="modal-subject-description"></textarea></div>
-                <div class="form-group"><label for="modal-subject-image">URL ảnh</label><input type="text" id="modal-subject-image"></div>
-                <div class="modal-actions"><button type="submit" class="btn-primary">Lưu</button></div>
-            </form>
+<div id="createUnitModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus-circle"></i> Thêm Chương Mới</h3>
+            <button class="btn-close" onclick="closeUnitModal()"><i class="fas fa-times"></i></button>
         </div>
+        <form id="createUnitForm">
+            <div class="form-group">
+                <label>Thuộc Môn Học</label>
+                <select id="unitSubjectId" class="admin-input" required>
+                    <option value="">-- Chọn môn học --</option>
+                    <% if(subjects) { %>
+                        <% subjects.forEach(s => { %>
+                            <option value="<%= s._id %>"><%= s.name %></option>
+                        <% }) %>
+                    <% } %>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tên Chương (Ví dụ: Chương 1 - Hàm số)</label>
+                <input type="text" id="unitTitle" class="admin-input" required>
+            </div>
+            <div class="form-group">
+                <label>Thứ tự hiển thị (Số)</label>
+                <input type="number" id="unitOrder" class="admin-input" value="1">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeUnitModal()">Hủy</button>
+                <button type="submit" class="btn-save">Tạo ngay</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div id="toast-container"></div>
-    <script src="/js/admin.js"></script>
+<script>
+    // Logic Modal Unit
+    const unitModal = document.getElementById('createUnitModal');
+    function openCreateUnitModal() { unitModal.classList.add('active'); }
+    function closeUnitModal() { unitModal.classList.remove('active'); }
+
+    document.getElementById('createUnitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            subjectId: document.getElementById('unitSubjectId').value,
+            title: document.getElementById('unitTitle').value,
+            order: document.getElementById('unitOrder').value
+        };
+        
+        try {
+            const res = await fetch('/admin/units', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if(result.success) {
+                Swal.fire('Thành công', result.message, 'success').then(() => location.reload());
+            } else {
+                Swal.fire('Lỗi', result.error, 'error');
+            }
+        } catch(err) { Swal.fire('Lỗi', 'Lỗi kết nối', 'error'); }
+    });
+</script>
+
+<script>
+    // 1. Tab Switching Logic
+    function showTab(tabId, btnElement) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+        // Show target tab
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        // Update sidebar active state
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    // 2. Client-side Search Function
+    function searchTable(tableId, query) {
+        const filter = query.toUpperCase();
+        const table = document.getElementById(tableId);
+        const tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) { // Skip header
+            let visible = false;
+            const tds = tr[i].getElementsByTagName("td");
+            for (let j = 0; j < tds.length; j++) {
+                if (tds[j]) {
+                    if (tds[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                        visible = true;
+                        break;
+                    }
+                }
+            }
+            tr[i].style.display = visible ? "" : "none";
+        }
+    }
+
+    // 3. Chart.js Initialization
+    document.addEventListener("DOMContentLoaded", () => {
+        // Traffic Chart (Line)
+        const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
+        new Chart(ctxTraffic, {
+            type: 'line',
+            data: {
+                labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+                datasets: [{
+                    label: 'Lượt truy cập',
+                    data: [12, 19, 3, 5, 2, 3, 10], // Dữ liệu giả lập
+                    borderColor: '#3b82f6',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // User Ratio Chart (Doughnut)
+        const ctxUser = document.getElementById('userChart').getContext('2d');
+        new Chart(ctxUser, {
+            type: 'doughnut',
+            data: {
+                labels: ['Free', 'PRO'],
+                datasets: [{
+                    data: [<%= stats.totalUsers - stats.proUsers %>, <%= stats.proUsers %>],
+                    backgroundColor: ['#e5e7eb', '#f59e0b']
+                }]
+            }
+        });
+    });
+</script>
+
+<script>
+    // --- 1. XỬ LÝ MODAL EDIT USER ---
+    const modal = document.getElementById('editUserModal');
+    
+    function openEditUser(id, username, points, isPro, isBanned) {
+        // Điền dữ liệu vào form
+        document.getElementById('editUserId').value = id;
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editPoints').value = points;
+        document.getElementById('editIsPro').checked = isPro; // true/false
+        document.getElementById('editIsBanned').checked = isBanned; // true/false
+        
+        // Hiện modal
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+    }
+
+    // Xử lý Submit Form Sửa User
+    document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('editUserId').value;
+        const data = {
+            points: document.getElementById('editPoints').value,
+            isPro: document.getElementById('editIsPro').checked,
+            isBanned: document.getElementById('editIsBanned').checked
+        };
+
+        try {
+            const res = await fetch(`/admin/users/${id}`, { // Route này phải khớp với Controller
+                method: 'POST', // Hoặc PUT tùy route của bạn
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                Swal.fire('Thành công!', 'Cập nhật user thành công.', 'success')
+                .then(() => location.reload());
+            } else {
+                Swal.fire('Lỗi!', result.error || 'Có lỗi xảy ra.', 'error');
+            }
+        } catch (err) {
+            Swal.fire('Lỗi!', 'Không thể kết nối server.', 'error');
+        }
+    });
+
+    // --- 2. XỬ LÝ XÓA (DELETE) CHUNG ---
+    function confirmDelete(type, id) {
+        // type: 'users', 'lessons', hoặc 'news'
+        let textWarning = "Bạn có chắc chắn muốn xóa không?";
+        if(type === 'users') textWarning = "Hành động này sẽ xóa vĩnh viễn tài khoản này!";
+
+        Swal.fire({
+            title: 'Xác nhận xóa?',
+            text: textWarning,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Xóa ngay',
+            cancelButtonText: 'Hủy'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/admin/${type}/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        Swal.fire('Đã xóa!', data.message, 'success')
+                        .then(() => location.reload()); // Load lại trang để cập nhật bảng
+                    } else {
+                        Swal.fire('Lỗi!', data.error || 'Không thể xóa.', 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Lỗi!', 'Lỗi kết nối server.', 'error');
+                }
+            }
+        });
+    }
+</script>
+
 </body>
 </html>

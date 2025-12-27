@@ -1,0 +1,177 @@
+/* public/css/styleLiveCreateV2.css */
+
+.setup-wrapper {
+    max-width: 1100px;
+    margin: 40px auto;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.setup-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr; /* Cột trái to hơn chút */
+    gap: 30px;
+    align-items: start;
+}
+
+/* --- LEFT CARD: INFO FORM --- */
+.setup-card {
+    background: #fff;
+    border: 3px solid var(--dark-ink);
+    border-radius: 30px;
+    padding: 30px;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.card-header h2 {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    color: var(--dark-ink);
+}
+
+.input-group-setup { margin-bottom: 25px; }
+
+.setup-label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+    color: #555;
+}
+
+.setup-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: 0.3s;
+    background: #fafafa;
+}
+.setup-input:focus {
+    border-color: var(--dark-ink);
+    background: #fff;
+    box-shadow: 4px 4px 0px var(--pop-blue);
+    outline: none;
+}
+
+/* Tags Selector */
+.tags-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.tag-option { cursor: pointer; }
+.tag-option input { display: none; }
+.tag-chip {
+    padding: 8px 16px;
+    border: 2px solid #eee;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #888;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.tag-option input:checked + .tag-chip {
+    border-color: var(--dark-ink);
+    background: var(--pop-blue);
+    color: var(--dark-ink);
+    box-shadow: 2px 2px 0px var(--dark-ink);
+    transform: translateY(-2px);
+}
+
+/* Thumbnail Upload Mini */
+.thumb-upload-box {
+    border: 2px dashed #ccc;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    background: #f9f9f9;
+    position: relative;
+    overflow: hidden;
+}
+.thumb-upload-box:hover { border-color: var(--dark-ink); background: #fff; }
+.thumb-preview {
+    position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;
+}
+
+/* --- RIGHT CARD: TECH CHECK (CAMERA) --- */
+.cam-preview-wrapper {
+    background: #000;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/9;
+    border: 3px solid var(--dark-ink);
+    box-shadow: 8px 8px 0px var(--pop-pink);
+}
+
+#localVideoPreview {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* Lật gương */
+}
+
+.cam-overlay {
+    position: absolute;
+    bottom: 15px; left: 15px; right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.mic-meter-bar {
+    width: 10px;
+    height: 40px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+.mic-level {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    height: 0%;
+    background: #2ecc71;
+    transition: height 0.1s;
+}
+
+.device-status {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    backdrop-filter: blur(5px);
+}
+
+/* Button Big */
+.btn-go-live {
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    background: var(--dark-ink);
+    color: white;
+    font-weight: 900;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #999;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.btn-go-live:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0px #999; background: #000; }
+.btn-go-live:disabled { opacity: 0.7; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+    .setup-grid { grid-template-columns: 1fr; }
+    .cam-preview-wrapper { order: -1; } /* Đưa Cam lên đầu trên mobile */
+}

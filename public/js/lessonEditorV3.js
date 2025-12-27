@@ -1,2655 +1,1411 @@
-// public/js/lessonEditorV3.js
-// @ts-check // Optional: Enable type checking in VS Code
-
-// Assume showAlert is defined globally or imported elsewhere
-// declare function showAlert(message: string, type: 'success' | 'error' | 'warning' | 'info', duration?: number): void;
-
-// Register GSAP plugins
-if (typeof gsap !== 'undefined' && typeof Flip !== 'undefined') {
-    gsap.registerPlugin(Flip);
-    // Optional: Register ScrollTrigger if you use it elsewhere or for future use
-    // gsap.registerPlugin(ScrollTrigger);
-} else {
-    console.error("GSAP Core or Flip plugin not loaded. Animations might be disabled or broken.");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("Initializing Manage Lesson V3 Script (with Multi-Choice Quiz)...");
-
-    // --- Library Checks ---
-    if (typeof gsap === 'undefined' || typeof Flip === 'undefined') {
-        console.error("GSAP or GSAP Flip plugin not loaded! Animations will be disabled.");
-        // Provide fallback or stop execution if essential
-    }
-    if (typeof toastui === 'undefined' || typeof toastui.Editor === 'undefined') {
-        console.error("Toast UI Editor not loaded! Critical dependency.");
-        // Potentially disable features relying on the editor or stop script
-        return;
-    }
-    if (typeof marked === 'undefined') {
-        console.error("Marked library not loaded (needed for previews)! Previews will likely fail.");
-    }
-    if (typeof katex === 'undefined') console.warn("KaTeX not loaded! Math plugin will fail.");
-    // Check for Math rendering functions
-    const hasRenderMathInElement = typeof renderMathInElement === 'function'; // For KaTeX auto-render
-    const hasMathLive = typeof MathLive !== 'undefined' && typeof MathLive.renderMathInElement === 'function';
-    if (!hasRenderMathInElement) console.warn("KaTeX auto-render function 'renderMathInElement' not found. Math formulas in previews might not render.");
-    if (!hasMathLive) console.warn("MathLive library or 'renderMathInElement' method not found. MathLive formulas in previews might not render.");
-
-    // --- Configuration ---
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const mathLiveRenderOptions = { /* MathLive rendering options if needed */ };
-    const katexRenderOptions = {
-        delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "$", right: "$", display: false },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true }
-        ],
-        throwOnError: false, // Prevent KaTeX errors from stopping the script
-        output: "htmlAndMathml" // Recommended for accessibility
-    };
-
-    // --- Global Editor Instance & State ---
-    /** @type {import('@toast-ui/editor').Editor | null} */
-    let fullscreenEditorInstance = null;
-    /** @type {{ type: string; qId: string | number | undefined; optIndex: number | undefined; dataInput: HTMLInputElement | HTMLTextAreaElement; previewContainer: HTMLElement; context: string; } | null} */
-    let currentEditingTarget = null; // Info about what's being edited
-    /** @type {Array<{id: string; question: string; options: Array<{text: string; isCorrect: boolean}>}>} */
-    let quizData = []; // More specific type for quiz
-    /** @type {Array<{question: string; sampleAnswer: string}>} */
-    let essayData = []; // More specific type for essay
-    // let quizCounter = 0; // Removed as robust ID generation is used
-
-    // --- DOM References ---
-    /** @param {string} id */
-    const getEl = id => document.getElementById(id);
-    const lessonForm = /** @type {HTMLFormElement | null} */ (getEl("lessonForm"));
-
-    if (!lessonForm) {
-        console.error("FATAL: Lesson form (#lessonForm) not found! Script cannot proceed.");
-        return;
-    }
-
-    const steps = gsap.utils.toArray(".form-step");
-    const stepIndicators = gsap.utils.toArray(".step-indicator .step");
-    const typeSelectHidden = /** @type {HTMLInputElement | null} */ (getEl("lessonType"));
-    const mode = lessonForm.getAttribute("action")?.includes("/edit") ? 'edit' : 'add';
-
-    // Step 1 Elements
-    const subjectSelect = /** @type {HTMLSelectElement | null} */ (getEl("subjectId"));
-    const titleInput = /** @type {HTMLInputElement | null} */ (getEl("title"));
-    const categorySelect = /** @type {HTMLSelectElement | null} */ (getEl("category"));
-    const proOnlyCheckbox = /** @type {HTMLInputElement | null} */ (lessonForm.querySelector('input[name="isProOnly"]'));
-
-    // Step 2 Elements
-    const typeTabButtons = document.querySelectorAll(".lesson-type-selector-v2 .type-tab-btn");
-    const editorPanels = document.querySelectorAll(".editor-area .editor-panel");
-    const markdownDataInput = /** @type {HTMLTextAreaElement | null} */ (getEl("markdownData")); // Hidden textarea for main markdown
-    const quizContainer = getEl("quizContainer");
-    const quizDataInput = /** @type {HTMLInputElement | null} */ (getEl("quizData")); // Hidden input for stringified quiz JSON
-    const addQuestionBtn = getEl("addQuestionBtn");
-    const generateQuizBtn = getEl("generateQuizBtn"); // AI generation button
-    const docxFileInput = /** @type {HTMLInputElement | null} */ (getEl("docxFile")); // AI file input
-    const videoUrlInput = /** @type {HTMLInputElement | null} */ (getEl("videoUrl"));
-    const videoPreviewArea = getEl("videoPreview");
-    const essayPromptDataInput = /** @type {HTMLTextAreaElement | null} */ (getEl("essayPromptData")); // Hidden textarea for essay prompt
-    const essayContainer = getEl("essayContainer");
-    const essayDataInput = /** @type {HTMLInputElement | null} */ (getEl("essayData")); // Hidden input for stringified essay JSON
-    const addEssayQuestionBtn = getEl("addEssayQuestionBtn");
-    const essayGradingSelect = /** @type {HTMLSelectElement | null} */ (getEl("essayGrading"));
-    const absoluteSettingsDiv = getEl("absoluteSettings");
-    const absoluteToleranceInput = /** @type {HTMLInputElement | null} */ (getEl("absoluteTolerance"));
-
-    // Step 3 Elements
-    const reviewSubject = getEl("reviewSubject");
-    const reviewTitle = getEl("reviewTitle");
-    const reviewCategory = getEl("reviewCategory");
-    const reviewType = getEl("reviewType");
-    const reviewProOnly = getEl("reviewProOnly");
-    const reviewContentPreview = getEl("reviewContentPreview");
-    const saveProgressBtn = getEl("saveProgressBtn"); // Only exists in 'add' mode
-    const finalSubmitBtn = getEl("finalSubmitBtn") || lessonForm.querySelector('button[type="submit"].final-submit-btn');
-
-    // Fullscreen Modal Elements
-    const fullscreenModal = getEl("fullscreen-editor-modal");
-    const modalBackdrop = fullscreenModal?.querySelector(".modal-backdrop");
-    const modalContent = fullscreenModal?.querySelector(".modal-content");
-    const editorContainer = getEl("fullscreen-editor-container");
-    const editorContextTitle = getEl("fullscreen-editor-context");
-    const closeModalBtn = fullscreenModal?.querySelector(".close-fullscreen-editor");
-    const saveAndCloseBtn = getEl("save-and-close-editor");
-
-    const documentDataInput = getEl("documentData");
-    const documentDropZone = getEl("document-drop-zone");
-    const documentFileInput = getEl("documentFileInput");
-    const uploadStatusContainer = getEl("upload-status");
-    // --- DOCUMENT UPLOAD LOGIC ---
-    if (documentDropZone && documentFileInput && uploadStatusContainer && documentDataInput) {
-        
-        const updateStatus = (html) => {
-            uploadStatusContainer.innerHTML = html;
-        };
-        
-        const handleFileUpload = async (file) => {
-            if (!file) return;
-
-            updateStatus(`
-                <div class="status-card uploading">
-                    <div class="status-icon"><i class="fas fa-spinner fa-spin"></i></div>
-                    <div class="status-text">
-                        <strong>Đang tải lên...</strong>
-                        <small>${file.name}</small>
-                    </div>
-                </div>
-            `);
-
-            const formData = new FormData();
-            formData.append('documentFile', file);
-
-            try {
-                const response = await fetch('/documents/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                // KIỂM TRA PHẢN HỒI TRƯỚC KHI PARSE JSON
-                if (!response.ok) {
-                    let errorMsg = `Lỗi server: ${response.status}`;
-                    try {
-                        // Cố gắng lấy lỗi chi tiết từ server nếu có
-                        const errorData = await response.json();
-                        errorMsg = errorData.error || errorMsg;
-                    } catch (e) {
-                        // Bỏ qua nếu phản hồi lỗi không phải là JSON
-                    }
-                    throw new Error(errorMsg);
-                }
-
-                // Nếu response.ok, chúng ta có thể an toàn parse JSON
-                const result = await response.json();
-                
-                const documentInfo = {
-                    fileId: result.fileId,
-                    originalName: result.originalName,
-                    contentType: result.contentType,
-                    size: result.size,
-                    url: result.url // URL này vẫn là /view/:id để tải về
-                };
-                documentDataInput.value = JSON.stringify(documentInfo);
-
-                updateStatus(`
-                    <div class="status-card success">
-                        <div class="status-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="status-text">
-                            <strong>Tải lên thành công!</strong>
-                            <small>${result.originalName} (${(result.size / 1024 / 1024).toFixed(2)} MB)</small>
-                        </div>
-                    </div>
-                `);
-
-                if(mode !== 'edit') saveProgressThrottled();
-
-            } catch (error) {
-                console.error('Upload failed:', error);
-                updateStatus(`
-                     <div class="status-card error">
-                        <div class="status-icon"><i class="fas fa-times-circle"></i></div>
-                        <div class="status-text">
-                            <strong>Tải lên thất bại!</strong>
-                            <small>${error.message}</small>
-                        </div>
-                    </div>
-                `);
-                documentDataInput.value = ''; // Xóa dữ liệu cũ nếu upload lỗi
-            }
-        };
-        
-        // Hiển thị lại trạng thái file đã upload (khi sửa bài)
-        if (documentDataInput.value) {
-            try {
-                const existingData = JSON.parse(documentDataInput.value);
-                 updateStatus(`
-                    <div class="status-card success">
-                        <div class="status-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="status-text">
-                            <strong>Đã tải lên file:</strong>
-                            <small>${existingData.originalName} (${(existingData.size / 1024 / 1024).toFixed(2)} MB)</small>
-                        </div>
-                    </div>
-                `);
-            } catch(e) {}
-        }
-
-
-        documentDropZone.addEventListener('click', () => documentFileInput.click());
-        documentFileInput.addEventListener('change', () => {
-            if (documentFileInput.files.length > 0) {
-                handleFileUpload(documentFileInput.files[0]);
-            }
-        });
-
-        // Drag and Drop events
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            documentDropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-            documentDropZone.addEventListener(eventName, () => {
-                documentDropZone.classList.add('drag-over');
-            }, false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            documentDropZone.addEventListener(eventName, () => {
-                documentDropZone.classList.remove('drag-over');
-            }, false);
-        });
-
-        documentDropZone.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            if (dt && dt.files && dt.files.length > 0) {
-                handleFileUpload(dt.files[0]);
-            }
-        });
-    }
-
-    // --- State Variables ---
-    let currentStep = 1;
-    let isSubmitting = false; // Prevent double submit
-    let isEditorOpen = false; // Track if the fullscreen editor is active
-    let isAnimating = false;  // Prevent conflicting animations
-
-    // ==========================================================================
-    // HELPER FUNCTIONS
-    // ==========================================================================
-
-     // =========================================================================
-    // ===== KÄTEX PLUGIN FOR TOAST UI EDITOR (CORRECT IMPLEMENTATION) =====
-    // =========================================================================
-    function katexPlugin() {
-        // Function to render KaTeX safely
-        const renderKatex = (literal, isDisplayMode) => {
-            if (!window.katex) {
-                return `<span style="color: red; font-weight: bold;">KaTeX library not loaded.</span>`;
-            }
-            try {
-                return katex.renderToString(literal, {
-                    throwOnError: false, // Don't crash the editor on syntax error
-                    displayMode: isDisplayMode,
-                    output: "htmlAndMathml",
-                });
-            } catch (e) {
-                console.error("KaTeX Plugin Error:", e);
-                return `<span style="color: red;">${e.message}</span>`;
-            }
-        };
-
-        const toHTMLRenderers = {
-            // Renderer for block-level math: ```math ... ```
-            math(node) {
-                const html = renderKatex(node.literal, true);
-                return [
-                    { type: 'openTag', tagName: 'div', outerNewLine: true, attributes: { 'data-katex-block': 'true' } },
-                    { type: 'html', content: html },
-                    { type: 'closeTag', tagName: 'div', outerNewLine: true }
-                ];
-            },
-            // Renderer for inline-level math: $...$
-            // This is triggered by the customInlineRules below
-            katexInline(node) {
-                 const html = renderKatex(node.literal, false);
-                 return { type: 'html', content: html };
-            }
-        };
-
-        // This rule finds $...$ patterns and tells the editor to use our `katexInline` renderer
-        const customInlineRules = [
-            {
-                // Regex: finds a '$' not preceded or followed by another '$',
-                // captures the content inside until the next single '$'.
-                // This prevents it from matching block-level $$...$$.
-                rule: /(?:^|[^$])\$((?:\\.|[^$])+)\$([^$]|$)/,
-                toCustomInline: (text, [leading, content, trailing]) => {
-                    return {
-                        nodes: [
-                            { type: 'text', content: leading },
-                            { type: 'customInline', info: 'katexInline', literal: content.trim() },
-                            { type: 'text', content: trailing }
-                        ]
-                    };
-                }
-            }
-        ];
-        
-        return { toHTMLRenderers, customInlineRules };
-    }
-
-    /**
-     * Throttles a function to ensure it's not called too frequently.
-     * @param {Function} func The function to throttle.
-     * @param {number} limit The throttle limit in milliseconds.
-     * @returns {Function} The throttled function.
-     */
-    function throttle(func, limit) {
-        let lastFunc;
-        let lastRan;
-        return function(...args) {
-            const context = this;
-            if (!lastRan) {
-                func.apply(context, args);
-                lastRan = Date.now();
-            } else {
-                clearTimeout(lastFunc);
-                lastFunc = setTimeout(function() {
-                    if ((Date.now() - lastRan) >= limit) {
-                        func.apply(context, args);
-                        lastRan = Date.now();
-                    }
-                }, limit - (Date.now() - lastRan));
-            }
-        }
-    }
-
-    /**
-     * Renders Markdown content into a preview element safely, including math formulas.
-     * @param {HTMLElement | null} previewContainer The container element holding the preview.
-     * @param {string | undefined | null} markdownContent The Markdown string to render.
-     */
-    function renderPreview(previewContainer, markdownContent) {
-        if (!previewContainer) {
-            console.warn("renderPreview called with null previewContainer.");
-            return;
-        }
-        const previewContentDiv = /** @type {HTMLElement | null} */ (previewContainer.querySelector('.preview-content'));
-        if (!previewContentDiv) {
-            console.warn("renderPreview: '.preview-content' div not found inside container:", previewContainer);
-            return;
-        }
-
-        markdownContent = markdownContent || ''; // Ensure it's a string
-
-        try {
-            let htmlContent = '<p><em>Chưa có nội dung</em></p>'; // Default content
-            if (typeof marked !== 'undefined') {
-                // Basic check for non-empty/non-whitespace content before parsing
-                if (markdownContent.trim()) {
-                    htmlContent = marked.parse(markdownContent);
-                    // !!! IMPORTANT: SANITIZE HTML IN PRODUCTION using a library like DOMPurify !!!
-                    // Example (requires DOMPurify library):
-                    // if (typeof DOMPurify !== 'undefined') {
-                    //     htmlContent = DOMPurify.sanitize(htmlContent, { USE_PROFILES: { html: true } });
-                    // } else {
-                    //     console.warn("DOMPurify not loaded. Skipping HTML sanitization for preview.");
-                    // }
-                }
-                previewContentDiv.innerHTML = htmlContent;
-            } else {
-                // Fallback if marked.js is missing - display raw text safely
-                previewContentDiv.textContent = markdownContent.trim() ? markdownContent : 'Chưa có nội dung (lỗi trình phân tích)';
-                console.error("Marked library not found, rendering raw text.");
-            }
-
-            // Render Math formulas if libraries are available
-            if (htmlContent !== '<p><em>Chưa có nội dung</em></p>') { // Only render math if there's actual content
-                if (hasRenderMathInElement) {
-                    try {
-                        renderMathInElement(previewContentDiv, katexRenderOptions);
-                    } catch (katexError) {
-                        console.error("KaTeX rendering error:", katexError);
-                    }
-                }
-                if (hasMathLive) {
-                     try {
-                         MathLive.renderMathInElement(previewContentDiv, mathLiveRenderOptions);
-                     } catch (mathliveError) {
-                         console.error("MathLive rendering error:", mathliveError);
-                     }
-                }
-            }
-
-        } catch (e) {
-            console.error("Markdown parsing/rendering error:", e);
-            previewContentDiv.innerHTML = '<p><em>Lỗi hiển thị nội dung</em></p>'; // Safer fallback
-        }
-    }
-
-    // ==========================================================================
-    // FULLSCREEN EDITOR MANAGEMENT
-    // ==========================================================================
-
-    /**
-     * Initializes or updates the single fullscreen editor instance.
-     * @param {string} initialMarkdown The initial Markdown content for the editor.
-     * @returns {boolean} True if setup was successful, false otherwise.
-     */
-    function setupFullscreenEditor(initialMarkdown) {
-        if (!editorContainer) {
-            console.error("FATAL: Fullscreen editor container (#fullscreen-editor-container) not found.");
-            showAlert("Lỗi giao diện: Không tìm thấy vùng soạn thảo. Hãy thử tải lại.", "error", 5000);
-            return false; // Indicate failure
-        }
-
-        initialMarkdown = initialMarkdown || ""; // Ensure string
-
-        if (!fullscreenEditorInstance) {
-            console.log("Initializing Fullscreen Editor...");
-            try {
-                fullscreenEditorInstance = new toastui.Editor({
-                    el: editorContainer,
-                    initialEditType: "markdown",
-                    previewStyle: "vertical",
-                    height: "100%",
-                    initialValue: initialMarkdown,
-                    usageStatistics: false,
-                    // ===== PLUGIN INTEGRATION =====
-                    plugins: [
-                        katexPlugin
-                    ]
-                    // ==============================
-                });
-                console.log("Fullscreen Editor Initialized successfully.");
-                return true;
-            } catch (e) {
-                console.error("FATAL: Failed to initialize Fullscreen Editor:", e);
-                showAlert("Không thể khởi tạo trình soạn thảo. Vui lòng tải lại trang.", "error", 5000);
-                editorContainer.innerHTML = '<p class="text-danger">Lỗi khởi tạo trình soạn thảo.</p>'; // Provide feedback in UI
-                return false;
-            }
-        } else {
-            console.log("Updating content for existing Fullscreen Editor.");
-            try {
-                // Use setMarkdown API
-                fullscreenEditorInstance.setMarkdown(initialMarkdown, false); // `false` prevents firing the 'change' event unnecessarily
-                fullscreenEditorInstance.moveCursorToStart(); // Reset cursor position
-                // Ensure editor is visible and refresh layout if needed (especially after display:none)
-                 if (fullscreenModal?.classList.contains('active')) {
-                    fullscreenEditorInstance.refresh();
-                 }
-                console.log("Fullscreen Editor content updated.");
-                return true;
-            } catch(e) {
-                console.error("Error setting markdown on existing editor:", e);
-                showAlert("Lỗi cập nhật nội dung trình soạn thảo.", "error");
-                return false;
-            }
-        }
-    }
-
-    /**
-     * Opens the fullscreen editor modal with Flip animation.
-     * @param {object} targetInfo Information about the element being edited.
-     * @param {string} targetInfo.type Type of content (e.g., 'markdown', 'quizQuestion').
-     * @param {string | number | undefined} targetInfo.qId Question ID or Essay Index.
-     * @param {number | undefined} targetInfo.optIndex Option Index.
-     * @param {HTMLInputElement | HTMLTextAreaElement} targetInfo.dataInput The hidden input storing the data.
-     * @param {HTMLElement} targetInfo.previewContainer The preview element that was clicked.
-     * @param {string} targetInfo.context A description for the modal title.
-     */
-    function openFullscreenEditor(targetInfo) {
-        if (isAnimating || isEditorOpen) {
-            console.warn("Cannot open editor: Already open or animating.", { isAnimating, isEditorOpen });
-            return;
-        }
-        if (!fullscreenModal || !modalContent || !targetInfo?.previewContainer || !targetInfo?.dataInput) {
-            console.error("Cannot open editor: Missing required elements (modal, content, previewContainer, dataInput) or targetInfo.", { fullscreenModal, modalContent, targetInfo });
-            showAlert("Lỗi giao diện: Không thể mở trình soạn thảo.", "error");
-            return;
-        }
-        if (typeof Flip === 'undefined') {
-             console.error("GSAP Flip plugin not available. Opening editor without animation.");
-             // Simple show fallback:
-             if (!setupFullscreenEditor(targetInfo.dataInput.value)) return; // Setup content first
-             currentEditingTarget = targetInfo;
-             fullscreenModal.classList.add("active");
-             if(editorContextTitle) editorContextTitle.textContent = `Chỉnh sửa: ${targetInfo.context || 'Nội dung'}`;
-             isEditorOpen = true;
-             fullscreenEditorInstance?.focus();
-             fullscreenEditorInstance?.refresh(); // Refresh layout
-             return;
-        }
-
-        console.log("Opening editor for:", targetInfo);
-        isAnimating = true; // Lock animation state
-        currentEditingTarget = targetInfo;
-        const initialMarkdown = currentEditingTarget.dataInput.value;
-
-        // 1. Setup Editor Content FIRST
-        if (!setupFullscreenEditor(initialMarkdown)) {
-            console.error("Editor setup failed. Aborting open animation.");
-             isAnimating = false;
-             currentEditingTarget = null;
-             // Clean up partial state if needed
-             fullscreenModal.classList.remove("active");
-             if(modalBackdrop) gsap.set(modalBackdrop, { autoAlpha: 0 });
-            return;
-        }
-
-        // 2. Get State (Before DOM changes) - From preview to modal content
-        const state = Flip.getState(targetInfo.previewContainer, modalContent, { props: "borderRadius, boxShadow, opacity, visibility" });
-
-        // 3. Make DOM changes
-        fullscreenModal.classList.add("active"); // Make modal visible (opacity 0 initially if animating backdrop)
-        targetInfo.previewContainer.style.visibility = 'hidden'; // Keep space, hide visually
-        if(editorContextTitle) editorContextTitle.textContent = `Chỉnh sửa: ${targetInfo.context || 'Nội dung'}`;
-        gsap.set(modalContent, { visibility: 'visible' }); // Ensure modal content is visible for Flip
-
-        // 4. Animate with Flip
-        Flip.from(state, {
-            targets: modalContent,
-            duration: prefersReducedMotion ? 0 : 0.6,
-            ease: "expo.inOut",
-            absolute: true, // Crucial for position: fixed transitions
-            // scale: true, // Implicitly handled
-            onComplete: () => {
-                isEditorOpen = true;
-                isAnimating = false;
-                fullscreenEditorInstance?.focus();
-                fullscreenEditorInstance?.refresh(); // Refresh TUI layout after animation
-                console.log("Editor open animation complete.");
-            },
-            // Fallback for non-flip environments (though checked earlier)
-            simple: true
-        });
-
-        // Animate backdrop fade-in separately
-        if (modalBackdrop) {
-             gsap.fromTo(modalBackdrop, { autoAlpha: 0 }, { duration: 0.4, autoAlpha: 1 });
-        }
-    }
-
-    /**
-     * Closes the fullscreen editor modal with Flip animation.
-     * @param {boolean} [forceClose=false] If true, closes immediately without animation or saving.
-     */
-    function closeFullscreenEditor(forceClose = false) {
-        if (isAnimating || !isEditorOpen || !fullscreenModal || !modalContent) {
-             console.warn("Cannot close editor: Not open or currently animating.", { isAnimating, isEditorOpen });
-            return;
-        }
-         if (!currentEditingTarget && !forceClose) {
-            console.warn("Cannot perform close animation: Missing 'currentEditingTarget'. Forcing close.");
-            forceClose = true;
-         }
-
-        console.log("Closing editor.", { forceClose });
-        isAnimating = true; // Lock animation state
-
-        // --- Force Close ---
-        if (forceClose) {
-            fullscreenModal.classList.remove("active");
-            if (currentEditingTarget?.previewContainer) {
-                 currentEditingTarget.previewContainer.style.visibility = 'visible'; // Show preview again
-            }
-            if(modalBackdrop) gsap.set(modalBackdrop, { autoAlpha: 0 }); // Hide backdrop immediately
-            isEditorOpen = false;
-            isAnimating = false;
-            currentEditingTarget = null; // Clear target
-            console.log("Editor force closed.");
-            return;
-        }
-
-        // --- Check for Flip ---
-         if (typeof Flip === 'undefined') {
-             console.error("GSAP Flip plugin not available. Closing editor without animation.");
-             if (!saveEditorContent()) {
-                 console.warn("Content saving failed or was cancelled during non-animated close.");
-             }
-             fullscreenModal.classList.remove("active");
-             if (currentEditingTarget?.previewContainer) {
-                currentEditingTarget.previewContainer.style.visibility = 'visible';
-             }
-             if(modalBackdrop) gsap.set(modalBackdrop, { autoAlpha: 0 });
-             isEditorOpen = false;
-             isAnimating = false;
-             currentEditingTarget = null;
-             return;
-         }
-
-
-        // --- Try to Save Content ---
-        if (!saveEditorContent()) {
-            console.warn("Content saving failed or was cancelled. Editor remains open.");
-            // Optionally ask user: if (!window.confirm("Lưu thất bại. Đóng mà không lưu?")) {...}
-            isAnimating = false; // Unlock animation state if save fails
-            return; // Keep editor open if save failed
-        }
-
-        // --- Animate Closing ---
-        isEditorOpen = false; // Set flag early
-
-         // Ensure target preview is available
-         if (!currentEditingTarget?.previewContainer) {
-             console.error("Cannot perform close animation: previewContainer missing from currentEditingTarget.");
-             closeFullscreenEditor(true); // Force close if target is bad
-             return;
-         }
-
-         // 1. Get State (Modal content is start) - To preview container
-         const state = Flip.getState(modalContent, currentEditingTarget.previewContainer, { props: "borderRadius, boxShadow, opacity, visibility" });
-
-         // 2. Make DOM changes (Prepare preview)
-         currentEditingTarget.previewContainer.style.visibility = 'visible'; // Make preview visible for Flip target
-         gsap.set(currentEditingTarget.previewContainer, { opacity: 0 }); // Start preview invisible for fade-in effect
-
-         // 3. Animate with Flip
-         Flip.from(state, {
-             targets: currentEditingTarget.previewContainer,
-             duration: prefersReducedMotion ? 0 : 0.5,
-             ease: "expo.inOut",
-             absolute: true,
-             // scale: true,
-             onStart: () => {
-                 // Fade out modal content slightly delayed
-                 gsap.to(modalContent, { duration: 0.3, opacity: 0, delay: 0.1 });
-                 // Fade out backdrop
-                 if (modalBackdrop) {
-                     gsap.to(modalBackdrop, { duration: 0.4, autoAlpha: 0 });
-                 }
-             },
-             onComplete: () => {
-                 fullscreenModal.classList.remove("active"); // Hide modal container AFTER animation
-                 gsap.set(modalContent, { opacity: 1, visibility: 'hidden' }); // Reset modal content for next time
-                 gsap.set(currentEditingTarget?.previewContainer, { opacity: 1 }); // Ensure preview is fully opaque
-                 isAnimating = false; // Unlock animation state
-                 currentEditingTarget = null; // Clear target info
-                 console.log("Editor close animation complete.");
-             },
-             simple: true // Fallback
-         });
-    }
-
-    /**
-     * Saves content from the fullscreen editor to the target input and updates JS data arrays.
-     * Also re-renders the specific preview area.
-     * @returns {boolean} True if saving was successful, false otherwise.
-     */
-    function saveEditorContent() {
-        if (!fullscreenEditorInstance || !currentEditingTarget || !currentEditingTarget.dataInput || !currentEditingTarget.previewContainer) {
-            console.error("Cannot save editor content: Missing editor instance or target information.", { fullscreenEditorInstance, currentEditingTarget });
-            showAlert("Lỗi lưu nội dung: Thiếu thông tin cần thiết.", "error");
-            return false; // Indicate failure
-        }
-
-        const newMarkdown = fullscreenEditorInstance.getMarkdown();
-        const { type, qId, optIndex, dataInput, previewContainer } = currentEditingTarget;
-
-        // Update the hidden input's value
-        dataInput.value = newMarkdown;
-
-        // Update the corresponding JS data array
-        let updateSuccess = false;
-        try {
-            switch (type) {
-                case 'markdown':
-                    updateSuccess = true; // Data input is the source of truth here
-                    break;
-                case 'quizQuestion':
-                    const qIndexQQ = quizData.findIndex(q => q && q.id === qId); // Add safety check for q
-                    if (qIndexQQ > -1) {
-                        quizData[qIndexQQ].question = newMarkdown;
-                        updateQuizDataInput(); // Update the main hidden quiz JSON input
-                        updateSuccess = true;
-                    } else console.warn(`Quiz question with id ${qId} not found in data array for saving.`);
-                    break;
-                case 'quizOption':
-                    const qIndexQO = quizData.findIndex(q => q && q.id === qId); // Safety check
-                    if (qIndexQO > -1 && quizData[qIndexQO].options && optIndex !== undefined && quizData[qIndexQO].options[optIndex]) {
-                        quizData[qIndexQO].options[optIndex].text = newMarkdown;
-                        updateQuizDataInput();
-                        updateSuccess = true;
-                    } else console.warn(`Quiz option with qId ${qId} and optIndex ${optIndex} not found for saving.`);
-                    break;
-                case 'essayPrompt':
-                    updateSuccess = true; // Data input is the source of truth
-                    break;
-                case 'essayQuestion':
-                    // Assuming qId is the *index* for essays
-                    if (typeof qId === 'number' && essayData[qId]) {
-                        essayData[qId].question = newMarkdown;
-                        updateEssayDataInput();
-                        updateSuccess = true;
-                    } else console.warn(`Essay question with index ${qId} not found for saving.`);
-                    break;
-                case 'essayAnswer':
-                     // Assuming qId is the *index* for essays
-                    if (typeof qId === 'number' && essayData[qId]) {
-                        essayData[qId].sampleAnswer = newMarkdown;
-                        updateEssayDataInput();
-                        updateSuccess = true;
-                    } else console.warn(`Essay answer with index ${qId} not found for saving.`);
-                    break;
-                default:
-                    console.warn("Unknown editing target type for saving:", type);
-                    showAlert(`Lỗi lưu: Không nhận dạng được loại nội dung "${type}".`, "error");
-                    return false; // Cannot save unknown type
-            }
-        } catch (error) {
-             console.error("Error updating JS data array during save:", error);
-             showAlert("Lỗi lưu dữ liệu vào bộ nhớ trong.", "error");
-             return false; // Indicate failure
-        }
-
-        if (updateSuccess) {
-             // Re-render the specific preview area with the new content
-             renderPreview(previewContainer, newMarkdown);
-             console.log(`Content saved successfully for target: ${type} (ID/Index: ${qId}, OptIndex: ${optIndex})`);
-             // Trigger auto-save if in add mode after successful save
-             if (mode !== 'edit') saveProgressThrottled();
-             return true; // Indicate success
-        } else {
-             console.error(`Failed to update JS data for target: ${type} (ID/Index: ${qId}, OptIndex: ${optIndex})`);
-              showAlert("Không thể cập nhật dữ liệu bài học sau khi sửa.", "error");
-             return false; // Indicate failure
-        }
-    }
-
-    /**
-     * Adds a click listener to a preview element to trigger the fullscreen editor.
-     * Adds a class to prevent adding multiple listeners.
-     * @param {HTMLElement} element The preview element.
-     */
-    function addPreviewClickListener(element) {
-        if (!element || element.classList.contains('listener-added')) return;
-
-        element.addEventListener('click', (e) => {
-            // Prevent triggering if clicking on interactive elements *inside* the preview
-            if (e.target.closest('a, button, input, select, textarea, .mathfield')) {
-                console.log("Clicked on interactive element inside preview, ignoring editor open.");
-                return;
-            }
-            // Prevent if already animating or open
-            if (isAnimating || isEditorOpen) {
-                console.warn("Ignoring preview click, editor is already open or animating.");
-                return;
-            }
-
-            const targetInputId = element.dataset.editorTarget;
-            const targetInput = targetInputId ? /** @type {HTMLInputElement | HTMLTextAreaElement | null} */ (getEl(targetInputId)) : null;
-            if (!targetInput) {
-                console.error(`Data input element with ID #${targetInputId} not found for the clicked preview.`, element);
-                showAlert("Lỗi: Không tìm thấy nơi lưu dữ liệu được liên kết.", "error");
-                return;
-            }
-
-            // Gather necessary context information from data attributes
-            const context = element.dataset.editorContext || 'Nội dung không xác định';
-            const type = element.dataset.editorType; // e.g., 'quizQuestion'
-            const qId = element.dataset.qId;        // Question ID (string) or Essay Index (string representation of number)
-            const optIndexStr = element.dataset.optIndex; // Option Index (string or undefined)
-
-            if (!type) {
-                 console.error("Missing 'data-editor-type' attribute on preview element.", element);
-                 showAlert("Lỗi: Không xác định được loại nội dung cần sửa.", "error");
-                 return;
-            }
-
-            // Determine if qId should be treated as a number (for essay index)
-            let parsedQId = qId;
-            if ((type === 'essayQuestion' || type === 'essayAnswer') && qId !== undefined) {
-                const numId = parseInt(qId, 10);
-                if (!isNaN(numId)) {
-                    parsedQId = numId;
-                } else {
-                    console.error(`Invalid numeric index found for essay type: ${qId}`);
-                    showAlert("Lỗi dữ liệu: Chỉ số câu hỏi tự luận không hợp lệ.", "error");
-                    return;
-                }
-            }
-
-
-            openFullscreenEditor({
-                type: type,
-                qId: parsedQId, // Use parsed number for essay, keep string for quiz ID
-                optIndex: optIndexStr !== undefined ? parseInt(optIndexStr, 10) : undefined, // Parse if exists
-                dataInput: targetInput,         // Reference to the hidden textarea/input
-                previewContainer: element,      // Reference to the preview div itself
-                context: context                // String description for modal title
-            });
-        });
-
-        element.classList.add('listener-added'); // Mark as processed
-    }
-    // ==========================================================================
-    // STEP NAVIGATION & UI LOGIC
-    // ==========================================================================
-
-    /**
-     * Updates the visual state of the step indicators.
-     * @param {number} targetStep The step number to mark as active.
-     */
-    function updateStepIndicator(targetStep) {
-        stepIndicators.forEach((stepEl, index) => {
-            const stepNum = index + 1;
-            stepEl.classList.remove('active', 'completed');
-            if (stepNum < targetStep) {
-                stepEl.classList.add('completed');
-            } else if (stepNum === targetStep) {
-                stepEl.classList.add('active');
-            }
-        });
-    }
-
-    /**
- * Navigates to the specified step number with animation - FIXED VERSION
- * @param {number} targetStepNum The step number to navigate to (1-based).
+/**
+ * LESSON EDITOR V3 - FINAL FULL STABLE
+ * Features: 
+ * - TreeList (Draft/Live Mode, Sortable)
+ * - Block Editor (EasyMDE, Smart Video, Advanced Quiz)
+ * - AJAX Saving (Publish/Draft)
  */
-function goToStep(targetStepNum) {
-    if (isAnimating) { 
-        console.warn("Animation in progress, delaying step change."); 
-        return; 
+
+// --- GLOBAL VARIABLES ---
+let blocks = [];       // Lưu trữ nội dung các khối (JSON)
+let editors = {};      // Quản lý các instance EasyMDE
+let activeLessonId = null; // ID bài đang chọn (có thể là new_... hoặc ID thật)
+let blockInsertIndex = -1; // Vị trí chèn khối mới
+let currentLessonId = window.location.pathname.split('/').pop(); // ID từ URL
+
+// Xử lý trường hợp URL là /add
+if (currentLessonId === 'add') currentLessonId = 'current_new_lesson';
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    
+    // Live Update Title: Gõ ở giữa -> Cập nhật tên bên trái cây
+    const titleInput = document.getElementById('mainTitleInput');
+    if(titleInput) {
+        titleInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if(activeLessonId) {
+                const treeItem = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
+                if(treeItem) {
+                    const treeInput = treeItem.querySelector('.lesson-title-input');
+                    if(treeInput) treeInput.value = val;
+                }
+            }
+        });
+    }
+});
+
+function initApp() {
+    // 1. Init Curriculum Tree: Load danh sách môn học nếu có sẵn value
+    const subIdElement = document.getElementById('selectSubject');
+    if (subIdElement && subIdElement.value) {
+        loadCourses(subIdElement.value);
     }
 
-    const currentStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.classList.contains('active')));
-    const targetStepElement = /** @type {HTMLElement | undefined} */ (steps.find(step => step.dataset.stepContent == targetStepNum));
-    const wrapper = /** @type {HTMLElement | null} */ (document.querySelector('.form-steps-wrapper'));
+    // 2. Click outside to close Block Menu
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('blockMenu');
+        if (menu && menu.style.display === 'block') {
+            if (!menu.contains(e.target) && 
+                !e.target.closest('.add-block-placeholder') && 
+                !e.target.closest('.inserter-line') &&
+                !e.target.closest('.btn-icon-mini')) {
+                closeBlockMenu();
+            }
+        }
+    });
+}
 
-    if (!targetStepElement || !wrapper || targetStepElement.classList.contains('active')) {
-        console.warn(`goToStep(${targetStepNum}) - Target invalid, already active, or wrapper not found.`);
+// Helper set text status
+function setSaveStatus(text) {
+    const el = document.getElementById('saveStatus');
+    if (el) el.innerText = text;
+}
+
+/* ==========================================================================
+   PART 1: LEFT PANEL - CURRICULUM TREE & COURSE MANAGER
+   ========================================================================== */
+
+// --- 1. KHI CHỌN MÔN HỌC -> LOAD DANH SÁCH KHÓA HỌC ---
+async function loadCourses(subjectId) {
+    const courseGroup = document.getElementById('courseSelectGroup');
+    const courseSelect = document.getElementById('selectCourse');
+    const treeContainer = document.getElementById('treeContainer');
+    const btnAdd = document.getElementById('btnAddUnitMain');
+    const hiddenSub = document.getElementById('hiddenSubjectId');
+
+    // Reset UI
+    if(hiddenSub) hiddenSub.value = subjectId;
+    if(courseSelect) courseSelect.innerHTML = '<option value="">Đang tải...</option>';
+    if(treeContainer) treeContainer.innerHTML = '<div class="empty-state">Vui lòng chọn khóa học.</div>';
+    if(btnAdd) btnAdd.style.display = 'none';
+
+    if(!subjectId) {
+        if(courseGroup) courseGroup.style.display = 'none';
         return;
     }
 
-    const currentStepNum = currentStepElement ? parseInt(currentStepElement.dataset.stepContent || '0', 10) : 0;
-    console.log(`Navigating from step ${currentStepNum} to ${targetStepNum}`);
-
-    isAnimating = true; // Lock animation
-
-    // --- Prepare for Step Change ---
-    if (targetStepNum === 3) {
-        populateReviewData();
-    }
-
-    // --- IMPROVED Height Calculation ---
-    let targetHeight = 0;
-    
-    // Tạo clone tạm để đo chiều cao chính xác mà không ảnh hưởng đến element gốc
-    const clone = targetStepElement.cloneNode(true);
-    gsap.set(clone, {
-        position: 'absolute',
-        visibility: 'hidden',
-        display: 'block',
-        left: '-9999px',
-        top: 0,
-        width: targetStepElement.offsetWidth || wrapper.offsetWidth
-    });
-    
-    document.body.appendChild(clone);
-    targetHeight = clone.scrollHeight;
-    document.body.removeChild(clone);
-
-    console.log(`Target step ${targetStepNum} calculated height: ${targetHeight}px`);
-
-    // --- Animation Logic ---
-    if (prefersReducedMotion) {
-        // Simple show/hide, no animation
-        steps.forEach(step => {
-            const isActive = step === targetStepElement;
-            step.classList.toggle('active', isActive);
-            gsap.set(step, { 
-                display: isActive ? 'block' : 'none',
-                position: isActive ? 'relative' : 'absolute',
-                autoAlpha: isActive ? 1 : 0,
-                clearProps: 'transform'
-            });
-        });
+    try {
+        const res = await fetch(`/api/courses/by-subject/${subjectId}`);
+        const courses = await res.json();
         
-        gsap.set(wrapper, { height: targetHeight > 0 ? `${targetHeight}px` : 'auto' });
-        
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                if(targetStepElement.classList.contains('active')) {
-                    gsap.set(wrapper, { height: 'auto' });
-                }
-            });
-        });
-        
-        isAnimating = false;
-        currentStep = targetStepNum;
-        updateStepIndicator(currentStep);
-        
-    } else {
-        // GSAP Timeline animation
-        const tl = gsap.timeline({
-            defaults: { duration: 0.5, ease: 'power2.inOut' },
-            onComplete: () => {
-                // Ensure correct final state
-                steps.forEach(step => {
-                    const isActive = step === targetStepElement;
-                    step.classList.toggle('active', isActive);
-                    
-                    // ✅ SỬA: Dùng set với clearProps để tránh conflict
-                    if (isActive) {
-                        gsap.set(step, {
-                            position: 'relative',
-                            display: 'block',
-                            autoAlpha: 1,
-                            x: 0,
-                            clearProps: 'transform' // Xóa transform sau animation
-                        });
-                    } else {
-                        gsap.set(step, {
-                            position: 'absolute',
-                            display: 'none',
-                            autoAlpha: 0,
-                            clearProps: 'transform,x'
-                        });
-                    }
+        if(courseSelect) {
+            courseSelect.innerHTML = '<option value="">-- Chọn Khóa Học --</option>';
+            if(courses.length > 0) {
+                courses.forEach(c => {
+                    courseSelect.innerHTML += `<option value="${c._id}">${c.title}</option>`;
                 });
-
-                // Set wrapper height to auto AFTER animation
-                gsap.set(wrapper, { height: 'auto' });
-                
-                console.log(`Step transition complete. Active step: ${targetStepElement.dataset.stepContent}`);
-                
-                if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
-                
-                isAnimating = false;
+            } else {
+                courseSelect.innerHTML = '<option value="">(Chưa có khóa học nào)</option>';
             }
-        });
-
-        const direction = targetStepNum > currentStepNum ? 1 : -1;
-
-        // 1. Animate wrapper height
-        tl.to(wrapper, { 
-            height: targetHeight > 0 ? targetHeight : 'auto',
-            ease: 'power2.inOut'
-        }, 0);
-
-        // 2. Animate out current step
-        if (currentStepElement) {
-            tl.to(currentStepElement, { 
-                autoAlpha: 0, 
-                x: -50 * direction,
-                ease: 'power2.in'
-            }, 0);
         }
+        
+        if(courseGroup) courseGroup.style.display = 'block';
 
-        // 3. Prepare and animate in target step
-        // ✅ SỬA: Set initial state rõ ràng, tránh conflict
-        gsap.set(targetStepElement, { 
-            position: 'absolute',
-            display: 'block',
-            autoAlpha: 0, // autoAlpha handles both opacity + visibility
-            x: 50 * direction,
-            zIndex: 1 // Đảm bảo step mới nằm trên
-        });
-
-        // Add active class
-        tl.call(() => {
-            targetStepElement.classList.add('active');
-            gsap.set(targetStepElement, { 
-                position: 'relative',
-                zIndex: 'auto'
-            });
-        }, null, ">-0.3");
-
-        // Animate in
-        tl.to(targetStepElement, { 
-            autoAlpha: 1, 
-            x: 0,
-            ease: 'power2.out'
-        }, "<");
+    } catch(err) {
+        console.error(err);
+        Swal.fire('Lỗi', 'Không tải được danh sách khóa học', 'error');
     }
-
-    currentStep = targetStepNum;
-    updateStepIndicator(currentStep);
 }
 
-    // Event listeners for step navigation buttons
-    document.querySelectorAll('.next-step-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (isAnimating) return;
-            const nextStep = parseInt(btn.dataset.nextStep || '0', 10);
-            if (nextStep > currentStep) {
-                // Optional: Add validation for current step before proceeding
-                // if (validateStep(currentStep)) { goToStep(nextStep); } else { return; }
-                goToStep(nextStep);
-            }
-        });
-    });
-    document.querySelectorAll('.back-step-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-             if (isAnimating) return;
-            const prevStep = parseInt(btn.dataset.prevStep || '0', 10);
-            if (prevStep < currentStep) {
-                goToStep(prevStep);
-            }
-        });
-    });
+// --- 2. KHI CHỌN KHÓA HỌC -> LOAD CẤU TRÚC (TREE) ---
+async function loadCurriculumByCourse(courseId) {
+    const container = document.getElementById('treeContainer');
+    const btnAdd = document.getElementById('btnAddUnitMain');
+    const hiddenCourse = document.getElementById('hiddenCourseId');
+    
+    if(hiddenCourse) hiddenCourse.value = courseId;
 
-    // Lesson Type Tab Button Logic
-    typeTabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (isAnimating || !typeSelectHidden) return; // Prevent type change during animation or if hidden input missing
-            const newType = btn.dataset.type;
-            if (!newType || typeSelectHidden.value === newType) return; // Do nothing if invalid or already active
-
-            console.log("Changing lesson type to:", newType);
-            isAnimating = true; // Lock during panel transition
-            typeSelectHidden.value = newType;
-
-            // Update button active states
-            typeTabButtons.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-
-            // Animate Panel Transition
-            const targetPanel = /** @type {HTMLElement | null} */ (document.querySelector(`.editor-panel[data-editor-type="${newType}"]`));
-            const currentPanel = /** @type {HTMLElement | undefined} */ (Array.from(editorPanels).find(p => {
-                const style = window.getComputedStyle(p);
-                return style.display !== 'none' && style.opacity !== '0' && style.visibility !== 'hidden';
-            })); // Find currently visible panel more reliably
-
-
-            if (!targetPanel) {
-                console.error(`Editor panel for type "${newType}" not found!`);
-                 showAlert(`Giao diện cho loại "${newType}" bị thiếu.`, "error");
-                 isAnimating = false; // Unlock
-                 return;
-            }
-
-            if (prefersReducedMotion) {
-                 editorPanels.forEach(p => {
-                     gsap.set(p, { display: (p === targetPanel) ? 'block' : 'none' });
-                 });
-                 renderInitialPreviewsForType(newType); // Render after display change
-                 isAnimating = false;
-            } else {
-                const tl = gsap.timeline({
-                    onComplete: () => {
-                        // Ensure final display states are correct
-                        editorPanels.forEach(p => {
-                            gsap.set(p, { display: (p === targetPanel) ? 'block' : 'none' });
-                        });
-                        renderInitialPreviewsForType(newType); // Render content for the new type
-                        if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
-                         isAnimating = false; // Unlock
-                         console.log("Panel transition complete for type:", newType);
-                    }
-                });
-
-                if (currentPanel && currentPanel !== targetPanel) {
-                    tl.to(currentPanel, { duration: 0.3, autoAlpha: 0, scale: 0.97, ease: 'power1.in' }, 0);
-                }
-
-                // Set initial state for target panel (hidden, scaled down, but display: block to allow animation)
-                gsap.set(targetPanel, { display: 'block', autoAlpha: 0, scale: 0.97 });
-                // Animate target panel in
-                tl.to(targetPanel, { duration: 0.4, autoAlpha: 1, scale: 1, ease: 'power2.out' }, ">-0.1"); // Overlap slightly
-            }
-
-            // Trigger auto-save if in add mode
-            if (mode !== 'edit') saveProgressThrottled();
-        });
-    });
-
-    /**
-     * Renders the initial previews for the selected lesson type.
-     * Assumes quizData and essayData arrays are already populated (by initial load or loadProgress).
-     * @param {string | undefined | null} type The lesson type (e.g., 'markdown', 'quiz').
-     */
-    function renderInitialPreviewsForType(type) {
-        console.log("Rendering initial previews for type:", type);
-
-        // No need to parse here - parsing happens during initial load (edit mode) or in loadProgress (add mode)
-
-        switch (type) {
-            case "markdown":
-                const mdPreview = document.querySelector('.editor-preview-container[data-editor-target="markdownData"]');
-                if (mdPreview && markdownDataInput) renderPreview(mdPreview, markdownDataInput.value);
-                break;
-            case "quiz":
-                 if (!quizContainer) break;
-                renderQuiz(); // Rebuilds the quiz UI based on `quizData`
-                break;
-            case "video":
-                triggerVideoPreviewUpdate(); // Video uses its own update mechanism
-                break;
-            case "essay":
-                const promptPreview = document.querySelector('.editor-preview-container[data-editor-target="essayPromptData"]');
-                if (promptPreview && essayPromptDataInput) renderPreview(promptPreview, essayPromptDataInput.value);
-                 if (!essayContainer) break;
-                renderEssayQuestions(); // Rebuilds essay questions based on `essayData`
-                break;
-            default:
-                console.warn("Unknown lesson type for initial preview rendering:", type);
-                break;
-        }
-        // Add listeners to any newly rendered interactive previews that don't have them yet
-        document.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-             addPreviewClickListener( /** @type {HTMLElement} */ (el));
-        });
+    if(!courseId) {
+        if(container) container.innerHTML = '<div class="empty-state">Vui lòng chọn khóa học.</div>';
+        if(btnAdd) btnAdd.style.display = 'none';
+        return;
     }
 
-    // ==========================================================================
-    // QUIZ EDITOR LOGIC (MULTI-CHOICE MODIFIED)
-    // ==========================================================================
+    // Hiệu ứng Loading
+    if(container) container.innerHTML = '<div style="text-align:center; padding:30px; color:#666;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Đang tải giáo trình...</div>';
 
-    /** Updates the hidden quizData input with the stringified current quizData array. */
-    function updateQuizDataInput() {
-        if (!quizDataInput) return;
-        try {
-            // Filter out potential null/undefined entries if using splice incorrectly elsewhere
-            const cleanQuizData = quizData.filter(q => q && typeof q === 'object' && q.id); // Basic sanity check
-            if (cleanQuizData.length !== quizData.length) {
-                 console.warn("Quiz data contained invalid entries, cleaning before saving to input.");
-                 quizData = cleanQuizData; // Update the main array if cleaned
-            }
-            quizDataInput.value = JSON.stringify(quizData);
-            // console.log("Quiz Data Input Updated:", quizDataInput.value); // Reduce console noise
-        } catch (e) {
-            console.error("Error stringifying quiz data:", e, quizData);
-            showAlert("Lỗi nghiêm trọng khi cập nhật dữ liệu Quiz! Dữ liệu có thể không được lưu.", "error", 5000);
-        }
-     }
+    try {
+        const res = await fetch(`/api/tree/by-course/${courseId}`);
+        const data = await res.json();
+        
+        if(container) container.innerHTML = '';
 
-    /** Updates the visual numbering (Câu 1, Câu 2...) of quiz questions. */
-    function updateQuizNumbering() {
-        if (!quizContainer) return;
-        const questionCards = quizContainer.querySelectorAll('.quiz-question-card');
-        questionCards.forEach((qCard, i) => {
-            const numberSpan = qCard.querySelector('.question-number');
-            if (numberSpan) numberSpan.textContent = `Câu ${i + 1}`;
-
-            // Update context data attribute for previews
-            const qPreview = qCard.querySelector('.editor-preview-container[data-editor-type="quizQuestion"]');
-            if (qPreview instanceof HTMLElement) {
-                 qPreview.dataset.editorContext = `Câu hỏi Quiz ${i + 1}`;
-                 // Also update qId in case it was generated dynamically (though ideally IDs are stable)
-                 // qPreview.dataset.qId = qCard.dataset.id; // Assuming card has correct ID
-            }
-
-            // Update option contexts
-            qCard.querySelectorAll('.quiz-option-card').forEach((optCard, optIdx) => {
-                 const oPreview = optCard.querySelector('.editor-preview-container[data-editor-type="quizOption"]');
-                  if (oPreview instanceof HTMLElement) {
-                      oPreview.dataset.editorContext = `Lựa chọn ${String.fromCharCode(65 + optIdx)} - Câu ${i + 1}`;
-                      // Update indices if needed (though add/remove logic should handle this)
-                      // oPreview.dataset.optIndex = String(optIdx);
-                  }
-            });
-        });
-    }
-
-    /**
-     * Creates the HTML structure for a single quiz question card with previews.
-     * @param {any} questionData The data object for the question. Requires at least { id: string, question: string, options: any[] }.
-     * @param {string} qId The unique ID for this question.
-     * @returns {HTMLElement | null} The created card element or null on failure.
-     */
-    function createQuizQuestionElement(questionData, qId) {
-        if (!quizContainer) { console.error("Quiz container not found."); return null; }
-        if (!questionData || typeof qId !== 'string' || !qId) { console.error("Invalid question data or ID provided.", { questionData, qId }); return null; }
-        if (!Array.isArray(questionData.options)) questionData.options = []; // Ensure options is an array
-
-        const questionIndex = quizData.findIndex(q => q && q.id === qId); // Get current index for context
-        const questionEditorTargetId = `quizQuestionData_${qId}`; // Unique ID for the hidden data store
-
-        const card = document.createElement("div");
-        card.className = "quiz-question-card";
-        card.dataset.id = qId; // Store ID on the card
-
-        card.innerHTML = `
-            <div class="quiz-card-header">
-                <span class="question-number">Câu ${questionIndex + 1}</span>
-                <div class="quiz-card-actions">
-                    <button type="button" class="btn-icon remove-question-btn" title="Xóa câu hỏi ${questionIndex + 1}"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>
-            <div class="quiz-card-body">
-                <label class="form-label" for="${questionEditorTargetId}_preview">Nội dung câu hỏi:</label>
-                <!-- Question Preview Area -->
-                <div id="${questionEditorTargetId}_preview" class="editor-preview-container interactive-preview"
-                     data-editor-target="${questionEditorTargetId}"
-                     data-editor-type="quizQuestion"
-                     data-q-id="${qId}"
-                     data-editor-context="Câu hỏi Quiz ${questionIndex + 1}"
-                     tabindex="0" role="button" aria-label="Chỉnh sửa nội dung câu hỏi ${questionIndex + 1}">
-                    <div class="preview-content"></div>
-                    <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                </div>
-                <textarea id="${questionEditorTargetId}" class="hidden-data" aria-hidden="true">${questionData.question || ''}</textarea>
-                <label class="form-label" style="margin-top: 15px;">Các lựa chọn (Có thể chọn nhiều đáp án đúng):</label>
-                <div class="options-container" id="options-container-${qId}"></div>
-                <button type="button" class="btn btn-secondary add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-            </div>
-        `;
-
-        // Append to container *before* adding listeners if possible
-        quizContainer.appendChild(card);
-
-        // Render initial preview content for the question
-        const questionPreview = /** @type {HTMLElement | null} */ (card.querySelector('.editor-preview-container[data-editor-type="quizQuestion"]'));
-        if (questionPreview) {
-            renderPreview(questionPreview, questionData.question);
-            addPreviewClickListener(questionPreview); // Attach listener
-        }
-
-        // Add listeners for card buttons
-        const addOptBtn = card.querySelector(".add-option-btn");
-        if (addOptBtn) {
-            addOptBtn.addEventListener("click", () => {
-                if (isAnimating) return;
-                addQuizOption(qId); // Add a new blank option
-            });
-        }
-
-        const removeQBtn = card.querySelector(".remove-question-btn");
-        if (removeQBtn) {
-            removeQBtn.addEventListener("click", () => {
-                 if (isAnimating) return;
-                 // Use a custom confirmation modal ideally
-                 if (window.confirm(`Bạn chắc muốn xóa Câu ${questionIndex + 1}?`)) {
-                      // Find index again right before splicing
-                      const currentIndex = quizData.findIndex(item => item && item.id === qId);
-                      if (currentIndex > -1) {
-                          quizData.splice(currentIndex, 1); // Remove from data array
-                          // Animate removal
-                           gsap.to(card, { duration: 0.3, autoAlpha: 0, height: 0, marginTop: 0, marginBottom: -15, ease: 'power1.in', onComplete: () => {
-                              card.remove(); // Remove from DOM after animation
-                              updateQuizDataInput();
-                              updateQuizNumbering(); // Renumber remaining questions
-                              if(mode !== 'edit') saveProgressThrottled(); // Save after removal
-                          }});
-                      } else {
-                           console.warn(`Question ${qId} not found in data array for removal.`);
-                           card.remove(); // Remove from DOM anyway if data is inconsistent
-                           updateQuizDataInput();
-                           updateQuizNumbering();
-                      }
-                  }
-             });
-        }
-
-        return card; // Return the created element
-    }
-
-     /**
-      * Adds a quiz option (with preview) to a specific question. NOW USES CHECKBOXES.
-      * @param {string} qId The ID of the question to add the option to.
-      * @param {number | null} [optionIndex=null] The index to insert at (used for rendering existing data). If null, appends.
-      * @param {any} [optionData=null] The data for the option ({ text: string, isCorrect: boolean }). If null, creates a blank option.
-      */
-    function addQuizOption(qId, optionIndex = null, optionData = null) {
-        const question = quizData.find(q => q?.id === qId);
-        if (!question) { console.error(`Quiz Q ${qId} not found for adding option.`); return; }
-        if (!Array.isArray(question.options)) question.options = [];
-
-        const optionsContainer = getEl(`options-container-${qId}`);
-        if (!optionsContainer) { console.error(`Options container for Q ${qId} not found.`); return; }
-
-        const isNewOption = (optionIndex === null);
-        const targetIndex = isNewOption ? question.options.length : optionIndex;
-        const currentOptionData = optionData || { text: "", isCorrect: false };
-
-        // Add/Update data array before creating DOM
-        if (isNewOption) {
-            question.options.push({ ...currentOptionData });
-        } else if (optionIndex !== null && question.options[optionIndex]) {
-            question.options[optionIndex] = { ...currentOptionData };
-        } else if (optionIndex !== null) { // Index out of bounds? Append instead.
-            console.warn(`Attempted render at invalid option index ${optionIndex} for Q ${qId}. Appending.`);
-            question.options.push({ ...currentOptionData });
-        }
-
-        const optionDiv = document.createElement("div");
-        optionDiv.className = "quiz-option-card"; // Keep same card structure
-        optionDiv.dataset.optIndex = String(targetIndex);
-        const optionEditorTargetId = `quizOptionData_${qId}_${targetIndex}`;
-        const checkboxId = `correctAnswer_${qId}_${targetIndex}`; // Unique ID for checkbox and label's 'for'
-
-        const questionIndexForContext = quizData.findIndex(q => q?.id === qId);
-
-        optionDiv.innerHTML = `
-            <div class="option-content">
-                 <!-- Option Preview Area -->
-                 <div class="editor-preview-container interactive-preview"
-                      data-editor-target="${optionEditorTargetId}"
-                      data-editor-type="quizOption"
-                      data-q-id="${qId}"
-                      data-opt-index="${targetIndex}"
-                      data-editor-context="Lựa chọn ${String.fromCharCode(65 + targetIndex)} - Câu ${questionIndexForContext + 1}"
-                      tabindex="0" role="button" aria-label="Chỉnh sửa lựa chọn ${String.fromCharCode(65 + targetIndex)} câu ${questionIndexForContext + 1}">
-                     <div class="preview-content"></div>
-                     <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                 </div>
-                 <textarea id="${optionEditorTargetId}" class="hidden-data" aria-hidden="true">${currentOptionData.text || ''}</textarea>
-            </div>
-            <div class="option-controls">
-                 <!-- Wrapper for custom checkbox -->
-                 <div class="choice-control">
-                     <input
-                         type="checkbox" 
-                         name="${checkboxId}" 
-                         id="${checkboxId}" 
-                         class="correct-checkbox visually-hidden" 
-                         value="${targetIndex}"
-                         data-q-id="${qId}"
-                         data-opt-index="${targetIndex}" 
-                         ${currentOptionData.isCorrect ? "checked" : ""}
-                         aria-labelledby="${checkboxId}-label" 
-                      >
-                      <label
-                          for="${checkboxId}"
-                          id="${checkboxId}-label"
-                          class="correct-answer-label" 
-                          title="Đánh dấu là đáp án đúng/sai"
-                      >
-                          <span class="custom-choice-indicator" aria-hidden="true">
-                              <i class="fas fa-check check-icon"></i>
-                          </span>
-                          <!-- Screen reader text can be simpler or removed if label text is clear -->
-                          <span class="sr-only">Check if correct answer for option ${targetIndex + 1}</span>
-                      </label>
-                 </div>
-                 <button type="button" class="btn-icon remove-option-btn" title="Xóa lựa chọn ${String.fromCharCode(65 + targetIndex)}"><i class="fas fa-times"></i></button>
-            </div>
-        `;
-        optionsContainer.appendChild(optionDiv);
-
-        // Render preview content
-        const optionPreview = /** @type {HTMLElement | null} */ (optionDiv.querySelector('.editor-preview-container[data-editor-type="quizOption"]'));
-        if (optionPreview) {
-            renderPreview(optionPreview, currentOptionData.text);
-            addPreviewClickListener(optionPreview);
-        }
-
-        // --- MODIFIED: Event Listener for Checkbox ---
-        const checkbox = /** @type {HTMLInputElement | null} */ (optionDiv.querySelector(".correct-checkbox"));
-        if (checkbox) {
-            checkbox.addEventListener("change", (e) => {
-                if (!(e.target instanceof HTMLInputElement)) return;
-
-                const changedQId = e.target.dataset.qId;
-                const changedOptIndexStr = e.target.dataset.optIndex;
-
-                if (changedQId === undefined || changedOptIndexStr === undefined) {
-                    console.error("Missing data attributes on checkbox for multi-choice update.");
-                    return;
-                }
-                const changedOptIndex = parseInt(changedOptIndexStr, 10);
-                if (isNaN(changedOptIndex)) {
-                     console.error("Invalid option index on checkbox.");
-                     return;
-                }
-
-                 // Find the specific question and option in the data array
-                 const currentQuestion = quizData.find(q => q?.id === changedQId);
-                 if (!currentQuestion || !currentQuestion.options || !currentQuestion.options[changedOptIndex]) {
-                     console.error(`Cannot find question or option to update: QID ${changedQId}, Index ${changedOptIndex}`);
-                     return;
-                 }
-
-                 // Update the isCorrect status based on the checkbox's checked state
-                 currentQuestion.options[changedOptIndex].isCorrect = e.target.checked;
-
-                 console.log(`Option ${changedOptIndex} for Q:${changedQId} isCorrect set to: ${e.target.checked}`);
-
-                 // Update the main hidden input
-                 updateQuizDataInput();
-
-                 // Trigger auto-save if needed
-                 if(mode !== 'edit') saveProgressThrottled();
-            });
-        }
-
-        // Remove button listener
-        const removeOptBtn = optionDiv.querySelector(".remove-option-btn");
-        if (removeOptBtn) {
-             removeOptBtn.addEventListener("click", () => {
-                 if (isAnimating) return;
-                 // Find the option's index *within the current data structure* using the dataset index
-                 const indexToRemove = parseInt(optionDiv.dataset.optIndex || '-1', 10);
-
-                 if (indexToRemove > -1 && question.options && question.options[indexToRemove]) {
-                     question.options.splice(indexToRemove, 1); // Remove from data using stored index
-
-                     // Animate removal
-                     gsap.to(optionDiv, { duration: 0.3, autoAlpha: 0, height: 0, ease: 'power1.in', onComplete: () => {
-                         optionDiv.remove(); // Remove from DOM after animation
-                         updateQuizDataInput();
-                         // Re-assign correct indices and update context/targets for remaining DOM elements
-                         // This is crucial after splicing the data array
-                         optionsContainer.querySelectorAll('.quiz-option-card').forEach((card, newIdx) => {
-                             if (!(card instanceof HTMLElement)) return;
-                             card.dataset.optIndex = String(newIdx);
-                             const check = /** @type {HTMLInputElement | null} */ (card.querySelector('.correct-checkbox')); // Target checkbox
-                             const label = /** @type {HTMLLabelElement | null} */ (card.querySelector('.correct-answer-label'));
-                             const removeBtn = card.querySelector('.remove-option-btn');
-                             const newCheckboxId = `correctAnswer_${qId}_${newIdx}`; // Update ID pattern
-                             if (check) {
-                                 check.value = String(newIdx);
-                                 check.id = newCheckboxId;
-                                 check.name = newCheckboxId; // Update name
-                                 check.dataset.optIndex = String(newIdx);
-                             }
-                             if (label) {
-                                 label.htmlFor = newCheckboxId; // Update label's 'for'
-                                 label.title = `Đánh dấu là đáp án đúng/sai`; // Update title
-                             }
-                             const preview = card.querySelector('.editor-preview-container'); const textarea = card.querySelector('.hidden-data');
-                             if (preview instanceof HTMLElement && textarea instanceof HTMLElement) {
-                                 const newTargetId = `quizOptionData_${qId}_${newIdx}`;
-                                 preview.dataset.optIndex = String(newIdx);
-                                 preview.dataset.editorTarget = newTargetId;
-                                 preview.dataset.editorContext = `Lựa chọn ${String.fromCharCode(65 + newIdx)} - Câu ${questionIndexForContext + 1}`;
-                                 textarea.id = newTargetId;
-                                 // Update accessibility attributes if needed
-                                 preview.setAttribute('aria-label', `Chỉnh sửa lựa chọn ${String.fromCharCode(65 + newIdx)} câu ${questionIndexForContext + 1}`);
-                             }
-                             if(removeBtn) removeBtn.setAttribute('title', `Xóa lựa chọn ${String.fromCharCode(65 + newIdx)}`);
-                         });
-                         if(mode !== 'edit') saveProgressThrottled(); // Save progress after structure change
-                     }});
-
-                 } else {
-                      console.warn(`Could not remove option at index ${indexToRemove} for question ${qId}. Data mismatch or index invalid?`, question.options);
-                      // Fallback: just remove from DOM if data is inconsistent
-                      optionDiv.remove();
-                      updateQuizDataInput(); // Try to save anyway
-                 }
-             });
-        }
-
-        // Animate entrance if new option
-        if (isNewOption) {
-             updateQuizDataInput(); // Save structure
-             if (!prefersReducedMotion) { gsap.from(optionDiv, {duration: 0.4, autoAlpha: 0, y: 20, ease: 'power2.out'}); }
-             if(mode !== 'edit') saveProgressThrottled();
-        }
-    }
-
-    /** Adds a completely new, blank quiz question card to the UI and data array. */
-    function addNewQuizQuestion() {
-        if (isAnimating || !quizContainer) return;
-        const qId = `quizQ_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        const newQuestionData = { id: qId, question: "", options: [] };
-        quizData.push(newQuestionData);
-        const newQuestionElement = createQuizQuestionElement(newQuestionData, qId);
-        if (newQuestionElement) {
-            addQuizOption(qId); // Add default option
-            updateQuizDataInput();
-            updateQuizNumbering();
-            newQuestionElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            if (!prefersReducedMotion) {
-                gsap.from(newQuestionElement, { duration: 0.5, autoAlpha: 0, y: 30, ease: 'power2.out', delay: 0.1 });
-            }
-            if(mode !== 'edit') saveProgressThrottled();
-            console.log("Added new quiz question with ID:", qId);
+        // KIỂM TRA: LÀ BẢN NHÁP HAY LIVE?
+        if (data.source === 'draft') {
+            const alertHtml = `
+                <div style="background:#fff7ed; color:#c2410c; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ffedd5; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
+                    <div>
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <b>Chế độ Bản Nháp</b><br>
+                        <span style="font-size:0.8rem; opacity:0.8">Thay đổi chưa được công khai.</span>
+                    </div>
+                    <button type="button" onclick="discardDraft('${courseId}')" style="border:none; background:white; border:1px solid #c2410c; color:#c2410c; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem;">
+                        <i class="fas fa-undo"></i> Hủy nháp
+                    </button>
+                </div>`;
+            container.innerHTML = alertHtml;
+            renderTreeFromJson(data.tree); 
         } else {
-            console.error("Failed to create new quiz question element.");
-            const failedIndex = quizData.findIndex(q => q?.id === qId);
-            if (failedIndex > -1) quizData.splice(failedIndex, 1);
-            showAlert("Không thể thêm câu hỏi mới vào giao diện.", "error");
+            // Live mode
+            renderTreeFromJson(data.tree); 
         }
+
+        if(btnAdd) btnAdd.style.display = 'block';
+
+        // Tự động mở bài học lần trước đang sửa
+        if(data.lastEditedId) {
+            setTimeout(() => {
+                const item = document.querySelector(`.tree-lesson[data-lesson-id="${data.lastEditedId}"]`);
+                if(item) item.click();
+            }, 500);
+        }
+
+    } catch(err) {
+        console.error(err);
+        if(container) container.innerHTML = '<div style="color:red; text-align:center; padding:20px;">Lỗi tải dữ liệu cây.<br>Vui lòng thử lại.</div>';
+    }
+}
+
+// --- 3. RENDER TREE TỪ JSON ---
+function renderTreeFromJson(units) {
+    const container = document.getElementById('treeContainer');
+    
+    // Tạo wrapper riêng để không xóa mất Alert Draft
+    let listWrapper = document.getElementById('treeListWrapper');
+    if(!listWrapper) {
+        listWrapper = document.createElement('div');
+        listWrapper.id = 'treeListWrapper';
+        container.appendChild(listWrapper);
+    } else {
+        listWrapper.innerHTML = '';
     }
 
-    // ==========================================================================
-    // ===== PAGINATION HELPER =====
-    // ==========================================================================
-    const ITEMS_PER_PAGE = 5; // Số câu hỏi mỗi trang
+    if(!units || units.length === 0) {
+        listWrapper.innerHTML = '<div class="empty-state" style="margin-top:20px;">Khóa học này chưa có chương nào.</div>';
+        return;
+    }
 
-    function setupPagination(containerId, totalItems, onPageChange) {
-        const paginationContainer = document.getElementById(containerId);
-        if (!paginationContainer) return;
+    // Render từng Unit
+    units.forEach(u => {
+        const uId = u.id || u._id;
+        createUnitDOM(uId, u.title, u.lessons, listWrapper);
+    });
+    
+    // Sortable cho Chương
+    if(typeof Sortable !== 'undefined') {
+        new Sortable(listWrapper, {
+            handle: '.tree-unit-header',
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+    }
+}
 
-        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-        let currentPage = 1;
+// --- 4. CREATE UNIT DOM (Hỗ trợ targetContainer) ---
+function createUnitDOM(id, title, lessons = [], targetContainer) {
+    // Nếu không truyền container thì lấy mặc định (cho trường hợp thêm mới)
+    const container = targetContainer || document.getElementById('treeListWrapper') || document.getElementById('treeContainer');
 
-        const render = () => {
-            paginationContainer.innerHTML = '';
-            if (totalPages <= 1) return;
+    const unitEl = document.createElement('div');
+    unitEl.className = 'tree-unit';
+    unitEl.dataset.unitId = id; 
 
-            // Previous Button
-            const prevBtn = document.createElement('button');
-            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-            prevBtn.className = 'pagination-btn';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    onPageChange(currentPage);
-                    render();
-                }
-            });
-            paginationContainer.appendChild(prevBtn);
+    unitEl.innerHTML = `
+        <div class="tree-unit-header">
+            <div style="display:flex; align-items:center; flex-grow:1;">
+                <i class="fas fa-grip-vertical" style="color:#ccc; cursor:grab; margin-right:8px;" title="Kéo để sắp xếp chương"></i>
+                <input type="text" class="unit-title-input" value="${title}" 
+                       placeholder="Nhập tên chương..."
+                       onchange="this.setAttribute('value', this.value)">
+            </div>
+            <div class="tree-actions">
+                <button type="button" class="btn-icon-mini" onclick="addTempLessonToUnit(this)" title="Thêm bài vào chương này"><i class="fas fa-plus"></i></button>
+                <button type="button" class="btn-icon-mini" onclick="deleteUnitDOM(this)" title="Xóa chương"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="tree-lesson-list" data-unit-id="${id}"></div>
+    `;
 
-            // Page Info
-            const pageInfo = document.createElement('span');
-            pageInfo.className = 'pagination-info';
-            pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
-            paginationContainer.appendChild(pageInfo);
+    const listContainer = unitEl.querySelector('.tree-lesson-list');
 
-            // Next Button
-            const nextBtn = document.createElement('button');
-            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-            nextBtn.className = 'pagination-btn';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    onPageChange(currentPage);
-                    render();
-                }
-            });
-            paginationContainer.appendChild(nextBtn);
-        };
+    // Render Lessons bên trong
+    if(lessons && lessons.length > 0) {
+        lessons.forEach(l => {
+            const lId = l.id || l._id;
+            const lessonObj = { _id: lId, title: l.title, type: l.type, isPublished: l.isPublished };
+            const isCurrent = (String(lId) === String(activeLessonId));
+            listContainer.appendChild(createLessonDOM(lessonObj, isCurrent));
+        });
+    }
+
+    container.appendChild(unitEl);
+
+    // Sortable cho Bài học
+    if(typeof Sortable !== 'undefined') {
+        new Sortable(listContainer, {
+            group: 'lessons', 
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+    }
+    
+    // Auto focus nếu tên rỗng
+    if(title === '') {
+        setTimeout(() => unitEl.querySelector('.unit-title-input').focus(), 100);
+    }
+}
+
+// --- 5. CREATE LESSON DOM (Duy nhất) ---
+function createLessonDOM(lesson, isCurrent = false) {
+    const el = document.createElement('div');
+    const lessonId = lesson._id || lesson.id;
+    
+    // Class Active
+    el.className = `tree-lesson ${String(lessonId) === String(activeLessonId) ? 'active' : ''}`;
+    el.dataset.lessonId = lessonId;
+    
+    // Icon loại bài học
+    let icon = '<i class="fas fa-file-alt"></i>';
+    if(lesson.type === 'video') icon = '<i class="fas fa-video"></i>';
+    if(lesson.type === 'question' || lesson.type === 'quiz') icon = '<i class="fas fa-question-circle"></i>';
+
+    // Trạng thái Nháp
+    let statusIcon = '';
+    if (lesson.isPublished === false || String(lessonId).startsWith('new_') || lessonId === 'current_new_lesson') {
+        statusIcon = `<i class="fas fa-pencil-ruler" style="font-size: 0.7rem; color: #f59e0b;" title="Bản nháp"></i>`;
+    }
+
+    // --- CẤU TRÚC HTML MỚI (CÓ NÚT XÓA) ---
+    // Sử dụng Flexbox để căn chỉnh: [Drag][Icon][Input] ......... [Status][Delete]
+    el.innerHTML = `
+        <div style="display:flex; align-items:center; flex-grow:1; overflow:hidden; padding-right:5px;">
+            <i class="fas fa-ellipsis-v drag-handle" style="margin-right:8px; cursor:grab; color:#ccc;"></i>
+            <span class="lesson-icon" style="margin-right:8px;">${icon}</span>
+            <input type="text" class="lesson-title-input" value="${lesson.title}" 
+                   onchange="this.setAttribute('value', this.value)" 
+                   onclick="event.stopPropagation()"
+                   style="flex-grow:1; border:none; background:transparent; min-width:0;"> 
+        </div>
         
-        onPageChange(1); // Render trang đầu tiên
-        render();
-    }
+        <div class="lesson-actions" style="display:flex; align-items:center; gap:8px;">
+            ${statusIcon}
+            <button type="button" class="btn-icon-mini delete-lesson-btn" 
+                    title="Xóa bài học" 
+                    onclick="deleteLessonDOM(this, '${lessonId}', event)">
+                <i class="fas fa-times" style="color:#ef4444;"></i>
+            </button>
+        </div>
+    `;
 
-    /** Renders the entire quiz section based on the current `quizData` array. */
-    function renderQuiz() {
-        if (!quizContainer) return;
+    // Sự kiện click chọn bài
+    el.onclick = () => selectLesson(lessonId, lesson.title, lesson.type);
+    
+    // Live update title
+    const input = el.querySelector('input');
+    input.addEventListener('input', (e) => {
+        if(String(lessonId) === String(activeLessonId)) {
+            const mainInput = document.getElementById('mainTitleInput');
+            if(mainInput) mainInput.value = e.target.value;
+        }
+    });
+
+    return el;
+}
+
+/* --- HÀM XÓA BÀI HỌC --- */
+async function deleteLessonDOM(btn, lessonId, event) {
+    // Ngăn sự kiện click lan ra ngoài (để không kích hoạt selectLesson)
+    event.stopPropagation(); 
+
+    // Xác nhận xóa
+    const result = await Swal.fire({
+        title: 'Xóa bài học này?',
+        text: "Hành động này không thể hoàn tác!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Xóa ngay',
+        cancelButtonText: 'Hủy'
+    });
+
+    if (!result.isConfirmed) return;
+
+    const lessonEl = btn.closest('.tree-lesson');
+
+    // TRƯỜNG HỢP 1: Bài mới (Chưa lưu vào DB) -> Xóa trên giao diện thôi
+    if (lessonId.startsWith('new_') || lessonId === 'current_new_lesson') {
+        lessonEl.remove();
         
-        quizContainer.innerHTML = "";
-        if (!Array.isArray(quizData) || quizData.length === 0) {
-            quizContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi nào.</p>';
-            document.getElementById('quizPagination').innerHTML = '';
-            return;
+        // Nếu đang chọn bài này thì reset editor
+        if (lessonId === activeLessonId) {
+            document.getElementById('editorMainPanel').style.display = 'none';
+            document.getElementById('emptyStatePanel').style.display = 'block';
+            activeLessonId = null;
         }
-
-        const onPageChange = (page) => {
-            quizContainer.innerHTML = ""; // Clear for new page
-            const startIndex = (page - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-            const pageItems = quizData.slice(startIndex, endIndex);
-
-            pageItems.forEach(q => {
-                if (!q || typeof q !== 'object' || !q.id) return;
-                const questionElement = createQuizQuestionElement(q, q.id); // This function creates and appends one card
-                if (questionElement) {
-                    q.options = q.options || [];
-                    q.options.forEach((opt, optIdx) => {
-                        addQuizOption(q.id, optIdx, opt);
-                    });
-                }
-            });
-            // Attach listeners to newly rendered previews
-            quizContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-                addPreviewClickListener(el);
-            });
-        };
-
-        setupPagination('quizPagination', quizData.length, onPageChange);
+        
+        Swal.fire('Đã xóa', 'Đã xóa bài học nháp.', 'success');
+        return;
     }
 
-    // --- Quiz Button Listeners ---
-    addQuestionBtn?.addEventListener("click", addNewQuizQuestion);
-
-    generateQuizBtn?.addEventListener("click", async () => {
-        if (!docxFileInput?.files?.length) {
-            showAlert("Vui lòng chọn một file DOCX hoặc PDF để tạo Quiz.", "warning", 3000);
-            docxFileInput?.focus();
-            return;
-        }
-        if (isAnimating || isSubmitting) {
-            console.warn("Cannot generate quiz: Animation or submission in progress.");
-            return;
-        }
-
-        const file = docxFileInput.files[0];
-        if (file.size > 10 * 1024 * 1024) { // Example: 10MB limit
-             showAlert("File quá lớn (tối đa 10MB).", "error", 4000);
-             return;
-        }
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const loadingOverlay = getEl("loading-overlay"); // Assuming you have one
-        loadingOverlay?.classList.add("active");
-        generateQuizBtn.disabled = true;
-        generateQuizBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-        let generatedSuccessfully = false; // Track success
-
-        try {
-            const res = await fetch("/api/quiz-generator", { method: "POST", body: formData });
-
-            if (!res.ok) {
-                // Try to parse error message from server response body
-                let errorMsg = `Lỗi máy chủ (${res.status})`;
-                 try {
-                    const errorData = await res.json();
-                    errorMsg = errorData.error || errorData.message || errorMsg;
-                 } catch (parseErr) { /* Ignore if response is not JSON */ }
-                showAlert(`Lỗi tạo quiz: ${errorMsg}`, "error", 5000);
-                console.error("Quiz generation error:", res.status, res.statusText);
-                return; // Exit after handling server error
+    // TRƯỜNG HỢP 2: Bài đã có trong DB -> Gọi API xóa thật
+    try {
+        // Gọi API xóa (Backend đã có route này trong server.js)
+        const res = await fetch(`/lesson/${lessonId}/delete`, { method: 'POST' });
+        
+        // Lưu ý: Route cũ của bạn có thể redirect về dashboard, 
+        // nên check res.ok hoặc res.redirected là đủ.
+        // Tốt nhất backend nên trả về JSON {success: true}
+        
+        if (res.ok) {
+            lessonEl.remove();
+            
+            if (lessonId === activeLessonId) {
+                document.getElementById('editorMainPanel').style.display = 'none';
+                document.getElementById('emptyStatePanel').style.display = 'block';
+                activeLessonId = null;
             }
+            
+            Swal.fire('Đã xóa', 'Bài học đã được xóa vĩnh viễn.', 'success');
+        } else {
+            Swal.fire('Lỗi', 'Không thể xóa bài học.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
+    }
+}
 
+// --- 6. ACTIONS (Thêm Chương, Thêm Bài, Xóa Chương) ---
+
+function addTempUnit() {
+    const tempId = 'new_unit_' + Date.now();
+    createUnitDOM(tempId, '', []);
+}
+
+function addTempLessonToUnit(btn) {
+    const unitEl = btn.closest('.tree-unit');
+    const listContainer = unitEl.querySelector('.tree-lesson-list');
+    
+    const tempId = 'new_lesson_' + Date.now();
+    const tempLesson = { _id: tempId, title: 'Bài học mới', type: 'theory', isPublished: false };
+
+    const lessonDOM = createLessonDOM(tempLesson, false);
+    listContainer.appendChild(lessonDOM);
+
+    // Tự động chọn bài vừa tạo
+    selectLesson(tempId, 'Bài học mới');
+    
+    // Focus vào ô nhập tên Ở GIỮA
+    setTimeout(() => {
+        const mainTitle = document.getElementById('mainTitleInput');
+        if(mainTitle) mainTitle.select();
+    }, 200);
+}
+
+/* --- HÀM XÓA CHƯƠNG (CẬP NHẬT: XÓA CẢ BÀI HỌC CON) --- */
+async function deleteUnitDOM(btn) {
+    const unitEl = btn.closest('.tree-unit');
+    const lessons = unitEl.querySelectorAll('.tree-lesson');
+    const lessonCount = lessons.length;
+
+    // 1. Xác định nội dung cảnh báo
+    let title = 'Xóa chương này?';
+    let text = "Hành động này sẽ xóa chương khỏi cấu trúc.";
+    let confirmBtnText = 'Xóa chương';
+
+    if (lessonCount > 0) {
+        title = `CẢNH BÁO: Chương này có ${lessonCount} bài học!`;
+        text = "Nếu bạn xóa chương này, TẤT CẢ bài học bên trong cũng sẽ bị xóa khỏi danh sách. Bạn có chắc chắn không?";
+        confirmBtnText = 'Đồng ý xóa tất cả';
+    }
+
+    // 2. Hiển thị Popup xác nhận
+    const result = await Swal.fire({
+        title: title,
+        text: text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: confirmBtnText,
+        cancelButtonText: 'Hủy'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // 3. Xử lý Logic Xóa
+    // Kiểm tra xem bài đang sửa (activeLessonId) có nằm trong chương bị xóa không
+    let isActiveLessonInside = false;
+    if (activeLessonId) {
+        const activeItem = unitEl.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
+        if (activeItem) isActiveLessonInside = true;
+    }
+
+    // Hiệu ứng xóa UI
+    unitEl.style.transition = 'all 0.3s ease';
+    unitEl.style.opacity = '0';
+    unitEl.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+        unitEl.remove();
+
+        // Nếu bài đang mở bị xóa theo chương -> Reset màn hình Editor về trống
+        if (isActiveLessonInside) {
+            document.getElementById('editorMainPanel').style.display = 'none';
+            document.getElementById('emptyStatePanel').style.display = 'block';
+            activeLessonId = null;
+            document.getElementById('currentEditingId').value = '';
+        }
+
+        Swal.fire('Đã xóa', 'Chương và các bài học bên trong đã được xóa.', 'success');
+    }, 300);
+}
+
+// --- 7. TẠO KHÓA HỌC NHANH (Popup) ---
+async function promptCreateCourse() {
+    const subjectSelect = document.getElementById('selectSubject');
+    const subjectId = subjectSelect ? subjectSelect.value : null;
+    if(!subjectId) return Swal.fire('Lỗi', 'Chọn môn học trước', 'warning');
+
+    const { value: title } = await Swal.fire({
+        title: 'Tạo Khóa Học Mới',
+        input: 'text',
+        inputPlaceholder: 'Ví dụ: Toán 12 Nâng Cao',
+        showCancelButton: true,
+        confirmButtonText: 'Tạo ngay'
+    });
+
+    if(title) {
+        try {
+            const res = await fetch('/api/courses/quick-create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title, subjectId })
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                await loadCourses(subjectId);
+                const courseSelect = document.getElementById('selectCourse');
+                if(courseSelect) courseSelect.value = data.course._id;
+                loadCurriculumByCourse(data.course._id);
+                Swal.fire({ icon: 'success', title: 'Đã tạo khóa học mới!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            }
+        } catch(err) {
+            Swal.fire('Lỗi', 'Không tạo được khóa học', 'error');
+        }
+    }
+}
+
+/* --- HÀM XÓA KHÓA HỌC HIỆN TẠI --- */
+async function deleteCurrentCourse() {
+    const courseSelect = document.getElementById('selectCourse');
+    const courseId = courseSelect.value;
+    const courseName = courseSelect.options[courseSelect.selectedIndex]?.text;
+
+    if (!courseId) {
+        return Swal.fire('Lỗi', 'Vui lòng chọn khóa học cần xóa.', 'warning');
+    }
+
+    // Cảnh báo mạnh
+    const result = await Swal.fire({
+        title: 'Xóa khóa học này?',
+        html: `Bạn đang xóa khóa học: <b>${courseName}</b>.<br><br>
+               <span style="color:red; font-weight:bold;">CẢNH BÁO:</span> 
+               Tất cả Chương và Bài học bên trong sẽ bị xóa vĩnh viễn!`,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Xóa vĩnh viễn',
+        cancelButtonText: 'Hủy'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            // Gọi API
+            const res = await fetch(`/api/course/${courseId}/delete`, { method: 'POST' });
             const data = await res.json();
 
-            if (data.error) { // Handle application-level errors returned in JSON
-                showAlert(`Lỗi tạo quiz: ${data.error}`, "error", 5000);
-                console.error("Quiz generation application error:", data.error);
-
-            } else if (data.quiz && Array.isArray(data.quiz) && data.quiz.length > 0) {
-                // Assign unique IDs and structure validation might be needed here
-                const generatedQuiz = data.quiz.map((q, index) => ({
-                    id: `quizQ_gen_${Date.now()}_${index}`, // Ensure new unique client-side IDs
-                    question: q.question || "", // Ensure fields exist
-                    options: Array.isArray(q.options) ? q.options.map(opt => ({ // Ensure options structure
-                        text: opt.text || "",
-                        isCorrect: !!opt.isCorrect // Coerce to boolean
-                    })) : [],
-                }));
-
-                // Ask user whether to replace or append? (Replacing is simpler)
-                let replace = true; // Default to replace
-                if (quizData.length > 0) {
-                     replace = window.confirm(`Đã tạo ${generatedQuiz.length} câu hỏi từ file.\n\nBẠN CÓ MUỐN THAY THẾ các câu hỏi hiện tại không?\n\n(Chọn 'OK' để thay thế, 'Cancel' để giữ lại câu cũ và hủy thêm câu mới).`);
-                }
-
-                if (replace) {
-                    quizData = generatedQuiz; // Replace existing data
-                    renderQuiz(); // Re-render the entire quiz section with new data
-                    showAlert(`Đã tạo và thay thế thành công ${quizData.length} câu hỏi!`, "success", 3500);
-                    generatedSuccessfully = true; // Mark success
-                     if(mode !== 'edit') saveProgressThrottled(); // Save progress
-                } else {
-                     showAlert("Đã hủy thêm câu hỏi từ file.", "info", 2500);
-                }
-
-            } else if (data.quiz && Array.isArray(data.quiz) && data.quiz.length === 0) {
-                 showAlert("File được xử lý nhưng không tìm thấy câu hỏi nào phù hợp để tạo quiz.", "warning", 4000);
-                 console.warn("Quiz generation returned empty array.");
+            if (data.success) {
+                Swal.fire('Đã xóa', 'Khóa học đã bị xóa thành công.', 'success');
+                
+                // Refresh lại danh sách khóa học
+                const subjectId = document.getElementById('selectSubject').value;
+                loadCourses(subjectId);
+                
+                // Reset cây thư mục
+                document.getElementById('treeContainer').innerHTML = '<div class="empty-state">Vui lòng chọn khóa học.</div>';
+                document.getElementById('btnAddUnitMain').style.display = 'none';
             } else {
-                showAlert("Không nhận được dữ liệu quiz hợp lệ từ máy chủ.", "error", 4000);
-                console.error("Invalid quiz data format received:", data);
+                Swal.fire('Lỗi', data.error || 'Không thể xóa khóa học.', 'error');
             }
         } catch (err) {
-            showAlert("Lỗi mạng hoặc lỗi xử lý khi tạo quiz.", "error", 4000);
-            console.error("Fetch error during quiz generation:", err);
-        } finally {
-            loadingOverlay?.classList.remove("active");
-            generateQuizBtn.disabled = false;
-            generateQuizBtn.innerHTML = '<i class="fas fa-cogs"></i> Tạo Quiz';
-            // Clear file input only on successful generation and replacement/append? Or always?
-             if (docxFileInput) docxFileInput.value = ''; // Clear file input regardless
-        }
-    });
-
-
-    // ==========================================================================
-    // ESSAY EDITOR LOGIC
-    // ==========================================================================
-
-    /** Updates the hidden essayData input with the stringified current essayData array. */
-    function updateEssayDataInput() {
-         if (!essayDataInput) return;
-        try {
-            // Filter out potential null/undefined entries left by 'remove' logic
-            const cleanEssayData = essayData.filter(e => e !== null && e !== undefined);
-            if (cleanEssayData.length !== essayData.length) {
-                console.warn("Essay data contained null entries, cleaning before saving to input.");
-                 essayData = cleanEssayData; // Update the main array
-            }
-            essayDataInput.value = JSON.stringify(essayData);
-            // console.log("Essay Data Input Updated:", essayDataInput.value);
-        } catch (e) {
-            console.error("Error stringifying essay data:", e, essayData);
-            showAlert("Lỗi nghiêm trọng khi cập nhật dữ liệu Tự luận! Dữ liệu có thể không được lưu.", "error", 5000);
+            console.error(err);
+            Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
         }
     }
-
-    /** Renders the essay questions based on the current `essayData` array, with pagination. */
-    function renderEssayQuestions() {
-        if (!essayContainer) return;
-
-        essayContainer.innerHTML = '';
-        const validEssayData = (essayData || []).filter(Boolean); // Clean data first
-
-        if (validEssayData.length === 0) {
-            essayContainer.innerHTML = '<p class="text-center text-muted">Chưa có câu hỏi tự luận nào.</p>';
-            const pag = document.getElementById('essayPagination');
-            if (pag) pag.innerHTML = '';
-            return;
-        }
-
-        const onPageChange = (page) => {
-            essayContainer.innerHTML = "";
-            const startIndex = (page - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-            const pageItems = validEssayData.slice(startIndex, endIndex);
-
-            pageItems.forEach((item, idxOnPage) => {
-                const originalIndex = essayData.indexOf(item); // Find original index to link data
-                if (originalIndex === -1) return;
-
-                const questionTargetId = `essayQuestionData_${originalIndex}`;
-                const answerTargetId = `essayAnswerData_${originalIndex}`;
-                const currentQuestionNumber = startIndex + idxOnPage + 1;
-
-                const essayDiv = document.createElement("div");
-                essayDiv.className = "essay-question-card";
-                essayDiv.dataset.index = String(originalIndex);
-                essayDiv.innerHTML = `
-                    <div class="essay-card-header">
-                        <span class="question-number">Câu Tự Luận ${currentQuestionNumber}</span>
-                        <button type="button" class="btn-icon remove-essay-question-btn" title="Xóa câu hỏi Tự luận ${currentQuestionNumber}"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="essay-card-body">
-                        <label class="form-label" for="${questionTargetId}_preview">Nội dung câu hỏi:</label>
-                        <div id="${questionTargetId}_preview" class="editor-preview-container interactive-preview"
-                             data-editor-target="${questionTargetId}"
-                             data-editor-type="essayQuestion"
-                             data-q-id="${originalIndex}"
-                             data-editor-context="Câu hỏi Tự luận ${currentQuestionNumber}"
-                             tabindex="0" role="button" aria-label="Chỉnh sửa câu hỏi Tự luận ${currentQuestionNumber}">
-                            <div class="preview-content"></div>
-                            <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                        </div>
-                        <textarea id="${questionTargetId}" class="hidden-data" aria-hidden="true">${item.question || ''}</textarea>
-
-                        <label class="form-label" style="margin-top: 15px;" for="${answerTargetId}_preview">Đáp án mẫu (Gợi ý chấm):</label>
-                        <div id="${answerTargetId}_preview" class="editor-preview-container interactive-preview"
-                             data-editor-target="${answerTargetId}"
-                             data-editor-type="essayAnswer"
-                             data-q-id="${originalIndex}" 
-                             data-editor-context="Đáp án mẫu - Câu ${currentQuestionNumber}"
-                             tabindex="0" role="button" aria-label="Chỉnh sửa đáp án mẫu cho Câu ${currentQuestionNumber}">
-                            <div class="preview-content"></div>
-                            <div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                        </div>
-                        <textarea id="${answerTargetId}" class="hidden-data" aria-hidden="true">${item.sampleAnswer || ''}</textarea>
-                    </div>
-                `;
-                essayContainer.appendChild(essayDiv);
-
-                // Render initial previews
-                const qPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayQuestion"]'));
-                const aPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayAnswer"]'));
-                if (qPreview) renderPreview(qPreview, item.question);
-                if (aPreview) renderPreview(aPreview, item.sampleAnswer);
-                if (qPreview) addPreviewClickListener(qPreview);
-                if (aPreview) addPreviewClickListener(aPreview);
-
-                // Remove button listener
-                const removeBtn = essayDiv.querySelector(".remove-essay-question-btn");
-                if (removeBtn) {
-                    removeBtn.addEventListener("click", () => {
-                        if (isAnimating) return;
-                        if (window.confirm(`Bạn có chắc muốn xóa Câu hỏi Tự luận ${currentQuestionNumber}?`)) {
-                            const currentIndex = parseInt(essayDiv.dataset.index || '-1', 10);
-                            if (currentIndex > -1 && essayData[currentIndex] !== undefined) {
-                                essayData[currentIndex] = null;
-                                gsap.to(essayDiv, { duration: 0.3, autoAlpha: 0, height: 0, marginTop: 0, marginBottom: -15, ease: 'power1.in', onComplete: () => {
-                                    essayDiv.remove();
-                                    updateEssayDataInput();
-                                    updateEssayQuestionNumbering();
-                                    if (mode !== 'edit') saveProgressThrottled();
-                                }});
-                            } else {
-                                essayDiv.remove();
-                                updateEssayDataInput();
-                                updateEssayQuestionNumbering();
-                            }
-                        }
-                    });
-                }
-            });
-            updateEssayQuestionNumbering();
-            essayContainer.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-                addPreviewClickListener(el);
-            });
-        };
-
-        setupPagination('essayPagination', validEssayData.length, onPageChange);
-    }
-
-    /** Updates the visual numbering (Câu Tự Luận 1...) of the essay questions currently in the DOM. */
-    function updateEssayQuestionNumbering() {
-         if (!essayContainer) return;
-         let visibleIndex = 0;
-         // Select only cards that are likely visible (not display:none or opacity:0 from removal animation)
-         essayContainer.querySelectorAll('.essay-question-card').forEach((card) => {
-            if (!(card instanceof HTMLElement)) return;
-             // Check computed style for visibility/display might be more robust but slower
-             // For simplicity, assume cards present are meant to be numbered sequentially
-             visibleIndex++;
-             const numberSpan = card.querySelector('.question-number');
-             if (numberSpan) numberSpan.textContent = `Câu Tự Luận ${visibleIndex}`;
-
-             // Update context attributes and aria-labels using the current visibleIndex
-             const qIdx = card.dataset.index; // Keep original data index link
-             const qPreview = /** @type {HTMLElement | null} */ (card.querySelector('.editor-preview-container[data-editor-type="essayQuestion"]'));
-             const aPreview = /** @type {HTMLElement | null} */ (card.querySelector('.editor-preview-container[data-editor-type="essayAnswer"]'));
-             if (qPreview) {
-                qPreview.dataset.editorContext = `Câu hỏi Tự luận ${visibleIndex}`;
-                qPreview.setAttribute('aria-label', `Chỉnh sửa câu hỏi Tự luận ${visibleIndex}`);
-             }
-             if (aPreview) {
-                aPreview.dataset.editorContext = `Đáp án mẫu - Câu ${visibleIndex}`;
-                 aPreview.setAttribute('aria-label', `Chỉnh sửa đáp án mẫu cho Câu ${visibleIndex}`);
-             }
-             const removeBtn = card.querySelector('.remove-essay-question-btn');
-             if(removeBtn) removeBtn.setAttribute('title', `Xóa câu hỏi Tự luận ${visibleIndex}`);
-
-             // Important: Update the dataset.index ONLY if you are re-indexing the underlying essayData array
-             // If using the 'mark as null' approach, the original index remains the link to the data
-             // card.dataset.index = String(visibleIndex - 1); // << DO NOT DO THIS unless re-indexing essayData itself
-         });
-         console.log("Updated essay question numbering. Visible count:", visibleIndex);
-     }
-
-
-    /** Adds a new, blank essay question card to the UI and data array. */
-    function addNewEssayQuestion() {
-        if (isAnimating || !essayContainer) return;
-
-        const newItem = { question: "", sampleAnswer: "" };
-        essayData.push(newItem); // Add to data array first
-        const newIndex = essayData.length - 1; // Index of the new item in the *current* array
-
-        // Manually create and append the new card element
-        const essayDiv = document.createElement("div");
-        essayDiv.className = "essay-question-card";
-        essayDiv.dataset.index = String(newIndex); // Store its index
-        const questionTargetId = `essayQuestionData_${newIndex}`;
-        const answerTargetId = `essayAnswerData_${newIndex}`;
-
-        // Calculate the visual number based on current visible cards + 1
-        const currentVisibleCount = essayContainer.querySelectorAll('.essay-question-card').length;
-        const newQuestionNumber = currentVisibleCount + 1;
-
-        essayDiv.innerHTML = `
-            <div class="essay-card-header">
-                <span class="question-number">Câu Tự Luận ${newQuestionNumber}</span>
-                <button type="button" class="btn-icon remove-essay-question-btn" title="Xóa câu hỏi Tự luận ${newQuestionNumber}"><i class="fas fa-trash-alt"></i></button>
-            </div>
-            <div class="essay-card-body">
-                 <label class="form-label" for="${questionTargetId}_preview">Nội dung câu hỏi:</label>
-                 <div id="${questionTargetId}_preview" class="editor-preview-container interactive-preview"
-                      data-editor-target="${questionTargetId}" data-editor-type="essayQuestion" data-q-id="${newIndex}"
-                      data-editor-context="Câu hỏi Tự luận ${newQuestionNumber}" tabindex="0" role="button" aria-label="Chỉnh sửa câu hỏi Tự luận ${newQuestionNumber}">
-                     <div class="preview-content"></div><div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                 </div>
-                 <textarea id="${questionTargetId}" class="hidden-data" aria-hidden="true"></textarea>
-
-                 <label class="form-label" style="margin-top: 15px;" for="${answerTargetId}_preview">Đáp án mẫu (Gợi ý chấm):</label>
-                 <div id="${answerTargetId}_preview" class="editor-preview-container interactive-preview"
-                      data-editor-target="${answerTargetId}" data-editor-type="essayAnswer" data-q-id="${newIndex}"
-                      data-editor-context="Đáp án mẫu - Câu ${newQuestionNumber}" tabindex="0" role="button" aria-label="Chỉnh sửa đáp án mẫu cho Câu ${newQuestionNumber}">
-                     <div class="preview-content"></div><div class="edit-overlay" aria-hidden="true"><i class="fas fa-pencil-alt"></i> Chỉnh sửa</div>
-                 </div>
-                 <textarea id="${answerTargetId}" class="hidden-data" aria-hidden="true"></textarea>
-             </div>
-        `;
-        essayContainer.appendChild(essayDiv);
-
-        // Render previews and add listeners
-        const qPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayQuestion"]'));
-        const aPreview = /** @type {HTMLElement | null} */ (essayDiv.querySelector('.editor-preview-container[data-editor-type="essayAnswer"]'));
-         if (qPreview) renderPreview(qPreview, newItem.question); // Initially empty
-         if (aPreview) renderPreview(aPreview, newItem.sampleAnswer); // Initially empty
-         if (qPreview) addPreviewClickListener(qPreview);
-         if (aPreview) addPreviewClickListener(aPreview);
-
-        // Add remove listener for the new card
-        const removeBtn = essayDiv.querySelector(".remove-essay-question-btn");
-        if (removeBtn) {
-            removeBtn.addEventListener("click", () => {
-                if (isAnimating) return;
-                if (window.confirm(`Bạn có chắc muốn xóa Câu hỏi Tự luận ${newQuestionNumber}?`)) {
-                     const currentIndex = parseInt(essayDiv.dataset.index || '-1', 10);
-                     if (currentIndex > -1 && essayData[currentIndex] !== undefined) {
-                         essayData[currentIndex] = null; // Mark for removal
-                          console.log(`Marked new essay question at index ${currentIndex} for removal.`);
-                         gsap.to(essayDiv, { duration: 0.3, autoAlpha: 0, height: 0, marginTop: 0, marginBottom: -15, ease: 'power1.in', onComplete: () => {
-                             essayDiv.remove();
-                             updateEssayDataInput(); // Save cleaned data
-                             updateEssayQuestionNumbering(); // Update numbering
-                             if(mode !== 'edit') saveProgressThrottled();
-                         }});
-                     } else {
-                          console.warn(`Could not mark new essay question at index ${currentIndex} for removal.`);
-                           essayDiv.remove(); // Remove from DOM anyway
-                           updateEssayDataInput();
-                           updateEssayQuestionNumbering();
-                     }
-                 }
-            });
-        }
-
-        // Update data input immediately after adding to the array
-        updateEssayDataInput();
-
-        essayDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        // Animate entrance
-        if (!prefersReducedMotion) {
-             gsap.from(essayDiv, { duration: 0.5, autoAlpha: 0, y: 30, ease: 'power2.out', delay: 0.1 });
-        }
-        if(mode !== 'edit') saveProgressThrottled();
-        console.log("Added new essay question at index:", newIndex);
-    }
-
-    // --- Essay Button/Select Listeners ---
-    addEssayQuestionBtn?.addEventListener("click", addNewEssayQuestion);
-
-    essayGradingSelect?.addEventListener("change", () => {
-        if(absoluteSettingsDiv) {
-            const showAbsolute = essayGradingSelect.value === "absolute";
-            // Animate toggle smoothly
-            const currentHeight = absoluteSettingsDiv.offsetHeight;
-            gsap.fromTo(absoluteSettingsDiv,
-                { height: currentHeight, autoAlpha: absoluteSettingsDiv.style.opacity }, // Start from current state
-                { duration: 0.3, height: showAbsolute ? 'auto' : 0, autoAlpha: showAbsolute ? 1 : 0, marginTop: showAbsolute ? 15 : 0, ease: 'power1.inOut'}
-            );
-        }
-         if (mode !== 'edit') saveProgressThrottled(); // Save progress on change
-    });
-    // Initial check for absolute settings display on load (handled in initial load logic now)
-
-
-    // ==========================================================================
-    // VIDEO EDITOR LOGIC
-    // ==========================================================================
-    /** Updates the video preview area based on the URL in the videoUrlInput. */
-    function triggerVideoPreviewUpdate() {
-        if (!videoUrlInput || !videoPreviewArea) {
-             // console.warn("Video input or preview area not found.");
-             return;
-        }
-        const url = videoUrlInput.value.trim();
-        videoPreviewArea.innerHTML = ''; // Clear previous preview or error
-
-        if (!url) {
-            videoPreviewArea.innerHTML = '<p class="text-muted text-center">Dán URL video vào ô trên để xem trước.</p>';
-            return; // Exit if URL is empty
-        }
-
-        let embedUrl = '';
-        let videoId = '';
-        let platform = '';
-
-        try {
-            // More robust URL parsing
-            if (url.match(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/)) {
-                platform = 'youtube';
-                if (url.includes("watch?v=")) {
-                    videoId = new URL(url).searchParams.get("v");
-                } else if (url.includes("youtu.be/")) {
-                    videoId = new URL(url).pathname.split('/')[1]?.split('?')[0]; // Get part after '/' and before '?'
-                } else if (url.includes("/embed/")) {
-                     videoId = new URL(url).pathname.split('/embed/')[1]?.split('?')[0];
-                }
-                 if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-
-            } else if (url.match(/^(https?:\/\/)?(www\.)?(vimeo\.com)\/.+/)) {
-                platform = 'vimeo';
-                 const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-                 if (match && match[1]) {
-                     videoId = match[1];
-                     embedUrl = `https://player.vimeo.com/video/${videoId}`;
-                 }
-            }
-            // Add other providers (e.g., Dailymotion) here with similar regex/parsing logic
-
-            if (embedUrl && videoId && platform) {
-                // Basic validation: Check if videoId seems reasonable (e.g., length for YouTube)
-                 if (platform === 'youtube' && videoId.length !== 11) {
-                     console.warn("Potential invalid YouTube video ID detected:", videoId);
-                     // Optionally add more checks
-                 }
-                console.log(`Detected ${platform} video ID: ${videoId}`);
-                // Use title attribute for accessibility
-                videoPreviewArea.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen title="Xem trước video ${platform}"></iframe>`;
-            } else {
-                 console.warn("Could not extract embeddable URL from:", url);
-                videoPreviewArea.innerHTML = '<p class="video-error text-danger text-center">Không thể nhận dạng URL video hợp lệ (Hỗ trợ YouTube, Vimeo).</p>';
-            }
-        } catch (error) {
-             // Catch potential errors from URL constructor if URL is malformed
-            console.error("Error parsing video URL:", error, url);
-            videoPreviewArea.innerHTML = '<p class="video-error text-danger text-center">URL không hợp lệ hoặc không được hỗ trợ.</p>';
-        }
-
-        // The hidden input is usually the same as the visible one (name="editorData[video]")
-        // No separate update needed unless your structure is different.
-
-        // Trigger auto-save only if URL is considered valid? Or always on input?
-        if (mode !== 'edit') saveProgressThrottled();
-    }
-    // Use 'input' for immediate feedback, throttled to avoid excessive updates
-    videoUrlInput?.addEventListener("input", throttle(triggerVideoPreviewUpdate, 600));
-
-
-    // ==========================================================================
-    // LOCAL PROGRESS SAVING ('Add' Mode Only)
-    // ==========================================================================
-    const localProgressKey = `lessonProgressV3_${lessonForm.dataset.lessonId || 'new'}`; // Use data attribute or action for key
-
-    /** Saves the current form state to localStorage. */
-    const saveProgress = () => {
-        if (mode === 'edit') return; // Only save progress in 'add' mode
-        if (isSubmitting) return; // Don't save if form is submitting
-        console.log("Auto-saving progress...");
-
-        // Ensure data arrays are stringified into hidden inputs *before* saving
-        updateQuizDataInput();
-        updateEssayDataInput();
-
-        const dataToSave = {
-            _timestamp: Date.now(),
-            // Step 1
-            subjectId: subjectSelect?.value,
-            title: titleInput?.value,
-            category: categorySelect?.value,
-            isProOnly: proOnlyCheckbox?.checked ?? false, // Default to false if null
-            // Step 2 - Type and Data
-            type: typeSelectHidden?.value,
-            markdownData: markdownDataInput?.value,
-            quizData: quizDataInput?.value,       // Already stringified
-            videoUrl: videoUrlInput?.value,        // Current value from visible input
-            essayPrompt: essayPromptDataInput?.value,
-            essayGrading: essayGradingSelect?.value,
-            absoluteTolerance: absoluteToleranceInput?.value,
-            essayData: essayDataInput?.value,       // Already stringified
-            // State
-            currentStep: currentStep
-        };
-
-        try {
-            localStorage.setItem(localProgressKey, JSON.stringify(dataToSave));
-            console.log("Progress saved successfully to localStorage.");
-            // Optional: Show subtle save indicator
-            saveProgressBtn?.classList.add('saved-indicator'); // Add class for CSS feedback
-            setTimeout(() => saveProgressBtn?.classList.remove('saved-indicator'), 1500);
-        } catch (e) {
-            console.error("Error saving progress to localStorage:", e);
-            if (e.name === 'QuotaExceededError') {
-                showAlert('Bộ nhớ cục bộ đã đầy, không thể lưu nháp tự động!', 'error', 5000);
-                // Consider disabling auto-save here?
-            } else {
-                 showAlert('Lỗi khi lưu nháp tạm thời.', 'warning');
-            }
-        }
-    };
-
-    // Throttle auto-saving triggered by input/change events
-    const saveProgressThrottled = throttle(saveProgress, 3500); // Save max every 3.5 seconds
-
-    /**
-     * Loads saved progress from localStorage and applies it to the form.
-     * Returns true if progress was found and attempted to load, false otherwise.
-    */
-    const loadProgress = () => {
-        if (mode === 'edit') return false; // Don't load for existing lessons
-
-        const saved = localStorage.getItem(localProgressKey);
-        if (!saved) {
-             console.log("No saved progress found.");
-             return false; // No saved data
-        }
-
-        console.log("Found saved progress in localStorage.");
-        // Use custom confirm modal ideally
-        if (!window.confirm("Tìm thấy bản nháp chưa lưu của bài học này. Bạn có muốn khôi phục không? (Chọn 'Cancel' để bắt đầu mới)")) {
-            localStorage.removeItem(localProgressKey); // User chose not to restore
-            console.log("User declined restoring progress. Starting fresh.");
-            return false; // Did not load
-        }
-
-        let loadedSuccessfully = false; // Flag
-        try {
-            const data = JSON.parse(saved);
-            console.log("Loading saved data:", data);
-
-            // --- Restore Step 1 ---
-            if (data.subjectId && subjectSelect) subjectSelect.value = data.subjectId;
-            if (data.title !== undefined && titleInput) titleInput.value = data.title; // Allow empty title
-            if (data.category && categorySelect) categorySelect.value = data.category;
-            if (proOnlyCheckbox) proOnlyCheckbox.checked = data.isProOnly || false;
-
-            // --- Restore Type and Hidden Data Inputs ---
-            let loadedType = 'markdown'; // Default
-            if (data.type && typeSelectHidden) {
-                typeSelectHidden.value = data.type;
-                loadedType = data.type;
-                // Update type tab buttons visually
-                typeTabButtons.forEach(b => b.classList.toggle("active", b.dataset.type === loadedType));
-                // Update editor panel visibility *before* step change/render
-                editorPanels.forEach(p => {
-                    const panelType = p.dataset.editorType;
-                    gsap.set(p, { display: panelType === loadedType ? 'block' : 'none', autoAlpha: panelType === loadedType ? 1 : 0 });
-                });
-                 console.log("Restored type:", loadedType);
-            }
-            // Set hidden input values FROM saved data
-            if (data.markdownData !== undefined && markdownDataInput) markdownDataInput.value = data.markdownData;
-            if (data.quizData !== undefined && quizDataInput) quizDataInput.value = data.quizData; // Stringified JSON
-            if (data.videoUrl !== undefined && videoUrlInput) videoUrlInput.value = data.videoUrl;
-            if (data.essayPrompt !== undefined && essayPromptDataInput) essayPromptDataInput.value = data.essayPrompt;
-            if (data.essayData !== undefined && essayDataInput) essayDataInput.value = data.essayData; // Stringified JSON
-            if (data.essayGrading && essayGradingSelect) {
-                 essayGradingSelect.value = data.essayGrading;
-                 // Trigger absolute tolerance visibility based on loaded value
-                 if(absoluteSettingsDiv) {
-                     const showAbsolute = data.essayGrading === "absolute";
-                      gsap.set(absoluteSettingsDiv, { height: showAbsolute ? 'auto' : 0, autoAlpha: showAbsolute ? 1 : 0, marginTop: showAbsolute ? 15 : 0 });
-                 }
-            }
-            if (data.absoluteTolerance && absoluteToleranceInput) absoluteToleranceInput.value = data.absoluteTolerance;
-
-
-            // --- PARSE data AFTER loading into inputs ---
-            try {
-                 if (quizDataInput?.value) {
-                    quizData = JSON.parse(quizDataInput.value);
-                     if (!Array.isArray(quizData)) throw new Error("Parsed quiz data is not an array");
-                 } else quizData = [];
-
-                 if (essayDataInput?.value) {
-                    essayData = JSON.parse(essayDataInput.value);
-                     if (!Array.isArray(essayData)) throw new Error("Parsed essay data is not an array");
-                 } else essayData = [];
-
-                 console.log("Parsed loaded Quiz/Essay data from localStorage:", { quizData: JSON.parse(JSON.stringify(quizData)), essayData: JSON.parse(JSON.stringify(essayData)) });
-            } catch (parseError) {
-                 console.error("Error parsing quiz/essay data loaded from localStorage:", parseError);
-                 quizData = []; // Reset on error
-                 essayData = []; // Reset on error
-                 if (quizDataInput) quizDataInput.value = '[]'; // Clear invalid input
-                 if (essayDataInput) essayDataInput.value = '[]'; // Clear invalid input
-                 showAlert("Lỗi đọc dữ liệu Quiz/Essay từ bản nháp. Một số nội dung có thể bị mất.", "warning");
-            }
-            // --- END PARSE ---
-
-
-            // --- Restore Step and Render ---
-            const loadedStep = (typeof data.currentStep === 'number' && data.currentStep >= 1 && data.currentStep <= steps.length) ? data.currentStep : 1;
-
-            // Go to the saved step WITHOUT animation to avoid visual glitches during setup
-             currentStep = loadedStep; // Set internal state
-             steps.forEach(step => {
-                 const stepNum = parseInt(step.dataset.stepContent || '0', 10);
-                 const isActive = stepNum === loadedStep;
-                  step.classList.toggle('active', isActive);
-                  gsap.set(step, { position: isActive ? 'relative' : 'absolute', display: isActive ? 'block' : 'none', autoAlpha: isActive ? 1 : 0 });
-             });
-             updateStepIndicator(loadedStep); // Update visual indicator
-
-             // Set wrapper height initially based on the loaded step's content
-             const activeStepEl = steps.find(s => s.classList.contains('active'));
-             if (activeStepEl) {
-                  const wrapper = document.querySelector('.form-steps-wrapper');
-                  // Temporarily make visible to measure height accurately
-                  const originalVisibility = activeStepEl.style.visibility;
-                  activeStepEl.style.visibility = 'hidden';
-                  if (wrapper instanceof HTMLElement) {
-                      wrapper.style.height = `${activeStepEl.scrollHeight}px`;
-                  }
-                   activeStepEl.style.visibility = originalVisibility;
-                  // Reset to auto height after a frame
-                  requestAnimationFrame(() => requestAnimationFrame(() => { if (wrapper instanceof HTMLElement) wrapper.style.height = 'auto'; }));
-             }
-
-             // Render previews AFTER setting the step, data, and ensuring correct panels are visible
-             renderInitialPreviewsForType(loadedType);
-
-             // Trigger video preview if loaded type is video
-             if (loadedType === 'video' && videoUrlInput?.value) {
-                  triggerVideoPreviewUpdate();
-             }
-
-             showAlert("Đã khôi phục bản nháp thành công!", "success", 2500);
-             loadedSuccessfully = true; // Mark as successful load attempt
-
-        } catch (e) {
-            console.error("Error parsing or applying saved progress:", e);
-            showAlert("Lỗi nghiêm trọng khi khôi phục bản nháp. Bắt đầu mới.", "error");
-            localStorage.removeItem(localProgressKey); // Clear potentially corrupted data
-            loadedSuccessfully = false; // Load failed
-             // Reset form to default state? Or just reload the page?
-             // window.location.reload(); // Simplest way to ensure clean slate
-        }
-        return loadedSuccessfully; // Return status
-    };
-
-    // Attach progress saving listeners only in 'add' mode
-    if (mode !== 'edit' && lessonForm) {
-        // Save on input/change events (throttled)
-        lessonForm.addEventListener("input", saveProgressThrottled);
-        lessonForm.addEventListener("change", saveProgressThrottled); // For selects, checkboxes, radios
-
-        // Optional: Manual Save Button
-        saveProgressBtn?.addEventListener("click", () => {
-            saveProgress(); // Immediate save (not throttled)
-            showAlert("Đã lưu nháp thủ công!", "info", 1500);
-        });
-         // Optional: Save before leaving the page
-         window.addEventListener('beforeunload', (event) => {
-             // Don't save if submitting normally
-              if (!isSubmitting) {
-                 console.log("Saving progress before unload...");
-                 saveProgress(); // Attempt one last save
-              }
-             // Standard practice for beforeunload requires returning undefined or nothing for modern browsers
-             // The confirmation message is handled by the browser itself.
-             // event.preventDefault(); // Not needed unless conditionally preventing unload
-             // event.returnValue = ''; // Standard way to trigger confirmation (browser controls message)
-         });
-    }
-
-    // ==========================================================================
-    // REVIEW STEP POPULATION
-    // ==========================================================================
-    /** Populates the summary fields in the review step (Step 3). */
-    function populateReviewData() {
-        if (reviewSubject) reviewSubject.textContent = subjectSelect?.selectedOptions[0]?.text || '(Chưa chọn)';
-        if (reviewTitle) reviewTitle.textContent = titleInput?.value.trim() || '(Chưa có tiêu đề)';
-        if (reviewCategory) reviewCategory.textContent = categorySelect?.selectedOptions[0]?.text || '(Chưa chọn)';
-        if (reviewType && typeSelectHidden) {
-             const activeTypeBtn = document.querySelector(`.type-tab-btn[data-type="${typeSelectHidden.value}"] span`);
-             reviewType.textContent = activeTypeBtn?.textContent || typeSelectHidden.value || 'N/A';
-        }
-        if (reviewProOnly && proOnlyCheckbox) reviewProOnly.textContent = proOnlyCheckbox.checked ? 'Có (PRO)' : 'Không';
-
-        // Provide a more informative content preview based on type
-        if (reviewContentPreview) {
-             let contentSummary = "Xem chi tiết nội dung ở Bước 2.";
-             const currentType = typeSelectHidden?.value;
-             switch(currentType) {
-                 case 'markdown':
-                     const mdLength = markdownDataInput?.value?.length || 0;
-                     contentSummary = mdLength > 0 ? `Văn bản Markdown (${mdLength} ký tự)` : "Chưa có nội dung Markdown.";
-                     break;
-                 case 'quiz':
-                     const qCount = quizData.filter(q => q).length; // Count valid questions
-                     contentSummary = qCount > 0 ? `Trắc nghiệm (${qCount} câu hỏi)` : "Chưa có câu hỏi trắc nghiệm.";
-                     break;
-                 case 'video':
-                     contentSummary = videoUrlInput?.value ? `Video: ${videoUrlInput.value}` : "Chưa có liên kết video.";
-                     break;
-                 case 'essay':
-                      const eCount = essayData.filter(e => e).length; // Count valid questions
-                      const hasPrompt = !!essayPromptDataInput?.value?.trim();
-                      contentSummary = `Tự luận ${hasPrompt ? '(có đề bài chung)' : ''} (${eCount} câu hỏi)`;
-                      if (eCount === 0 && !hasPrompt) contentSummary = "Chưa có nội dung tự luận.";
-                     break;
-             }
-             reviewContentPreview.textContent = contentSummary;
-        }
-    }
-
-    // ==========================================================================
-    // FORM SUBMISSION
-    // ==========================================================================
-    lessonForm.addEventListener("submit", async (e) => {
-        if (isSubmitting || isAnimating) {
-            e.preventDefault();
-            console.warn("Form submission prevented: Already submitting or animating.", { isSubmitting, isAnimating });
-            showAlert("Đang xử lý hoặc hiệu ứng đang chạy, vui lòng đợi.", "warning", 2000);
-            return;
-        }
-         if (isEditorOpen) {
-             e.preventDefault();
-             console.warn("Form submission prevented: Fullscreen editor is open.");
-             showAlert("Vui lòng đóng trình soạn thảo (Lưu & Đóng) trước khi gửi bài học.", "warning", 3000);
-             return;
-         }
-
-
-        console.log("Form submit initiated...");
-        // Ensure latest data from arrays is in hidden inputs before native submission
-        updateQuizDataInput();
-        updateEssayDataInput();
-        console.log("Final Quiz Data for submit:", quizDataInput?.value);
-        console.log("Final Essay Data for submit:", essayDataInput?.value);
-
-        // --- Basic HTML5 Validation (and focus) ---
-        if (!lessonForm.checkValidity()) {
-            e.preventDefault(); // Prevent submission
-            console.log("Form validation failed.");
-            showAlert("Vui lòng điền đầy đủ các trường bắt buộc hoặc sửa lỗi định dạng.", "error", 4000);
-
-            // Find first invalid field
-            const firstInvalid = /** @type {HTMLElement | null} */ (lessonForm.querySelector(':invalid'));
-            if (firstInvalid) {
-                 // Scroll to the step containing the invalid field
-                 const invalidStepElement = firstInvalid.closest('.form-step');
-                 if (invalidStepElement && !invalidStepElement.classList.contains('active')) {
-                     const stepNum = parseInt(invalidStepElement.dataset.stepContent || '0', 10);
-                     if (stepNum > 0) {
-                         console.log(`Validation failed on step ${stepNum}, navigating...`);
-                         goToStep(stepNum); // Navigate to the step
-                         // Focus after step transition animation completes
-                          setTimeout(() => {
-                             firstInvalid.focus({ preventScroll: true }); // Focus without jumping scroll
-                             // Optional shake animation
-                             if (!prefersReducedMotion && typeof gsap !== 'undefined') {
-                                 gsap.fromTo(firstInvalid.closest('.input-field-group, .custom-select-wrapper-v2, .quiz-question-card, .essay-question-card') || firstInvalid, { x: 0 }, { duration: 0.6, x: "+=6", yoyo: true, repeat: 3, ease: 'power1.inOut' });
-                             }
-                             // Scroll the field into view smoothly after focusing
-                             firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }, 600); // Adjust delay based on animation duration
-                     } else { firstInvalid.focus(); } // Fallback focus if step not found
-                 } else {
-                     // Already on the correct step, just focus and shake
-                      firstInvalid.focus({ preventScroll: true });
-                     if (!prefersReducedMotion && typeof gsap !== 'undefined') {
-                         gsap.fromTo(firstInvalid.closest('.input-field-group, .custom-select-wrapper-v2, .quiz-question-card, .essay-question-card') || firstInvalid, { x: 0 }, { duration: 0.6, x: "+=6", yoyo: true, repeat: 3, ease: 'power1.inOut' });
-                     }
-                     firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                 }
-            }
-            return; // Stop submission
-        }
-
-        // --- Turnstile Check (Optional but recommended) ---
-        // You might need to get the token and include it in the submission if handled via fetch
-        // For native form submit, the server usually validates the 'cf-turnstile-response' field
-        // const turnstileResponse = lessonForm.querySelector('[name="cf-turnstile-response"]')?.value;
-        // if (!turnstileResponse) {
-        //      e.preventDefault();
-        //      showAlert("Vui lòng hoàn thành xác minh bảo mật (Turnstile).", "error");
-        //      // Focus or highlight the Turnstile widget if possible
-        //      return;
-        // }
-
-        // --- Set Submitting State ---
-        isSubmitting = true;
-        if (finalSubmitBtn instanceof HTMLButtonElement) {
-            finalSubmitBtn.classList.add('submitting'); // Add visual state
-            finalSubmitBtn.disabled = true;
-            const btnText = finalSubmitBtn.querySelector('.btn-text') || finalSubmitBtn;
-            if (btnText) btnText.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${mode === 'edit' ? 'Đang cập nhật...' : 'Đang thêm...'}`;
-        }
-        const loadingOverlay = getEl("loading-overlay");
-        loadingOverlay?.classList.add("active"); // Show global overlay
-
-        // --- Clear Local Progress on Successful Submit Intent (Add Mode Only) ---
-        // Do this *before* the native submission navigates away
-        if (mode !== 'edit') {
-            console.log("Clearing local progress before submission...");
-            localStorage.removeItem(localProgressKey);
-        }
-
-        // Allow native form submission to proceed
-        console.log("Form validated. Allowing native submission...");
-        // If using Fetch API instead:
-        // e.preventDefault();
-        // // ... gather FormData ...
-        // fetch(lessonForm.action, { method: lessonForm.method, body: formData })
-        //    .then(...)
-        //    .catch(...)
-        //    .finally(() => { isSubmitting = false; /* Reset button state */ });
-    });
-
-    // ==========================================================================
-    // MODAL EVENT LISTENERS
-    // ==========================================================================
-    saveAndCloseBtn?.addEventListener('click', () => {
-        if (isAnimating) return;
-        closeFullscreenEditor(); // Will attempt to save first
-    });
-    closeModalBtn?.addEventListener('click', () => {
-        if (isAnimating) return;
-         // Ask for confirmation if there are unsaved changes?
-         // let hasChanges = fullscreenEditorInstance?.getMarkdown() !== currentEditingTarget?.dataInput?.value;
-         // if(hasChanges && !window.confirm("Bạn có thay đổi chưa lưu. Đóng mà không lưu?")) return;
-        closeFullscreenEditor(); // Attempt save first by default
-    });
-    modalBackdrop?.addEventListener('click', () => {
-        if (isAnimating) return;
-         // closeFullscreenEditor(true); // Force close without saving on backdrop click? Or same as close button?
-        closeFullscreenEditor(); // Attempt save first
-    });
-    // Close modal on ESC key
-     document.addEventListener('keydown', (e) => {
-         if (e.key === 'Escape' && isEditorOpen && !isAnimating) {
-             console.log("ESC key pressed, closing editor.");
-             // Check for changes before closing on ESC?
-             closeFullscreenEditor(); // Attempt save first
-         }
-     });
-
-    // ==========================================================================
-    // INITIAL PAGE STATE & LOAD
-    // ==========================================================================
-
-    console.log("Setting up initial page state...");
-    // Set initial step indicator
-    updateStepIndicator(currentStep); // Should be 1 initially
-
-    // Set initial visibility of steps (only step 1 active/visible)
-    steps.forEach((step, index) => {
-        const isActive = index === 0;
-        step.classList.toggle('active', isActive);
-        gsap.set(step, {
-            position: isActive ? 'relative' : 'absolute',
-            display: isActive ? 'block' : 'none',
-            autoAlpha: isActive ? 1 : 0
-        });
-    });
-    // Ensure wrapper height is initially auto or fits step 1
-    const wrapper = document.querySelector('.form-steps-wrapper');
-    if (wrapper instanceof HTMLElement) gsap.set(wrapper, { height: 'auto' });
-
-
-    // --- Load Progress (Add Mode) or Parse Initial Data (Edit Mode) ---
-    let progressLoaded = false;
-    if (mode !== 'edit') {
-        progressLoaded = loadProgress(); // Tries to load, returns true if successful
-    }
-
-    // If progress wasn't loaded (i.e., edit mode OR add mode starting fresh)
-    if (!progressLoaded) {
-        console.log(`Initializing state for mode: ${mode}. Progress loaded: ${progressLoaded}`);
-        const initialType = typeSelectHidden?.value || 'markdown'; // Get type set by EJS or default
-
-        // --- Edit Mode: Parse initial data provided by EJS ---
-        if (mode === 'edit') {
-            console.log("Edit mode: Parsing initial data from EJS inputs...");
-            try {
-                // Parse Quiz data
-                 if (quizDataInput?.value) {
-                     quizData = JSON.parse(quizDataInput.value);
-                     if (!Array.isArray(quizData)) {
-                         console.error("Initial quiz data from EJS is not an array:", quizData);
-                         quizData = []; // Reset on error
-                         quizDataInput.value = '[]'; // Clear bad data
-                     }
-                 } else quizData = [];
-                 console.log("Parsed initial Quiz Data:", JSON.parse(JSON.stringify(quizData)));
-
-                // Parse Essay data
-                 if (essayDataInput?.value) {
-                     essayData = JSON.parse(essayDataInput.value);
-                      if (!Array.isArray(essayData)) {
-                         console.error("Initial essay data from EJS is not an array:", essayData);
-                         essayData = []; // Reset on error
-                         essayDataInput.value = '[]'; // Clear bad data
-                     }
-                 } else essayData = [];
-                 console.log("Parsed initial Essay Data:", JSON.parse(JSON.stringify(essayData)));
-
-                // Ensure essay absolute settings visibility matches loaded state
-                if (essayGradingSelect && absoluteSettingsDiv) {
-                    const showAbsolute = essayGradingSelect.value === "absolute";
-                    gsap.set(absoluteSettingsDiv, { height: showAbsolute ? 'auto' : 0, autoAlpha: showAbsolute ? 1 : 0, marginTop: showAbsolute ? 15 : 0 });
-                    console.log(`Initial Essay Grading: ${essayGradingSelect.value}, Absolute Settings Visible: ${showAbsolute}`);
-                } else if (essayGradingSelect && !absoluteSettingsDiv) {
-                    console.warn("Essay grading select found, but absoluteSettingsDiv is missing.");
-                }
-
-            } catch (e) {
-                console.error("FATAL: Error parsing initial JSON data in Edit Mode:", e);
-                showAlert("Lỗi nghiêm trọng khi tải dữ liệu bài học (Quiz/Essay). Nội dung có thể không hiển thị đúng hoặc bị mất khi lưu.", "error", 7000);
-                // Reset to empty arrays to prevent further errors during rendering
-                quizData = [];
-                essayData = [];
-                 // Optionally clear the inputs that failed parsing
-                 if (quizDataInput) quizDataInput.value = '[]';
-                 if (essayDataInput) essayDataInput.value = '[]';
-            }
-        }
-        // --- End Edit Mode Parsing ---
-
-        // Render initial previews using the correct type and the now-populated data arrays
-        renderInitialPreviewsForType(initialType);
-
-        // Trigger video preview if type is video and URL exists (value set by EJS in edit mode)
-        if (initialType === 'video' && videoUrlInput?.value) {
-            console.log("Initial load: Triggering video preview update.");
-            triggerVideoPreviewUpdate();
-        }
-    }
-    // --- End Initial Load Logic ---
-
-
-    // Add initial click listeners to static previews (markdown, essay prompt)
-    document.querySelectorAll('.interactive-preview:not(.listener-added)').forEach(el => {
-        addPreviewClickListener( /** @type {HTMLElement} */ (el));
-    });
-
-    // Initial Load Animations (Slide-ins for content)
-    if (!prefersReducedMotion && typeof gsap !== 'undefined') {
-        gsap.from('.step-indicator .step', {
-            duration: 0.6, y: -20, autoAlpha: 0, stagger: 0.1,
-            ease: 'power2.out', delay: 0.2
-        });
-        gsap.from('.main-title', {
-            duration: 0.7, y: -25, autoAlpha: 0,
-            ease: 'power3.out', delay: 0.3
-        });
-
-        // Select the elements for the slide-up animation
-        const stepContentElements = '.form-step.active > *:not(.step-title), .form-step.active .form-grid > *, .form-step.active .step-navigation > *';
-
-        // Ensure elements start visible (opacity: 1) before the 'from' animation
-        // This might already be handled by the initial step setup, but being explicit is safer
-        gsap.set(stepContentElements, { opacity: 1, visibility: 'visible' });
-
-        // Animate ONLY the 'y' position from 25 to 0
-        gsap.from(stepContentElements, {
-            duration: 0.6,
-            y: 25,           // Animate y from 25
-            // autoAlpha: 0, // REMOVED - We want opacity: 1 throughout
-            opacity: 1,      // Ensure opacity stays 1 (might be default, but explicit)
-            stagger: 0.07,
-            ease: 'power2.out',
-            delay: 0.5,
-            clearProps: "transform" // Remove the 'y' transform style once animation is complete
-        });
-    }
-  
-    // --- Input Field Focus/Blur & Placeholder Interaction ---
-    const inputs = document.querySelectorAll('.form-input-v2');
-    inputs.forEach(input => {
-        const group = input.closest('.input-field-group');
-        if(!group) return;
-
-        const checkFilled = () => {
-             if (input.value !== "") {
-                 group.classList.add('filled');
-             } else {
-                 group.classList.remove('filled');
-             }
-        };
-
-        input.addEventListener('focus', () => group.classList.add('focused'));
-        input.addEventListener('blur', () => {
-            group.classList.remove('focused');
-            checkFilled();
-        });
-        checkFilled(); // Initial check for autofill
-    });
-
-// --- TAG INPUT V4 INITIALIZATION ---
-const tagGroup = document.querySelector('.tag-input-group');
-if (tagGroup) {
-    const tagInputContainer = tagGroup.querySelector('#tag-input-container');
-    const realInput = tagGroup.querySelector('#tag-input-field');
-    const hiddenInput = tagGroup.querySelector('#hidden-tags-input');
-    let tags = [];
-
-    const checkFilledState = () => {
-        // Thêm class 'filled' nếu có tag, để label nổi lên
-        tagGroup.classList.toggle('filled', tags.length > 0);
-    };
-
-    const updateHiddenInput = () => {
-        hiddenInput.value = tags.join(',');
-        checkFilledState();
-        if(mode !== 'edit') saveProgressThrottled();
-    };
-
-    const createTagElement = (tagText) => {
-        const tagEl = document.createElement('span');
-        tagEl.className = 'tag-item';
-        tagEl.dataset.tagValue = tagText; 
-        tagEl.innerHTML = `
-            ${tagText}
-            <button type="button" class="remove-tag-btn" title="Xóa tag ${tagText}">&times;</button>
-        `;
-
-        tagEl.querySelector('.remove-tag-btn').addEventListener('click', () => {
-            const index = tags.indexOf(tagText);
-            if (index > -1) {
-                tags.splice(index, 1);
-                updateHiddenInput();
-            }
-            // Animate out and remove
-            gsap.to(tagEl, { 
-                scale: 0, 
-                opacity: 0, 
-                duration: 0.3, 
-                ease: 'power2.in', 
-                onComplete: () => tagEl.remove() 
-            });
-        });
-
-        return tagEl;
-    };
-
-    const addTag = (tagText) => {
-        const trimmedTag = tagText.trim().replace(/,/g, "");
-        if (trimmedTag.length > 1 && !tags.includes(trimmedTag)) {
-            tags.push(trimmedTag);
-            const tagElement = createTagElement(trimmedTag);
-            realInput.before(tagElement);
-            updateHiddenInput();
-        } else if (tags.includes(trimmedTag)) {
-            // Hiệu ứng rung lắc khi nhập tag trùng
-            tagGroup.classList.add('shake');
-            setTimeout(() => tagGroup.classList.remove('shake'), 500);
-        }
-        realInput.value = "";
-    };
-
-    realInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            if (realInput.value) addTag(realInput.value);
-        } else if (e.key === 'Backspace' && realInput.value === '' && tags.length > 0) {
-            const lastTagEl = tagInputContainer.querySelector('.tag-item:last-of-type');
-            lastTagEl?.querySelector('.remove-tag-btn')?.click();
-        }
-    });
-
-    realInput.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const pasteData = e.clipboardData.getData('text');
-        pasteData.split(',').forEach(tag => addTag(tag));
-    });
-    
-    tagInputContainer.addEventListener('click', () => realInput.focus());
-
-    // Thêm class 'focused' cho label nổi
-    realInput.addEventListener('focus', () => tagGroup.classList.add('focused'));
-    realInput.addEventListener('blur', () => tagGroup.classList.remove('focused'));
-
-    // Tải các tag đã có khi vào trang edit
-    if (hiddenInput.value) {
-        hiddenInput.value.split(',').map(t => t.trim()).filter(Boolean).forEach(addTag);
-    }
-    checkFilledState(); // Kiểm tra trạng thái ban đầu
 }
-// --- END TAG INPUT V4 ---
 
-    console.log(`Manage Lesson V3 Script Initialized. Mode: ${mode}. Multi-choice quiz enabled.`);
+// --- 8. HỦY BỎ BẢN NHÁP ---
+async function discardDraft(courseId) {
+    const result = await Swal.fire({
+        title: 'Hủy bỏ bản nháp?',
+        text: "Mọi thay đổi chưa đăng sẽ bị mất vĩnh viễn! Cấu trúc sẽ quay về phiên bản đang hiển thị cho học sinh.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Đồng ý hủy',
+        cancelButtonText: 'Giữ lại'
+    });
 
-}); // End DOMContentLoaded
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(`/api/course/${courseId}/discard-draft`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                loadCurriculumByCourse(courseId);
+                Swal.fire('Hoàn tất', 'Bản nháp đã được hủy.', 'success');
+            } else {
+                Swal.fire('Lỗi', 'Không thể hủy bản nháp', 'error');
+            }
+        } catch (err) {
+            Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+        }
+    }
+}
+
+/* --- QUẢN LÝ CẤU HÌNH KHÓA HỌC --- */
+
+// 1. Mở Modal và Load dữ liệu
+async function openCourseSettings() {
+    const courseId = document.getElementById('selectCourse').value;
+    if (!courseId) return Swal.fire('Lỗi', 'Vui lòng chọn khóa học trước.', 'warning');
+
+    try {
+        // Fetch thông tin chi tiết khóa học
+        const res = await fetch(`/api/course/${courseId}/details`);
+        const data = await res.json();
+
+        if (data.success) {
+            const c = data.course;
+            document.getElementById('settingCourseTitle').value = c.title;
+            document.getElementById('settingCourseThumb').value = c.thumbnail || '';
+            document.getElementById('thumbPreview').src = c.thumbnail || '/img/default-course.jpg';
+            document.getElementById('settingCourseDesc').value = c.description || '';
+            document.getElementById('settingCoursePro').checked = c.isPro || false;
+            document.getElementById('settingCoursePublic').checked = c.isPublished;
+
+            document.getElementById('courseSettingsModal').style.display = 'flex';
+        } else {
+            Swal.fire('Lỗi', 'Không tải được thông tin khóa học.', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
+    }
+}
+
+// 2. Đóng Modal
+function closeCourseSettings() {
+    document.getElementById('courseSettingsModal').style.display = 'none';
+}
+
+// 3. Lưu Cấu hình
+async function saveCourseSettings() {
+    const courseId = document.getElementById('selectCourse').value;
+    const title = document.getElementById('settingCourseTitle').value;
+    const thumbnail = document.getElementById('settingCourseThumb').value;
+    const description = document.getElementById('settingCourseDesc').value;
+    const isPro = document.getElementById('settingCoursePro').checked;
+    const isPublished = document.getElementById('settingCoursePublic').checked;
+
+    if (!title.trim()) return Swal.fire('Lỗi', 'Tên khóa học không được để trống.', 'warning');
+
+    try {
+        const res = await fetch(`/api/course/${courseId}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, thumbnail, description, isPro, isPublished })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            Swal.fire('Thành công', 'Cập nhật khóa học thành công!', 'success');
+            closeCourseSettings();
+            
+            // Cập nhật lại tên trong select box nếu đổi tên
+            const select = document.getElementById('selectCourse');
+            select.options[select.selectedIndex].text = title;
+        } else {
+            Swal.fire('Lỗi', result.error || 'Cập nhật thất bại.', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
+    }
+}
+
+/* ==========================================================================
+   PART 2: CENTER PANEL - LESSON SELECTION & BLOCK EDITOR
+   ========================================================================== */
+
+// --- 1. SELECT LESSON (SPA LOGIC) ---
+async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theory') {
+    // A. UI Updates
+    document.querySelectorAll('.tree-lesson').forEach(el => el.classList.remove('active'));
+    const activeItem = document.querySelector(`.tree-lesson[data-lesson-id="${id}"]`);
+    if(activeItem) activeItem.classList.add('active');
+
+    const emptyStatePanel = document.getElementById('emptyStatePanel');
+    if(emptyStatePanel) emptyStatePanel.style.display = 'none';
+    
+    const mainPanel = document.getElementById('editorMainPanel');
+    if(mainPanel) mainPanel.style.display = 'contents';
+
+    // B. Update State
+    activeLessonId = id;
+    const currentIdInput = document.getElementById('currentEditingId');
+    if(currentIdInput) currentIdInput.value = id;
+    
+    const mainTitleInput = document.getElementById('mainTitleInput');
+    if(mainTitleInput) mainTitleInput.value = titleFallback;
+    
+    setSaveStatus('Đang tải...');
+
+    // C. Check New vs Old
+    if(id === 'current_new_lesson' || String(id).startsWith('new_lesson_')) {
+        // --- BÀI MỚI (Reset trắng) ---
+        initBlocks(''); 
+        const isProInp = document.getElementById('isProInput');
+        if(isProInp) isProInp.checked = false;
+        
+        setSaveStatus('Bản nháp (Chưa lưu)');
+        updateStatusBadge(false); // Luôn là nháp
+        
+        // Sync tên từ cây (nếu có)
+        if(activeItem) {
+            const currentTitleVal = activeItem.querySelector('.lesson-title-input').value;
+            if(mainTitleInput) mainTitleInput.value = currentTitleVal;
+        } else {
+            if(mainTitleInput) mainTitleInput.value = '';
+        }
+
+    } else {
+        // --- BÀI CŨ (Load từ API) ---
+        try {
+            const res = await fetch(`/api/lesson/${id}`);
+            if (!res.ok) {
+                // Nếu lỗi 404 hoặc 500
+                if (res.status === 404) {
+                    Swal.fire('Không tìm thấy', 'Bài học này có thể đã bị xóa.', 'warning');
+                } else {
+                    Swal.fire('Lỗi', `Server trả về lỗi: ${res.status}`, 'error');
+                }
+                setSaveStatus('Lỗi tải');
+                return; 
+            }
+            const data = await res.json();
+            
+            if(data.success) {
+                const l = data.lesson;
+                if(mainTitleInput) mainTitleInput.value = l.title;
+                
+                const isProInp = document.getElementById('isProInput');
+                if(isProInp) isProInp.checked = l.isPro;
+                
+                updateStatusBadge(l.isPublished);
+
+                // Load Blocks
+                initBlocks(l.content);
+                
+                setSaveStatus('Đã đồng bộ');
+            } else {
+                Swal.fire('Lỗi', 'Không thể tải nội dung bài học', 'error');
+            }
+        } catch(err) {
+            console.error(err);
+            Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+        }
+    }
+}
+
+function updateStatusBadge(isPublished) {
+    const badge = document.getElementById('publishStatusBadge');
+    if (!badge) return;
+
+    if (isPublished) {
+        badge.className = 'status-badge published';
+        badge.innerText = 'ĐÃ ĐĂNG';
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#16a34a';
+        badge.style.border = '1px solid #86efac';
+    } else {
+        badge.className = 'status-badge draft';
+        badge.innerText = 'BẢN NHÁP';
+        badge.style.background = '#f1f5f9';
+        badge.style.color = '#64748b';
+        badge.style.border = '1px solid #cbd5e1';
+    }
+}
+
+// --- 2. BLOCK EDITOR CORE ---
+
+function initBlocks(initialContent) {
+    let parsed = null;
+    
+    // Parse JSON
+    if (initialContent && initialContent.trim()) {
+        try {
+            parsed = JSON.parse(initialContent);
+            if (!Array.isArray(parsed)) parsed = null;
+        } catch (e) {
+            parsed = null;
+        }
+    }
+
+    if (parsed) {
+        blocks = parsed;
+    } else if (initialContent && initialContent.trim()) {
+        // Fallback text cũ
+        blocks = [{ type: 'text', data: { text: initialContent } }];
+    } else {
+        // Mặc định 1 block text
+        blocks = [{ type: 'text', data: { text: '' } }];
+    }
+
+    renderBlocks();
+    
+    // Sortable Blocks (Kéo thả thứ tự nội dung)
+    const canvas = document.getElementById('editorCanvas');
+    if(canvas && typeof Sortable !== 'undefined') {
+        new Sortable(canvas, {
+            handle: '.drag-handle-block',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function (evt) {
+                const item = blocks.splice(evt.oldIndex, 1)[0];
+                blocks.splice(evt.newIndex, 0, item);
+                renderBlocks(); // Re-render để cập nhật index
+            }
+        });
+    }
+}
+
+// RENDER ALL BLOCKS
+function renderBlocks() {
+    cleanupEditors(); // Dọn dẹp editor cũ
+
+    const canvas = document.getElementById('editorCanvas');
+    if (!canvas) return;
+    canvas.innerHTML = '';
+
+    blocks.forEach((b, idx) => {
+        const el = document.createElement('div');
+        el.className = 'content-block';
+        el.dataset.index = idx;
+
+        // Header Controls
+        const header = document.createElement('div');
+        header.className = 'block-controls';
+        header.innerHTML = `
+            <div class="btn-ctrl drag-handle-block" title="Kéo thả"><i class="fas fa-grip-lines"></i></div>
+            <button type="button" class="btn-ctrl" onclick="moveBlock(${idx}, -1)" title="Lên"><i class="fas fa-arrow-up"></i></button>
+            <button type="button" class="btn-ctrl" onclick="moveBlock(${idx}, 1)" title="Xuống"><i class="fas fa-arrow-down"></i></button>
+            <button type="button" class="btn-ctrl delete" onclick="deleteBlock(${idx})" title="Xóa"><i class="fas fa-trash"></i></button>
+        `;
+        el.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'block-body';
+
+        // --- RENDER TYPE: TEXT ---
+        if (b.type === 'text') {
+            body.innerHTML = `<div class="block-label"><i class="fab fa-markdown"></i> Văn bản (Advanced)</div>`;
+            const ta = document.createElement('textarea');
+            ta.id = `editor-area-${idx}`;
+            ta.className = 'easymde-input';
+            ta.value = b.data && b.data.text ? b.data.text : '';
+            body.appendChild(ta);
+
+        // --- RENDER TYPE: IMAGE ---
+        } else if (b.type === 'image') {
+            body.innerHTML = `<div class="block-label"><i class="fas fa-image"></i> Hình ảnh</div>`;
+            const inp = document.createElement('input');
+            inp.className = 'studio-select';
+            inp.placeholder = 'URL ảnh...';
+            inp.value = b.data?.url || '';
+            inp.addEventListener('change', (e) => { blocks[idx].data.url = e.target.value; renderBlocks(); });
+            body.appendChild(inp);
+            if(b.data?.url) {
+                const img = document.createElement('img');
+                img.src = b.data.url; img.style.maxWidth = '100%'; img.style.marginTop = '10px';
+                body.appendChild(img);
+            }
+
+        // --- RENDER TYPE: VIDEO (SMART) ---
+        } else if (b.type === 'video') {
+            const data = b.data || {};
+            const ratio = data.ratio || '16/9';
+            const isAutoplay = data.autoplay || false;
+
+            body.innerHTML = `<div class="block-label"><i class="fab fa-youtube"></i> Video / Embed Link</div>`;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'video-block-wrapper';
+
+            // Input
+            wrapper.innerHTML = `
+                <div class="video-input-group">
+                    <input type="text" class="studio-select" 
+                           placeholder="Dán link Youtube, Vimeo hoặc link file .mp4..." 
+                           value="${data.url || ''}" 
+                           onchange="updateVideoBlock(${idx}, 'url', this.value)">
+                </div>
+            `;
+
+            // Preview
+            const preview = document.createElement('div');
+            preview.className = 'video-preview-box';
+            preview.style.aspectRatio = ratio.replace('/', ' / ');
+            
+            if (data.url) {
+                const embedInfo = getVideoTypeInfo(data.url);
+                if (embedInfo.type === 'iframe') {
+                    const embedSrc = getEmbedUrl(data.url, isAutoplay);
+                    preview.innerHTML = embedSrc ? 
+                        `<iframe src="${embedSrc}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>` : 
+                        `<div class="empty-preview">Link không hỗ trợ</div>`;
+                } else {
+                    preview.innerHTML = `<video src="${data.url}" controls ${isAutoplay ? 'autoplay muted' : ''} style="width:100%; height:100%"></video>`;
+                }
+            } else {
+                preview.innerHTML = `<div class="empty-preview"><i class="fas fa-play-circle" style="font-size:2rem; opacity:0.3;"></i><span>Preview</span></div>`;
+            }
+            wrapper.appendChild(preview);
+
+            // Settings
+            const settingsDiv = document.createElement('div');
+            settingsDiv.innerHTML = `
+                <input type="text" class="studio-select" style="margin-top:10px; border:none; border-bottom:1px dashed #ccc;" placeholder="Chú thích (Caption)..." value="${data.caption || ''}" onchange="updateVideoBlock(${idx}, 'caption', this.value)">
+                <div class="video-settings-toggle" onclick="this.nextElementSibling.classList.toggle('show')">Cấu hình nâng cao</div>
+                <div class="video-settings-panel">
+                    <div class="v-setting-item">
+                        <label>Tỷ lệ</label>
+                        <select class="studio-select" onchange="updateVideoBlock(${idx}, 'ratio', this.value)">
+                            <option value="16/9" ${ratio === '16/9' ? 'selected' : ''}>16:9</option>
+                            <option value="9/16" ${ratio === '9/16' ? 'selected' : ''}>9:16</option>
+                        </select>
+                    </div>
+                    <div class="v-setting-item">
+                        <label>Autoplay</label>
+                        <input type="checkbox" ${isAutoplay ? 'checked' : ''} onchange="updateVideoBlock(${idx}, 'autoplay', this.checked)">
+                    </div>
+                </div>
+            `;
+            wrapper.appendChild(settingsDiv);
+            body.appendChild(wrapper);
+
+        // --- RENDER TYPE: QUESTION (QUIZ) ---
+        } else if (b.type === 'question' || b.type === 'quiz') {
+             el.classList.add('block-quiz');
+             const questions = b.data?.questions || [];
+             const summary = questions.length + ' câu hỏi';
+             
+             body.innerHTML = `
+                <div class="block-label"><i class="fas fa-question-circle"></i> Bộ Câu Hỏi</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <div style="font-size:0.9rem; color:#4b5563;"><strong>${summary}</strong></div>
+                    <button type="button" class="btn-mini-add" onclick="editQuestionBlock(${idx})"><i class="fas fa-edit"></i> Chỉnh sửa</button>
+                </div>
+             `;
+        
+        // --- RENDER TYPE: CALLOUT ---
+        } else if (b.type === 'callout') {
+             el.classList.add('block-callout');
+             body.innerHTML = `<div class="block-label"><i class="fas fa-exclamation-circle"></i> Ghi chú</div>`;
+             const ta = document.createElement('textarea');
+             ta.className = 'studio-select';
+             ta.value = b.data?.text || '';
+             ta.addEventListener('input', (e) => { blocks[idx].data.text = e.target.value; });
+             body.appendChild(ta);
+        }
+
+        el.appendChild(body);
+        canvas.appendChild(el);
+
+        // Inserter Line
+        const inserter = document.createElement('div');
+        inserter.className = 'inserter-line';
+        inserter.innerHTML = `<div class="inserter-btn"><i class="fas fa-plus"></i></div>`;
+        
+        // SỬA DÒNG NÀY: Truyền thêm (e) vào hàm
+        inserter.onclick = (e) => openBlockMenu(idx, e);
+        canvas.appendChild(inserter);
+    });
+
+    // Init EasyMDE for all text blocks
+    initMarkdownEditors();
+}
+
+// --- 3. BLOCK HELPERS ---
+
+function cleanupEditors() {
+    Object.keys(editors).forEach(key => {
+        if (editors[key]) {
+            try { editors[key].toTextArea(); } catch(e) {}
+            editors[key] = null;
+        }
+    });
+    editors = {};
+}
+
+function initMarkdownEditors() {
+    const textareas = document.querySelectorAll('.easymde-input');
+    textareas.forEach(el => {
+        const idx = parseInt(el.id.split('-')[2]);
+        if(isNaN(idx) || !blocks[idx]) return;
+
+        const easyMDE = new EasyMDE({
+            element: el,
+            spellChecker: false,
+            status: false,
+            minHeight: "150px",
+            placeholder: "Viết nội dung bài học...",
+            toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "table", "|", "preview", "side-by-side", "fullscreen"],
+        });
+
+        easyMDE.codemirror.on("change", () => {
+            if(blocks[idx] && blocks[idx].data) {
+                blocks[idx].data.text = easyMDE.value();
+            }
+        });
+        editors[idx] = easyMDE;
+    });
+}
+
+function openBlockMenu(index, event) {
+    blockInsertIndex = index;
+    const menu = document.getElementById('blockMenu');
+    
+    if (menu && event) {
+        // 1. Hiển thị trước để trình duyệt tính toán kích thước thực
+        menu.style.display = 'block';
+        
+        // 2. Lấy vị trí của nút bấm (Inserter Button)
+        // event.currentTarget là dòng kẻ, ta lấy nút tròn bên trong hoặc chính dòng kẻ
+        const rect = event.currentTarget.getBoundingClientRect();
+        
+        // 3. Tính toán vị trí Left (Căn giữa nút bấm)
+        // rect.left + một nửa chiều rộng nút - một nửa chiều rộng menu
+        const menuWidth = menu.offsetWidth || 200;
+        let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
+        
+        // Giới hạn không cho tràn màn hình trái/phải
+        if (leftPos < 10) leftPos = 10;
+        if (leftPos + menuWidth > window.innerWidth) leftPos = window.innerWidth - menuWidth - 10;
+
+        menu.style.left = `${leftPos}px`;
+
+        // 4. Tính toán vị trí Top/Bottom (Thông minh)
+        const menuHeight = menu.offsetHeight || 300;
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        if (spaceBelow < menuHeight + 20) {
+            // Nếu bên dưới hết chỗ -> Hiển thị BÊN TRÊN nút bấm
+            menu.style.top = 'auto';
+            menu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+            
+            // Thêm hiệu ứng xuất hiện từ dưới lên (Optional)
+            menu.style.transformOrigin = 'bottom center';
+        } else {
+            // Nếu bên dưới còn chỗ -> Hiển thị BÊN DƯỚI nút bấm (Mặc định)
+            menu.style.top = `${rect.bottom + 10}px`;
+            menu.style.bottom = 'auto';
+            
+            menu.style.transformOrigin = 'top center';
+        }
+    }
+}
+
+function closeBlockMenu() {
+    const menu = document.getElementById('blockMenu');
+    if (menu) menu.style.display = 'none';
+    blockInsertIndex = -2;
+}
+
+function addBlock(type) {
+    const tpl = {
+        text: { type: 'text', data: { text: '' } },
+        image: { type: 'image', data: { url: '' } },
+        video: { type: 'video', data: { url: '' } },
+        callout: { type: 'callout', data: { text: '' } },
+        question: { type: 'question', data: { questions: [] } }
+    };
+    
+    const newBlock = JSON.parse(JSON.stringify(tpl[type]));
+
+    if (blockInsertIndex === -1) blocks.push(newBlock);
+    else blocks.splice(blockInsertIndex + 1, 0, newBlock);
+
+    closeBlockMenu();
+    renderBlocks();
+}
+
+function deleteBlock(index) {
+    Swal.fire({
+        title: 'Xóa khối này?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa'
+    }).then((res) => {
+        if(res.isConfirmed) {
+            blocks.splice(index, 1);
+            renderBlocks();
+        }
+    });
+}
+
+function moveBlock(index, dir) {
+    const newIndex = index + dir;
+    if(newIndex < 0 || newIndex >= blocks.length) return;
+    const item = blocks.splice(index, 1)[0];
+    blocks.splice(newIndex, 0, item);
+    renderBlocks();
+}
+
+function serializeBlocks() {
+    return JSON.stringify(blocks);
+}
+
+// --- VIDEO HELPERS ---
+function updateVideoBlock(idx, field, value) {
+    if (!blocks[idx].data) blocks[idx].data = {};
+    blocks[idx].data[field] = value;
+    renderBlocks(); 
+}
+
+function getVideoTypeInfo(url) {
+    if (!url) return { type: 'unknown' };
+    if (/(?:youtu\.be\/|youtube\.com\/|vimeo\.com\/)/.test(url)) return { type: 'iframe' };
+    return { type: 'video' };
+}
+
+function getEmbedUrl(url, autoplay) {
+    if (!url) return null;
+    let embedUrl = null;
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*).*/);
+    if (ytMatch && ytMatch[1]) {
+        embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+        if(autoplay) embedUrl += "&autoplay=1&mute=1";
+    }
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+        embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        if(autoplay) embedUrl += "?autoplay=1&muted=1";
+    }
+    return embedUrl || url; // Fallback to raw url
+}
+
+/* ==========================================================================
+   PART 3: QUIZ BUILDER (MODAL LOGIC)
+   ========================================================================== */
+
+function editQuestionBlock(blockIndex) {
+    const block = blocks[blockIndex];
+    const modalId = `q-modal-${Date.now()}`;
+    const containerId = `${modalId}-container`;
+
+    Swal.fire({
+        title: 'Biên soạn Bộ câu hỏi',
+        html: `
+            <div id="${modalId}" style="text-align:left; max-height:65vh; overflow-y:auto; padding-right:5px; padding-bottom:10px;">
+                <div id="${containerId}"></div>
+            </div>
+            <div class="add-q-buttons">
+                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'choice')"><i class="fas fa-list-ul"></i> Trắc nghiệm</button>
+                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'fill')"><i class="fas fa-edit"></i> Điền từ</button>
+                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'essay')"><i class="fas fa-pen-nib"></i> Tự luận</button>
+            </div>
+        `,
+        width: 850,
+        showCancelButton: true,
+        confirmButtonText: 'Lưu bộ đề',
+        didOpen: () => {
+            renderQuestionsToModal(block.data.questions || [], containerId);
+        },
+        preConfirm: () => {
+            return serializeQuestionData(containerId);
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            try {
+                block.data.questions = JSON.parse(result.value);
+                renderBlocks();
+            } catch (e) { console.error("Lỗi lưu câu hỏi", e); }
+        }
+    });
+}
+
+function renderQuestionsToModal(questions, containerId) {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    questions.forEach((q, i) => renderSingleQuestionItem(q, i, container));
+}
+
+// Window helpers for inline HTML onclicks
+window.addQuestionItem = function(containerId, type) {
+    const container = document.getElementById(containerId);
+    const idx = container.querySelectorAll('.quiz-item').length;
+    let qData = { type: type, question: '', explanation: '' };
+
+    if (type === 'choice') {
+        qData.options = ['', '']; qData.correct = [0]; qData.isMulti = false;
+    } else if (type === 'fill') {
+        qData.content = 'Thủ đô của Việt Nam là [Hà Nội].';
+    } else if (type === 'essay') {
+        qData.modelAnswer = '';
+    }
+    renderSingleQuestionItem(qData, idx, container);
+    container.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addOptionToQuestion = function(btn, groupName) {
+    const container = btn.closest('.quiz-item').querySelector('.q-options-container');
+    const idx = container.querySelectorAll('.option-row').length;
+    const isMulti = btn.closest('.quiz-item').querySelector('.q-multi-toggle').checked;
+    const inputType = isMulti ? 'checkbox' : 'radio';
+
+    const div = document.createElement('div');
+    div.className = 'option-row';
+    div.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:5px;';
+    div.innerHTML = `
+        <input type="${inputType}" name="${groupName}" class="q-correct-check" value="${idx}" style="cursor:pointer;">
+        <input type="text" class="studio-select q-opt-val" value="" placeholder="Đáp án ${idx+1}">
+        <button type="button" class="btn-ctrl delete" onclick="this.parentElement.remove()" tabindex="-1"><i class="fas fa-minus"></i></button>
+    `;
+    container.appendChild(div);
+}
+
+window.toggleMulti = function(checkbox, groupName) {
+    const inputs = document.querySelectorAll(`input[name="${groupName}"]`);
+    inputs.forEach(inp => {
+        inp.type = checkbox.checked ? 'checkbox' : 'radio';
+        inp.checked = false; 
+    });
+}
+
+function renderSingleQuestionItem(q, idx, container) {
+    const div = document.createElement('div');
+    div.className = 'quiz-item';
+    div.dataset.type = q.type;
+    div.style.cssText = "background:#f9fafb; padding:15px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:15px; position:relative;";
+
+    let badge = '', contentHtml = '';
+    const deleteBtn = `<button type="button" class="btn-ctrl delete" style="position:absolute; top:10px; right:10px;" onclick="this.closest('.quiz-item').remove()"><i class="fas fa-trash"></i></button>`;
+
+    if (q.type === 'choice' || !q.type) { 
+        badge = `<span class="q-type-badge q-type-choice">TRẮC NGHIỆM</span>`;
+        const uniqueName = `q_radio_${Date.now()}_${idx}`;
+        const inputType = q.isMulti ? 'checkbox' : 'radio';
+        const correctArr = Array.isArray(q.correct) ? q.correct : [q.correct];
+
+        let optsHtml = '';
+        (q.options || ['', '']).forEach((opt, i) => {
+            const isChecked = correctArr.includes(i) ? 'checked' : '';
+            optsHtml += `
+                <div class="option-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                    <input type="${inputType}" name="${uniqueName}" class="q-correct-check" value="${i}" ${isChecked} style="cursor:pointer;">
+                    <input type="text" class="studio-select q-opt-val" value="${opt}" placeholder="Đáp án ${i+1}">
+                    <button type="button" class="btn-ctrl delete" onclick="this.parentElement.remove()" tabindex="-1"><i class="fas fa-minus"></i></button>
+                </div>`;
+        });
+
+        contentHtml = `
+            <input type="text" class="studio-select q-title" placeholder="Nhập câu hỏi..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
+            <div class="q-options-container">${optsHtml}</div>
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button type="button" class="btn-mini-add" onclick="addOptionToQuestion(this, '${uniqueName}')">+ Đáp án</button>
+                <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
+                    <input type="checkbox" class="q-multi-toggle" onchange="toggleMulti(this, '${uniqueName}')" ${q.isMulti ? 'checked' : ''}> Chọn nhiều
+                </label>
+            </div>
+        `;
+    } else if (q.type === 'fill') {
+        badge = `<span class="q-type-badge q-type-fill">ĐIỀN TỪ</span>`;
+        contentHtml = `
+            <div class="q-hint">Viết câu hỏi và đặt đáp án đúng trong ngoặc vuông [ ]. Ví dụ: 1 + 1 = [2]</div>
+            <textarea class="q-fill-input q-content" rows="3">${q.content || ''}</textarea>
+        `;
+    } else if (q.type === 'essay') {
+        badge = `<span class="q-type-badge q-type-essay">TỰ LUẬN</span>`;
+        contentHtml = `
+            <input type="text" class="studio-select q-title" placeholder="Nhập đề bài tự luận..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
+            <textarea class="q-model-answer" placeholder="Nhập đáp án mẫu hoặc gợi ý chấm điểm...">${q.modelAnswer || ''}</textarea>
+        `;
+    }
+
+    const explainHtml = `
+        <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:5px;">
+            <input type="text" class="studio-select q-explain" placeholder="Giải thích đáp án (Tùy chọn)..." value="${q.explanation || ''}" style="font-size:0.85rem; background:#fff;">
+        </div>
+    `;
+
+    div.innerHTML = `${deleteBtn} <div style="margin-bottom:10px;">${badge} <strong>Câu ${idx+1}</strong></div> ${contentHtml} ${explainHtml}`;
+    container.appendChild(div);
+}
+
+function serializeQuestionData(containerId) {
+    const container = document.getElementById(containerId);
+    if(!container) return '[]';
+    const items = container.querySelectorAll('.quiz-item');
+    const data = [];
+
+    items.forEach(item => {
+        const type = item.dataset.type;
+        const explanation = item.querySelector('.q-explain').value;
+        
+        if (type === 'choice') {
+            const question = item.querySelector('.q-title').value;
+            const isMulti = item.querySelector('.q-multi-toggle').checked;
+            const options = []; const correct = [];
+            item.querySelectorAll('.option-row').forEach((row, idx) => {
+                options.push(row.querySelector('.q-opt-val').value);
+                if(row.querySelector('.q-correct-check').checked) correct.push(idx);
+            });
+            if(question.trim()) data.push({ type, question, options, correct, isMulti, explanation });
+        
+        } else if (type === 'fill') {
+            const content = item.querySelector('.q-content').value;
+            if(content.trim()) data.push({ type, content, explanation });
+        } else if (type === 'essay') {
+            const question = item.querySelector('.q-title').value;
+            const modelAnswer = item.querySelector('.q-model-answer').value;
+            if(question.trim()) data.push({ type, question, modelAnswer, explanation });
+        }
+    });
+    return JSON.stringify(data);
+}
+
+/* ==========================================================================
+   PART 4: SAVING LOGIC
+   ========================================================================== */
+
+async function submitLessonAJAX(publishStatus) {
+    const btnDraft = document.querySelector('.btn-draft');
+    const btnPublish = document.querySelector('.btn-publish');
+    
+    // UI Loading
+    const originalDraftText = btnDraft ? btnDraft.innerHTML : 'Lưu nháp';
+    const originalPublishText = btnPublish ? btnPublish.innerHTML : 'Đăng bài';
+    
+    if(btnPublish && publishStatus) {
+        btnPublish.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng...';
+        btnPublish.disabled = true;
+        if(btnDraft) btnDraft.disabled = true;
+    } else if (btnDraft) {
+        btnDraft.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+        btnDraft.disabled = true;
+        if(btnPublish) btnPublish.disabled = true;
+    }
+
+    try {
+        const titleInput = document.getElementById('mainTitleInput');
+        if (!titleInput.value.trim()) {
+            Swal.fire('Thiếu thông tin', 'Vui lòng nhập tên bài học.', 'warning');
+            throw new Error("Missing title");
+        }
+
+        const title = titleInput.value;
+        const isProInp = document.getElementById('isProInput');
+        const isPro = isProInp ? isProInp.checked : false;
+        
+        const contentJSON = serializeBlocks();
+        const subjectSelect = document.getElementById('selectSubject');
+        const subjectId = subjectSelect ? subjectSelect.value : '';
+        const courseId = document.getElementById('hiddenCourseId').value;
+        
+        // Snapshot Tree
+        const treeData = [];
+        document.querySelectorAll('.tree-unit').forEach((uEl, uIdx) => {
+            const unitId = uEl.dataset.unitId || '';
+            const unitTitle = uEl.querySelector('.unit-title-input').value;
+            const lessonIds = [];
+            uEl.querySelectorAll('.tree-lesson').forEach(lEl => {
+                const lessonTitleInp = lEl.querySelector('.lesson-title-input');
+                lessonIds.push({
+                    id: lEl.dataset.lessonId,
+                    title: lessonTitleInp ? lessonTitleInp.value : ''
+                });
+            });
+            treeData.push({ id: unitId, title: unitTitle, order: uIdx + 1, lessons: lessonIds });
+        });
+
+        // Quiz Data (Backward Compatibility)
+        let quizData = [];
+        const quizBlock = blocks.find(b => b.type === 'quiz' || b.type === 'question');
+        if(quizBlock && quizBlock.data && quizBlock.data.questions) {
+            quizData = quizBlock.data.questions;
+        }
+
+        const payload = {
+            title, content: contentJSON, type: 'theory',
+            isPro, isPublished: publishStatus,
+            subjectId, courseId, // New field for hierarchy
+            quizData: JSON.stringify(quizData),
+            curriculumSnapshot: JSON.stringify(treeData),
+            currentEditingId: activeLessonId
+        };
+
+        const res = await fetch('/api/lesson/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await res.json();
+
+        if(result.success) {
+            const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            
+            if(publishStatus) {
+                Toast.fire({ icon: 'success', title: 'Đã đăng bài thành công!' });
+                updateStatusBadge(true);
+            } else {
+                Toast.fire({ icon: 'info', title: 'Đã lưu bản nháp' });
+                updateStatusBadge(false);
+            }
+            
+            const lastSaved = document.getElementById('lastSavedTime');
+            if(lastSaved) lastSaved.innerText = new Date().toLocaleTimeString('vi-VN');
+
+            // Cập nhật ID thật nếu là bài mới
+            if(String(activeLessonId).startsWith('new_lesson_') || activeLessonId === 'current_new_lesson') {
+                const treeItem = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
+                if(treeItem) treeItem.dataset.lessonId = result.newLessonId;
+                
+                activeLessonId = result.newLessonId;
+                const currentIdInp = document.getElementById('currentEditingId');
+                if(currentIdInp) currentIdInp.value = result.newLessonId;
+            }
+
+            // Reload tree nếu vừa lưu nháp/publish để đồng bộ ID thật cho các item
+            // loadCurriculumByCourse(courseId); // Optional: có thể bật nếu muốn chắc chắn
+
+        } else {
+            Swal.fire('Lỗi', result.error || 'Lỗi không xác định', 'error');
+        }
+
+    } catch(err) {
+        if(err.message !== "Missing title") {
+            console.error(err);
+            Swal.fire('Lỗi', 'Không thể kết nối server', 'error');
+        }
+    } finally {
+        if(btnPublish) { btnPublish.innerHTML = originalPublishText; btnPublish.disabled = false; }
+        if(btnDraft) { btnDraft.innerHTML = originalDraftText; btnDraft.disabled = false; }
+    }
+}

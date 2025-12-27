@@ -1,0 +1,228 @@
+/* public/css/styleUpgrade.css */
+
+.upgrade-wrapper {
+    max-width: 1000px;
+    margin: 40px auto;
+    font-family: 'Quicksand', sans-serif;
+    padding: 0 20px;
+}
+
+.upgrade-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.upgrade-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--dark-ink);
+    text-transform: uppercase;
+    letter-spacing: -1px;
+}
+
+.upgrade-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    max-width: 600px;
+    margin: 10px auto;
+}
+
+/* --- PRICING GRID --- */
+.pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr; /* Cột PRO to hơn */
+    gap: 30px;
+    align-items: center;
+}
+
+/* Card Cơ Bản */
+.plan-card {
+    background: #fff;
+    border: 3px solid #eee;
+    border-radius: 30px;
+    padding: 30px;
+    text-align: center;
+    color: #888;
+    transition: 0.3s;
+}
+
+.plan-card h3 { font-size: 1.5rem; margin-bottom: 10px; color: #666; }
+.plan-price { font-size: 2rem; font-weight: 800; margin-bottom: 20px; color: #333; }
+
+/* Card PRO (VIP) */
+.plan-card.pro {
+    background: #fff;
+    border: 3px solid var(--dark-ink);
+    box-shadow: 12px 12px 0px gold;
+    position: relative;
+    transform: scale(1.05);
+    z-index: 2;
+    overflow: hidden;
+}
+
+.plan-card.pro:hover {
+    transform: scale(1.08) translateY(-5px);
+    box-shadow: 15px 15px 0px gold;
+}
+
+/* Hiệu ứng lấp lánh */
+.plan-card.pro::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+}
+
+.crown-icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+    display: inline-block;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+}
+
+.pro-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--dark-ink);
+    margin-bottom: 5px;
+}
+
+.pro-badge {
+    background: gold;
+    color: #b45309;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+/* Features List */
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 30px;
+    text-align: left;
+}
+
+.features-list li {
+    padding: 10px 0;
+    border-bottom: 1px dashed #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--dark-ink);
+}
+
+.features-list li i { color: #2ecc71; }
+.features-list li.disabled { color: #ccc; text-decoration: line-through; }
+.features-list li.disabled i { color: #ccc; }
+
+/* Form Area inside Card */
+.upgrade-form {
+    background: #fff9c4; /* Vàng nhạt */
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px dashed #fbc02d;
+    margin-top: 20px;
+}
+
+.cute-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+    color: #555;
+}
+.cute-checkbox input { accent-color: var(--dark-ink); width: 18px; height: 18px; }
+
+.btn-upgrade {
+    width: 100%;
+    padding: 15px;
+    background: var(--dark-ink);
+    color: white;
+    font-weight: 900;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #fbc02d;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-upgrade:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #fbc02d;
+    background: #000;
+}
+
+/* FIX LỖI ẨN ELEMENT */
+.upgrade-header, .plan-card {
+    /* Đảm bảo phần tử luôn hiển thị nếu JS chưa kịp chạy */
+    opacity: 1; 
+    visibility: visible;
+}
+
+/* --- STYLE CHO Ô NHẬP SECRET KEY --- */
+.key-input-wrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.code-input {
+    border: 2px dashed #fbc02d !important; /* Viền nét đứt màu vàng */
+    background: #fff !important;
+    text-align: center;         /* Căn giữa nội dung */
+    font-family: 'Courier New', monospace; /* Font kiểu code */
+    font-size: 1.2rem !important;
+    font-weight: 800;
+    letter-spacing: 3px;        /* Giãn cách chữ cho dễ đọc */
+    text-transform: uppercase;  /* Tự động viết hoa */
+    color: var(--dark-ink);
+}
+
+.code-input::placeholder {
+    letter-spacing: 1px;
+    font-size: 1rem;
+    color: #ccc;
+    text-transform: none;
+}
+
+.code-input:focus {
+    border-style: solid !important; /* Khi bấm vào thì viền liền */
+    box-shadow: 0 0 0 4px rgba(251, 192, 45, 0.2) !important;
+}
+
+.hint-text {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+/* Đặt lại trạng thái ban đầu cho animation trong CSS (nếu muốn mượt hơn) */
+/* Nhưng để an toàn nhất, ta để mặc định hiện, JS sẽ tự set opacity: 0 khi bắt đầu chạy */
+
+/* Animations */
+@keyframes shine { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pricing-grid { grid-template-columns: 1fr; }
+    .plan-card { order: 2; }
+    .plan-card.pro { order: 1; transform: scale(1); }
+}

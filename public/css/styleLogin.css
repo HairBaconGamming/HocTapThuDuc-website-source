@@ -1,0 +1,93 @@
+/* public/css/styleLogin.css */
+.login-page-section {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-form-container {
+    background: var(--white);
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    border-radius: 30px;
+    /* Bóng đổ kiểu Sticker dễ thương */
+    box-shadow: 8px 8px 0px var(--secondary), -2px -2px 0px rgba(0,0,0,0.05); 
+    border: 2px solid var(--secondary);
+    text-align: center;
+}
+
+.form-title {
+    font-size: 2rem;
+    color: var(--text-main);
+    margin-bottom: 5px;
+}
+
+.form-subtitle {
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.input-field-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-input-v2, .form-select-v2 {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #eee;
+    border-radius: 15px;
+    font-family: var(--font-main);
+    background: #fafafa;
+    transition: 0.3s;
+    outline: none;
+    font-size: 1rem;
+}
+
+.form-input-v2:focus {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(162, 210, 255, 0.2);
+}
+
+.form-label-v2 {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: 5px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.btn-submit-v2 {
+    width: 100%;
+    padding: 14px;
+    border-radius: 50px;
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-hard);
+    transition: 0.2s;
+    margin-top: 10px;
+}
+
+.btn-submit-v2:hover {
+    transform: translateY(-4px);
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.15);
+}
+
+.switch-auth-link {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+.switch-auth-link a {
+    color: var(--primary-dark);
+    font-weight: bold;
+    text-decoration: underline;
+}

@@ -1,0 +1,227 @@
+<%- include('partials/header') %>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary: #3b82f6;
+        --dark: #1e293b;
+        --light-bg: #f3f4f6;
+        --border: #e5e7eb;
+    }
+
+    body { background-color: #f8fafc; color: var(--dark); font-family: 'Inter', sans-serif; }
+
+    /* LAYOUT */
+    .course-wrapper {
+        max-width: 1200px; margin: 40px auto; padding: 0 20px;
+        display: grid; grid-template-columns: 2fr 1fr; gap: 40px;
+    }
+
+    /* --- LEFT COLUMN --- */
+    .course-header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; color: #111827; }
+    .course-meta { display: flex; gap: 20px; color: #6b7280; font-size: 0.9rem; margin-bottom: 20px; align-items: center; }
+    .author-badge { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--dark); }
+    .author-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+
+    /* Description Box */
+    .course-desc-box { background: white; padding: 30px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+    .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; display: inline-block; }
+    .desc-content { line-height: 1.6; color: #4b5563; }
+
+    /* Curriculum (Accordion) */
+    .curriculum-box { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .curr-header { padding: 20px; background: #f9fafb; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    
+    .unit-item { border-bottom: 1px solid var(--border); }
+    .unit-toggle { 
+        padding: 15px 20px; background: #fff; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; 
+        transition: 0.2s;
+    }
+    .unit-toggle:hover { background: #f8fafc; color: var(--primary); }
+    .unit-toggle.active { background: #eff6ff; color: var(--primary); }
+    .unit-toggle i { transition: transform 0.3s; }
+    .unit-toggle.active i { transform: rotate(180deg); }
+
+    .lesson-group { display: none; background: #fcfcfc; }
+    .lesson-group.open { display: block; }
+    .lesson-row { 
+        padding: 12px 20px 12px 40px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;
+        color: #64748b; font-size: 0.95rem; text-decoration: none; transition: 0.2s;
+    }
+    .lesson-row:hover { background: white; color: var(--primary); padding-left: 45px; }
+    
+    .badge-pro { background: #fff7ed; color: #ea580c; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #ffedd5; font-weight: 700; }
+    .badge-free { background: #f0fdf4; color: #16a34a; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0; font-weight: 700; }
+
+    /* --- RIGHT COLUMN (Sticky Card) --- */
+    .sticky-sidebar { position: sticky; top: 20px; }
+    .course-card { 
+        background: white; border-radius: 16px; overflow: hidden; 
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border);
+    }
+    .course-thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+    .course-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .play-overlay { 
+        position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); 
+        display: flex; justify-content: center; align-items: center; opacity: 0; transition: 0.3s; cursor: pointer;
+    }
+    .course-thumb-wrapper:hover .play-overlay { opacity: 1; }
+
+    .card-body { padding: 25px; }
+    .price-tag { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 20px; display: block; }
+    
+    .btn-action { 
+        display: block; width: 100%; padding: 15px; text-align: center; border-radius: 8px; 
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; cursor: pointer; border: none; text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: white; margin-bottom: 10px; }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+    
+    .features-list { margin-top: 25px; list-style: none; padding: 0; }
+    .features-list li { margin-bottom: 10px; color: #4b5563; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+    .features-list li i { color: var(--primary); width: 20px; text-align: center; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .course-wrapper { grid-template-columns: 1fr; }
+        .sticky-sidebar { position: relative; top: 0; }
+        .course-header { text-align: center; }
+        .course-meta { justify-content: center; }
+    }
+</style>
+
+<div class="course-wrapper">
+    
+    <div class="main-content">
+        <div class="course-header">
+            <div style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 10px; text-transform: uppercase;">Khóa học trực tuyến</div>
+            <h1><%= course.title %></h1>
+            
+            <div class="course-meta">
+                <div class="author-badge">
+                    <img src="<%= course.author ? (course.author.avatar || 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191') : 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191' %>" class="author-avatar">
+                    <span><%= course.author ? course.author.username : 'Admin' %></span>
+                </div>
+                <span><i class="far fa-clock"></i> Cập nhật: <%= new Date(course.updatedAt).toLocaleDateString('vi-VN') %></span>
+                <span><i class="fas fa-user-graduate"></i> <%= course.studentsCount || 0 %> học viên</span>
+            </div>
+        </div>
+
+        <div class="course-desc-box">
+            <h3 class="section-title">Giới thiệu khóa học</h3>
+            <div class="desc-content">
+                <% if(course.description) { %>
+                    <%- course.description.replace(/\n/g, '<br>') %>
+                <% } else { %>
+                    <p>Chưa có mô tả chi tiết cho khóa học này.</p>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="course-desc-box">
+            <h3 class="section-title">Nội dung khóa học</h3>
+            <div style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">
+                <strong><%= units.length %></strong> chương • <strong><%= stats.totalLessons %></strong> bài học
+            </div>
+
+            <div class="curriculum-box">
+                <% if(units.length > 0) { %>
+                    <% units.forEach((unit, idx) => { %>
+                        <div class="unit-item">
+                            <div class="unit-toggle <%= idx === 0 ? 'active' : '' %>" onclick="toggleUnit(this)">
+                                <span>
+                                    <i class="fas fa-plus-square" style="margin-right: 8px; opacity: 0.6;"></i> 
+                                    Chương <%= idx + 1 %>: <%= unit.title %>
+                                </span>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <small style="font-weight: 400; color: #999;"><%= unit.lessons ? unit.lessons.length : 0 %> bài</small>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="lesson-group <%= idx === 0 ? 'open' : '' %>">
+                                <% if(unit.lessons && unit.lessons.length > 0) { %>
+                                    <% unit.lessons.forEach(lesson => { %>
+                                        <a href="/lesson/<%= lesson._id %>" class="lesson-row">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <% if(lesson.type === 'video') { %>
+                                                    <i class="fas fa-play-circle" style="color: #8b5cf6;"></i>
+                                                <% } else if(lesson.type === 'quiz') { %>
+                                                    <i class="fas fa-question-circle" style="color: #f59e0b;"></i>
+                                                <% } else { %>
+                                                    <i class="fas fa-file-text" style="color: #3b82f6;"></i>
+                                                <% } %>
+                                                <%= lesson.title %>
+                                            </div>
+                                            
+                                            <% if(lesson.isPro || lesson.isProOnly) { %>
+                                                <span class="badge-pro"><i class="fas fa-lock"></i> VIP</span>
+                                            <% } else { %>
+                                                <span class="badge-free">Học thử</span>
+                                            <% } %>
+                                        </a>
+                                    <% }) %>
+                                <% } else { %>
+                                    <div style="padding: 15px 40px; color: #999; font-style: italic;">Đang cập nhật bài học...</div>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <div style="padding: 30px; text-align: center; color: #666;">Nội dung đang được biên soạn.</div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-sidebar">
+        <div class="course-card">
+            <div class="course-thumb-wrapper">
+                <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-thumb" alt="<%= course.title %>">
+                <div class="play-overlay">
+                    <i class="fas fa-play-circle" style="font-size: 4rem; color: white;"></i>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <span class="price-tag"><%= course.isPublished ? 'Miễn phí' : 'Sắp ra mắt' %></span>
+                
+                <% if(user) { %>
+                    <a href="#" class="btn-action btn-primary">Vào học ngay</a>
+                <% } else { %>
+                    <a href="/login" class="btn-action btn-primary">Đăng nhập để học</a>
+                <% } %>
+
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> Truy cập trọn đời</li>
+                    <li><i class="fas fa-film"></i> <%= stats.totalVideos %> video bài giảng</li>
+                    <li><i class="fas fa-clipboard-check"></i> <%= stats.totalQuiz %> bài tập thực hành</li>
+                    <li><i class="fas fa-mobile-alt"></i> Học trên mọi thiết bị</li>
+                    <li><i class="fas fa-certificate"></i> Cấp chứng chỉ khi hoàn thành</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+    function toggleUnit(header) {
+        header.classList.toggle('active');
+        const content = header.nextElementSibling;
+        
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+        } else {
+            // Nếu muốn đóng các chương khác khi mở chương mới (Accordion effect)
+            // document.querySelectorAll('.lesson-group').forEach(el => el.classList.remove('open'));
+            // document.querySelectorAll('.unit-toggle').forEach(el => el.classList.remove('active'));
+            // header.classList.add('active');
+            
+            content.classList.add('open');
+        }
+    }
+</script>

@@ -1,0 +1,89 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleLiveCreate.css">
+
+<div class="setup-wrapper">
+    
+    <div class="text-center mb-4" data-animate="fade-down">
+        <h1 style="font-size: 2.5rem; font-weight: 900; color: var(--dark-ink);">🎙️ Thiết Lập Phòng Live</h1>
+        <p style="color: #666;">Kiểm tra đầu tóc, âm thanh, ánh sáng trước khi lên sóng nhé!</p>
+    </div>
+
+    <form id="setupForm" class="setup-grid">
+        
+        <div class="setup-card">
+            <div class="card-header">
+                <h2>Thông Tin</h2>
+                <p style="color:#888; font-size:0.9rem;">Những gì người xem sẽ thấy bên ngoài.</p>
+            </div>
+            
+            <div class="input-group-setup" style="margin-top: 20px;">
+                <label class="setup-label">Tiêu đề buổi Live</label>
+                <input type="text" id="liveTitle" name="title" class="setup-input" placeholder="VD: Học Toán cùng tớ 📚..." required minlength="3" autocomplete="off">
+            </div>
+
+            <div class="input-group-setup">
+                <label class="setup-label">Chuyên mục</label>
+                <div class="tags-container">
+                    <label class="tag-option">
+                        <input type="radio" name="category" value="Học tập" checked>
+                        <div class="tag-chip"><i class="fas fa-book"></i> Học tập</div>
+                    </label>
+                    <label class="tag-option">
+                        <input type="radio" name="category" value="Tâm sự">
+                        <div class="tag-chip"><i class="fas fa-coffee"></i> Tâm sự</div>
+                    </label>
+                    <label class="tag-option">
+                        <input type="radio" name="category" value="Gaming">
+                        <div class="tag-chip"><i class="fas fa-gamepad"></i> Gaming</div>
+                    </label>
+                    <label class="tag-option">
+                        <input type="radio" name="category" value="Nhạc">
+                        <div class="tag-chip"><i class="fas fa-music"></i> Nhạc</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-group-setup">
+                <label class="setup-label">Ảnh bìa (Thumbnail) - <small>Optional</small></label>
+                <div class="thumb-upload-box" id="thumbUploadBox">
+                    <input type="file" id="thumbInput" accept="image/*" style="display:none">
+                    <img id="thumbPreview" class="thumb-preview">
+                    <i class="fas fa-image" style="font-size: 2rem; color: #ccc;"></i>
+                    <p style="margin: 5px 0 0; font-size: 0.85rem; color: #999;">Click để tải ảnh lên</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-card" style="background: #2d3436; border-color: #000; color: white;">
+            <div class="card-header">
+                <h2 style="color: white;">Soi Gương 🪞</h2>
+                <p style="color: #aaa; font-size: 0.9rem;">Xem trước Camera & Micro.</p>
+            </div>
+
+            <div class="cam-preview-wrapper" style="margin-top: 20px;">
+                <video id="localVideoPreview" autoplay muted playsinline></video>
+                
+                <div class="cam-overlay">
+                    <div id="deviceStatus" class="device-status">Check...</div>
+                    <div class="mic-meter-bar" title="Độ nhạy Mic">
+                        <div id="micLevel" class="mic-level"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p style="margin-top: 15px; font-size: 0.85rem; color: #aaa; text-align: center;">
+                <i class="fas fa-info-circle"></i> Hãy đảm bảo bạn ở nơi đủ ánh sáng và không có tiếng ồn.
+            </p>
+
+            <button type="submit" class="btn-go-live" id="btnSubmit">
+                <i class="fas fa-rocket"></i> BẮT ĐẦU LIVE
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="/js/liveSetup.js"></script>
+
+<%- include('partials/footer') %>

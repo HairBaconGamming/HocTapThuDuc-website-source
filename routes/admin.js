@@ -4,13 +4,18 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { isAdmin, isTeacher, canManageUsers } = require('../middlewares/auth');
+const unitController = require('../controllers/unitController');
+
+// Quản lý Unit (Admin)
+router.post('/units', isAdmin, unitController.createUnit);
+router.delete('/units/:id', isAdmin, unitController.deleteUnit);
 
 // Middleware chung: Phải là Teacher hoặc Admin mới được vào
 router.use(isTeacher);
 
 // --- Page Rendering ---
 // Teacher và Admin đều có thể xem trang chính
-router.get('/', adminController.renderAdminPanel);
+router.get('/', adminController.getAdminPanel);
 
 // --- API Endpoints ---
 

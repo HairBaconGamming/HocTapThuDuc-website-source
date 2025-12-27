@@ -1,0 +1,145 @@
+/* public/css/styleNewsFeed.css */
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.news-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid #eee;
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+}
+
+.news-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    border-color: var(--dark-ink);
+}
+
+/* Thumbnail */
+.news-thumb-wrapper {
+    position: relative;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    background: #f0f0f0;
+    overflow: hidden;
+}
+
+.news-thumb {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: 0.5s;
+}
+
+.news-card:hover .news-thumb {
+    transform: scale(1.1);
+}
+
+.news-cat-badge {
+    position: absolute;
+    top: 15px; left: 15px;
+    background: rgba(255,255,255,0.9);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--dark-ink);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 2;
+}
+
+/* Content */
+.news-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.news-date {
+    font-size: 0.85rem;
+    color: #999;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.news-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--dark-ink);
+    margin-bottom: 10px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-excerpt {
+    font-size: 0.95rem;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.news-footer {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.author-avatar {
+    width: 25px; height: 25px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.read-more-link {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: none;
+    transition: 0.2s;
+}
+.read-more-link:hover { text-decoration: underline; }
+
+/* --- FIX LỖI ẨN (SAFETY NET) --- */
+.news-card, 
+.btn-primary, 
+.news-header-content {
+    opacity: 1;
+    visibility: visible;
+    /* Không dùng !important ở đây để GSAP vẫn có thể animate được */
+}
+
+/* Đảm bảo nút "Viết bài mới" luôn nổi */
+.btn-primary {
+    position: relative;
+    z-index: 10;
+}

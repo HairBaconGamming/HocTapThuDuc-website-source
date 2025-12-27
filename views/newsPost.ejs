@@ -1,268 +1,121 @@
-<!-- views/newsPost.ejs -->
-<%- include('partials/header', { title: editMode ? 'Chỉnh sửa Tin Tức' : 'Soạn Tin Tức Mới', user: user, activePage: 'newsPost' }) %> <%# Updated activePage %>
-<link rel="stylesheet" href="/styleNewsPost.css"> 
-<%# Include necessary CSS/JS in header or footer %>
-<%# Toast UI Editor CSS %>
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleNewsPost.css">
 <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
-<%# KaTeX CSS %>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css"> <%# Use consistent KaTeX version %>
 
-<section class="news-composer-page-section"> <%# Unique Class %>
-
-    <!-- Background Elements -->
-    <div class="composer-background">
-        <div class="bg-gradient-soft"></div>
-        <div class="bg-grid-pattern-faint"></div>
+<div class="newsroom-wrapper">
+    
+    <div class="newsroom-header">
+        <div class="newsroom-title">📰 Tòa Soạn HTTD</div>
+        <p style="color: #666;">Spill the Tea (Lên bài) cho cả trường cùng hóng nào!</p>
     </div>
 
-    <div class="container composer-container">
+    <form action="<%= (mode === 'edit' && newsItem) ? '/news/' + newsItem._id + '/edit' : '/news/post' %>" 
+          method="POST" 
+          enctype="multipart/form-data" 
+          class="news-editor-card" 
+          id="newsForm">
 
-        <form action="<%= editMode ? ('/news/' + newsItem._id + '/edit') : '/news/post' %>" method="POST" class="news-composer-form" id="newsPostForm"> <%# Add ID, use PUT for edit %>
-            <% if (editMode) { %>
-                <%# Method Override for PUT request %>
-                <!-- <input type="hidden" name="_method" value="PUT"> --> <%# If using method-override package %>
-            <% } %>
-
-            <!-- Form Header -->
-            <div class="composer-header" data-animate="fade-down">
-                <h2><%= editMode ? 'Chỉnh sửa Tin Tức' : 'Soạn Tin Tức Mới' %></h2>
-                <p><%= editMode ? 'Cập nhật nội dung và chi tiết.' : 'Chia sẻ thông tin quan trọng với cộng đồng.' %></p>
+        <div class="cover-section">
+            
+            <div class="thumb-switcher">
+                <% if (user && user.isPro) { %>
+                    <button type="button" class="thumb-tab active" onclick="switchThumbMode('upload')">
+                        <i class="fas fa-cloud-upload-alt"></i> Tải ảnh lên
+                    </button>
+                    <button type="button" class="thumb-tab" onclick="switchThumbMode('url')">
+                        <i class="fas fa-link"></i> Dán Link ảnh
+                    </button>
+                <% } else { %>
+                    <button type="button" class="thumb-tab locked" onclick="window.location.href='/upgrade'" title="Nâng cấp để mở khóa">
+                        <i class="fas fa-lock"></i> Tải ảnh (VIP)
+                    </button>
+                    <button type="button" class="thumb-tab active" onclick="switchThumbMode('url')">
+                        <i class="fas fa-link"></i> Dán Link ảnh
+                    </button>
+                <% } %>
             </div>
 
-             <!-- Flash Message Area -->
-             <% if (typeof message !== 'undefined' && message.message && message.message.length > 0) { %>
-                <div class="composer-flash-message alert-<%= message.type || 'error' %>" data-animate="fade-in">
-                    <%= message.message %>
-                </div>
-            <% } %>
-
-            <!-- Form Fields -->
-            <div class="composer-fields">
-                <!-- Title Input -->
-                <div class="input-field-group composer-input-group" data-animate="fade-up" data-anim-delay="0.1">
-                    <input type="text" name="title" id="newsTitle" class="form-input-v2" placeholder=" " required value="<%= editMode ? (newsItem.title || '') : '' %>" autocomplete="off">
-                    <label for="newsTitle" class="form-label-v2">Tiêu đề Tin tức</label>
-                    <span class="input-focus-line"></span>
-                    <i class="fas fa-heading input-icon"></i>
-                </div>
-
-                <!-- Category Select -->
-                <div class="input-field-group composer-input-group select-group-styled" data-animate="fade-up" data-anim-delay="0.2">
-                     <select name="category" id="newsCategory" class="form-select-v2" required>
-                         <% const currentCategory = editMode ? (newsItem.category || 'Học tập') : 'Học tập'; %>
-                         <option value="" disabled <%= !currentCategory ? 'selected' : '' %>>Chọn Thể loại</option>
-                         <option value="Học tập" <%= currentCategory === 'Học tập' ? 'selected' : '' %>>Học tập</option>
-                         <option value="Tuyển sinh" <%= currentCategory === 'Tuyển sinh' ? 'selected' : '' %>>Tuyển sinh</option>
-                         <option value="Thông báo" <%= currentCategory === 'Thông báo' ? 'selected' : '' %>>Thông báo</option>
-                         <option value="Tài khoản PRO" <%= currentCategory === 'Tài khoản PRO' ? 'selected' : '' %>>Tài khoản PRO</option>
-                     </select>
-                      <label for="newsCategory" class="form-label-select-v2">Thể loại</label>
-                      <i class="fas fa-tags select-icon"></i>
-                      <i class="fas fa-chevron-down select-arrow"></i>
-                 </div>
-
-
-                <!-- Toast UI Editor Container -->
-                 <div class="form-group composer-editor-group" data-animate="fade-up" data-anim-delay="0.3">
-                    <label for="editor" class="editor-label">Nội dung Chi tiết</label>
-                    <div class="editor-wrapper"> <%# Wrapper for styling %>
-                        <div id="editor"><%- editMode ? (newsItem.content || '') : '' %></div>
+            <div class="cover-upload-zone" id="coverZone">
+                
+                <% if (user && user.isPro) { %>
+                    <div id="modeUpload" class="thumb-input-group active">
+                        <input type="file" name="image" id="coverInput" accept="image/*" style="display: none;">
+                        <div class="cover-placeholder" id="uploadPlaceholder">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 10px; color: #ccc;"></i>
+                            <h3>Kéo thả hoặc Click để tải ảnh</h3>
+                            <p>Dành riêng cho thành viên PRO 👑</p>
+                        </div>
                     </div>
-                    <!-- Hidden input to store Markdown content -->
-                    <input type="hidden" name="content" id="newsContent">
+                <% } %>
+
+                <div id="modeUrl" class="thumb-input-group <%= (!user || !user.isPro) ? 'active' : '' %>" 
+                    style="<%= (!user || !user.isPro) ? 'padding-top:40px' : 'width: 80%; margin: 0 auto; padding-top: 40px;' %>">
+                    
+                    <input type="text" name="imageUrl" id="urlInput" class="url-input" 
+                        placeholder="Paste link ảnh hợp lệ vào đây (https://...)" 
+                        autocomplete="off">
+                    
+                    <p style="text-align: center; color: #999; margin-top: 10px; font-size: 0.9rem;">
+                        <% if (!user || !user.isPro) { %>
+                            <i class="fas fa-info-circle"></i> Bạn đang dùng gói miễn phí. <a href="/upgrade" style="color:var(--primary)">Nâng cấp PRO</a> để upload ảnh trực tiếp.
+                        <% } else { %>
+                            Preview sẽ hiện ngay khi bạn dán link.
+                        <% } %>
+                    </p>
                 </div>
 
-            </div> <!-- End .composer-fields -->
-
-            <!-- Form Actions -->
-            <div class="composer-actions" data-animate="fade-up" data-anim-delay="0.4">
-                <a href="/news" class="btn btn-secondary-outline cancel-link loading-link">
-                    <i class="fas fa-times"></i> Hủy bỏ
-                </a>
-                 <button type="submit" class="btn-submit-v2 composer-submit-btn" id="newsSubmitBtn">
-                     <span class="btn-text">
-                         <% if (editMode) { %>
-                             <i class="fas fa-save"></i> Cập nhật Tin
-                         <% } else { %>
-                              <i class="fas fa-paper-plane"></i> Đăng Tin
-                         <% } %>
-                     </span>
-                     <span class="btn-liquid-effect composer-liquid"></span>
-                     <span class="btn-particles composer-particles"></span>
-                 </button>
+                <img src="<%= (newsItem && newsItem.image) ? newsItem.image : '' %>" 
+                    class="cover-preview" 
+                    id="coverPreview" 
+                    style="<%= (newsItem && newsItem.image) ? 'display:block' : 'display:none' %>">
+                
+                <button type="button" class="btn-remove-cover" id="btnRemoveCover" 
+                        style="<%= (newsItem && newsItem.image) ? 'display:flex' : 'display:none' %>">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
+        </div>
 
-        </form>
+        <input type="text" name="title" class="news-title-input" 
+               placeholder="Nhập tiêu đề hót hòn họt..." 
+               value="<%= newsItem ? newsItem.title : '' %>" required autocomplete="off">
 
-    </div> <!-- End .composer-container -->
-</section>
+        <label class="cat-label">Chọn Team (Chuyên mục)</label>
+        <div class="cat-selector">
+            <label class="cat-option">
+                <input type="radio" name="category" value="Học tập" <%= (!newsItem || newsItem.category === 'Học tập') ? 'checked' : '' %>>
+                <div class="cat-chip"><i class="fas fa-book"></i> Học tập</div>
+            </label>
+            <label class="cat-option">
+                <input type="radio" name="category" value="Hoạt động" <%= (newsItem && newsItem.category === 'Hoạt động') ? 'checked' : '' %>>
+                <div class="cat-chip"><i class="fas fa-running"></i> Hoạt động</div>
+            </label>
+            <label class="cat-option">
+                <input type="radio" name="category" value="Tuyển sinh" <%= (newsItem && newsItem.category === 'Tuyển sinh') ? 'checked' : '' %>>
+                <div class="cat-chip"><i class="fas fa-fire"></i> Tuyển sinh</div>
+            </label>
+            <label class="cat-option">
+                <input type="radio" name="category" value="Khác" <%= (newsItem && newsItem.category === 'Khác') ? 'checked' : '' %>>
+                <div class="cat-chip"><i class="fas fa-hashtag"></i> Khác</div>
+            </label>
+        </div>
+
+        <label class="cat-label">Nội dung chi tiết</label>
+        <div id="newsContentEditor"></div>
+        <input type="hidden" name="content" id="hiddenContentInput" value="<%= newsItem ? newsItem.content : '' %>">
+
+        <div class="action-bar">
+            <a href="/news" class="btn-cancel">Hủy</a>
+            <button type="submit" class="btn-post" id="btnSubmit">
+                <i class="fas fa-paper-plane"></i> <%= mode === 'edit' ? 'Lưu bài viết' : 'Đăng ngay 🚀' %>
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="/js/newsEditor.js"></script>
 
 <%- include('partials/footer') %>
-
-<!-- JS Libraries (Ensure they are loaded correctly, usually in footer) -->
-<!-- <link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive.core.css" /> -->
-<!-- <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script> -->
-<!-- KaTeX -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script> -->
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script> -->
-<!-- Toast UI Editor JS -->
-<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-<!-- GSAP -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<!-- Your custom JS -->
-<script src="/js/alerts.js"></script>
-
-<!-- Page Specific JS -->
-<script type="module">
-
-  document.addEventListener('DOMContentLoaded', () => {
-    // --- Config & Refs ---
-    if (typeof toastui === 'undefined' || typeof toastui.Editor === 'undefined') {
-        console.error("Toast UI Editor not loaded!"); return;
-    }
-    if (typeof gsap === 'undefined') { console.error("GSAP not loaded!"); return; }
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const newsPostForm = document.getElementById('newsPostForm');
-    const submitButton = document.getElementById('newsSubmitBtn');
-    const editorEl = document.querySelector("#editor");
-    const contentInput = document.querySelector('#newsContent');
-
-    // --- Initialize Toast UI Editor ---
-    let editorInstance;
-    try {
-        editorInstance = new toastui.Editor({
-            el: editorEl,
-            initialEditType: "markdown",
-            previewStyle: "vertical",
-            height: "500px", // Increased height
-            initialValue: editorEl.textContent.trim(), // Get initial value from hidden div content
-             usageStatistics: false, // Disable statistics
-             // Use custom toolbar items if desired
-             toolbarItems: [
-                 ['heading', 'bold', 'italic', 'strike'],
-                 ['hr', 'quote'],
-                 ['ul', 'ol', 'task'], // Removed 'indent', 'outdent' if not needed
-                 ['table', 'image', 'link'],
-                 ['code', 'codeblock'],
-                 // Add custom math button if plugin provides one or handle differently
-             ],
-             hideModeSwitch: false, // Show mode switch (MD/WYSIWYG)
-            plugins: [],
-            // Add custom buttons or hooks here if needed
-        });
-         console.log("Toast UI Editor Initialized");
-    } catch (error) {
-         console.error("Error initializing Toast UI Editor:", error);
-          editorEl.innerHTML = '<p style="color: var(--danger-color);">Lỗi tải trình soạn thảo. Vui lòng thử lại.</p>';
-          return; // Stop script if editor fails
-    }
-
-
-    // --- KaTeX Rendering Hook (If needed - depends on math plugin) ---
-    // It's often better if the plugin handles rendering internally
-    /*
-    editorInstance.addHook("afterPreviewRender", () => {
-        let previewEl = editorInstance.getPreviewEl();
-        if (!previewEl) return;
-        // ... (KaTeX rendering logic as before) ...
-         if (typeof renderMathInElement === 'function') {
-              renderMathInElement(previewEl, { /* KaTeX options * / });
-         }
-    });
-    */
-
-
-    // --- Update Hidden Input Before Submit ---
-    newsPostForm?.addEventListener('submit', function(e) {
-         if (!editorInstance) {
-             console.error("Editor instance not available on submit.");
-             e.preventDefault(); // Prevent submission if editor failed
-             showAlert("Lỗi trình soạn thảo, không thể gửi bài.", "error");
-             return;
-         }
-         contentInput.value = editorInstance.getMarkdown(); // Get Markdown content
-
-         // Add submitting state to button
-          if (newsPostForm.checkValidity() && submitButton) {
-             submitButton.classList.add('submitting');
-             submitButton.disabled = true;
-             document.getElementById("loading-overlay")?.classList.add("active"); // Show global overlay
-          } else if (submitButton) {
-             // Optional: Shake invalid fields (excluding editor for simplicity)
-              newsPostForm.querySelectorAll('input:invalid, select:invalid').forEach(field => {
-                  const group = field.closest('.input-field-group') || field.closest('.select-group-styled');
-                  if(group) gsap.fromTo(group, { x: 0 }, { duration: 0.5, x: gsap.utils.wrap([0, -8, 8, -6, 6, -4, 4, 0]), ease: 'elastic.out(1, 0.4)' });
-              });
-          }
-    });
-
-     // --- Input Field/Select Styling ---
-     // (Reuse JS logic from register/login for .input-field-group and .select-group-styled)
-     document.querySelectorAll('.form-input-v2').forEach(input => { /* ... focus/blur/filled logic ... */ });
-     document.querySelectorAll('.form-select-v2').forEach(select => { /* ... focus/blur/filled/change logic ... */ });
-
-     // --- Initial Page Animations ---
-     if (!prefersReducedMotion) {
-         const tl = gsap.timeline({ delay: 0.2 });
-         tl.from('[data-animate="fade-down"]', { duration: 0.8, y: -30, autoAlpha: 0, ease: 'power2.out' })
-           .from('.composer-flash-message', { duration: 0.5, autoAlpha: 0, ease: 'none'}, "-=0.3") // Fade flash quickly if present
-           .from('.composer-fields > .composer-input-group', { // Stagger Title and Category
-               duration: 0.7, autoAlpha: 0, y: 25, stagger: 0.1, ease: 'power2.out'
-           }, "-=0.3")
-            .from('.composer-editor-group', { // Fade/slide editor section
-                duration: 0.9, autoAlpha: 0, y: 30, ease: 'power3.out'
-            }, "-=0.4")
-           .from('.composer-actions > *', { // Stagger action buttons
-               duration: 0.7, autoAlpha: 0, y: 20, stagger: 0.1, ease: 'power2.out'
-           }, "-=0.5");
-     } else {
-         gsap.set('[data-animate="fade-down"], [data-animate="fade-in"], .composer-fields > *, .composer-actions > *', { autoAlpha: 1 });
-     }
-
-     // --- Loading Link Script ---
-     document.querySelectorAll(".loading-link").forEach(anchor => { /* ... Keep as before ... */ });
-
-      // --- Flash Message via JS Alert ---
-      const flashData = document.querySelector('.composer-flash-message');
-      if (flashData && typeof showAlert === 'function') {
-          const message = flashData.textContent.trim();
-          let type = 'info'; // Default
-          if (flashData.classList.contains('alert-error')) type = 'error';
-          if (flashData.classList.contains('alert-success')) type = 'success';
-          if (flashData.classList.contains('alert-warning')) type = 'warning';
-          showAlert(message, type, 5000);
-           flashData.style.display = 'none'; // Hide original flash div
-      } else if (flashData) {
-           console.error("showAlert function not found.");
-      }
-    
-      const inputs = document.querySelectorAll('.form-input-v2');
-      inputs.forEach(input => {
-          const group = input.closest('.input-field-group'); // Find parent group
-
-          // Function to check and set filled state
-          const checkFilled = () => {
-              if (input.value && input.value.trim() !== "") { // Check for non-empty value
-                  group?.classList.add('filled');
-              } else {
-                  group?.classList.remove('filled');
-              }
-          };
-
-          // Listener for focus
-          input.addEventListener('focus', () => {
-              group?.classList.add('focused');
-          });
-
-          // Listener for blur
-          input.addEventListener('blur', () => {
-              group?.classList.remove('focused');
-              checkFilled(); // Check filled state on blur
-          });
-
-          // Initial check on page load (for edit mode pre-fill or browser autofill)
-          checkFilled(); // <<< THIS IS THE IMPORTANT PART for the fix
-      });
-
-  }); // End DOMContentLoaded
-</script>

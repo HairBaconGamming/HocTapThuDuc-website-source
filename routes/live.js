@@ -18,7 +18,7 @@ function createToken(user) {
 
 // Hiển thị trang tạo live stream
 router.get("/create", isLoggedIn, (req, res) => {
-  res.render("liveStream", {
+  res.render("liveCreate", {
     title: "Tạo Live Stream",
     user: req.user,
     activePage: "live"
@@ -38,14 +38,17 @@ router.post("/create", isLoggedIn, async (req, res) => {
 
     // Kiểm tra xem user đã có phòng live chưa bằng cách gọi API lấy danh sách phòng
     const roomListResponse = await axios.get("https://live-hoctapthuduc.onrender.com/api/rooms");
-    const existingRoom = roomListResponse.data.find(room => room.ownerid === roomOwnerId);
+    const roomsFromApi = Array.isArray(roomListResponse.data) ? roomListResponse.data : [];
+    const existingRoom = roomsFromApi.find(room => (room.ownerid === roomOwnerId || room.ownerId === roomOwnerId || room.owner === roomOwnerId));
 
-    
     if (existingRoom) {
-      return res.json({
+      const token = createToken(req.user);
+      const existingUrl = existingRoom.liveStreamUrl || existingRoom.url || existingRoom.liveUrl || null;
+      const urlWithToken = existingUrl ? `${existingUrl}${existingUrl.includes('?') ? '&' : '?'}token=${token}` : null;
+      return res.status(409).json({
         error: "Bạn đã có một phòng live đang hoạt động.",
-        existingRoomUrl: existingRoom.liveStreamUrl,
-        roomId: existingRoom.id
+        existingRoomUrl: urlWithToken,
+        roomId: existingRoom.id || existingRoom._id || existingRoom.roomId
       });
     }
 
@@ -53,10 +56,11 @@ router.post("/create", isLoggedIn, async (req, res) => {
     const payload = { roomOwnerId, roomOwnerName, title };
     const apiResponse = await axios.post("https://live-hoctapthuduc.onrender.com/api/createStream", payload);
     
-    if (apiResponse.data.existingRoomUrl) {
+    if (apiResponse.data && apiResponse.data.existingRoomUrl) {
       const token = createToken(req.user);
-      const urlWithToken = `${apiResponse.data.existingRoomUrl}?token=${token}`;
-      return res.status(400).json({
+      const existingUrl = apiResponse.data.existingRoomUrl;
+      const urlWithToken = `${existingUrl}${existingUrl.includes('?') ? '&' : '?'}token=${token}`;
+      return res.status(409).json({
         error: "Bạn đã có một phòng live đang hoạt động.",
         existingRoomUrl: urlWithToken,
         roomId: apiResponse.data.roomId
@@ -73,19 +77,25 @@ router.post("/create", isLoggedIn, async (req, res) => {
     const liveStreamUrlWithToken = `${apiResponse.data.liveStreamUrl}?token=${token}`;
     return res.json({ success: true, liveStreamUrl: liveStreamUrlWithToken });
   } catch (error) {
-    console.error("❌ Lỗi khi tạo live stream:", error.message);
-    console.log(error.existingRoomUrl);
-    if (error.existingRoomUrl) {
-      return res.status(400).json({
-        error: "Bạn đã có một phòng live đang hoạt động.",
-        existingRoomUrl: error.existingRoomUrl,
-        roomId: error.roomId
-      });
+    console.error("❌ Lỗi khi tạo live stream:", error?.message || error);
+
+    // Nếu API trả về 409 (Conflict) thì lấy URL phòng hiện có kèm roomId (nếu có)
+    if (error.response && error.response.status === 409) {
+      const existingUrl = error.response?.data?.existingRoomUrl || error.response?.data?.url || null;
+      const roomId = error.response?.data?.roomId || error.response?.data?.id || null;
+      if (existingUrl) {
+        const token = createToken(req.user);
+        const urlWithToken = `${existingUrl}${existingUrl.includes('?') ? '&' : '?'}token=${token}`;
+        return res.status(409).json({ error: "Bạn đã có một phòng live đang hoạt động.", existingRoomUrl: urlWithToken, roomId });
+      }
+      return res.status(409).json({ error: error.response?.data?.error || "Bạn đã có một phòng live đang hoạt động." });
     }
+
     if (error.response && error.response.status === 400) {
       const errorMessage = error.response?.data?.error || "Yêu cầu không hợp lệ.";
       return res.status(400).json({ error: errorMessage });
     }
+
     return res.status(500).json({ error: "Lỗi không xác định khi tạo live stream." });
   }
 });
@@ -105,8 +115,24 @@ router.get("/joinLive/:roomId", isLoggedIn, async (req, res) => {
 });
 
 // Trang danh sách live stream
-router.get("/", isLoggedIn, (req, res) => {
-  res.render("liveList", { user: req.user, activePage: "live" });
+router.get("/", isLoggedIn, async (req, res) => {
+  try {
+    const response = await axios.get("https://live-hoctapthuduc.onrender.com/api/rooms");
+    const roomsRaw = Array.isArray(response.data) ? response.data : [];
+    const rooms = roomsRaw.map(room => ({
+      roomId: room.id || room._id || room.roomId,
+      roomName: room.title || room.name || room.roomName || 'Phòng Live',
+      host: {
+        username: room.ownername || room.ownerName || room.username || (room.host && room.host.username) || 'Ẩn danh',
+        avatar: room.ownerAvatar || room.avatar || (room.host && room.host.avatar) || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+      },
+      viewers: room.viewers || room.viewerCount || 0
+    }));
+    res.render("liveList", { user: req.user, activePage: "live", rooms });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách phòng live:", error.message);
+    res.render("liveList", { user: req.user, activePage: "live", rooms: [] });
+  }
 });
 
 // Route lấy token (nếu cần cho việc xác thực thêm) – tạo token rút gọn
