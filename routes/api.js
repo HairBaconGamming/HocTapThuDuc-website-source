@@ -106,12 +106,25 @@ router.get('/auth/status', (req, res) => {
 router.post('/user/avatar', isLoggedIn, isPro, async (req, res) => {
     try {
         const { avatarUrl } = req.body;
-        if (!avatarUrl || !avatarUrl.startsWith('http')) {
+        // Accept absolute (http/https) or relative (starting with '/') URLs, and data URLs
+        if (!avatarUrl || !(avatarUrl.startsWith('/') || avatarUrl.startsWith('http') || avatarUrl.startsWith('data:'))) {
             return res.status(400).json({ error: 'URL ảnh không hợp lệ.' });
         }
 
-        await User.findByIdAndUpdate(req.user._id, { avatar: avatarUrl });
-        res.json({ success: true, message: 'Cập nhật avatar thành công.', newAvatarUrl: avatarUrl });
+        // Normalize absolute URLs to path + query to avoid saving host (prevents localhost:3000 entries)
+        let storeUrl = avatarUrl;
+        try {
+            if (avatarUrl.startsWith('http')) {
+                const parsed = new URL(avatarUrl);
+                storeUrl = parsed.pathname + parsed.search; // keep path and query if present
+            }
+        } catch (e) {
+            // If URL parsing fails, fall back to original value
+            console.warn('Failed to parse avatar URL for normalization:', avatarUrl, e);
+        }
+
+        await User.findByIdAndUpdate(req.user._id, { avatar: storeUrl });
+        res.json({ success: true, message: 'Cập nhật avatar thành công.', newAvatarUrl: storeUrl });
 
     } catch (error) {
         console.error("Avatar Update Error:", error);

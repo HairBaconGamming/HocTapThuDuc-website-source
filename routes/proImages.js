@@ -85,7 +85,8 @@ router.post("/upload", isPro, upload.single("image"), (req, res) => {
       return res.status(500).json({ error: "Lỗi khi upload file." });
     })
     .on("finish", () => {
-      const imageUrl = `${req.protocol}://${req.get("host")}/api/pro-images/${uploadStream.filename}`;
+      // Use relative URL so it follows the current page's scheme and host (avoids mixed-content and localhost issues)
+      const imageUrl = `/api/pro-images/${uploadStream.filename}`;
       res.status(201).json({ url: imageUrl, fileId: uploadStream.id });
     });
 });
@@ -105,7 +106,8 @@ router.get("/list", isPro, async (req, res) => {
 
     const filesWithDisplay = files.map((file) => ({
       ...file,
-      url: `${req.protocol}://${req.get("host")}/api/pro-images/${file.filename}`,
+      // Use relative URL so clients load images via same scheme/host
+      url: `/api/pro-images/${file.filename}`,
       displayName: file.metadata?.displayName || file.filename,
     }));
 
