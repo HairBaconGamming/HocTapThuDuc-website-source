@@ -333,6 +333,36 @@ body {
 .block-callout .block-body { background: #fffbeb; border-left: 4px solid #fbbf24; padding: 15px; border-radius: 4px; }
 .block-quiz .block-body { background: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 6px; }
 
+/* --- QUIZ SETTINGS BAR --- */
+.quiz-settings-bar {
+    background: #f3e8ff; /* Tím nhạt */
+    border: 1px dashed #d8b4fe;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.quiz-settings-header {
+    font-weight: 700; color: #7e22ce; margin-bottom: 8px; 
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+
+.quiz-settings-content {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+
+.q-setting-item {
+    display: flex; align-items: center; gap: 8px;
+    color: #4b5563; font-weight: 500;
+}
+.q-setting-item input[type="number"] {
+    width: 60px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;
+}
+.q-setting-item select {
+    padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; background: white;
+}
+
 /* Inserter (+ Button) */
 .inserter-line {
     height: 16px; position: relative; cursor: pointer;

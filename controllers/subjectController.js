@@ -28,6 +28,10 @@ exports.getSubjectDetail = async (req, res) => {
             title: subject.name,
             subject,
             units, // Truyền cây thư mục (Môn -> Chương -> Bài) ra view
+            breadcrumbs: [
+                { label: 'Trang chủ', url: '/' },
+                { label: subject.name, url: null }
+            ],
             user: req.user
         });
 

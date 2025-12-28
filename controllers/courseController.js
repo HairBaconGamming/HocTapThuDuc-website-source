@@ -7,8 +7,11 @@ exports.getCourseDetail = async (req, res) => {
     try {
         const { id } = req.params; // Lấy ID từ URL (vd: /course/65a...)
 
-        // 1. Lấy thông tin khóa học + Tác giả
-        const course = await Course.findById(id).populate('author', 'username avatar bio').lean();
+        // 1. Lấy thông tin khóa học + Tác giả + Môn học (note: field is subjectId)
+        const course = await Course.findById(id)
+            .populate('author', 'username avatar bio')
+            .populate('subjectId', 'name')
+            .lean();
         
         if (!course) {
             return res.status(404).render('404', { title: 'Không tìm thấy khóa học', user: req.user });
@@ -25,27 +28,46 @@ exports.getCourseDetail = async (req, res) => {
             })
             .lean();
 
-        // 3. Tính toán thống kê
+        // 3. Tính toán thống kê & tìm bài học đầu tiên
         let totalLessons = 0;
         let totalVideos = 0;
         let totalQuiz = 0;
+        let totalDuration = 0;
+        let firstLessonId = null; // ID để gắn vào nút "Vào học ngay"
 
-        units.forEach(u => {
-            if (u.lessons) {
-                totalLessons += u.lessons.length;
-                u.lessons.forEach(l => {
-                    if (l.type === 'video') totalVideos++;
-                    if (l.type === 'quiz' || l.type === 'question') totalQuiz++;
-                });
+        for (const unit of units) {
+            if (unit.lessons && unit.lessons.length > 0) {
+                // Lấy bài học đầu tiên của chương đầu tiên có bài
+                if (!firstLessonId) {
+                    firstLessonId = unit.lessons[0]._id;
+                }
+
+                totalLessons += unit.lessons.length;
+
+                for (const lesson of unit.lessons) {
+                    if (lesson.type === 'video') totalVideos++;
+                    if (lesson.type === 'quiz' || lesson.type === 'question') totalQuiz++;
+
+                    // Nếu có trường duration (số), cộng lại
+                    if (typeof lesson.duration === 'number' && !isNaN(lesson.duration)) {
+                        totalDuration += lesson.duration;
+                    }
+                }
             }
-        });
+        }
 
         // 4. Render View
         res.render('courseDetail', {
             title: course.title,
             course,
             units,
-            stats: { totalLessons, totalVideos, totalQuiz },
+            stats: { totalLessons, totalVideos, totalQuiz, totalDuration },
+            firstLessonId,
+            breadcrumbs: [
+                { label: 'Trang chủ', url: '/' },
+                { label: course.subjectId?.name || 'Môn học', url: course.subjectId ? `/subjects/${course.subjectId._id}` : '/subjects' },
+                { label: course.title, url: null }
+            ],
             user: req.user,
             activePage: 'courses'
         });

@@ -170,9 +170,43 @@ router.get("/pro-images", isLoggedIn, (req, res) => {
 // --- 7. PROFILE & MY TREE ---
 router.get("/profile", isLoggedIn, async (req, res) => {
     try {
+        const user = req.user;
+
+        // Calculate completed lessons count
+        const completedLessonsCount = await LessonCompletion.countDocuments({
+            userId: user._id,
+            completed: true
+        });
+
+        // Calculate user rank based on points
+        const rank = await User.countDocuments({ points: { $gt: user.points || 0 } }) + 1;
+
+        // Get recent lesson completions as activities
+        const recentCompletions = await LessonCompletion.find({
+            userId: user._id,
+            completed: true
+        })
+        .populate('lessonId', 'title')
+        .sort({ completedAt: -1 })
+        .limit(5)
+        .lean();
+
         const achievements = await Achievement.find({ user: req.user._id }).lean();
-        res.render("profile", { user: req.user, achievements, activePage: "profile" });
-    } catch(e) { res.redirect('/'); }
+
+        res.render("profile", {
+            user: req.user,
+            achievements,
+            stats: {
+                completedLessons: completedLessonsCount,
+                rank: rank
+            },
+            activities: recentCompletions,
+            activePage: "profile"
+        });
+    } catch(e) {
+        console.error(e);
+        res.redirect('/');
+    }
 });
 
 router.get("/profile/edit", isLoggedIn, (req, res) => {
@@ -209,12 +243,45 @@ router.get("/profile/:id", async (req, res) => {
     try {
         const targetUser = await User.findById(req.params.id).lean();
         if(!targetUser) return res.redirect("/");
-        const achievements = await Achievement.find({ user: targetUser._id }).lean();
-        res.render("profileView", { 
-            title: `Hồ sơ ${targetUser.username}`, profile: targetUser, targetUser, 
-            user: req.user, viewedUserAchievements: achievements, activePage: "profileView" 
+
+        // Calculate completed lessons count for target user
+        const completedLessonsCount = await LessonCompletion.countDocuments({
+            userId: targetUser._id,
+            completed: true
         });
-    } catch(e) { res.redirect("/"); }
+
+        // Calculate user rank based on points for target user
+        const rank = await User.countDocuments({ points: { $gt: targetUser.points || 0 } }) + 1;
+
+        // Get recent lesson completions as activities for target user
+        const recentCompletions = await LessonCompletion.find({
+            userId: targetUser._id,
+            completed: true
+        })
+        .populate('lessonId', 'title')
+        .sort({ completedAt: -1 })
+        .limit(5)
+        .lean();
+
+        const achievements = await Achievement.find({ user: targetUser._id }).lean();
+
+        res.render("profileView", {
+            title: `Hồ sơ ${targetUser.username}`,
+            profile: targetUser,
+            targetUser,
+            user: req.user,
+            viewedUserAchievements: achievements,
+            stats: {
+                completedLessons: completedLessonsCount,
+                rank: rank
+            },
+            activities: recentCompletions,
+            activePage: "profileView"
+        });
+    } catch(e) {
+        console.error(e);
+        res.redirect("/");
+    }
 });
 
 router.get("/my-tree", isLoggedIn, (req, res) => {

@@ -914,10 +914,62 @@ function renderBlocks() {
         // --- RENDER TYPE: QUESTION (QUIZ) ---
         } else if (b.type === 'question' || b.type === 'quiz') {
              el.classList.add('block-quiz');
+             // Ensure settings exist (backward compatible)
+             if (!b.data) b.data = {};
+             if (!b.data.settings) {
+                 b.data.settings = {
+                     randomizeQuestions: false,
+                     randomizeOptions: false,
+                     passingScore: 50,
+                     showFeedback: 'submit'
+                 };
+             }
+             const settings = b.data.settings;
+
              const questions = b.data?.questions || [];
              const summary = questions.length + ' câu hỏi';
              
-             body.innerHTML = `
+             // Settings panel
+             const settingsHTML = `
+                <div class="quiz-settings-bar">
+                    <div class="quiz-settings-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'grid' : 'none'">
+                        <i class="fas fa-cog"></i> Cấu hình bài tập (Nhấn để ẩn/hiện)
+                    </div>
+                    <div class="quiz-settings-content" style="display:grid;">
+                        <label class="q-setting-item">
+                            <input type="checkbox" 
+                                   onchange="updateBlockData(${idx}, 'settings.randomizeQuestions', this.checked)"
+                                   ${settings.randomizeQuestions ? 'checked' : ''}>
+                            Đảo ngẫu nhiên câu hỏi
+                        </label>
+
+                        <label class="q-setting-item">
+                            <input type="checkbox" 
+                                   onchange="updateBlockData(${idx}, 'settings.randomizeOptions', this.checked)"
+                                   ${settings.randomizeOptions ? 'checked' : ''}>
+                            Đảo vị trí đáp án
+                        </label>
+
+                        <label class="q-setting-item">
+                            <span>Điểm đạt (%):</span>
+                            <input type="number" min="0" max="100" 
+                                   value="${settings.passingScore}"
+                                   onchange="updateBlockData(${idx}, 'settings.passingScore', Number(this.value))">
+                        </label>
+
+                        <label class="q-setting-item">
+                            <span>Xem đáp án:</span>
+                            <select onchange="updateBlockData(${idx}, 'settings.showFeedback', this.value)">
+                                <option value="instant" ${settings.showFeedback === 'instant' ? 'selected' : ''}>Ngay khi chọn</option>
+                                <option value="submit" ${settings.showFeedback === 'submit' ? 'selected' : ''}>Sau khi nộp bài</option>
+                                <option value="never" ${settings.showFeedback === 'never' ? 'selected' : ''}>Không hiển thị</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+             `;
+
+             body.innerHTML = settingsHTML + `
                 <div class="block-label"><i class="fas fa-question-circle"></i> Bộ Câu Hỏi</div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                     <div style="font-size:0.9rem; color:#4b5563;"><strong>${summary}</strong></div>
@@ -1107,6 +1159,31 @@ function getEmbedUrl(url, autoplay) {
         if(autoplay) embedUrl += "?autoplay=1&muted=1";
     }
     return embedUrl || url; // Fallback to raw url
+}
+
+// Update nested data path in a block (e.g. 'settings.randomizeQuestions')
+function updateBlockData(index, path, value) {
+    if (typeof index !== 'number' || !blocks[index]) return;
+    const keys = path.split('.');
+    let target = blocks[index].data;
+
+    // Walk down to the parent of the final key
+    for (let i = 0; i < keys.length - 1; i++) {
+        const k = keys[i];
+        if (!target[k]) target[k] = {};
+        target = target[k];
+    }
+
+    // Coerce numeric strings to number when appropriate
+    const finalKey = keys[keys.length - 1];
+    if (typeof value === 'string' && /^\d+$/.test(value)) {
+        value = Number(value);
+    }
+
+    target[finalKey] = value;
+
+    // Re-render block preview only (avoid full reload for performance if desired)
+    renderBlocks();
 }
 
 /* ==========================================================================

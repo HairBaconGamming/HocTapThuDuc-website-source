@@ -1,45 +1,21 @@
-// routes/admin.js
-
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { isAdmin, isTeacher, canManageUsers } = require('../middlewares/auth');
-const unitController = require('../controllers/unitController');
+const { isLoggedIn, isAdmin } = require('../middlewares/auth'); // Giả sử bạn có middleware này
 
-// Quản lý Unit (Admin)
-router.post('/units', isAdmin, unitController.createUnit);
-router.delete('/units/:id', isAdmin, unitController.deleteUnit);
+// --- GET: Hiển thị trang Admin ---
+router.get('/', isLoggedIn, isAdmin, adminController.getAdminPanel);
 
-// Middleware chung: Phải là Teacher hoặc Admin mới được vào
-router.use(isTeacher);
+// --- POST: Quản lý User ---
+router.post('/user/update', isLoggedIn, isAdmin, adminController.updateUser);
+router.post('/user/delete', isLoggedIn, isAdmin, adminController.deleteUser);
 
-// --- Page Rendering ---
-// Teacher và Admin đều có thể xem trang chính
-router.get('/', adminController.getAdminPanel);
+// --- POST: Quản lý Course ---
+router.post('/course/approve', isLoggedIn, isAdmin, adminController.approveCourse);
+router.post('/course/delete', isLoggedIn, isAdmin, adminController.deleteCourse);
 
-// --- API Endpoints ---
-
-// Dashboard (Teacher & Admin)
-router.get('/api/stats', adminController.getStats);
-
-// User Management
-router.get('/api/users', adminController.getUsers); // Teacher & Admin
-router.post('/api/users/:id/update', adminController.updateUser); // Teacher & Admin (logic quyền trong controller)
-router.post('/api/users/:id/ban', canManageUsers, adminController.banUser); // Logic quyền phức tạp
-router.post('/api/users/:id/unban', canManageUsers, adminController.unbanUser); // Logic quyền phức tạp
-
-// Subject Management (Teacher & Admin)
-router.get('/api/subjects', adminController.getSubjects);
-router.post('/api/subjects', adminController.createSubject);
-router.delete('/api/subjects/:id', adminController.deleteSubject);
-
-// ===========================================
-// ===== CÁC ROUTE CHỈ DÀNH CHO ADMIN =====
-// ===========================================
-router.use(isAdmin); // Middleware tiếp theo sẽ yêu cầu quyền Admin
-
-// PRO Key Management (Admin only)
-router.get('/api/users/pro-keys', adminController.getProKeys);
-router.post('/api/users/:id/regenerate-key', adminController.regenerateProKey);
+// --- POST: Quản lý News (Tin tức) ---
+router.post('/news/create', isLoggedIn, isAdmin, adminController.createNews);
+router.post('/news/delete', isLoggedIn, isAdmin, adminController.deleteNews);
 
 module.exports = router;

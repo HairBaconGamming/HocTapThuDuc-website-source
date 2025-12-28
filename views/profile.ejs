@@ -43,10 +43,10 @@
                     <p>🔥 Điểm số</p>
                 </div>
                 <div class="stat-box">
-                    <h3>12</h3> <p>📚 Bài học</p>
+                    <h3><%= stats.completedLessons || 0 %></h3> <p>📚 Bài học</p>
                 </div>
                 <div class="stat-box">
-                    <h3>5</h3> <p>🏆 Top 1</p>
+                    <h3>#<%= stats.rank || '--' %></h3> <p>🏆 Xếp hạng</p>
                 </div>
             </div>
 
@@ -82,20 +82,23 @@
             <div class="bento-card" data-animate="fade-up">
                 <h3 style="font-size: 1.2rem; margin-bottom: 20px;">📜 Hoạt động gần đây</h3>
                 <ul class="activity-list">
-                    <li class="activity-item">
-                        <div class="activity-icon"><i class="fas fa-check"></i></div>
-                        <div class="activity-content">
-                            <h4>Hoàn thành bài "Đạo hàm cơ bản"</h4>
-                            <span class="activity-time">2 giờ trước</span>
-                        </div>
-                    </li>
-                    <li class="activity-item">
-                        <div class="activity-icon" style="background:#e3f2fd; color:#1565c0;"><i class="fas fa-comment"></i></div>
-                        <div class="activity-content">
-                            <h4>Bình luận tại "Vật lý hạt nhân"</h4>
-                            <span class="activity-time">1 ngày trước</span>
-                        </div>
-                    </li>
+                    <% if (activities && activities.length > 0) { %>
+                        <% activities.forEach(activity => { %>
+                            <li class="activity-item">
+                                <div class="activity-icon"><i class="fas fa-check"></i></div>
+                                <div class="activity-content">
+                                    <h4>Hoàn thành bài "<%= activity.lessonId ? activity.lessonId.title : 'Bài học' %>"</h4>
+                                    <span class="activity-time"><%= new Date(activity.completedAt).toLocaleDateString('vi-VN') %></span>
+                                </div>
+                            </li>
+                        <% }); %>
+                    <% } else { %>
+                        <li class="activity-item">
+                            <div class="activity-content">
+                                <p style="color: #666; font-style: italic;">Chưa có hoạt động nào</p>
+                            </div>
+                        </li>
+                    <% } %>
                 </ul>
             </div>
 

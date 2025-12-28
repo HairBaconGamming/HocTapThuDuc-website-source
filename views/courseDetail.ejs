@@ -91,6 +91,8 @@
     }
 </style>
 
+<%- include('partials/breadcrumb') %>
+
 <div class="course-wrapper">
     
     <div class="main-content">
@@ -100,7 +102,7 @@
             
             <div class="course-meta">
                 <div class="author-badge">
-                    <img src="<%= course.author ? (course.author.avatar || 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191') : 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191' %>" class="author-avatar">
+                    <img src="<%= course.author ? (course.author.avatar || '/img/default-avatar.png') : '/img/default-avatar.png' %>" class="author-avatar">
                     <span><%= course.author ? course.author.username : 'Admin' %></span>
                 </div>
                 <span><i class="far fa-clock"></i> Cập nhật: <%= new Date(course.updatedAt).toLocaleDateString('vi-VN') %></span>
@@ -179,26 +181,53 @@
         <div class="course-card">
             <div class="course-thumb-wrapper">
                 <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-thumb" alt="<%= course.title %>">
-                <div class="play-overlay">
-                    <i class="fas fa-play-circle" style="font-size: 4rem; color: white;"></i>
-                </div>
+                <% if(firstLessonId) { %>
+                    <a href="/lesson/<%= firstLessonId %>" class="play-overlay">
+                        <i class="fas fa-play-circle" style="font-size: 4rem; color: white;"></i>
+                    </a>
+                <% } %>
             </div>
             
             <div class="card-body">
                 <span class="price-tag"><%= course.isPublished ? 'Miễn phí' : 'Sắp ra mắt' %></span>
                 
                 <% if(user) { %>
-                    <a href="#" class="btn-action btn-primary">Vào học ngay</a>
+                    <% if (firstLessonId) { %>
+                        <a href="/lesson/<%= firstLessonId %>" class="btn-action btn-primary">
+                            <i class="fas fa-graduation-cap"></i> Vào học ngay
+                        </a>
+                    <% } else { %>
+                        <button class="btn-action btn-primary" style="opacity: 0.6; cursor: not-allowed;" disabled>
+                            Đang cập nhật nội dung
+                        </button>
+                    <% } %>
                 <% } else { %>
-                    <a href="/login" class="btn-action btn-primary">Đăng nhập để học</a>
+                    <a href="/login?redirect=/course/<%= course._id %>" class="btn-action btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Đăng nhập để học
+                    </a>
                 <% } %>
 
                 <ul class="features-list">
-                    <li><i class="fas fa-check"></i> Truy cập trọn đời</li>
-                    <li><i class="fas fa-film"></i> <%= stats.totalVideos %> video bài giảng</li>
-                    <li><i class="fas fa-clipboard-check"></i> <%= stats.totalQuiz %> bài tập thực hành</li>
-                    <li><i class="fas fa-mobile-alt"></i> Học trên mọi thiết bị</li>
-                    <li><i class="fas fa-certificate"></i> Cấp chứng chỉ khi hoàn thành</li>
+                    <li>
+                        <i class="fas fa-check" style="width:20px; text-align:center;"></i> 
+                        Truy cập trọn đời
+                    </li>
+                    <li>
+                        <i class="fas fa-film" style="width:20px; text-align:center;"></i> 
+                        <strong><%= stats.totalVideos %></strong> video bài giảng
+                    </li>
+                    <li>
+                        <i class="fas fa-clipboard-check" style="width:20px; text-align:center;"></i> 
+                        <strong><%= stats.totalQuiz %></strong> bài tập thực hành
+                    </li>
+                    <li>
+                        <i class="fas fa-layer-group" style="width:20px; text-align:center;"></i> 
+                        <strong><%= stats.totalLessons %></strong> bài học tổng cộng
+                    </li>
+                    <li>
+                        <i class="fas fa-users" style="width:20px; text-align:center;"></i> 
+                        <strong><%= course.studentsCount || 0 %></strong> học viên đã tham gia
+                    </li>
                 </ul>
             </div>
         </div>

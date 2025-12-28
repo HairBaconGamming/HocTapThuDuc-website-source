@@ -10,6 +10,7 @@ const { updateGrowth } = require("../utils/growthUtils");
 const Lesson = require("../models/Lesson");
 const Subject = require("../models/Subject");
 const Unit = require("../models/Unit");
+const Course = require("../models/Course");
 const LessonCompletion = require("../models/LessonCompletion");
 const User = require("../models/User");
 
@@ -120,7 +121,24 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             if (idx >= 0 && idx < siblings.length - 1) nextLesson = siblings[idx + 1];
         } catch (e) { /* ignore navigation errors */ }
 
-        res.render("lessonDetail", { user: req.user, lesson: lessonData, subject, unit, prevLesson, nextLesson, marked: req.app.locals.marked, activePage: "subjects" });
+        // Try to resolve Course (and its Subject) for breadcrumb (if lesson.courseId present)
+        let course = null;
+        try {
+            if (lesson.courseId) {
+                course = await Course.findById(lesson.courseId).populate('subjectId', 'name _id').lean();
+            }
+        } catch (e) { course = null; }
+
+        // Build breadcrumbs: Home > Subject > Course > Lesson
+        const breadcrumbs = [
+            { label: 'Trang chủ', url: '/' },
+            ...(course && course.subjectId && course.subjectId.name ? [{ label: course.subjectId.name, url: `/subjects/${course.subjectId._id}` }] : (subject ? [{ label: subject.name, url: `/subjects/${subject._id}` }] : [])),
+            ...(course ? [{ label: course.title, url: `/course/${course._id}` }] : []),
+            { label: lesson.title, url: null }
+        ];
+
+        // Pass course to view so Back button can target course page
+        res.render("lessonDetail", { user: req.user, lesson: lessonData, subject, unit, prevLesson, nextLesson, course, marked: req.app.locals.marked, breadcrumbs, activePage: "subjects" });
     } catch (e) { res.redirect("/subjects"); }
 });
 

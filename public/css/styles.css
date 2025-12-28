@@ -128,3 +128,98 @@ ul { list-style: none; }
 }
 .badge.pro-badge { background: var(--secondary); color: #fff; }
 .badge.ai-badge { background: var(--accent); color: #333; }
+
+/* =========================================
+   BREADCRUMB NAVIGATION STYLE
+   ========================================= */
+
+/* 1. Khung bao ngoài - Tạo cảm giác nổi khối nhẹ */
+.custom-breadcrumb-wrapper {
+    background: #ffffff;
+    border-radius: 12px; /* Bo góc mềm mại */
+    padding: 12px 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02); /* Bóng đổ tinh tế */
+    border: 1px solid #f1f5f9; /* Viền siêu mỏng */
+    display: flex;
+    align-items: center;
+}
+
+/* 2. Danh sách các mục */
+.breadcrumb-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap; /* Tự xuống dòng trên mobile */
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 3. Từng mục riêng lẻ */
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    color: #94a3b8;
+}
+
+/* 4. Dấu ngăn cách (Separator) */
+.breadcrumb-item:not(:last-child)::after {
+    content: '\f105'; /* Mã icon Chevron Right (FontAwesome) hoặc dùng dấu '/' */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin: 0 10px;
+    color: #cbd5e1;
+    font-size: 0.8rem;
+}
+/* Nếu không dùng FontAwesome, bạn thay content bên trên thành: content: '/'; */
+
+/* 5. Đường dẫn (Link) - Các cấp cha */
+.breadcrumb-item a {
+    text-decoration: none;
+    color: #64748b; /* Màu xám trung tính */
+    transition: all 0.2s ease;
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Hiệu ứng khi di chuột vào Link */
+.breadcrumb-item a:hover {
+    color: #3b82f6; /* Màu xanh thương hiệu */
+    background-color: #eff6ff; /* Nền xanh nhạt */
+    transform: translateY(-1px); /* Nảy lên nhẹ */
+}
+
+/* 6. Mục hiện tại (Active) - Cấp con cuối cùng */
+.breadcrumb-item.active span {
+    color: #1e293b; /* Màu đen đậm để nổi bật */
+    font-weight: 700;
+    padding: 6px 10px;
+    background: #f8fafc; /* Nền xám nhẹ để đánh dấu */
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    cursor: default;
+}
+
+/* --- Responsive cho Mobile --- */
+@media (max-width: 600px) {
+    .custom-breadcrumb-wrapper {
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        overflow-x: auto; /* Cho phép cuộn ngang nếu quá dài */
+        white-space: nowrap;
+    }
+    
+    .breadcrumb-list {
+        flex-wrap: nowrap;
+    }
+    
+    .breadcrumb-item {
+        font-size: 0.85rem;
+    }
+}

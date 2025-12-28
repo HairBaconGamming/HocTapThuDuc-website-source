@@ -1,0 +1,15 @@
+<% if (typeof breadcrumbs !== 'undefined' && breadcrumbs.length > 0) { %>
+    <nav aria-label="breadcrumb" class="custom-breadcrumb-wrapper">
+        <ol class="breadcrumb-list">
+            <% breadcrumbs.forEach((crumb, index) => { %>
+                <li class="breadcrumb-item <%= index === breadcrumbs.length - 1 ? 'active' : '' %>">
+                    <% if (crumb.url && index !== breadcrumbs.length - 1) { %>
+                        <a href="<%= crumb.url %>"><%= crumb.label %></a>
+                    <% } else { %>
+                        <span><%= crumb.label %></span>
+                    <% } %>
+                </li>
+            <% }); %>
+        </ol>
+    </nav>
+<% } %>
