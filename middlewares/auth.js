@@ -19,19 +19,20 @@ module.exports.isLoggedIn = function (req, res, next) {
 
 // Kiểm tra xem người dùng đã đăng nhập và có tài khoản Pro không
 module.exports.isPro = function (req, res, next) {
-  // Kiểm tra đăng nhập trước
+  // 1. Kiểm tra đăng nhập trước
   if (!req.user) {
     if (req.accepts('html')) {
       return res.redirect('/login');
     } else {
-      return res.status(403).json({ error: "Bạn cần đăng nhập để truy cập tính năng này" });
+      return res.status(401).json({ error: "Bạn cần đăng nhập để truy cập tính năng này" });
     }
   }
 
-  // Kiểm tra quyền tài khoản Pro
-  if (req.user.isPro) {
+  // 2. Kiểm tra quyền: PRO hoặc ADMIN hoặc TEACHER đều được qua
+  if (req.user.isPro || req.user.isAdmin || req.user.isTeacher) {
     return next();
   } else {
+    // Không có quyền
     if (req.accepts('html')) {
       return res.redirect('/upgrade');
     } else {

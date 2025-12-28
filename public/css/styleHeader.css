@@ -265,3 +265,179 @@
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- STYLE CHO THANH TÌM KIẾM TRÊN HEADER --- */
+
+.search-item-wrapper {
+    margin-right: 15px; /* Cách các mục khác một chút */
+    display: flex;
+    align-items: center;
+}
+
+.header-search-form {
+    position: relative;
+    width: 250px; /* Độ rộng mặc định trên Desktop */
+    transition: all 0.3s ease;
+}
+
+.header-search-input {
+    width: 100%;
+    padding: 10px 45px 10px 20px; /* Padding phải chừa chỗ cho nút */
+    border-radius: 50px; /* Bo tròn viên thuốc */
+    border: 2px solid transparent;
+    background: #f1f5f9; /* Màu nền xám nhẹ */
+    font-size: 0.95rem;
+    font-family: 'Quicksand', sans-serif;
+    color: #334155;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hiệu ứng khi bấm vào tìm kiếm */
+.header-search-input:focus {
+    background: #ffffff;
+    border-color: #4f46e5; /* Màu primary */
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+/* Nút mũi tên bên trong */
+.header-search-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #4f46e5;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    opacity: 0; /* Ẩn mặc định */
+    visibility: hidden;
+    transition: all 0.2s;
+}
+
+/* Chỉ hiện nút khi user gõ hoặc focus */
+.header-search-input:focus + .header-search-btn,
+.header-search-input:not(:placeholder-shown) + .header-search-btn {
+    opacity: 1;
+    visibility: visible;
+    right: 8px;
+}
+
+.header-search-btn:hover {
+    background: #4338ca;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* --- RESPONSIVE (Mobile) --- */
+@media (max-width: 992px) {
+    .search-item-wrapper {
+        margin: 10px 20px; /* Căn lề trong menu mobile */
+        width: auto;
+    }
+    
+    .header-search-form {
+        width: 100%; /* Full width trên mobile */
+    }
+
+    .header-search-input {
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+    }
+
+    .header-search-input:focus {
+        width: 100%; /* Không nở ra trên mobile để tránh vỡ layout */
+    }
+}
+
+/* --- SEARCH SUGGESTIONS DROPDOWN --- */
+.search-suggestions-box {
+    position: absolute;
+    top: 100%; /* Nằm ngay dưới ô input */
+    left: 0;
+    width: 320px; /* Rộng hơn ô input chút cho đẹp */
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 10px 0;
+    z-index: 1000;
+    display: none; /* Mặc định ẩn */
+    margin-top: 10px;
+    border: 1px solid #f1f5f9;
+    animation: slideDown 0.2s ease;
+}
+
+/* Mũi tên nhỏ trỏ lên (Optional - trang trí cho đẹp) */
+.search-suggestions-box::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-top: 1px solid #f1f5f9;
+    border-left: 1px solid #f1f5f9;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    color: #334155;
+    text-decoration: none;
+    transition: background 0.2s;
+    font-size: 0.95rem;
+}
+
+.suggestion-item:hover {
+    background: #f8fafc;
+    color: #4f46e5; /* Màu primary */
+}
+
+.sug-icon {
+    width: 30px;
+    height: 30px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+/* Dòng "Xem tất cả" */
+.suggestion-item.view-all {
+    border-top: 1px solid #f1f5f9;
+    color: #4f46e5;
+    font-weight: 600;
+    justify-content: space-between;
+    margin-top: 5px;
+    padding-top: 12px;
+}
+
+.suggestion-item.view-all:hover {
+    background: #f1f5f9;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 992px) {
+    .search-suggestions-box {
+        width: 100%; /* Trên mobile thì full width */
+        left: 0;
+    }
+}

@@ -30,6 +30,20 @@
         </button>
 
         <ul class="nav-menu" id="navMenu">
+            
+            <li class="nav-item search-item-wrapper" style="position: relative;">
+                <form action="/search" method="GET" class="header-search-form" autocomplete="off">
+                    <input type="text" name="q" id="searchInput" class="header-search-input" 
+                           placeholder="Tìm bài học, bạn bè... 🔍">
+                    <button type="submit" class="header-search-btn">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div id="searchSuggestions" class="search-suggestions-box">
+                    </div>
+            </li>
+
             <li class="nav-item <%= activePage === 'home' ? 'active' : '' %>">
                 <a href="/" class="nav-link"><i class="fas fa-home icon"></i> Sân trường</a>
             </li>
@@ -54,7 +68,11 @@
                     <i class="fas fa-rocket icon"></i> Đồ chơi <i class="fas fa-chevron-down dropdown-indicator"></i>
                 </a>
                 <div class="dropdown-menu">
-                    <a href="/lesson/add" class="tool-dropdown-link loading-link <%= activePage === 'lessonAdd' ? 'active' : '' %>"> <i class="fa-solid fa-share-from-square icon"></i> <span>Share bí kíp</span> </a>
+                    <% if (user && (user.isPro || user.isTeacher || user.role === 'admin')) { %>
+                        <a href="/lesson/add" class="tool-dropdown-link loading-link <%= activePage === 'lessonAdd' ? 'active' : '' %>"> 
+                            <i class="fa-solid fa-share-from-square icon"></i> <span>Share bí kíp</span> 
+                        </a>
+                    <% } %>
                     <a href="/live" class="tool-dropdown-link"><i class="fas fa-broadcast-tower"></i> <span>Lên sóng (Live)</span></a>
                     <a href="/leaderboard" class="tool-dropdown-link"><i class="fas fa-trophy"></i> <span>Đua Top Server</span></a>
                     <% if (user && user.isPro) { %>
@@ -73,6 +91,9 @@
                         <% if(user.isPro) { %> <i class="fas fa-check-circle" style="color: #a2d2ff; font-size: 0.8rem; margin-left: 3px;" title="Tài khoản xịn"></i> <% } %>
                     </a>
                     <div class="dropdown-menu">
+                        <% if(user.isAdmin || user.role === 'admin') { %>
+                             <a href="/admin" class="tool-dropdown-link" style="color: var(--primary); font-weight: bold;"><i class="fas fa-user-shield"></i> <span>Trang Admin</span></a>
+                        <% } %>
                         <a href="/dashboard" class="tool-dropdown-link"><i class="fas fa-gamepad"></i> <span>Căn cứ địa (Dashboard)</span></a>
                         <a href="/profile" class="tool-dropdown-link"><i class="fas fa-id-card"></i> <span>Check Info</span></a>
                         <a href="/my-tree" class="tool-dropdown-link"><i class="fas fa-leaf"></i> <span>Chăm cây cưng</span></a>
@@ -109,23 +130,105 @@
             navMenu.classList.toggle('active');
         });
 
-        // 3. Mobile Dropdown Toggle (Click thay vì Hover trên mobile)
+        // 3. Mobile Dropdown Toggle
         const dropdowns = document.querySelectorAll('.has-dropdown');
         dropdowns.forEach(item => {
             const link = item.querySelector('.nav-link');
             link.addEventListener('click', (e) => {
                 if (window.innerWidth <= 992) {
-                    e.preventDefault(); // Chặn link chính khi ở mobile để mở menu con
+                    e.preventDefault();
                     item.classList.toggle('dropdown-active');
                 }
             });
         });
-
-        // Close menu when clicking outside
+        
         document.addEventListener('click', (e) => {
             if (!header.contains(e.target)) {
                 mobileToggle?.classList.remove('active');
                 navMenu?.classList.remove('active');
+            }
+        });
+
+        const input = document.getElementById('searchInput');
+        const box = document.getElementById('searchSuggestions');
+        let timeout = null;
+
+        // Hàm gọi API
+        const fetchSuggestions = async (val) => {
+            try {
+                const res = await fetch(`/search/suggest?q=${encodeURIComponent(val)}`);
+                const json = await res.json();
+                
+                if (json.success && json.data.length > 0) {
+                    renderSuggestions(json.data);
+                } else {
+                    box.style.display = 'none';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        // Hàm hiển thị kết quả
+        const renderSuggestions = (items) => {
+            let html = '';
+            items.forEach(item => {
+                // Icon riêng cho từng loại
+                let iconHtml = `<i class="${item.icon}"></i>`;
+                if(item.type === 'user' && item.avatar) { 
+                    // Nếu là user có avatar thì hiện avatar bé xíu
+                    // (Bạn có thể bỏ qua dòng này nếu muốn đơn giản)
+                }
+                
+                // Badge PRO cho user xịn
+                let badge = (item.isPro) ? '<i class="fas fa-check-circle" style="color:#3b82f6; font-size:0.8rem; margin-left:4px"></i>' : '';
+
+                html += `
+                    <a href="${item.url}" class="suggestion-item">
+                        <span class="sug-icon">${iconHtml}</span>
+                        <span class="sug-text">${item.text} ${badge}</span>
+                    </a>
+                `;
+            });
+            
+            // Thêm nút "Xem tất cả"
+            html += `
+                <a href="/search?q=${input.value}" class="suggestion-item view-all">
+                    <span>Xem tất cả kết quả cho "<b>${input.value}</b>"</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            `;
+
+            box.innerHTML = html;
+            box.style.display = 'block';
+        };
+
+        // Sự kiện gõ phím (Debounce 300ms để tránh spam server)
+        input.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            clearTimeout(timeout);
+            
+            if (val.length < 2) { // Gõ ít nhất 2 ký tự mới tìm
+                box.style.display = 'none';
+                return;
+            }
+
+            timeout = setTimeout(() => {
+                fetchSuggestions(val);
+            }, 300);
+        });
+
+        // Click ra ngoài thì ẩn gợi ý
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !box.contains(e.target)) {
+                box.style.display = 'none';
+            }
+        });
+        
+        // Focus lại thì hiện lại nếu có nội dung
+        input.addEventListener('focus', () => {
+            if(input.value.length >= 2 && box.innerHTML !== '') {
+                box.style.display = 'block';
             }
         });
     });

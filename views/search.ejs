@@ -1,0 +1,272 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleSearch.css">
+
+<div class="search-container">
+    
+    <div class="search-header">
+        <h1 class="search-title">Kết quả tìm kiếm 🔍</h1>
+        <div class="search-box-wrapper">
+            <form action="/search" method="GET">
+                <input type="text" name="q" class="search-input" 
+                       placeholder="Nhập từ khóa..." 
+                       value="<%= keyword %>" autocomplete="off">
+                <input type="hidden" name="type" id="typeInput" value="<%= activeType || 'all' %>">
+                <button type="submit" class="search-btn-icon">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <% 
+        // Tính toán tổng quan xem có kết quả nào không
+        // (Sử dụng optional chaining ?. để tránh lỗi nếu controller lỡ không trả về mảng)
+        const hasResults = (results.features?.length > 0) || 
+                           (results.lessons?.length > 0) || 
+                           (results.courses?.length > 0) || 
+                           (results.users?.length > 0) || 
+                           (results.news?.length > 0);
+    %>
+
+<% if (!keyword || keyword.trim() === '') { %>
+        
+        <div class="empty-state" style="display: block;">
+             <img src="https://cdn-icons-png.flaticon.com/512/2641/2641411.png" width="120" style="opacity: 0.8; margin-bottom: 20px;">
+             <h3 style="color: #334155; margin-bottom: 10px;">Bạn muốn học gì hôm nay?</h3>
+             <p style="color: #64748b; margin-bottom: 25px;">Nhập từ khóa để khám phá kho tàng kiến thức ngay nào!</p>
+             
+             <p style="font-weight: 600; color: #475569; margin-bottom: 15px;">🔥 Xu hướng tìm kiếm:</p>
+             
+             <div class="tags-cloud">
+                 <% if (typeof hotTags !== 'undefined' && hotTags.length > 0) { %>
+                     <% hotTags.forEach(tag => { %>
+                         <a href="<%= tag.url %>" class="tag-chip">
+                             <%= tag.text %>
+                         </a>
+                     <% }) %>
+                 <% } else { %>
+                     <a href="/search?q=Toán" class="tag-chip">🧮 Toán 12</a>
+                     <a href="/search?q=Văn" class="tag-chip">📚 Ngữ Văn</a>
+                     <a href="/search?q=Rank" class="tag-chip">🏆 Leaderboard</a>
+                 <% } %>
+             </div>
+        </div>
+
+    <% } else if (!hasResults) { %>
+
+        <div class="empty-state" style="display: block;">
+            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486747.png" width="120" style="opacity: 0.5; margin-bottom: 20px;">
+            <h3 style="color: #334155;">Không tìm thấy kết quả nào cho "<%= keyword %>"</h3>
+            <p style="color: #64748b;">Hãy thử từ khóa khác ngắn gọn hoặc chính xác hơn nhé.</p>
+            <a href="/search" class="btn-activate" style="width: auto; display: inline-block; margin-top: 20px; padding: 10px 25px;">
+                Quay lại tìm kiếm
+            </a>
+        </div>
+
+    <% } else { %>
+
+        <div class="filter-bar">
+            <button class="filter-btn <%= activeType === 'all' ? 'active' : '' %>" onclick="filterResults('all')">
+                Tất cả
+            </button>
+            
+            <% if(results.features.length > 0) { %>
+            <button class="filter-btn <%= activeType === 'feature' ? 'active' : '' %>" onclick="filterResults('feature')">
+                Tính năng <span class="filter-count"><%= results.features.length %></span>
+            </button>
+            <% } %>
+
+            <% if(results.lessons.length > 0) { %>
+            <button class="filter-btn <%= activeType === 'lesson' ? 'active' : '' %>" onclick="filterResults('lesson')">
+                Bài học <span class="filter-count"><%= results.lessons.length %></span>
+            </button>
+            <% } %>
+
+            <% if(results.courses.length > 0) { %>
+            <button class="filter-btn <%= activeType === 'course' ? 'active' : '' %>" onclick="filterResults('course')">
+                Khóa học <span class="filter-count"><%= results.courses.length %></span>
+            </button>
+            <% } %>
+
+            <% if(results.news.length > 0) { %>
+            <button class="filter-btn <%= activeType === 'news' ? 'active' : '' %>" onclick="filterResults('news')">
+                Tin tức <span class="filter-count"><%= results.news.length %></span>
+            </button>
+            <% } %>
+
+            <% if(results.users.length > 0) { %>
+            <button class="filter-btn <%= activeType === 'user' ? 'active' : '' %>" onclick="filterResults('user')">
+                Thành viên <span class="filter-count"><%= results.users.length %></span>
+            </button>
+            <% } %>
+        </div>
+
+        <div class="search-results-container">
+            
+            <div id="filterEmptyState" class="filter-empty-state">
+                <i class="far fa-folder-open" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <p>Không có kết quả nào cho mục này.</p>
+            </div>
+
+            <% if (results.features.length > 0) { %>
+                <div class="result-section" data-type="feature" style="border: 2px solid #e0e7ff; background: #eef2ff;">
+                    <div class="section-title" style="color: #4f46e5; border-bottom-color: #c7d2fe;">
+                        <i class="fas fa-rocket"></i> Tính Năng Nhanh
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                        <% results.features.forEach(f => { %>
+                            <a href="<%= f.url %>" class="result-item" style="background: white; border: 1px solid #c7d2fe;">
+                                <div class="item-icon" style="background: linear-gradient(135deg, #4f46e5, #818cf8); color: white;">
+                                    <i class="<%= f.icon %>"></i>
+                                </div>
+                                <div class="item-info">
+                                    <h4 class="highlight-text" style="color: #3730a3;"><%= f.title %></h4>
+                                    <p style="font-size: 0.8rem; color: #6366f1;"><%= f.desc %></p>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+
+            <% if (results.lessons.length > 0) { %>
+                <div class="result-section" data-type="lesson">
+                    <div class="section-title"><i class="fas fa-book-open"></i> Bài Học</div>
+                    <% results.lessons.forEach(l => { %>
+                        <a href="/lesson/<%= l._id %>" class="result-item">
+                            <div class="item-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="item-info">
+                                <h4 class="highlight-text"><%= l.title %></h4>
+                                <p><%= l.description ? l.description.substring(0, 80) + '...' : '' %></p>
+                            </div>
+                        </a>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <% if (results.courses.length > 0) { %>
+                <div class="result-section" data-type="course">
+                    <div class="section-title"><i class="fas fa-cubes"></i> Khóa Học</div>
+                    <% results.courses.forEach(c => { %>
+                        <a href="/course/<%= c._id %>" class="result-item">
+                            <div class="item-icon" style="background: #fce7f3; color: #db2777;"><i class="fas fa-layer-group"></i></div>
+                            <div class="item-info"><h4 class="highlight-text"><%= c.title %></h4></div>
+                        </a>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <% if (results.news.length > 0) { %>
+                <div class="result-section" data-type="news">
+                    <div class="section-title"><i class="far fa-newspaper"></i> Tin Tức</div>
+                    <% results.news.forEach(n => { %>
+                        <a href="/news/<%= n._id %>" class="result-item">
+                            <div class="item-icon" style="background: #fff7ed; color: #ea580c;"><i class="fas fa-bullhorn"></i></div>
+                            <div class="item-info">
+                                <h4 class="highlight-text"><%= n.title %></h4>
+                                <p style="font-size: 0.8rem; color: #9ca3af;"><%= n.category %></p>
+                            </div>
+                        </a>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <% if (results.users.length > 0) { %>
+                <div class="result-section" data-type="user">
+                    <div class="section-title"><i class="fas fa-users"></i> Thành Viên</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <% results.users.forEach(u => { %>
+                            <a href="/profile/view/<%= u._id %>" class="result-item" style="background: #f1f5f9; border-radius: 50px;">
+                                <img src="<%= u.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" style="width: 30px; height: 30px; border-radius: 50%;">
+                                <div class="item-info">
+                                    <h4 style="font-size: 0.9rem;"><%= u.username %> 
+                                        <% if(u.isPro) { %><i class="fas fa-check-circle" style="color:#3b82f6;"></i><% } %>
+                                    </h4>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+            
+        </div>
+
+    <% } %>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1. Highlight từ khóa
+        const keyword = "<%= keyword %>";
+        if (keyword) {
+            const elements = document.querySelectorAll('.highlight-text');
+            // Escape special regex chars
+            const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(${safeKeyword})`, 'gi');
+            
+            elements.forEach(el => {
+                // Chỉ highlight text, tránh phá vỡ HTML
+                if(el.children.length === 0) {
+                     el.innerHTML = el.innerText.replace(regex, '<span class="highlight">$1</span>');
+                }
+            });
+        }
+        
+        // 2. Kích hoạt tab ban đầu
+        const initialType = "<%= activeType %>";
+        if(initialType && initialType !== 'all') {
+            filterResults(initialType, false);
+        }
+    });
+
+    // Hàm lọc kết quả
+    function filterResults(type, updateUrl = true) {
+        // Update Buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        // Logic tìm nút active (đơn giản hóa)
+        const btns = document.querySelectorAll('.filter-btn');
+        for(let btn of btns) {
+            if(type === 'all' && btn.innerText.includes('Tất cả')) { btn.classList.add('active'); break; }
+            if(type === 'feature' && btn.innerText.includes('Tính năng')) { btn.classList.add('active'); break; }
+            if(type === 'lesson' && btn.innerText.includes('Bài học')) { btn.classList.add('active'); break; }
+            if(type === 'course' && btn.innerText.includes('Khóa học')) { btn.classList.add('active'); break; }
+            if(type === 'news' && btn.innerText.includes('Tin tức')) { btn.classList.add('active'); break; }
+            if(type === 'user' && btn.innerText.includes('Thành viên')) { btn.classList.add('active'); break; }
+        }
+
+        // Show/Hide Sections
+        const sections = document.querySelectorAll('.result-section');
+        let hasVisible = false;
+
+        sections.forEach(sec => {
+            if (type === 'all' || sec.dataset.type === type) {
+                sec.style.display = 'block';
+                hasVisible = true;
+            } else {
+                sec.style.display = 'none';
+            }
+        });
+
+        // Show Empty Filter State
+        const emptyState = document.getElementById('filterEmptyState');
+        // Chỉ hiện empty nếu không có section nào hiện VÀ container có data (tránh nhầm với empty case 1,2)
+        if (!hasVisible && document.querySelector('.search-results-container')) { 
+            emptyState.style.display = 'block';
+        } else if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+
+        // Update URL
+        if (updateUrl) {
+            const url = new URL(window.location);
+            url.searchParams.set('type', type);
+            window.history.pushState({}, '', url);
+            
+            // Cập nhật input hidden
+            const typeInput = document.getElementById('typeInput');
+            if(typeInput) typeInput.value = type;
+        }
+    }
+</script>
+
+<%- include('partials/footer') %>

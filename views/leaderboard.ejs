@@ -57,7 +57,7 @@
 
     <div class="rank-list">
         <% restOfList.forEach((u, idx) => { %>
-            <a href="/profile/<%= u._id %>" class="rank-link">
+            <a href="/profile/view/<%= u._id %>" class="rank-link">
                 <div class="rank-card">
                     <div class="rank-num">#<%= idx + 4 %></div>
                     <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar">

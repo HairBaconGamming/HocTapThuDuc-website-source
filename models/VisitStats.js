@@ -2,7 +2,8 @@
 const mongoose = require("mongoose");
 
 const visitStatsSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
+  key: { type: String, unique: true, sparse: true },
+  date: { type: Date, unique: true, sparse: true },
   count: { type: Number, default: 0 }
 });
 

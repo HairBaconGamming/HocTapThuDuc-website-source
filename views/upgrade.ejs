@@ -3,121 +3,94 @@
 
 <div class="upgrade-wrapper">
     
-    <div class="upgrade-header" data-animate="fade-down">
-        <h1 class="upgrade-title">Mở Khóa Sức Mạnh ⚡</h1>
+    <div class="upgrade-header">
+        <h1 class="upgrade-title">Mở Khóa <span>PRO</span></h1>
         <p class="upgrade-subtitle">
-            Nâng cấp lên tài khoản PRO để sở hữu kho tàng kiến thức không giới hạn và những đặc quyền "chanh sả" nhất!
+            Nâng cấp tài khoản để truy cập kho tài liệu VIP, tạo phòng học riêng và sở hữu huy hiệu độc quyền.
         </p>
     </div>
 
     <div class="pricing-grid">
         
-        <div class="plan-card" data-animate="fade-right">
-            <h3>🌱 Newbie</h3>
-            <div class="plan-price">Miễn phí</div>
+        <div class="plan-card basic">
+            <div class="plan-name">
+                <i class="fas fa-user-graduate" style="color: #94a3b8;"></i> Thành Viên
+            </div>
+            <div class="plan-price">
+                0đ
+            </div>
             <ul class="features-list">
-                <li><i class="fas fa-check"></i> Xem bài học cơ bản</li>
-                <li><i class="fas fa-check"></i> Tham gia phòng Live</li>
-                <li><i class="fas fa-check"></i> Tạo hồ sơ cá nhân</li>
-                <li class="disabled"><i class="fas fa-times"></i> Đăng bài viết (News)</li>
-                <li class="disabled"><i class="fas fa-times"></i> Tạo phòng Live Stream</li>
-                <li class="disabled"><i class="fas fa-times"></i> Kho ảnh Avatar PRO</li>
-                <li class="disabled"><i class="fas fa-times"></i> Huy hiệu VIP lấp lánh</li>
+                <li><i class="fas fa-check check"></i> Truy cập bài học cơ bản</li>
+                <li><i class="fas fa-check check"></i> Xem tài liệu công khai</li>
+                <li><i class="fas fa-check check"></i> Hồ sơ cá nhân</li>
+                <li style="color: #94a3b8;"><i class="fas fa-lock lock"></i> Đăng bài viết mới</li>
+                <li style="color: #94a3b8;"><i class="fas fa-lock lock"></i> Kho ảnh đại diện VIP</li>
+                <li style="color: #94a3b8;"><i class="fas fa-lock lock"></i> Tạo phòng Live Stream</li>
             </ul>
         </div>
 
-        <div class="plan-card pro" data-animate="zoom-in">
-            <div class="crown-icon">👑</div>
-            <h2 class="pro-title">HTTD PRO</h2>
-            <div class="pro-badge">BEST VALUE</div>
-            
+        <div class="plan-card pro">
+            <div class="popular-tag">Phổ biến nhất 🔥</div>
+            <div class="plan-name">
+                <i class="fas fa-crown crown"></i> VIP Member
+            </div>
+            <div class="plan-price vip-text">
+                PRO <span>/ trọn đời</span>
+            </div>
             <ul class="features-list">
-                <li><i class="fas fa-check-circle"></i> <b>Tất cả quyền lợi Newbie</b></li>
-                <li><i class="fas fa-check-circle"></i> 🚀 Mở phòng Live Stream riêng</li>
-                <li><i class="fas fa-check-circle"></i> ✍️ Đăng bài viết lên bảng tin</li>
-                <li><i class="fas fa-check-circle"></i> 🎨 Sử dụng Kho ảnh PRO xịn xò</li>
-                <li><i class="fas fa-check-circle"></i> ✨ Huy hiệu vương miện cạnh tên</li>
-                <li><i class="fas fa-check-circle"></i> 🤖 Sử dụng AI chấm điểm (Sắp ra mắt)</li>
+                <li><i class="fas fa-check check"></i> <strong>Tất cả quyền lợi</strong> cơ bản</li>
+                <li><i class="fas fa-check check"></i> Đăng bài viết & Hỏi bài</li>
+                <li><i class="fas fa-check check"></i> Truy cập <strong>Kho ảnh VIP</strong></li>
+                <li><i class="fas fa-check check"></i> Tạo phòng học Live Stream</li>
+                <li><i class="fas fa-check check"></i> Huy hiệu <strong>Vương Miện Vàng</strong></li>
+                <li><i class="fas fa-check check"></i> Hỗ trợ ưu tiên 24/7</li>
             </ul>
-
-            <% if (user && user.isPro) { %>
-                <div class="upgrade-form" style="background: #e8f5e9; border-color: #2ecc71;">
-                    <h3 style="color: #2e7d32; font-size: 1.2rem; margin-bottom: 10px;">🎉 Đã kích hoạt PRO!</h3>
-                    <p style="font-size: 0.9rem;">Vương miện đã ở trên vai bạn.</p>
-                    <a href="/" class="btn-upgrade" style="background: #2e7d32; box-shadow: none;">Về trang chủ</a>
-                </div>
-            <% } else { %>
-                <form action="/upgrade" method="POST" class="upgrade-form" id="upgradeForm">
-                    <p style="font-weight: 700; color: #b45309; margin-bottom: 10px;">
-                        <i class="fas fa-key"></i> Nhập Secret Key kích hoạt
-                    </p>
-                    
-                    <div class="key-input-wrapper">
-                        <input type="text" name="secretKey" class="setup-input code-input" 
-                            placeholder="XXXX-XXXX-XXXX" 
-                            required autocomplete="off">
-                    </div>
-
-                    <p class="hint-text">Nhập mã bí mật bạn nhận được từ Admin hoặc Event.</p>
-
-                    <button type="submit" class="btn-upgrade">
-                        <i class="fas fa-unlock-alt"></i> MỞ KHÓA NGAY
-                    </button>
-                </form>
-            <% } %>
         </div>
 
     </div>
+
+    <div class="activation-zone">
+        <div class="activation-inner">
+            <h3 style="font-size: 1.5rem; margin-bottom: 10px; color: var(--text-dark);">
+                Đã có mã kích hoạt?
+            </h3>
+            <p style="color: var(--text-light); font-size: 0.95rem;">
+                Nhập Secret Key (được cấp bởi Admin/Giáo viên) để nâng cấp ngay lập tức.
+            </p>
+
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div style="background: #fef2f2; color: #ef4444; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem; border: 1px solid #fee2e2;">
+                    <i class="fas fa-exclamation-circle"></i> <%= error %>
+                </div>
+            <% } %>
+
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div style="background: #f0fdf4; color: #16a34a; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem; border: 1px solid #dcfce7;">
+                    <i class="fas fa-check-circle"></i> <%= success %>
+                </div>
+            <% } %>
+
+            <form action="/upgrade/activate" method="POST">
+                <div class="code-input-group">
+                    <input type="text" name="secretKey" class="code-input" placeholder="PRO-XXXX-XXXX" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-activate">
+                    Kích Hoạt Ngay <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        // Form Loading State
-        const form = document.getElementById('upgradeForm');
-        if(form) {
-            form.addEventListener('submit', (e) => {
-                const btn = form.querySelector('.btn-upgrade');
-                if(btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                }
-            });
-        }
-
-        // --- ANIMATION FIX ---
+    document.addEventListener("DOMContentLoaded", (event) => {
         if (typeof gsap !== 'undefined') {
-            // 1. Header
-            gsap.fromTo('.upgrade-header', 
-                { y: -30, opacity: 0 },
-                { y: 0, opacity: 1, duration: 0.8, ease: 'back.out(1.7)', clearProps: 'all' }
-            );
-
-            // 2. Card thường (Bên trái)
-            gsap.fromTo('.plan-card:not(.pro)', 
-                { x: -30, opacity: 0 },
-                { x: 0, opacity: 1, duration: 0.8, delay: 0.2, clearProps: 'all' }
-            );
-
-            // 3. Card PRO (Bên phải - Quan trọng)
-            // Lưu ý: scale kết thúc là 1.05 vì trong CSS chúng ta đã set transform: scale(1.05)
-            gsap.fromTo('.plan-card.pro', 
-                { scale: 0.8, opacity: 0 },
-                { scale: 1.05, opacity: 1, duration: 0.8, delay: 0.4, ease: 'elastic.out(1, 0.5)', clearProps: 'opacity,visibility' } 
-                // Chỉ clear opacity, giữ lại transform scale của CSS
-            );
-        } else {
-            // Fallback: Nếu GSAP không tải được, ép hiển thị tất cả
-            console.warn("GSAP not loaded. Forcing display.");
-            document.querySelectorAll('.upgrade-header, .plan-card').forEach(el => {
-                el.style.opacity = '1';
-                el.style.visibility = 'visible';
-                el.style.transform = 'none';
-            });
-            // Riêng thẻ PRO cần scale lại theo CSS gốc
-            const proCard = document.querySelector('.plan-card.pro');
-            if(proCard) proCard.style.transform = 'scale(1.05)';
+            gsap.from(".upgrade-header", { duration: 1, y: 30, opacity: 0, ease: "power3.out" });
+            gsap.from(".plan-card.basic", { duration: 0.8, x: -30, opacity: 0, delay: 0.2, ease: "power3.out" });
+            gsap.from(".plan-card.pro", { duration: 0.8, x: 30, opacity: 0, delay: 0.4, ease: "back.out(1.5)" });
+            gsap.from(".activation-zone", { duration: 0.8, y: 40, opacity: 0, delay: 0.6, ease: "power3.out" });
         }
     });
 </script>

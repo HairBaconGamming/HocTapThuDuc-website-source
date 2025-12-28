@@ -1,6 +1,34 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleEditProfile.css">
 
+<style>
+    .gallery-tabs {
+        display: flex;
+        border-bottom: 2px solid #f3f4f6;
+        margin-bottom: 20px;
+    }
+    .gallery-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+    }
+    .gallery-tab:hover { color: #d97706; }
+    .gallery-tab.active {
+        color: #d97706;
+        border-bottom: 2px solid #d97706;
+    }
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 20px;
+        color: #9ca3af;
+        font-style: italic;
+    }
+</style>
+
 <section class="edit-profile-section">
     <div class="container">
         <div style="text-align: center; margin-bottom: 40px;" data-animate="fade-down">
@@ -8,32 +36,47 @@
             <p style="color: #666;">Cập nhật thông tin để "ngầu" hơn trên bảng xếp hạng nhé!</p>
         </div>
 
-        <form action="/profile/edit" method="POST" enctype="multipart/form-data" class="edit-grid">
+        <form action="/profile/edit" method="POST" class="edit-grid">
             
             <div class="profile-card avatar-zone">
                 <div class="avatar-wrapper">
                     <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
                          class="avatar-preview" id="avatarPreview">
-                    
-                    <label for="avatarInput" class="camera-btn" title="Đổi ảnh">
-                        <i class="fas fa-camera"></i>
-                    </label>
-                    <input type="file" id="avatarInput" name="avatar" accept="image/*" hidden>
                 </div>
-
+                
                 <div class="user-display-name"><%= user.username %></div>
                 <div class="user-role-badge">
                     <%= user.isPro ? '👑 VIP Member' : '🌱 Newbie' %>
                 </div>
 
-                <% if (user.isPro) { %>
-                    <a href="/pro-images" class="pro-link"><i class="fas fa-images"></i> Chọn từ Kho Ảnh PRO</a>
-                <% } %>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block; font-size: 0.9rem;">Ảnh đại diện</label>
+                    
+                    <div style="display: flex; gap: 10px; align-items: flex-start; flex-direction: column;">
+                        <div class="input-group" style="display: flex; gap: 10px; width: 100%;">
+                            <input type="text" 
+                                   class="input-v3" 
+                                   name="avatar" 
+                                   id="avatarInput" 
+                                   value="<%= user.avatar %>" 
+                                   placeholder="Nhập link hoặc chọn từ kho..." 
+                                   oninput="document.getElementById('avatarPreview').src = this.value || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'"
+                                   style="flex: 1;">
+                            
+                            <button type="button" 
+                                    onclick="openAvatarModal()" 
+                                    style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; white-space: nowrap; transition: 0.2s;">
+                                <i class="fas fa-images"></i> Kho Avatar
+                            </button>
+                        </div>
+                        <small style="color: #6b7280; font-size: 0.8rem;">Bạn có thể chọn ảnh mẫu miễn phí hoặc ảnh đã tải lên (PRO).</small>
+                    </div>
+                </div>
             </div>
 
             <div class="profile-card form-zone">
                 <h3 class="card-title"><i class="fas fa-info-circle"></i> Thông Tin Cá Nhân</h3>
-
+                
                 <div class="input-group-v3">
                     <label class="label-v3">Email liên hệ</label>
                     <input type="email" name="email" class="input-v3" value="<%= user.email || '' %>" placeholder="ví dụ: tenban@gmail.com">
@@ -59,7 +102,7 @@
                         </select>
                     </div>
                 </div>
-
+                
                 <div class="profile-card password-toggle-card" id="passwordCard">
                     <div class="toggle-header" id="pwToggleHeader">
                         <div class="toggle-title">
@@ -70,7 +113,7 @@
                             <i class="fas fa-chevron-down toggle-arrow"></i>
                         </div>
                     </div>
-
+                    
                     <div id="pwFields" class="password-content">
                         <div class="input-group-v3">
                             <label class="label-v3">Mật khẩu hiện tại</label>
@@ -107,5 +150,153 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="/js/profileEditor.js"></script>
+
+<div id="avatarModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: white; width: 600px; max-width: 90%; border-radius: 12px; padding: 20px; position: relative; max-height: 80vh; overflow-y: auto;">
+        <span onclick="closeAvatarModal()" style="position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; color: #666;">&times;</span>
+        
+        <h3 style="margin-bottom: 0px; color: var(--dark-ink);">Chọn Ảnh Đại Diện</h3>
+        
+        <div class="gallery-tabs">
+            <div class="gallery-tab active" onclick="switchTab('default')">Mẫu có sẵn (Free)</div>
+            <div class="gallery-tab" onclick="switchTab('uploaded')">Ảnh của tôi (PRO)</div>
+        </div>
+
+        <div id="galleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px;">
+            </div>
+
+        <div id="uploadAction" style="display: none; margin-top: 15px; text-align: center; border-top: 1px dashed #ddd; padding-top: 15px;">
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Bạn muốn dùng ảnh khác? Hãy tải lên kho ảnh PRO.</p>
+            <a href="/pro-images" target="_blank" class="btn-save" style="display: inline-block; text-decoration: none; font-size: 0.9rem;">
+                <i class="fas fa-cloud-upload-alt"></i> Quản lý & Tải ảnh lên
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Biến lưu trạng thái PRO của user để JS xử lý
+    const isUserPro = <%= user.isPro %>; 
+    let currentTab = 'default';
+
+    // Danh sách ảnh mẫu (Public)
+    const defaultImages = [
+        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140037.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/924/924915.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/2922/2922506.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/921/921071.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/1999/1999625.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140061.png' },
+        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140051.png' }
+    ];
+
+    // Mở Modal
+    function openAvatarModal() {
+        document.getElementById('avatarModal').style.display = 'flex';
+        // Mặc định load tab default
+        switchTab('default');
+    }
+
+    // Đóng Modal
+    function closeAvatarModal() {
+        document.getElementById('avatarModal').style.display = 'none';
+    }
+
+    // Chuyển Tab
+    function switchTab(tabName) {
+        currentTab = tabName;
+        const grid = document.getElementById('galleryGrid');
+        const uploadAction = document.getElementById('uploadAction');
+        const tabs = document.querySelectorAll('.gallery-tab');
+
+        // Cập nhật UI Tabs
+        tabs.forEach(t => t.classList.remove('active'));
+        if(tabName === 'default') tabs[0].classList.add('active');
+        else tabs[1].classList.add('active');
+
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Đang tải...</p>';
+
+        if (tabName === 'default') {
+            uploadAction.style.display = 'none';
+            renderImages(defaultImages);
+        } else {
+            // Tab Uploaded (PRO only)
+            if (!isUserPro) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-lock" style="font-size: 2rem; color: #d97706; margin-bottom: 10px;"></i><br>
+                        Tính năng này chỉ dành cho tài khoản <b>VIP Member</b>.<br>
+                        <a href="/upgrade" target="_blank" style="color: #4f46e5; font-weight: bold;">Nâng cấp ngay</a> để tải ảnh riêng của bạn!
+                    </div>
+                `;
+                uploadAction.style.display = 'none';
+                return;
+            }
+            
+            uploadAction.style.display = 'block';
+            fetchUploadedImages();
+        }
+    }
+
+    // Render ảnh ra Grid
+    function renderImages(images) {
+        const grid = document.getElementById('galleryGrid');
+        grid.innerHTML = '';
+
+        if (!images || images.length === 0) {
+            grid.innerHTML = '<div class="empty-state">Chưa có ảnh nào.</div>';
+            return;
+        }
+
+        images.forEach(img => {
+            const imgEl = document.createElement('img');
+            imgEl.src = img.url;
+            imgEl.title = img.displayName || img.tag || 'Avatar';
+            imgEl.style.cssText = "width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; object-fit: cover; background: #f9fafb;";
+            
+            // Hover effect
+            imgEl.onmouseover = () => { imgEl.style.border = "2px solid #d97706"; imgEl.style.transform = "scale(1.1)"; };
+            imgEl.onmouseout = () => { imgEl.style.border = "2px solid transparent"; imgEl.style.transform = "scale(1)"; };
+
+            // Select action
+            imgEl.onclick = () => {
+                document.getElementById('avatarInput').value = img.url;
+                document.getElementById('avatarPreview').src = img.url;
+                closeAvatarModal();
+            };
+
+            grid.appendChild(imgEl);
+        });
+    }
+
+    // Gọi API lấy ảnh PRO
+    async function fetchUploadedImages() {
+        try {
+            // Gọi route /api/pro-images/list mà bạn đã định nghĩa trong proImages.js
+            const res = await fetch('/api/pro-images/list');
+            if (res.status === 403 || res.status === 401) {
+                // Xử lý trường hợp hết phiên hoặc mất quyền
+                alert('Vui lòng đăng nhập lại để sử dụng tính năng này.');
+                return;
+            }
+            const data = await res.json();
+            renderImages(data);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('galleryGrid').innerHTML = '<p style="color:red; grid-column: 1/-1; text-align:center;">Lỗi tải ảnh.</p>';
+        }
+    }
+
+    // Đóng modal khi click ra ngoài
+    window.onclick = function(event) {
+        const modal = document.getElementById('avatarModal');
+        if (event.target == modal) {
+            closeAvatarModal();
+        }
+    }
+</script>
 
 <%- include('partials/footer') %>

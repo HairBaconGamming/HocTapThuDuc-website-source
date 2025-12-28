@@ -21,6 +21,10 @@ const VisitStats = require("./models/VisitStats");
 const { banCheck } = require("./middlewares/banCheck");
 require("./config/passport")(passport);
 
+const trackVisits = require('./middlewares/trackVisits');
+
+const searchRouter = require('./routes/search');         
+
 // App Setup
 const app = express();
 const server = http.createServer(app);
@@ -101,9 +105,12 @@ app.use(async (req, res, next) => {
     next();
 });
 
+app.use(trackVisits); // Đặt dòng này sau các app.use(express.static...)
+
 // --- Routes ---
 app.use("/", require("./routes/index"));
 app.use("/", require("./routes/auth"));
+
 app.use("/lesson", require("./routes/lesson"));
 app.use("/api", require("./routes/api"));
 app.use("/api", require("./routes/course"));
@@ -111,6 +118,7 @@ app.use("/news", require("./routes/news"));
 app.use("/admin", require("./routes/admin"));
 app.use("/documents", require("./routes/documents"));
 app.use("/live", require("./routes/live"));
+app.use('/search', searchRouter);        
 app.use("/api/pro-images", require("./routes/proImages"));
 app.use("/api/quiz-generator", require("./routes/quizGenerator"));
 

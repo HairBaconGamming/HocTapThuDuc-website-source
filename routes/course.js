@@ -10,7 +10,7 @@ const unitController = require('../controllers/unitController');
 router.get('/courses/by-subject/:subjectId', courseController.getCoursesBySubject);
 
 // 2. Tạo khóa học nhanh
-router.post('/courses/quick-create', isAdmin, courseController.createQuickCourse);
+router.post('/courses/quick-create', isTeacher, courseController.createQuickCourse);
 
 // 3. Lấy cấu trúc cây (Tree)
 router.get('/tree/by-course/:courseId', courseController.getTreeByCourse);

@@ -114,19 +114,27 @@ router.get("/upgrade", isLoggedIn, (req, res) => {
     res.render("upgrade", { user: req.user, activePage: "upgrade" });
 });
 
-router.post("/upgrade", isLoggedIn, async (req, res) => {
+router.post("/upgrade/activate", isLoggedIn, async (req, res) => {
     const { secretKey } = req.body;
+
+    // 1. Kiểm tra xem Admin đã set key cho user này chưa
     if (!req.user.proSecretKey) {
-        req.flash("error", "Tài khoản chưa cấu hình key.");
+        req.flash("error", "Tài khoản này chưa được cấp mã kích hoạt. Vui lòng liên hệ Admin/GV.");
         return res.redirect("/upgrade");
     }
-    if (secretKey === req.user.proSecretKey) {
+
+    // 2. So sánh mã nhập vào với mã trong DB
+    // (Trim để xóa khoảng trắng thừa nếu có)
+    if (secretKey.trim() === req.user.proSecretKey.trim()) {
         req.user.isPro = true;
+        // Xóa key sau khi dùng xong để không dùng lại được (tùy chọn, nếu muốn dùng 1 lần)
+        // req.user.proSecretKey = null; 
+        
         await req.user.save();
-        req.flash("success", "Nâng cấp PRO thành công!");
-        res.redirect("/profile");
+        req.flash("success", "Chúc mừng! Bạn đã trở thành VIP Member.");
+        res.redirect("/upgrade"); // Redirect lại trang upgrade để thấy thông báo xanh
     } else {
-        req.flash("error", "Sai mã.");
+        req.flash("error", "Mã kích hoạt không chính xác.");
         res.redirect("/upgrade");
     }
 });

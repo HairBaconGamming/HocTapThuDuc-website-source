@@ -18,60 +18,74 @@
 
             <div class="id-meta">
                 <span class="meta-tag"><i class="fas fa-graduation-cap"></i> <%= targetUser.class || 'Lớp ?' %></span>
-                <span class="meta-tag"><i class="fas fa-school"></i> <%= targetUser.school || 'Trường ?' %></span>
+                <span class="meta-tag"><i class="fas fa-school"></i> <%= targetUser.school || 'THPT Thủ Đức' %></span>
             </div>
 
             <div class="id-bio">
-                "<%= targetUser.bio || 'Người dùng này rất bí ẩn...' %>"
+                "<%= targetUser.bio || 'Thành viên này rất bí ẩn, chưa viết tiểu sử...' %>"
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn-edit-profile" style="background: var(--pop-blue); color: var(--dark-ink);">
-                    <i class="fas fa-user-plus"></i> Kết bạn
-                </button>
-                <button class="btn-edit-profile" style="background: white; color: var(--dark-ink); border: 2px solid var(--dark-ink);">
-                    <i class="fas fa-comment-dots"></i> Nhắn tin
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="btn-action secondary" onclick="copyProfileLink()">
+                    <i class="fas fa-share-alt"></i> Sao chép Link
                 </button>
             </div>
-            
-            <button class="btn-edit-profile" style="margin-top: 10px; background: #ffebee; color: #c62828; border: none;">
-                <i class="fas fa-flag"></i> Báo cáo
-            </button>
         </aside>
 
-        <main>
-            <div class="stats-row">
-                <div class="stat-box highlight">
-                    <h3><%= targetUser.points || 0 %></h3>
-                    <p>🔥 Điểm số</p>
+        <main class="main-info">
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <h3><%= new Date(targetUser.createdAt).toLocaleDateString('vi-VN') %></h3>
+                    <p>📅 Ngày gia nhập</p>
                 </div>
                 <div class="stat-box">
-                    <h3>??</h3>
-                    <p>📚 Bài học</p>
+                    <h3><%= targetUser.growthPoints || 0 %></h3>
+                    <p>🌱 Điểm Tích Lũy</p>
                 </div>
                 <div class="stat-box">
-                    <h3>??</h3>
-                    <p>🏆 Rank</p>
+                    <h3>
+                        <% if (targetUser.role === 'admin') { %> Admin 🛡️
+                        <% } else if (targetUser.isTeacher) { %> Giáo Viên 🎓
+                        <% } else if (targetUser.isPro) { %> VIP Member 👑
+                        <% } else { %> Học Sinh ✏️ <% } %>
+                    </h3>
+                    <p>🔰 Vai trò</p>
                 </div>
             </div>
 
             <div class="bento-card tree-section">
                 <div class="tree-info">
                     <h3>🌳 Vườn Của <%= targetUser.username %></h3>
-                    <p style="color: #666;">Một cái cây xanh tốt chứng tỏ sự chăm chỉ.</p>
+                    <p style="color: #666; margin-bottom: 10px;">
+                        Đang chăm sóc cây với tất cả sự nỗ lực!
+                    </p>
+                    <div style="background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block; color: #166534; font-weight: 600;">
+                        Cấp độ hiện tại: <%= targetUser.treeLevel || 1 %> 🌟
+                    </div>
                 </div>
                 <div class="tree-visual">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2924/2924900.png" alt="Tree"> 
+                    <% 
+                        let treeImg = 'https://cdn-icons-png.flaticon.com/512/2924/2924900.png'; // Cây mặc định
+                        if ((targetUser.treeLevel || 1) >= 5) treeImg = 'https://cdn-icons-png.flaticon.com/512/628/628283.png'; // Cây to hơn
+                        if ((targetUser.treeLevel || 1) >= 10) treeImg = 'https://cdn-icons-png.flaticon.com/512/2424/2424773.png'; // Cây cổ thụ
+                    %>
+                    <img src="<%= treeImg %>" alt="Tree" style="width: 120px; height: 120px; object-fit: contain;"> 
                 </div>
             </div>
 
-            <div class="bento-card" style="background: #fff0f5; border-color: #ffc8dd; text-align: center;">
-                <h3 style="color: #d81b60;">🥊 Thách Đấu PK</h3>
-                <p style="color: #666; margin-bottom: 20px;">Mời <%= targetUser.username %> vào phòng thi trắc nghiệm đối kháng?</p>
-                <button class="btn-edit-profile" style="background: #d81b60; width: auto; display: inline-block; padding: 10px 30px;">
-                    Gửi lời mời
-                </button>
+            <% if (targetUser.achievements && targetUser.achievements.length > 0) { %>
+            <div class="bento-card" style="margin-top: 20px;">
+                <h3>🏅 Huy Hiệu Đạt Được</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                    <% targetUser.achievements.forEach(ach => { %>
+                        <div class="badge-item" title="<%= ach.name %>">
+                            <img src="<%= ach.icon %>" style="width: 40px; height: 40px;">
+                        </div>
+                    <% }) %>
+                </div>
             </div>
+            <% } %>
 
         </main>
     </div>
@@ -79,8 +93,22 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-    if(typeof gsap !== 'undefined') {
-        gsap.from('.profile-grid > *', { y: 30, opacity: 0, duration: 0.8, stagger: 0.2, ease: 'power2.out' });
+    // Animation đơn giản khi vào trang
+    gsap.from(".bento-card, .stat-box", {
+        duration: 0.6,
+        y: 30,
+        opacity: 0,
+        stagger: 0.1,
+        ease: "power2.out"
+    });
+
+    function copyProfileLink() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("Đã sao chép link hồ sơ!");
+        }).catch(err => {
+            console.error('Lỗi sao chép: ', err);
+        });
     }
 </script>
 

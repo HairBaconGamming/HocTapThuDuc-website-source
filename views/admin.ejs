@@ -4,129 +4,340 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Học Tập Thủ Đức</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        :root { --primary: #4f46e5; --dark: #1e293b; --light: #f8fafc; --danger: #ef4444; --success: #22c55e; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { display: flex; height: 100vh; background: var(--light); overflow: hidden; }
-        
+        :root {
+            --primary: #4f46e5;
+            --secondary: #6366f1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Quicksand', sans-serif; }
+        body { background: var(--light); display: flex; height: 100vh; overflow: hidden; }
+
         /* SIDEBAR */
-        .sidebar { width: 250px; background: var(--dark); color: white; display: flex; flex-direction: column; }
-        .brand { padding: 20px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; }
-        .menu { flex: 1; padding: 10px; }
-        .menu-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 6px; margin-bottom: 5px; cursor: pointer; transition: 0.2s; }
-        .menu-item:hover, .menu-item.active { background: var(--primary); color: white; }
-        .menu-item i { width: 25px; }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: 0.3s;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .brand {
+            padding: 25px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .menu { flex: 1; padding: 20px 10px; overflow-y: auto; }
+        .menu-label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin: 15px 15px 5px; font-weight: 700; }
+        .nav-item {
+            padding: 12px 20px;
+            margin-bottom: 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transform: translateX(5px);
+        }
 
         /* MAIN CONTENT */
-        .main { flex: 1; padding: 20px; overflow-y: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* HEADER */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .page-title h2 { font-size: 1.8rem; color: var(--dark); font-weight: 800; }
+        .page-title p { color: #64748b; }
+        .admin-profile { display: flex; align-items: center; gap: 15px; }
+        .admin-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+
+        /* CARDS (DASHBOARD) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-info h3 { font-size: 2rem; color: var(--dark); font-weight: 800; }
+        .stat-info p { color: #64748b; font-size: 0.9rem; }
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* CHART SECTION */
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            height: 400px;
+        }
+
+        /* TABLES */
+        .table-wrapper {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            animation: fadeIn 0.4s ease;
+        }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .search-box input {
+            padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; width: 250px; outline: none; transition: 0.2s;
+        }
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
         
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { color: #64748b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: #f8fafc; }
+        
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .badge-pro { background: #fffbeb; color: #d97706; border: 1px solid #fcd34d; }
+        .badge-teacher { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .badge-admin { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; color: white; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+        .btn-primary:hover { background: #4338ca; transform: translateY(-2px); }
+        .btn-danger { background: var(--danger); box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        .action-group { display: flex; gap: 8px; }
+
         /* SECTIONS (TABS) */
-        .section { display: none; animation: fadeIn 0.3s; }
+        .section { display: none; }
         .section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DASHBOARD CARDS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
-        .card h3 { font-size: 2rem; color: var(--dark); }
-        .card p { color: #64748b; }
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 500px; max-width: 95%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideDown 0.3s; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%; padding: 12px; margin: 8px 0 20px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; outline: none;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
-        /* TABLES */
-        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f1f5f9; font-weight: 600; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
-        .bg-green { background: #dcfce7; color: #166534; }
-        .bg-red { background: #fee2e2; color: #991b1b; }
-        
-        /* FORMS & MODALS */
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9rem; text-decoration: none; display: inline-block; }
-        .btn-primary { background: var(--primary); }
-        .btn-danger { background: var(--danger); }
-        .btn-edit { background: #f59e0b; }
-        
-        /* Custom Input Styling */
-        input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 8px; margin: 5px 0 15px; border: 1px solid #cbd5e1; border-radius: 4px; }
-        
-        /* Modal Popup (ẩn mặc định) */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 10px; width: 400px; max-width: 90%; }
-        .close { float: right; cursor: pointer; font-size: 1.5rem; }
+        /* GENERATE KEY BUTTON */
+        .key-input-group { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+        .key-input-group input { margin-bottom: 0; flex: 1; font-family: monospace; letter-spacing: 1px; color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="brand"><i class="fas fa-user-shield"></i> Admin Panel</div>
-        <nav class="menu">
-            <a class="menu-item active" onclick="showTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
-            <a class="menu-item" onclick="showTab('users')"><i class="fas fa-users"></i> Người dùng</a>
-            <a class="menu-item" onclick="showTab('courses')"><i class="fas fa-book"></i> Khóa học</a>
-            <a class="menu-item" onclick="showTab('news')"><i class="fas fa-newspaper"></i> Tin tức</a>
-            <a href="/" class="menu-item"><i class="fas fa-sign-out-alt"></i> Về trang chủ</a>
-        </nav>
+        <div class="brand">
+            <i class="fas fa-shield-alt"></i> HTTD Admin
+        </div>
+        
+        <div class="menu">
+            <div class="menu-label">Tổng Quan</div>
+            <div class="nav-item active" onclick="showTab('dashboard')">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </div>
+
+            <div class="menu-label">Quản Lý</div>
+            <div class="nav-item" onclick="showTab('users')">
+                <i class="fas fa-users"></i> Người Dùng
+            </div>
+            <div class="nav-item" onclick="showTab('courses')">
+                <i class="fas fa-layer-group"></i> Khóa Học
+            </div>
+            <div class="nav-item" onclick="showTab('news')">
+                <i class="fas fa-newspaper"></i> Tin Tức
+            </div>
+
+            <div class="menu-label">Hệ Thống</div>
+            <a href="/" class="nav-item" style="text-decoration: none;">
+                <i class="fas fa-home"></i> Về Trang Chủ
+            </a>
+            <a href="/logout" class="nav-item" style="text-decoration: none; color: #fca5a5;">
+                <i class="fas fa-sign-out-alt"></i> Đăng Xuất
+            </a>
+        </div>
     </div>
 
     <div class="main">
-        <div class="header">
-            <h2>Xin chào, <%= user.username %></h2>
+        <div class="header-bar">
+            <div class="page-title">
+                <h2 id="pageHeaderTitle">Dashboard</h2>
+                <p>Chào mừng trở lại, <%= user.username %>! 👋</p>
+            </div>
+            <div class="admin-profile">
+                <span style="font-weight: 600; color: var(--dark);"><%= user.username %></span>
+                <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="admin-avatar">
+            </div>
         </div>
 
         <div id="dashboard" class="section active">
             <div class="stats-grid">
-                <div class="card">
-                    <h3><%= stats.totalUsers %></h3>
-                    <p>Tổng thành viên</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><%= stats.totalUsers %></h3>
+                        <p>Tổng Thành Viên</p>
+                    </div>
+                    <div class="stat-icon" style="background: #e0e7ff; color: var(--primary);">
+                        <i class="fas fa-users"></i>
+                    </div>
                 </div>
-                <div class="card" style="border-color: #22c55e;">
-                    <h3><%= stats.totalCourses %></h3>
-                    <p>Khóa học</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><%= stats.totalCourses %></h3>
+                        <p>Khóa Học</p>
+                    </div>
+                    <div class="stat-icon" style="background: #dcfce7; color: var(--success);">
+                        <i class="fas fa-book"></i>
+                    </div>
                 </div>
-                <div class="card" style="border-color: #f59e0b;">
-                    <h3><%= stats.totalLessons %></h3>
-                    <p>Bài học</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><%= stats.totalNews %></h3>
+                        <p>Bài Viết Tin Tức</p>
+                    </div>
+                    <div class="stat-icon" style="background: #fef9c3; color: var(--warning);">
+                        <i class="far fa-newspaper"></i>
+                    </div>
                 </div>
-                <div class="card" style="border-color: #ef4444;">
-                    <h3><%= stats.totalNews %></h3>
-                    <p>Bài viết tin tức</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><%= stats.totalLessons %></h3>
+                        <p>Bài Học (Lessons)</p>
+                    </div>
+                    <div class="stat-icon" style="background: #fee2e2; color: var(--danger);">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
                 </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
             </div>
         </div>
 
         <div id="users" class="section">
-            <div class="table-container">
-                <h3>Quản lý người dùng</h3>
-                <table>
+            <div class="table-wrapper">
+                <div class="table-header">
+                    <h3>Danh sách người dùng</h3>
+                    <div class="search-box">
+                        <input type="text" id="userSearch" placeholder="Tìm kiếm user..." onkeyup="filterTable('userTable', this.value)">
+                    </div>
+                </div>
+                <table id="userTable">
                     <thead>
                         <tr>
-                            <th>Username</th>
-                            <th>Email</th>
+                            <th>User Info</th>
                             <th>Role</th>
-                            <th>Loại TK</th>
-                            <th>Hành động</th>
+                            <th>Trạng Thái</th>
+                            <th>Hành Động</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% users.forEach(u => { %>
                         <tr>
-                            <td><%= u.username %></td>
-                            <td><%= u.email %></td>
-                            <td><%= u.role %></td>
                             <td>
-                                <% if(u.isPro) { %><span class="badge bg-green">PRO</span><% } %>
-                                <% if(u.isTeacher) { %><span class="badge bg-green">GV</span><% } %>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="<%= u.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" style="width: 35px; height: 35px; border-radius: 50%;">
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--dark);"><%= u.username %></div>
+                                        <div style="font-size: 0.8rem; color: #94a3b8;"><%= u.email %></div>
+                                    </div>
+                                </div>
                             </td>
+
                             <td>
-                                <button class="btn btn-edit" onclick="openUserModal('<%= u._id %>', '<%= u.username %>', '<%= u.role %>', <%= u.isPro %>, <%= u.isTeacher %>, '<%= u.proSecretKey || '' %>')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <form action="/admin/user/delete" method="POST" style="display:inline;" onsubmit="return confirm('Xóa user này?');">
-                                    <input type="hidden" name="userId" value="<%= u._id %>">
-                                    <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
-                                </form>
+                                <% if (u.username === 'truonghoangnam') { %>
+                                    <span class="badge" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155;">👑 OWNER</span>
+                                <% } else if (u.isAdmin) { %>
+                                    <span class="badge badge-admin">Admin</span>
+                                <% } else { %>
+                                    <span class="badge" style="background: #f1f5f9;">User</span>
+                                <% } %>
+                            </td>
+
+                            <td>
+                                <% if(u.isPro) { %><span class="badge badge-pro">PRO</span><% } %>
+                                <% if(u.isTeacher) { %><span class="badge badge-teacher">GV</span><% } %>
+                            </td>
+
+                            <td>
+                                <div class="action-group">
+                                    <% if (u.username !== 'truonghoangnam' || user.username === 'truonghoangnam') { %>
+                                        <button class="btn btn-warning btn-sm" 
+                                            onclick="openUserModal(
+                                                '<%= u._id %>', 
+                                                '<%= u.username %>', 
+                                                <%= u.isAdmin %>,  /* Truyền true/false chuẩn xác */
+                                                <%= u.isPro %>, 
+                                                <%= u.isTeacher %>, 
+                                                '<%= u.proSecretKey || '' %>'
+                                            )">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    <% } %>
+                    
+                                    <% if (u.username !== 'truonghoangnam') { %>
+                                        <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/user/delete', 'userId', '<%= u._id %>')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <% } %>
+                                </div>
                             </td>
                         </tr>
                         <% }); %>
@@ -136,39 +347,49 @@
         </div>
 
         <div id="courses" class="section">
-            <div class="table-container">
-                <h3>Quản lý khóa học</h3>
-                <table>
+            <div class="table-wrapper">
+                <div class="table-header">
+                    <h3>Quản lý khóa học</h3>
+                    <div class="search-box">
+                        <input type="text" id="courseSearch" placeholder="Tìm khóa học..." onkeyup="filterTable('courseTable', this.value)">
+                    </div>
+                </div>
+                <table id="courseTable">
                     <thead>
                         <tr>
-                            <th>Tên khóa</th>
-                            <th>Tác giả</th>
-                            <th>Trạng thái</th>
-                            <th>Hành động</th>
+                            <th>Tên Khóa Học</th>
+                            <th>Tác Giả</th>
+                            <th>Tình Trạng</th>
+                            <th>Hành Động</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% courses.forEach(c => { %>
                         <tr>
-                            <td><%= c.title %></td>
-                            <td><%= c.author ? c.author.username : 'Unknown' %></td>
                             <td>
-                                <span class="badge <%= c.isPublished ? 'bg-green' : 'bg-red' %>">
-                                    <%= c.isPublished ? 'Đã đăng' : 'Nháp' %>
-                                </span>
+                                <div style="font-weight: 600;"><%= c.title %></div>
+                            </td>
+                            <td><%= c.author ? c.author.username : 'Ẩn danh' %></td>
+                            <td>
+                                <% if(c.isPublished) { %>
+                                    <span class="badge badge-teacher"><i class="fas fa-check"></i> Public</span>
+                                <% } else { %>
+                                    <span class="badge badge-admin">Private</span>
+                                <% } %>
                             </td>
                             <td>
-                                <form action="/admin/course/approve" method="POST" style="display:inline;">
-                                    <input type="hidden" name="courseId" value="<%= c._id %>">
-                                    <label>
-                                        <input type="checkbox" name="isPublished" onchange="this.form.submit()" <%= c.isPublished ? 'checked' : '' %>>
-                                        Public
-                                    </label>
-                                </form>
-                                <form action="/admin/course/delete" method="POST" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Xóa khóa học này?');">
-                                    <input type="hidden" name="courseId" value="<%= c._id %>">
-                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                </form>
+                                <div class="action-group">
+                                    <form action="/admin/course/approve" method="POST" style="margin:0;">
+                                        <input type="hidden" name="courseId" value="<%= c._id %>">
+                                        <input type="hidden" name="isPublished" value="<%= c.isPublished ? '' : 'on' %>">
+                                        <button class="btn btn-sm <%= c.isPublished ? 'btn-warning' : 'btn-primary' %>" title="<%= c.isPublished ? 'Ẩn khóa này' : 'Duyệt khóa này' %>">
+                                            <i class="fas <%= c.isPublished ? 'fa-eye-slash' : 'fa-check' %>"></i>
+                                        </button>
+                                    </form>
+                                    <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/course/delete', 'courseId', '<%= c._id %>')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <% }); %>
@@ -178,17 +399,18 @@
         </div>
 
         <div id="news" class="section">
-            <div class="table-container">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <h3>Quản lý Tin tức</h3>
+            <div class="table-wrapper">
+                <div class="table-header">
+                    <h3>Bảng tin tức</h3>
                     <button class="btn btn-primary" onclick="document.getElementById('modalNews').style.display='flex'">
-                        <i class="fas fa-plus"></i> Viết bài mới
+                        <i class="fas fa-plus"></i> Viết Bài Mới
                     </button>
                 </div>
-                <table>
+                <table id="newsTable">
                     <thead>
                         <tr>
                             <th>Tiêu đề</th>
+                            <th>Danh mục</th>
                             <th>Ngày đăng</th>
                             <th>Hành động</th>
                         </tr>
@@ -196,13 +418,13 @@
                     <tbody>
                         <% news.forEach(post => { %>
                         <tr>
-                            <td><%= post.title %></td>
+                            <td style="font-weight: 600;"><%= post.title %></td>
+                            <td><span class="badge" style="background:#f3e8ff; color:#7e22ce;"><%= post.category %></span></td>
                             <td><%= new Date(post.createdAt).toLocaleDateString('vi-VN') %></td>
                             <td>
-                                <form action="/admin/news/delete" method="POST" onsubmit="return confirm('Xóa bài này?');">
-                                    <input type="hidden" name="newsId" value="<%= post._id %>">
-                                    <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
-                                </form>
+                                <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/news/delete', 'newsId', '<%= post._id %>')">
+                                    <i class="fas fa-trash"></i> Xóa
+                                </button>
                             </td>
                         </tr>
                         <% }); %>
@@ -215,112 +437,170 @@
 
     <div id="modalUser" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="document.getElementById('modalUser').style.display='none'">&times;</span>
-            <h3>Chỉnh sửa User: <span id="editUsername"></span></h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">🛠 Chỉnh sửa: <span id="editUsername" style="color:var(--primary)"></span></h3>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalUser').style.display='none'"></i>
+            </div>
+            
             <form action="/admin/user/update" method="POST">
                 <input type="hidden" name="userId" id="editUserId">
                 
-                <label>Vai trò (Role):</label>
-                <select name="role" id="editRole">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px;">
+                    
+                    <% if (user && user.username === 'truonghoangnam') { %>
+                        <label style="background: #fef2f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; cursor: pointer; color: #dc2626; font-weight: bold;">
+                            <input type="checkbox" name="isAdmin" id="editIsAdmin"> 🛡️ Cấp quyền Quản Trị Viên (Admin)
+                        </label>
+                    <% } %>
+                    
+                    <label style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; cursor: pointer;">
+                        <input type="checkbox" name="isPro" id="editIsPro"> 👑 Tài khoản PRO
+                    </label>
+                    <label style="background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #bfdbfe; cursor: pointer;">
+                        <input type="checkbox" name="isTeacher" id="editIsTeacher"> 🎓 Giáo viên
+                    </label>
+                </div>
 
-                <label>
-                    <input type="checkbox" name="isPro" id="editIsPro"> Tài khoản PRO
-                </label>
-                <br>
-                <label>
-                    <input type="checkbox" name="isTeacher" id="editIsTeacher"> Giáo viên (Teacher)
-                </label>
-
-                <label style="display:block; margin-top:10px;">PRO Secret Key:</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" name="proSecretKey" id="editProKey" 
-                        placeholder="Nhập key riêng hoặc bấm tạo..." 
-                        style="flex: 1; margin-bottom: 0;"> <button type="button" class="btn btn-edit" onclick="generateKey()" title="Tạo mã ngẫu nhiên">
-                        <i class="fas fa-magic"></i> Random
+                <label>PRO Secret Key:</label>
+                <div class="key-input-group">
+                    <input type="text" name="proSecretKey" id="editProKey" placeholder="Chưa có mã...">
+                    <button type="button" class="btn btn-warning btn-sm" onclick="generateKey()">
+                        <i class="fas fa-magic"></i> Tạo
                     </button>
                 </div>
-                <small style="color: #64748b; font-style: italic;">Mã bí mật dùng để kích hoạt hoặc xác thực riêng.</small>
 
-                <button type="submit" class="btn btn-primary" style="width:100%">Lưu thay đổi</button>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Lưu Thay Đổi</button>
             </form>
         </div>
     </div>
 
     <div id="modalNews" class="modal">
         <div class="modal-content" style="width: 600px;">
-            <span class="close" onclick="document.getElementById('modalNews').style.display='none'">&times;</span>
-            <h3>Đăng bài viết mới</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">📰 Đăng tin mới</h3>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalNews').style.display='none'"></i>
+            </div>
+
             <form action="/admin/news/create" method="POST">
                 <label>Tiêu đề:</label>
-                <input type="text" name="title" required>
+                <input type="text" name="title" required placeholder="Nhập tiêu đề hấp dẫn...">
 
-                <label>Link ảnh Thumbnail:</label>
-                <input type="text" name="thumbnail" placeholder="https://...">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Danh mục:</label>
+                        <select name="category" required>
+                            <option value="Thông báo">Thông báo chung</option>
+                            <option value="Học tập">Góc học tập</option>
+                            <option value="Tuyển sinh">Tuyển sinh</option>
+                            <option value="Tài khoản PRO">Khuyến mãi VIP</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Ảnh bìa (URL):</label>
+                        <input type="text" name="image" placeholder="https://...">
+                    </div>
+                </div>
 
                 <label>Nội dung:</label>
-                <textarea name="content" rows="5" required></textarea>
+                <textarea name="content" rows="6" required placeholder="Nội dung bài viết..."></textarea>
 
-                <button type="submit" class="btn btn-primary" style="width:100%">Đăng bài</button>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Đăng Bài Ngay</button>
             </form>
         </div>
     </div>
 
     <script>
-        // Hàm tạo chuỗi ngẫu nhiên
-        function generateKey() {
-            // Độ dài key mong muốn
-            const length = 16;
-            const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            let retVal = "";
-            
-            // Tạo chuỗi ngẫu nhiên
-            for (let i = 0, n = charset.length; i < length; ++i) {
-                retVal += charset.charAt(Math.floor(Math.random() * n));
-            }
-            
-            // Thêm tiền tố PRO- cho ngầu và dễ nhận diện
-            const finalKey = "PRO-" + retVal.toUpperCase();
-            
-            // Gán vào ô input
-            document.getElementById('editProKey').value = finalKey;
-        }
-        // Tab switching logic
+        // 0. FIX SYNTAX ERROR: Kiểm tra dữ liệu chartData trước khi parse
+        const serverChartData = <%- (typeof chartData !== 'undefined' && chartData) ? JSON.stringify(chartData) : '{}' %>;
+
+        // 1. TAB SWITCHING
         function showTab(tabId) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
-            document.getElementById(tabId).classList.add('active');
-            // Tìm thẻ a chứa onclick tương ứng để active (cách đơn giản)
-            event.currentTarget.classList.add('active');
+            const tabSection = document.getElementById(tabId);
+            if (tabSection) tabSection.classList.add('active');
             
-            // Cập nhật URL param để khi reload vẫn ở tab đó
+            const menus = document.querySelectorAll('.nav-item');
+            if(tabId === 'dashboard' && menus[0]) { menus[0].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Dashboard"; }
+            if(tabId === 'users' && menus[1]) { menus[1].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Người Dùng"; }
+            if(tabId === 'courses' && menus[2]) { menus[2].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Khóa Học"; }
+            if(tabId === 'news' && menus[3]) { menus[3].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Tin Tức"; }
+            
             const url = new URL(window.location);
             url.searchParams.set('tab', tabId);
             window.history.pushState({}, '', url);
         }
 
-        // Check URL param on load
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
-            const tab = params.get('tab');
-            if(tab && document.getElementById(tab)) {
-                // Giả lập click vào menu tương ứng
-                const menus = document.querySelectorAll('.menu-item');
-                if(tab === 'dashboard') menus[0].click();
-                if(tab === 'users') menus[1].click();
-                if(tab === 'courses') menus[2].click();
-                if(tab === 'news') menus[3].click();
+            const tab = params.get('tab') || 'dashboard';
+            showTab(tab);
+            if(serverChartData && serverChartData.labels) {
+                renderChart(serverChartData);
             }
         }
 
-        // Modal Edit User logic
-        function openUserModal(id, username, role, isPro, isTeacher, key) {
+        function filterTable(tableId, query) {
+            const filter = query.toUpperCase();
+            const table = document.getElementById(tableId);
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let txtValue = tr[i].textContent || tr[i].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            if (window.myChart) window.myChart.destroy();
+
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Lượt truy cập (Visits)',
+                        data: data.visits || [],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Đăng ký mới (Users)',
+                        data: data.registers || [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Thống Kê 7 Ngày Gần Nhất' }
+                    }
+                }
+            });
+        }
+
+        function openUserModal(id, username, isAdmin, isPro, isTeacher, key) {
             document.getElementById('editUserId').value = id;
             document.getElementById('editUsername').innerText = username;
-            document.getElementById('editRole').value = role;
+            
+            // Nếu checkbox Admin tồn tại (chỉ truonghoangnam mới thấy), thì set giá trị
+            const adminCheckbox = document.getElementById('editIsAdmin');
+            if (adminCheckbox) {
+                adminCheckbox.checked = isAdmin;
+            }
+
             document.getElementById('editIsPro').checked = isPro;
             document.getElementById('editIsTeacher').checked = isTeacher;
             document.getElementById('editProKey').value = key;
@@ -328,7 +608,39 @@
             document.getElementById('modalUser').style.display = 'flex';
         }
 
-        // Close modal when clicking outside
+        function generateKey() {
+            const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let retVal = "";
+            for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            document.getElementById('editProKey').value = "PRO-" + retVal;
+        }
+
+        function confirmDelete(actionUrl, fieldName, idValue) {
+            Swal.fire({
+                title: 'Bạn chắc chắn chứ?',
+                text: "Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Vâng, xóa nó!',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = actionUrl;
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = fieldName;
+                    input.value = idValue;
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            })
+        }
+
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = "none";

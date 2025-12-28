@@ -6,6 +6,7 @@ const moment = require("moment-timezone");
 // --- IMPORT MODELS (QUAN TRỌNG ĐỂ KHÔNG BỊ LỖI 500) ---
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
+const LessonCompletion = require('../models/LessonCompletion');
 const News = require('../models/News');
 const Subject = require('../models/Subject');
 const Course = require('../models/Course');
@@ -239,7 +240,7 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/profile/:id", async (req, res) => {
+router.get("/profile/view/:id", async (req, res) => {
     try {
         const targetUser = await User.findById(req.params.id).lean();
         if(!targetUser) return res.redirect("/");

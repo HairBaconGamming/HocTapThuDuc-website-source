@@ -1,228 +1,277 @@
 /* public/css/styleUpgrade.css */
 
-.upgrade-wrapper {
-    max-width: 1000px;
-    margin: 40px auto;
-    font-family: 'Quicksand', sans-serif;
-    padding: 0 20px;
+:root {
+    --bg-color: #f8fafc;
+    --grid-color: #e2e8f0;
+    --primary: #4f46e5;   /* Indigo 600 */
+    --accent: #f59e0b;    /* Amber 500 */
+    --text-dark: #1e293b; /* Slate 800 */
+    --text-light: #64748b;/* Slate 500 */
+    --white: #ffffff;
 }
 
+body {
+    background-color: var(--bg-color);
+    /* Tạo hiệu ứng giấy tập kẻ ô vuông (Grid Pattern) */
+    background-image: 
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-attachment: fixed;
+    color: var(--text-dark);
+    font-family: 'Quicksand', sans-serif;
+}
+
+.upgrade-wrapper {
+    max-width: 1000px;
+    margin: 80px auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+}
+
+/* Trang trí nền (Floating Blobs - Màu Pastel nhẹ) */
+.upgrade-wrapper::before, .upgrade-wrapper::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.6;
+}
+.upgrade-wrapper::before {
+    width: 400px; height: 400px;
+    background: #e0e7ff; /* Indigo nhạt */
+    top: -100px; left: -100px;
+}
+.upgrade-wrapper::after {
+    width: 300px; height: 300px;
+    background: #fef3c7; /* Vàng nhạt */
+    bottom: -50px; right: -50px;
+}
+
+/* Header */
 .upgrade-header {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 70px;
 }
 
 .upgrade-title {
-    font-size: 3rem;
-    font-weight: 900;
-    color: var(--dark-ink);
-    text-transform: uppercase;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 15px;
     letter-spacing: -1px;
 }
 
-.upgrade-subtitle {
-    font-size: 1.1rem;
-    color: #666;
-    max-width: 600px;
-    margin: 10px auto;
+.upgrade-title span {
+    color: var(--primary);
+    position: relative;
+    display: inline-block;
 }
 
-/* --- PRICING GRID --- */
+/* Gạch chân cách điệu cho chữ PRO */
+.upgrade-title span::after {
+    content: '';
+    position: absolute;
+    bottom: 5px; left: 0; width: 100%; height: 10px;
+    background: rgba(245, 158, 11, 0.3); /* Vàng mờ */
+    z-index: -1;
+    transform: rotate(-2deg);
+}
+
+.upgrade-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-light);
+    max-width: 650px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Pricing Grid */
 .pricing-grid {
     display: grid;
-    grid-template-columns: 1fr 1.2fr; /* Cột PRO to hơn */
-    gap: 30px;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 40px;
     align-items: center;
+    margin-bottom: 80px;
 }
 
-/* Card Cơ Bản */
+/* Card Styles */
 .plan-card {
-    background: #fff;
-    border: 3px solid #eee;
-    border-radius: 30px;
-    padding: 30px;
-    text-align: center;
-    color: #888;
-    transition: 0.3s;
-}
-
-.plan-card h3 { font-size: 1.5rem; margin-bottom: 10px; color: #666; }
-.plan-price { font-size: 2rem; font-weight: 800; margin-bottom: 20px; color: #333; }
-
-/* Card PRO (VIP) */
-.plan-card.pro {
-    background: #fff;
-    border: 3px solid var(--dark-ink);
-    box-shadow: 12px 12px 0px gold;
+    background: var(--white);
+    border-radius: 24px;
+    padding: 40px;
+    /* Bóng đổ kiểu Soft Shadow hiện đại */
+    box-shadow: 0 20px 40px -5px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    transform: scale(1.05);
-    z-index: 2;
     overflow: hidden;
 }
 
+.plan-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+}
+
+/* Card PRO */
+.plan-card.pro {
+    border: 2px solid var(--primary);
+    background: #ffffff;
+    transform: scale(1.05);
+    z-index: 5;
+}
+
 .plan-card.pro:hover {
-    transform: scale(1.08) translateY(-5px);
-    box-shadow: 15px 15px 0px gold;
+    transform: scale(1.08) translateY(-8px);
 }
 
-/* Hiệu ứng lấp lánh */
-.plan-card.pro::before {
-    content: '';
+.popular-tag {
     position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-    transform: rotate(45deg);
-    animation: shine 3s infinite;
-}
-
-.crown-icon {
-    font-size: 4rem;
-    margin-bottom: 15px;
-    display: inline-block;
-    animation: float 3s ease-in-out infinite;
-    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
-}
-
-.pro-title {
-    font-size: 2rem;
-    font-weight: 900;
-    color: var(--dark-ink);
-    margin-bottom: 5px;
-}
-
-.pro-badge {
-    background: gold;
-    color: #b45309;
-    padding: 5px 15px;
+    top: 20px; right: 20px;
+    background: #fffbeb;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 6px 12px;
     border-radius: 20px;
-    font-weight: 800;
-    font-size: 0.85rem;
-    display: inline-block;
-    margin-bottom: 20px;
+    border: 1px solid #fcd34d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Features List */
+/* Typography inside Card */
+.plan-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.plan-price {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    letter-spacing: -1px;
+}
+
+.plan-price.vip-text {
+    color: var(--primary);
+}
+
+.plan-price span {
+    font-size: 1rem;
+    color: var(--text-light);
+    font-weight: 500;
+    letter-spacing: normal;
+}
+
+/* List Features */
 .features-list {
     list-style: none;
     padding: 0;
-    margin: 20px 0 30px;
     text-align: left;
 }
 
 .features-list li {
-    padding: 10px 0;
-    border-bottom: 1px dashed #eee;
+    padding: 12px 0;
+    color: var(--text-dark);
+    font-weight: 500;
     display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    color: var(--dark-ink);
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px dashed #f1f5f9;
 }
 
-.features-list li i { color: #2ecc71; }
-.features-list li.disabled { color: #ccc; text-decoration: line-through; }
-.features-list li.disabled i { color: #ccc; }
+.features-list li:last-child {
+    border-bottom: none;
+}
 
-/* Form Area inside Card */
-.upgrade-form {
-    background: #fff9c4; /* Vàng nhạt */
-    padding: 20px;
+.features-list i {
+    margin-top: 4px;
+}
+
+.features-list .check { color: var(--primary); }
+.features-list .lock { color: #cbd5e1; }
+.features-list .crown { color: var(--accent); }
+
+/* Activation Zone */
+.activation-zone {
+    max-width: 550px;
+    margin: 0 auto;
+    background: var(--white);
+    padding: 5px; /* Viền giả */
     border-radius: 20px;
-    border: 2px dashed #fbc02d;
-    margin-top: 20px;
+    box-shadow: 0 20px 40px -5px rgba(79, 70, 229, 0.15);
+    background-image: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%);
 }
 
-.cute-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 15px 0;
-    cursor: pointer;
-    text-align: left;
-    font-size: 0.9rem;
-    color: #555;
-}
-.cute-checkbox input { accent-color: var(--dark-ink); width: 18px; height: 18px; }
-
-.btn-upgrade {
-    width: 100%;
-    padding: 15px;
-    background: var(--dark-ink);
-    color: white;
-    font-weight: 900;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 4px 4px 0px #fbc02d;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+.activation-inner {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
 }
 
-.btn-upgrade:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px #fbc02d;
-    background: #000;
-}
-
-/* FIX LỖI ẨN ELEMENT */
-.upgrade-header, .plan-card {
-    /* Đảm bảo phần tử luôn hiển thị nếu JS chưa kịp chạy */
-    opacity: 1; 
-    visibility: visible;
-}
-
-/* --- STYLE CHO Ô NHẬP SECRET KEY --- */
-.key-input-wrapper {
+.code-input-group {
+    margin: 25px 0;
     position: relative;
-    margin-bottom: 10px;
 }
 
 .code-input {
-    border: 2px dashed #fbc02d !important; /* Viền nét đứt màu vàng */
-    background: #fff !important;
-    text-align: center;         /* Căn giữa nội dung */
-    font-family: 'Courier New', monospace; /* Font kiểu code */
-    font-size: 1.2rem !important;
-    font-weight: 800;
-    letter-spacing: 3px;        /* Giãn cách chữ cho dễ đọc */
-    text-transform: uppercase;  /* Tự động viết hoa */
-    color: var(--dark-ink);
-}
-
-.code-input::placeholder {
-    letter-spacing: 1px;
-    font-size: 1rem;
-    color: #ccc;
-    text-transform: none;
+    width: 100%;
+    padding: 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    color: var(--primary);
+    background: #f8fafc;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    transition: all 0.2s;
 }
 
 .code-input:focus {
-    border-style: solid !important; /* Khi bấm vào thì viền liền */
-    box-shadow: 0 0 0 4px rgba(251, 192, 45, 0.2) !important;
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
-.hint-text {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 15px;
-    font-style: italic;
+.btn-activate {
+    background: var(--text-dark);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
 }
 
-/* Đặt lại trạng thái ban đầu cho animation trong CSS (nếu muốn mượt hơn) */
-/* Nhưng để an toàn nhất, ta để mặc định hiện, JS sẽ tự set opacity: 0 khi bắt đầu chạy */
-
-/* Animations */
-@keyframes shine { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.btn-activate:hover {
+    background: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+}
 
 /* Responsive */
 @media (max-width: 768px) {
-    .pricing-grid { grid-template-columns: 1fr; }
-    .plan-card { order: 2; }
-    .plan-card.pro { order: 1; transform: scale(1); }
+    .pricing-grid { grid-template-columns: 1fr; gap: 20px; }
+    .plan-card.pro { transform: scale(1); order: -1; }
+    .upgrade-title { font-size: 2.5rem; }
+    .upgrade-wrapper::before, .upgrade-wrapper::after { display: none; }
 }
