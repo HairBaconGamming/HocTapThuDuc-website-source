@@ -1,6 +1,7 @@
 const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const User = require('../models/User');
+const Lesson = require('../models/Lesson');
 
 exports.getCourseDetail = async (req, res) => {
     try {
