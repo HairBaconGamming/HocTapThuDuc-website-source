@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* --- SCOPED CONTAINER: Chỉ ảnh hưởng bên trong khu vực game --- */
+.garden-scope {
+    --rpg-dark: #2d1b0e;    /* Gỗ tối */
+    --rpg-light: #5c3a21;   /* Gỗ sáng */
+    --rpg-gold: #ffb300;    /* Vàng */
+    --rpg-paper: #e3d5ca;   /* Giấy cũ */
+    --rpg-shadow: rgba(0,0,0,0.7);
+    --rpg-font: 'VT323', monospace;
+    
+    position: relative;
+    width: 100%;
+    /* Tự động tính chiều cao: Màn hình - Header (giả sử header cao 70px) - Footer */
+    height: 85vh; 
+    margin: 20px auto;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden; /* Cắt mọi thứ thừa ra */
+    font-family: var(--rpg-font);
+    border: 4px solid #1a1a1a;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    user-select: none;
+}
+
+/* --- CANVAS GAME --- */
+#game-container {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+}
+
+/* --- UI COMPONENTS (Chung) --- */
+.rpg-panel {
+    background: var(--rpg-dark);
+    border: 4px solid var(--rpg-light);
+    color: var(--rpg-gold);
+    /* Hiệu ứng viền Pixel 3D bằng box-shadow */
+    box-shadow: 
+        inset 4px 4px 0 rgba(255,255,255,0.1),
+        inset -4px -4px 0 rgba(0,0,0,0.5),
+        4px 4px 0 #000;
+    image-rendering: pixelated;
+}
+
+/* --- 1. HUD (Góc Trái) --- */
+.garden-hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none; /* Để click xuyên qua */
+}
+
+.hud-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(45, 27, 14, 0.9); /* Bán trong suốt */
+    padding: 8px 16px;
+    border-left: 6px solid var(--rpg-gold);
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); /* Cắt vát góc cho ngầu */
+}
+
+.hud-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(2px 2px 0 #000);
+}
+
+.hud-value {
+    font-size: 2rem;
+    color: #fff;
+    text-shadow: 2px 2px 0 #000;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* --- 2. TOOLBAR (Thanh Công Cụ Dưới) --- */
+.garden-toolbar {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50px;
+    backdrop-filter: blur(4px);
+    z-index: 50;
+}
+
+.rpg-btn {
+    width: 72px; height: 72px;
+    background: var(--rpg-light);
+    border: 3px solid var(--rpg-gold);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 0 #222; /* Độ dày nút */
+}
+
+.rpg-btn:active {
+    transform: translateY(6px); /* Nhấn xuống */
+    box-shadow: 0 0 0 #222;
+}
+
+.rpg-btn img {
+    width: 48px; height: 48px;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.5));
+}
+
+.rpg-btn::after {
+    /* Label nhỏ dưới nút */
+    content: attr(data-label);
+    position: absolute;
+    bottom: -25px;
+    font-size: 1rem;
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+    opacity: 0;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+.rpg-btn:hover::after { opacity: 1; bottom: -30px; }
+
+/* --- 3. SHOP MODAL (Giao diện Inventory) --- */
+.garden-modal-overlay {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    display: none;
+    align-items: center; justify-content: center;
+}
+
+.rpg-shop-window {
+    width: 800px; height: 550px;
+    display: flex; flex-direction: column;
+    position: relative;
+}
+
+/* Header Shop */
+.shop-title-bar {
+    background: var(--rpg-gold);
+    color: var(--rpg-dark);
+    padding: 10px 20px;
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    border: 4px solid var(--rpg-dark);
+    margin-bottom: -4px; /* Dính liền với body */
+    position: relative;
+    z-index: 2;
+}
+
+.btn-close-shop {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: #d32f2f; color: white; border: 2px solid #000;
+    width: 30px; height: 30px; cursor: pointer;
+    font-family: inherit; font-size: 1.2rem;
+}
+
+/* Body Shop */
+.shop-content {
+    flex: 1;
+    background: var(--rpg-paper);
+    border: 4px solid var(--rpg-dark);
+    padding: 20px;
+    display: flex; gap: 20px;
+}
+
+/* Sidebar Tabs */
+.shop-tabs {
+    width: 150px;
+    display: flex; flex-direction: column; gap: 10px;
+}
+
+.tab-rpg {
+    background: var(--rpg-light);
+    color: #bbb;
+    border: 2px solid var(--rpg-dark);
+    padding: 15px 10px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 1.4rem;
+    transition: 0.2s;
+}
+.tab-rpg:hover { color: #fff; background: var(--rpg-dark); }
+.tab-rpg.active {
+    background: var(--rpg-gold);
+    color: var(--rpg-dark);
+    font-weight: bold;
+    border-color: #000;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+}
+
+/* Grid Items */
+.shop-grid {
+    flex: 1;
+    background: rgba(0,0,0,0.1);
+    border: 2px inset rgba(0,0,0,0.2);
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 15px;
+    overflow-y: auto;
+}
+
+/* Scrollbar ngầu */
+.shop-grid::-webkit-scrollbar { width: 10px; background: var(--rpg-dark); }
+.shop-grid::-webkit-scrollbar-thumb { background: var(--rpg-gold); border: 2px solid var(--rpg-dark); }
+
+.item-card {
+    background: #fff;
+    border: 3px solid var(--rpg-dark);
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: 0.1s;
+}
+.item-card:hover {
+    background: #fff9c4;
+    transform: scale(1.05);
+    border-color: var(--rpg-gold);
+    z-index: 10;
+}
+.item-card img { width: 64px; height: 64px; object-fit: contain; }
+.item-name { font-size: 1.2rem; color: var(--rpg-dark); margin: 5px 0; line-height: 1; }
+.item-price {
+    background: var(--rpg-dark); color: var(--rpg-gold);
+    display: inline-block; padding: 2px 8px; font-size: 1.1rem;
+}

@@ -1486,3 +1486,100 @@ async function submitLessonAJAX(publishStatus) {
         if(btnDraft) { btnDraft.innerHTML = originalDraftText; btnDraft.disabled = false; }
     }
 }
+
+/* ==========================================================================
+   PART 5: IMPORT / EXPORT TOOLS
+   ========================================================================== */
+
+/**
+ * Xuất nội dung bài học hiện tại ra file .json
+ */
+function exportLessonJSON() {
+    // 1. Serialize blocks hiện tại
+    const dataStr = JSON.stringify(blocks, null, 2); // Format đẹp
+    const blob = new Blob([dataStr], { type: "application/json" });
+
+    // 2. Tạo tên file dựa trên tiêu đề bài học
+    const titleInput = document.getElementById('mainTitleInput');
+    let filename = 'lesson_data.json';
+    if (titleInput && titleInput.value.trim()) {
+        // Chuyển tiếng Việt có dấu thành không dấu, thay khoảng trắng bằng _
+        const cleanTitle = titleInput.value
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9]/g, '_')
+            .toLowerCase();
+        filename = `${cleanTitle}.json`;
+    }
+
+    // 3. Tải xuống
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Thông báo nhỏ
+    const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+    Toast.fire({ icon: 'success', title: 'Đã xuất file JSON thành công' });
+}
+
+/**
+ * Nhập nội dung từ file .json vào editor
+ */
+async function importLessonJSON(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Cảnh báo trước khi ghi đè
+    const result = await Swal.fire({
+        title: 'Nhập dữ liệu?',
+        text: "Hành động này sẽ GHI ĐÈ toàn bộ nội dung hiện tại bằng dữ liệu từ file. Bạn có chắc không?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Đồng ý nhập',
+        cancelButtonText: 'Hủy'
+    });
+
+    if (!result.isConfirmed) {
+        input.value = ''; // Reset input để chọn lại file cũ được
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const json = JSON.parse(e.target.result);
+
+            // Validate sơ bộ: Phải là mảng các blocks
+            if (Array.isArray(json)) {
+                // Cập nhật biến global blocks
+                blocks = json;
+
+                // Render lại giao diện
+                renderBlocks();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Nhập thành công!',
+                    text: `Đã tải ${json.length} khối nội dung.`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire('Lỗi định dạng', 'File JSON không đúng cấu trúc bài học (Phải là một mảng Array).', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Lỗi file', 'File JSON bị lỗi cú pháp hoặc hỏng.', 'error');
+        }
+        // Reset input
+        input.value = '';
+    };
+
+    reader.readAsText(file);
+}

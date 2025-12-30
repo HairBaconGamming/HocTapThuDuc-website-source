@@ -5,10 +5,11 @@ const courseSchema = new mongoose.Schema({
     slug: { type: String, slug: 'title', unique: true }, // Cần plugin mongoose-slug-generator
     subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    isPublished: { type: Boolean, default: false },
     description: String,
     thumbnail: String,
-    isPublished: { type: Boolean, default: true }, // Mặc định public cho nhanh
-
+    isPublished: { type: Boolean, default: false },
+    
     // TRƯỜNG MỚI: Chứa cấu trúc cây dạng JSON string (Bản nháp)
     draftTree: { type: String, default: null },
     // Lưu lại ID bài học cuối cùng đang sửa để mở lại đúng chỗ đó

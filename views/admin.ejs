@@ -200,6 +200,9 @@
             <div class="nav-item" onclick="showTab('courses')">
                 <i class="fas fa-layer-group"></i> Khóa Học
             </div>
+            <div class="nav-item" onclick="showTab('subjects')">
+                <i class="fas fa-book"></i> Môn Học
+            </div>
             <div class="nav-item" onclick="showTab('news')">
                 <i class="fas fa-newspaper"></i> Tin Tức
             </div>
@@ -398,6 +401,60 @@
             </div>
         </div>
 
+        <div id="subjects" class="section">
+            <div class="table-wrapper">
+                <div class="table-header">
+                    <h3>Quản lý môn học</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="search-box" style="margin-bottom: 0;">
+                            <input type="text" id="subjectSearch" placeholder="Tìm môn..." onkeyup="filterTable('subjectTable', this.value)">
+                        </div>
+                        <button class="btn btn-primary" onclick="openSubjectModal('', '', '')">
+                            <i class="fas fa-plus"></i> Thêm Môn
+                        </button>
+                    </div>
+                </div>
+                <table id="subjectTable">
+                    <thead>
+                        <tr>
+                            <th>Ảnh / Icon</th>
+                            <th>Tên Môn</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if(typeof subjects !== 'undefined') { %>
+                            <% subjects.forEach(s => { %>
+                            <tr>
+                                <td>
+                                    <img src="<%= s.image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' %>" 
+                                         style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 5px;">
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; color: var(--dark); font-size: 1rem;"><%= s.name %></div>
+                                    <div style="font-size: 0.8rem; color: #94a3b8;">ID: <%= s._id %></div>
+                                </td>
+                                <td>
+                                    <div class="action-group">
+                                        <button class="btn btn-warning btn-sm" 
+                                            onclick="openSubjectModal('<%= s._id %>', '<%= s.name %>', '<%= s.image %>')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/subject/delete', 'subjectId', '<%= s._id %>')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr><td colspan="3" style="text-align:center; color: #94a3b8;">Chưa có dữ liệu môn học (Cần update Controller)</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="news" class="section">
             <div class="table-wrapper">
                 <div class="table-header">
@@ -474,6 +531,30 @@
         </div>
     </div>
 
+    <div id="modalSubject" class="modal">
+        <div class="modal-content" style="width: 450px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">📚 Thông tin môn học</h3>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalSubject').style.display='none'"></i>
+            </div>
+
+            <form action="/admin/subject/save" method="POST">
+                <input type="hidden" name="subjectId" id="editSubjectId">
+                
+                <label>Tên môn học:</label>
+                <input type="text" name="name" id="editSubjectName" required placeholder="Ví dụ: Toán Học, Ngữ Văn...">
+
+                <label>Link Icon/Ảnh (URL):</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" name="image" id="editSubjectImage" placeholder="https://..." oninput="document.getElementById('previewIcon').src = this.value || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" style="margin-bottom: 20px;">
+                    <img id="previewIcon" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 20px; border: 1px solid #eee; border-radius: 5px; padding: 2px;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Lưu Dữ Liệu</button>
+            </form>
+        </div>
+    </div>
+
     <div id="modalNews" class="modal">
         <div class="modal-content" style="width: 600px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -525,6 +606,7 @@
             if(tabId === 'dashboard' && menus[0]) { menus[0].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Dashboard"; }
             if(tabId === 'users' && menus[1]) { menus[1].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Người Dùng"; }
             if(tabId === 'courses' && menus[2]) { menus[2].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Khóa Học"; }
+            if(tabId === 'subjects' && menus[3]) { menus[3].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Môn Học"; }
             if(tabId === 'news' && menus[3]) { menus[3].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Tin Tức"; }
             
             const url = new URL(window.location);
@@ -606,6 +688,17 @@
             document.getElementById('editProKey').value = key;
             
             document.getElementById('modalUser').style.display = 'flex';
+        }
+
+        function openSubjectModal(id, name, image) {
+            document.getElementById('editSubjectId').value = id;
+            document.getElementById('editSubjectName').value = name;
+            document.getElementById('editSubjectImage').value = image;
+            
+            // Reset ảnh preview
+            document.getElementById('previewIcon').src = image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+            
+            document.getElementById('modalSubject').style.display = 'flex';
         }
 
         function generateKey() {

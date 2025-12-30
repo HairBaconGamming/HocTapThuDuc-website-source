@@ -110,6 +110,7 @@ app.use(trackVisits); // Đặt dòng này sau các app.use(express.static...)
 // --- Routes ---
 app.use("/", require("./routes/index"));
 app.use("/", require("./routes/auth"));
+app.use("/my-tree", require('./routes/garden'));
 
 app.use("/lesson", require("./routes/lesson"));
 app.use("/api", require("./routes/api"));

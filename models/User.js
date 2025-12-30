@@ -18,9 +18,6 @@ const UserSchema = new mongoose.Schema(
     // --- NEW FIELD ---
     avatar: { type: String, default: "https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191" }, // Default avatar
     points: { type: Number, default: 0 },
-    treeLevel: { type: Number, default: 0, min: 0 },
-    growthPoints: { type: Number, default: 0, min: 0 },
-    lastGrowthActivity: { type: Date, default: Date.now },
   },
   {
     timestamps: true,

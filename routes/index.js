@@ -19,7 +19,6 @@ const courseController = require('../controllers/courseController');
 // Import Middleware & Controller
 const { isLoggedIn } = require('../middlewares/auth');
 const leaderboardController = require('../controllers/leaderboardController');
-const { getPointsForNextLevel, getPointsForCurrentLevel } = require("../utils/growthUtils"); // Nếu file này chưa có, xem phần Utils bên dưới
 
 // --- 1. HOME PAGE ---
 router.get("/", async (req, res) => {
@@ -216,13 +215,22 @@ router.get("/profile/edit", isLoggedIn, (req, res) => {
 
 router.post("/profile/edit", isLoggedIn, async (req, res) => {
     try {
-        const { email, bio, class: userClass, school } = req.body;
+        // Added 'avatar' to destructuring
+        const { email, bio, class: userClass, school, avatar } = req.body; 
         const user = await User.findById(req.user._id);
-        user.email = email; user.bio = bio; user.class = userClass; user.school = school;
+        
+        user.email = email; 
+        user.bio = bio; 
+        user.class = userClass; 
+        user.school = school;
+        
+        // Explicitly update avatar if provided
+        if (avatar && avatar.trim() !== "") {
+            user.avatar = avatar.trim();
+        }
         
         if (req.body.resetPassword === "true") {
             const { currentPassword, newPassword, confirmNewPassword } = req.body;
-            // Logic đổi pass đơn giản hóa (để code gọn, nên copy logic captcha từ file cũ nếu cần strict)
             const isMatch = await new Promise((resolve, reject) => {
                 user.comparePassword(currentPassword, (err, m) => err ? reject(err) : resolve(m));
             });
@@ -282,23 +290,6 @@ router.get("/profile/view/:id", async (req, res) => {
     } catch(e) {
         console.error(e);
         res.redirect("/");
-    }
-});
-
-router.get("/my-tree", isLoggedIn, (req, res) => {
-    try {
-        // Cần đảm bảo file utils/growthUtils.js tồn tại và export đúng hàm
-        const treeData = {
-            treeLevel: req.user.treeLevel || 0,
-            growthPoints: req.user.growthPoints || 0,
-            pointsForCurrentLevel: getPointsForCurrentLevel ? getPointsForCurrentLevel(req.user.treeLevel || 0) : 100,
-            pointsForNextLevel: getPointsForNextLevel ? getPointsForNextLevel(req.user.treeLevel || 0) : 200,
-            username: req.user.username,
-        };
-        res.render("myTree", { title: "Cây Thành Tài", user: req.user, treeData, activePage: "myTree" });
-    } catch (e) {
-        console.error("Tree Error:", e);
-        res.redirect("/dashboard"); 
     }
 });
 

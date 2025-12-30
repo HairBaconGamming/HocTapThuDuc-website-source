@@ -1,0 +1,87 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleGarden.css">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+
+<div class="container" style="max-width: 1400px; padding: 0;">
+    <div class="garden-scope">
+        
+        <div class="garden-hud">
+            <div class="hud-stat">
+                <div class="hud-icon">💧</div>
+                <div class="hud-value" id="hudWater"><%= garden.water %></div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-icon">💰</div>
+                <div class="hud-value" id="hudGold"><%= garden.gold %></div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-icon">🧪</div>
+                <div class="hud-value" id="hudFertilizer"><%= garden.fertilizer || 0 %></div>
+            </div>
+        </div>
+
+        <div id="game-container"></div>
+
+        <div class="garden-toolbar">
+            <button class="rpg-btn" data-label="Trồng Cây" onclick="window.gameEvents.emit('openShop', 'plants')">
+                <img src="https://cdn-icons-png.flaticon.com/512/740/740889.png">
+            </button>
+            <button class="rpg-btn" data-label="Trang Trí" onclick="window.gameEvents.emit('openShop', 'decors')">
+                <img src="https://cdn-icons-png.flaticon.com/512/812/812850.png">
+            </button>
+            <button class="rpg-btn" data-label="Đổi Nền" onclick="window.gameEvents.emit('openShop', 'backgrounds')">
+                <img src="https://cdn-icons-png.flaticon.com/512/3214/3214954.png">
+            </button>
+            <div style="width: 2px; background: rgba(255,255,255,0.3); margin: 0 10px;"></div>
+            <button class="rpg-btn" data-label="Tải Lại" onclick="location.reload()">
+                <img src="https://cdn-icons-png.flaticon.com/512/3031/3031709.png">
+            </button>
+        </div>
+
+        <div class="garden-modal-overlay" id="shopOverlay">
+            <div class="rpg-shop-window rpg-panel">
+                <div class="shop-title-bar">
+                    Cửa Hàng Vật Phẩm
+                    <button class="btn-close-shop" onclick="closeShop()">X</button>
+                </div>
+                <div class="shop-content">
+                    <div class="shop-tabs">
+                        <div class="tab-rpg active" onclick="switchShopTab('plants')">Cây Trồng</div>
+                        <div class="tab-rpg" onclick="switchShopTab('decors')">Kiến Trúc</div>
+                        <div class="tab-rpg" onclick="switchShopTab('backgrounds')">Thế Giới</div>
+                    </div>
+                    <div class="shop-grid" id="shopGrid">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    window.gardenAssets = <%- JSON.stringify(assets) %>;
+    window.gardenData = <%- JSON.stringify(garden) %>;
+    window.currentBgConfig = window.gardenAssets.BACKGROUNDS[currentBgId] || window.gardenAssets.BACKGROUNDS['default'];
+    window.currentBgId = "<%= garden.backgroundId || 'default' %>";
+
+    function closeShop() {
+        document.getElementById('shopOverlay').style.display = 'none';
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/gardenPhaser.js"></script>
+
+<style>
+    .swal2-popup.pixel-toast {
+        background: #3e2723 !important;
+        border: 2px solid #ffb300 !important;
+        color: #ffb300 !important;
+        font-family: 'VT323', monospace !important;
+        border-radius: 0 !important;
+        box-shadow: 4px 4px 0 #000 !important;
+    }
+</style>
+
+<%- include('partials/footer') %>

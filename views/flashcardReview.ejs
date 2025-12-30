@@ -1,0 +1,144 @@
+<%- include('partials/header') %>
+<style>
+    /* CSS Lật Thẻ 3D */
+    .flashcard-scene {
+        width: 100%; max-width: 600px; height: 350px; perspective: 1000px; margin: 0 auto;
+    }
+    .flashcard {
+        width: 100%; height: 100%; position: relative; transition: transform 0.6s;
+        transform-style: preserve-3d; cursor: pointer; border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .flashcard.is-flipped { transform: rotateY(180deg); }
+    .card-face {
+        position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: white; border-radius: 20px; padding: 30px; text-align: center;
+    }
+    .card-face.back { transform: rotateY(180deg); background: #f0f9ff; border: 2px solid #bae6fd; }
+    .card-content { font-size: 1.8rem; font-weight: 600; color: #334155; }
+    
+    .review-controls {
+        display: flex; gap: 10px; justify-content: center; margin-top: 30px; opacity: 0; pointer-events: none; transition: 0.3s;
+    }
+    .review-controls.active { opacity: 1; pointer-events: all; }
+    
+    .btn-srs { padding: 12px 24px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; transition: transform 0.1s; width: 100px; }
+    .btn-srs:active { transform: scale(0.95); }
+    .btn-fail { background: #ef4444; } /* Quên */
+    .btn-hard { background: #f59e0b; } /* Khó */
+    .btn-good { background: #3b82f6; } /* Nhớ */
+    .btn-easy { background: #10b981; } /* Quá dễ */
+</style>
+
+<div class="container" style="padding: 40px 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2>🧠 Ôn Tập Kiến Thức</h2>
+        <p>Kiếm <b>Phân Bón</b> để chăm sóc khu vườn của bạn!</p>
+    </div>
+
+    <div id="loading" style="text-align: center;">Đang tải bộ thẻ...</div>
+    <div id="finished" style="display:none; text-align: center;">
+        <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 20px;"></i>
+        <h3>Hoàn thành xuất sắc!</h3>
+        <p>Bạn đã ôn hết thẻ bài hôm nay.</p>
+        <a href="/my-tree" class="btn btn-primary" style="margin-top: 10px;">Về Vườn Dùng Phân Bón 🌱</a>
+    </div>
+
+    <div id="reviewArea" style="display:none;">
+        <div class="flashcard-scene" onclick="flipCard()">
+            <div class="flashcard" id="currentCard">
+                <div class="card-face front">
+                    <small style="color:#999; margin-bottom: 10px;">Câu hỏi</small>
+                    <div class="card-content" id="txtFront">?</div>
+                    <div style="margin-top: 20px; color: #cbd5e1; font-size: 0.9rem;">(Chạm để lật)</div>
+                </div>
+                <div class="card-face back">
+                    <small style="color:#999; margin-bottom: 10px;">Đáp án</small>
+                    <div class="card-content" id="txtBack">!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="review-controls" id="controls">
+            <button class="btn-srs btn-fail" onclick="rate(0)">Quên</button>
+            <button class="btn-srs btn-hard" onclick="rate(3)">Khó</button>
+            <button class="btn-srs btn-good" onclick="rate(4)">Nhớ</button>
+            <button class="btn-srs btn-easy" onclick="rate(5)">Dễ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cards = [];
+    let currentIndex = 0;
+    const cardEl = document.getElementById('currentCard');
+    const controlsEl = document.getElementById('controls');
+
+    // 1. Tải thẻ
+    async function loadCards() {
+        const res = await fetch('/api/flashcards/review');
+        const data = await res.json();
+        if(data.cards && data.cards.length > 0) {
+            cards = data.cards;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('reviewArea').style.display = 'block';
+            showCard(0);
+        } else {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('finished').style.display = 'block';
+            document.querySelector('#finished h3').innerText = "Không có thẻ cần ôn!";
+            document.querySelector('#finished p').innerText = "Bạn đã học rất chăm chỉ. Hãy quay lại sau nhé.";
+        }
+    }
+    loadCards();
+
+    // 2. Hiển thị thẻ
+    function showCard(idx) {
+        if(idx >= cards.length) {
+            document.getElementById('reviewArea').style.display = 'none';
+            document.getElementById('finished').style.display = 'block';
+            return;
+        }
+        const c = cards[idx];
+        document.getElementById('txtFront').innerText = c.front;
+        document.getElementById('txtBack').innerText = c.back;
+        
+        // Reset trạng thái
+        cardEl.classList.remove('is-flipped');
+        controlsEl.classList.remove('active');
+    }
+
+    // 3. Lật thẻ
+    function flipCard() {
+        if(!cardEl.classList.contains('is-flipped')) {
+            cardEl.classList.add('is-flipped');
+            setTimeout(() => controlsEl.classList.add('active'), 200);
+        }
+    }
+
+    // 4. Đánh giá & Gửi về Server
+    async function rate(quality) {
+        // Ngăn click đúp
+        controlsEl.classList.remove('active');
+        
+        const card = cards[currentIndex];
+        const res = await fetch('/api/flashcards/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ cardId: card._id, quality })
+        });
+        const data = await res.json();
+
+        if(data.bonusFertilizer) {
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'success', 
+                title: '+1 Phân Bón 🧪', showConfirmButton: false, timer: 1500
+            });
+        }
+
+        currentIndex++;
+        setTimeout(() => showCard(currentIndex), 300);
+    }
+</script>
+<%- include('partials/footer') %>

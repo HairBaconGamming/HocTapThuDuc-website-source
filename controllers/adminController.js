@@ -15,6 +15,7 @@ exports.getAdminPanel = async (req, res) => {
 
         const users = await User.find().sort({ createdAt: -1 }).lean();
         const courses = await Course.find().populate('author', 'username email').sort({ createdAt: -1 }).lean();
+        const subjects = await Subject.find().sort({ createdAt: -1 }).lean();
         const news = await News.find().sort({ createdAt: -1 }).lean();
 
         // 2. --- XỬ LÝ DỮ LIỆU BIỂU ĐỒ (7 NGÀY GẦN NHẤT) ---
@@ -54,6 +55,7 @@ exports.getAdminPanel = async (req, res) => {
             stats: { totalUsers, totalCourses, totalLessons, totalNews },
             users,
             courses,
+            subjects,
             news,
             // Truyền dữ liệu chart riêng biệt để tránh lỗi JSON
             labels: labels,

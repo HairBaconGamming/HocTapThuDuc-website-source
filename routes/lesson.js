@@ -6,13 +6,13 @@ const jwt = require("jsonwebtoken");
 const upload = multer();
 const { isLoggedIn, isPro } = require("../middlewares/auth");
 const { processLessonContent, getWordDiff, gradeEssaySimple, gradeEssaySmart, gradeEssayAIAll, levenshtein } = require("../utils/essayHelpers");
-const { updateGrowth } = require("../utils/growthUtils");
 const Lesson = require("../models/Lesson");
 const Subject = require("../models/Subject");
 const Unit = require("../models/Unit");
 const Course = require("../models/Course");
 const LessonCompletion = require("../models/LessonCompletion");
 const User = require("../models/User");
+const Garden = require('../models/Garden');
 
 // Rate Limiters
 const rateLimit = require("express-rate-limit");
@@ -189,13 +189,33 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
         const user = await User.findById(req.user._id);
         const points = 10;
         user.points += points;
-        const growth = await updateGrowth(user, points, req.app.locals.io, `Hoàn thành bài: ${req.params.id}`);
         
         await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
         await user.save();
 
-        res.json({ success: true, message: `+${points} điểm!`, points: user.points, leveledUp: growth.leveledUp });
-    } catch (e) { res.status(500).json({ error: "Lỗi." }); }
+        // -----------------------------------------------------
+        // 🔥 [MỚI] TÍCH HỢP VƯỜN TRI THỨC: TẶNG NƯỚC 
+        // -----------------------------------------------------
+        const WATER_REWARD = 5; // Số nước tặng
+        
+        const garden = await Garden.findOneAndUpdate(
+            { user: req.user._id },
+            { $inc: { water: WATER_REWARD } }, // Cộng nước
+            { upsert: true, new: true }        // Tạo vườn nếu chưa có
+        );
+        // -----------------------------------------------------
+
+        res.json({ 
+            success: true, 
+            message: `+${points} điểm & +${WATER_REWARD} nước 💧!`, // Thông báo cho user
+            points: user.points, 
+            leveledUp: growth.leveledUp,
+            water: garden.water // Trả về số nước mới để frontend cập nhật
+        });
+    } catch (e) { 
+        console.error(e);
+        res.status(500).json({ error: "Lỗi hệ thống." }); 
+    }
 });
 
 // Grade Essay

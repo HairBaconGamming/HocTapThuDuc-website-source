@@ -82,7 +82,15 @@ exports.getCourseDetail = async (req, res) => {
 exports.getCoursesBySubject = async (req, res) => {
     try {
         const { subjectId } = req.params;
-        const courses = await Course.find({ subjectId }).sort({ createdAt: -1 });
+        
+        // [SỬA LẠI LOGIC]
+        // Chỉ tìm các khóa học mà author chính là người đang login (req.user._id)
+        // Điều này đảm bảo User A không thấy khóa học của User B trong dropdown
+        const courses = await Course.find({ 
+            subjectId: subjectId,
+            author: req.user._id 
+        }).sort({ createdAt: -1 });
+
         res.json(courses);
     } catch (err) {
         res.status(500).json({ error: 'Lỗi tải danh sách khóa học' });
@@ -96,7 +104,8 @@ exports.createQuickCourse = async (req, res) => {
         const newCourse = new Course({
             title,
             subjectId,
-            author: req.user._id // Giả sử đã có middleware auth
+            author: req.user._id,
+            isPublished: false // [SỬA] Đảm bảo luôn là nháp khi tạo nhanh
         });
         await newCourse.save();
         res.json({ success: true, course: newCourse });
@@ -168,26 +177,23 @@ exports.deleteCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
 
-        // 1. Kiểm tra khóa học có tồn tại không
+        // Kiểm tra quyền sở hữu: Phải là tác giả HOẶC là Admin trùm
         const course = await Course.findById(courseId);
-        if (!course) {
-            return res.status(404).json({ error: 'Khóa học không tồn tại' });
+        if (!course) return res.status(404).json({ error: 'Khóa học không tồn tại' });
+
+        if (course.author.toString() !== req.user._id.toString() && req.user.username !== 'truonghoangnam') {
+            return res.status(403).json({ error: 'Không có quyền xóa khóa học của người khác' });
         }
 
-        // 2. Xóa tất cả BÀI HỌC thuộc khóa này
+        // Thực hiện xóa (như cũ)
         await Lesson.deleteMany({ courseId: courseId });
-
-        // 3. Xóa tất cả CHƯƠNG thuộc khóa này
         await Unit.deleteMany({ courseId: courseId });
-
-        // 4. Cuối cùng xóa KHÓA HỌC
         await Course.findByIdAndDelete(courseId);
 
-        res.json({ success: true, message: 'Đã xóa khóa học và toàn bộ nội dung bên trong.' });
+        res.json({ success: true, message: 'Đã xóa khóa học.' });
 
     } catch (err) {
-        console.error("Delete Course Error:", err);
-        res.status(500).json({ error: 'Lỗi server khi xóa khóa học.' });
+        res.status(500).json({ error: 'Lỗi server.' });
     }
 };
 
@@ -206,11 +212,20 @@ exports.getCourseDetails = async (req, res) => {
 exports.updateCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const { title, thumbnail, description, isPro, isPublished } = req.body;
+        
+        // Kiểm tra quyền sở hữu trước khi update
+        const course = await Course.findOne({ _id: courseId, author: req.user._id });
+        if (!course) return res.status(403).json({ success: false, error: 'Bạn không có quyền sửa khóa học này' });
 
-        await Course.findByIdAndUpdate(courseId, {
-            title, thumbnail, description, isPro, isPublished
-        });
+        const { title, thumbnail, description, isPro, isPublished } = req.body;
+        
+        // Cập nhật
+        course.title = title;
+        course.thumbnail = thumbnail;
+        course.description = description;
+        course.isPro = isPro;
+        course.isPublished = isPublished;
+        await course.save();
 
         res.json({ success: true });
     } catch (e) {
