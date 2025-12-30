@@ -10,8 +10,8 @@ module.exports = async (req, res, next) => {
 
             // Tìm bản ghi hôm nay, nếu không có thì tạo mới, nếu có thì tăng count
             await VisitStats.findOneAndUpdate(
-                { date: today },
-                { $inc: { count: 1 } },
+                { key: `visit_date_${today.toISOString().split('T')[0]}` },
+                { $inc: { count: 1 }, date: today },
                 { upsert: true, new: true }
             );
         }
