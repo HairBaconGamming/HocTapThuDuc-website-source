@@ -1,81 +1,89 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleLeaderboard.css">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
 <div class="leaderboard-wrapper">
     
-    <div class="lb-header" data-animate="fade-down">
+    <div class="lb-header">
         <h1 class="lb-title">🏆 Đấu Trường Danh Vọng</h1>
-        <p style="color: #666;">Vinh danh những chiến thần chăm chỉ nhất Server</p>
+        <div class="lb-desc">✨ Vinh danh những "Chiến Thần" chăm chỉ nhất Server ✨</div>
     </div>
 
     <div class="podium-container">
         
         <% if(top3[1]) { %>
             <a href="/profile/view/<%= top3[1]._id %>" class="podium-link rank-2">
-                <div class="podium-item">
+                <div class="podium-card">
+                    <div class="rank-badge">2</div>
                     <div class="podium-avatar-box">
                         <img src="<%= top3[1].avatar || '/default.png' %>" class="podium-avatar">
                     </div>
-                    <div class="podium-name"><%= top3[1].username %></div>
-                    <div class="podium-points"><%= top3[1].points %> pts</div>
-                    <div class="podium-block">2</div>
+                    <div class="podium-info">
+                        <div class="podium-name"><%= top3[1].username %></div>
+                        <div class="podium-score"><%= top3[1].totalPoints || 0 %> pts</div>
+                    </div>
                 </div>
             </a>
         <% } %>
 
         <% if(top3[0]) { %>
             <a href="/profile/view/<%= top3[0]._id %>" class="podium-link rank-1">
-                <div class="podium-item">
+                <div class="podium-card">
+                    <div class="crown">👑</div>
+                    <div class="rank-badge" style="background: #ffb300; border-color: #000; color: #000;">1</div>
                     <div class="podium-avatar-box">
-                        <div class="crown">👑</div>
                         <img src="<%= top3[0].avatar || '/default.png' %>" class="podium-avatar">
                     </div>
-                    <div class="podium-name">
-                        <%= top3[0].username %> 
-                        <% if(top3[0].isPro) { %><span class="pro-tag">PRO</span><% } %>
+                    <div class="podium-info">
+                        <div class="podium-name">
+                            <%= top3[0].username %>
+                            <% if(top3[0].isPro) { %><span class="pro-badge">PRO</span><% } %>
+                        </div>
+                        <div class="podium-score" style="font-size: 2rem;"><%= top3[0].totalPoints || 0 %> pts</div>
+                        <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔥 Out Trình 🔥</div>
                     </div>
-                    <div class="podium-points"><%= top3[0].points %> pts</div>
-                    <div class="podium-block">1</div>
                 </div>
             </a>
         <% } %>
 
         <% if(top3[2]) { %>
             <a href="/profile/view/<%= top3[2]._id %>" class="podium-link rank-3">
-                <div class="podium-item">
+                <div class="podium-card">
+                    <div class="rank-badge">3</div>
                     <div class="podium-avatar-box">
                         <img src="<%= top3[2].avatar || '/default.png' %>" class="podium-avatar">
                     </div>
-                    <div class="podium-name"><%= top3[2].username %></div>
-                    <div class="podium-points"><%= top3[2].points %> pts</div>
-                    <div class="podium-block">3</div>
+                    <div class="podium-info">
+                        <div class="podium-name"><%= top3[2].username %></div>
+                        <div class="podium-score"><%= top3[2].totalPoints || 0 %> pts</div>
+                    </div>
                 </div>
             </a>
         <% } %>
-
     </div>
 
     <div class="rank-list">
-        <% restOfList.forEach((u, idx) => { %>
-            <a href="/profile/view/<%= u._id %>" class="rank-link">
-                <div class="rank-card">
-                    <div class="rank-num">#<%= idx + 4 %></div>
-                    <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar">
-                    <div class="rank-info">
-                        <div class="rank-name">
-                            <%= u.username %>
-                            <% if(u.isPro) { %><span class="pro-tag">PRO</span><% } %>
+        <% if (restOfList && restOfList.length > 0) { %>
+            <% restOfList.forEach((u, idx) => { %>
+                <a href="/profile/view/<%= u._id %>" style="text-decoration: none;">
+                    <div class="rank-card">
+                        <div class="rank-num">#<%= idx + 4 %></div>
+                        <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar-sm">
+                        <div class="rank-details">
+                            <div class="rank-name-txt">
+                                <%= u.username %>
+                                <% if(u.isPro) { %><span class="pro-badge">PRO</span><% } %>
+                            </div>
+                            <div class="rank-meta"><%= u.class || 'Lớp ?' %> • <%= u.school || 'THPT Thủ Đức' %></div>
                         </div>
-                        <div style="font-size: 0.8rem; color: #888;"><%= u.class || 'Lớp ?' %></div>
+                        <div class="rank-pts"><%= u.totalPoints || 0 %></div>
                     </div>
-                    <div class="rank-score"><%= u.points %> <span style="font-size:0.7rem; font-weight:400; color:#aaa;">pts</span></div>
-                </div>
-            </a>
-        <% }) %>
-
-        <% if(restOfList.length === 0 && top3.length === 0) { %>
-            <div style="text-align: center; color: #999; padding: 20px;">
-                <i class="fas fa-ghost"></i> Chưa có dữ liệu xếp hạng.
+                </a>
+            <% }) %>
+        <% } else { %>
+            <div style="text-align: center; color: #999; padding: 40px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" style="opacity: 0.5;">
+                <p>Chưa có ai ở đây cả. Hãy là người đầu tiên leo rank!</p>
             </div>
         <% } %>
     </div>
@@ -83,41 +91,87 @@
 </div>
 
 <% if (user && myRank) { %>
-    <a href="/profile" style="text-decoration: none;"> <div class="sticky-rank-bar">
-            <div class="sticky-left">
-                <div class="my-rank-badge">#<%= myRank %></div>
-                <img src="<%= user.avatar || '/default.png' %>" class="my-avatar-circle">
-                <div class="my-info">
-                    <span class="my-label">Hạng của bạn</span>
-                    <span class="my-name"><%= user.username %></span>
+    <a href="/profile" style="text-decoration: none;">
+        <div class="player-hud">
+            <div class="hud-left">
+                <div class="hud-rank"><%= myRank %></div>
+                <img src="<%= user.avatar || '/default.png' %>" class="hud-avatar">
+                <div class="hud-info">
+                    <div class="hud-label">Thứ hạng của bạn</div>
+                    <div class="hud-name"><%= user.username %></div>
                 </div>
             </div>
-            <div class="sticky-right">
-                <div class="my-points-box">
-                    <%= user.points %> pts
-                </div>
+            <div class="hud-right">
+                <%= user.totalPoints || 0 %> <span style="font-size: 1rem;">pts</span>
             </div>
         </div>
     </a>
 <% } %>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const safeAnimate = (selector, fromVars, toVars) => {
-            const els = document.querySelectorAll(selector);
-            if(els.length === 0) return;
-            if(typeof gsap === 'undefined') {
-                els.forEach(el => { el.style.opacity='1'; el.style.transform='none'; el.style.visibility='visible'; });
-                return;
-            }
-            gsap.fromTo(els, fromVars, { ...toVars, clearProps: 'all' });
+        
+        // 1. Hàm chạy hiệu ứng (Sử dụng fromTo để chắc chắn 100% chạy đúng)
+        const runAnimations = () => {
+            // Nếu GSAP vẫn chưa có thì dừng, chờ lần check sau
+            if (typeof gsap === 'undefined') return;
+
+            const tl = gsap.timeline();
+
+            // Header bay xuống
+            tl.fromTo(".lb-header", 
+                { y: -50, opacity: 0, visibility: 'hidden' },
+                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: "back.out(1.7)" }
+            );
+
+            // Bục Podium nảy lên
+            tl.fromTo(".podium-link", 
+                { y: 100, opacity: 0, scale: 0.8, visibility: 'hidden' },
+                { y: 0, opacity: 1, scale: 1, visibility: 'visible', duration: 1, stagger: 0.2, ease: "elastic.out(1, 0.5)" },
+                "-=0.5"
+            );
+
+            // Danh sách Rank bay sang
+            tl.fromTo(".rank-card", 
+                { x: -30, opacity: 0, visibility: 'hidden' },
+                { x: 0, opacity: 1, visibility: 'visible', duration: 0.5, stagger: 0.05, ease: "power2.out" },
+                "-=0.8"
+            );
+
+            // Sticky Bar bay lên
+            tl.fromTo(".player-hud", 
+                { y: 100, opacity: 0, visibility: 'hidden' },
+                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: "power2.out" },
+                "-=0.5"
+            );
         };
 
-        // Animation config
-        safeAnimate('.podium-item', { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1, stagger: 0.2, ease: 'elastic.out(1, 0.5)' });
-        safeAnimate('.rank-card', { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, stagger: 0.05, delay: 0.5 });
-        safeAnimate('.lb-header', { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 });
+        // 2. CƠ CHẾ KIỂM TRA & KÍCH HOẠT (Fix lỗi mạng chậm)
+        if (typeof gsap !== 'undefined') {
+            // Nếu thư viện đã tải xong -> Chạy ngay
+            runAnimations();
+        } else {
+            // Nếu chưa xong -> Check mỗi 50ms
+            const checkInterval = setInterval(() => {
+                if (typeof gsap !== 'undefined') {
+                    clearInterval(checkInterval);
+                    runAnimations();
+                }
+            }, 50);
+
+            // 3. FAILSAFE (Dự phòng): Sau 3 giây mà vẫn lỗi -> Hiện thủ công
+            // (Tránh trường hợp mạng rớt hẳn khiến trang trắng trơn)
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                document.querySelectorAll('.lb-header, .podium-link, .rank-card, .player-hud').forEach(el => {
+                    el.style.opacity = '1';
+                    el.style.visibility = 'visible';
+                    el.style.transform = 'none';
+                });
+            }, 3000);
+        }
     });
 </script>
 
