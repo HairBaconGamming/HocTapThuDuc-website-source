@@ -25,20 +25,38 @@ const resetGarden = async () => {
         console.log(`👥 Tìm thấy ${users.length} người dùng. Đang cấp lại đất...`);
 
         let count = 0;
+        
+        // Tính toán tâm bản đồ (64x64 ô, mỗi ô 64px)
+        const GRID_SIZE = 64;
+        const MAP_SIZE = 64;
+        const CENTER_X = (MAP_SIZE * GRID_SIZE) / 2; // 2048
+        const CENTER_Y = (MAP_SIZE * GRID_SIZE) / 2; // 2048
+
         for (const user of users) {
             // Tạo vườn mặc định cho từng user
             await new Garden({
                 user: user._id,
-                water: 50,         // Tặng 50 nước
-                gold: 200,         // Tặng 200 vàng khởi nghiệp
-                fertilizer: 5,     // Tặng 5 phân bón
+                gold: 100,         // Tặng 500 vàng để người chơi thoải mái test tính năng mua bán
+                water: 1,         // Tặng 50 nước
+                fertilizer: 0,     // Tặng 5 phân bón
                 backgroundId: 'default',
+                
+                // [MỚI] Reset tiến độ hướng dẫn về 0 (Bắt đầu lại tutorial)
+                tutorialStep: 0,   
+                
+                // [MỚI] Đặt camera vào giữa map ngay từ đầu để không bị lạc
+                camera: { 
+                    x: CENTER_X, 
+                    y: CENTER_Y, 
+                    zoom: 1 
+                },
+
                 items: []          // Vườn trống để user tự kéo thả
             }).save();
             count++;
         }
 
-        console.log(`🌱 Đã cấp vườn mới thành công cho ${count} người dùng!`);
+        console.log(`🌱 Đã cấp vườn mới (Full Options) thành công cho ${count} người dùng!`);
         console.log("✨ Hoàn tất. Hệ thống Garden đã sẵn sàng.");
 
         process.exit(0);

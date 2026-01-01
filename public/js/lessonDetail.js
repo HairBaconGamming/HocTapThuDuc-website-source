@@ -348,19 +348,64 @@ async function completeLesson(lessonId) {
         const data = await res.json();
 
         if (res.ok) {
+            // [NÂNG CẤP] Giao diện phần thưởng đẹp mắt
             Swal.fire({
-                title: 'Hoàn thành!',
-                text: data.message || `Chúc mừng! Bạn nhận được +${data.points || 0} điểm.`,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
+                title: '<span style="color: #059669; font-weight: 800; font-size: 1.8rem;">XUẤT SẮC! 🎉</span>',
+                html: `
+                    <div style="font-size: 1.1rem; color: #4b5563; margin-bottom: 20px;">
+                        Bạn đã nỗ lực hết mình! Đây là phần thưởng xứng đáng:
+                    </div>
+                    
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <div class="reward-card" style="background: #ecfdf5; color: #059669; border: 2px solid #a7f3d0;">
+                            <div style="font-size: 2rem; margin-bottom: 5px;">🏆</div>
+                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.points || 0}</div>
+                            <div style="font-size: 0.9rem; font-weight: 600;">Điểm</div>
+                        </div>
+
+                        <div class="reward-card" style="background: #eff6ff; color: #2563eb; border: 2px solid #bfdbfe;">
+                            <div style="font-size: 2rem; margin-bottom: 5px;">💧</div>
+                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.water || 0}</div>
+                            <div style="font-size: 0.9rem; font-weight: 600;">Nước</div>
+                        </div>
+
+                        <div class="reward-card" style="background: #fffbeb; color: #d97706; border: 2px solid #fde68a;">
+                            <div style="font-size: 2rem; margin-bottom: 5px;">💰</div>
+                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.gold || 0}</div>
+                            <div style="font-size: 0.9rem; font-weight: 600;">Vàng</div>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        .reward-card {
+                            width: 90px; padding: 10px; border-radius: 15px;
+                            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        }
+                        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                    </style>
+                `,
+                icon: null, // Tắt icon mặc định để dùng giao diện custom
+                showConfirmButton: true,
+                confirmButtonText: 'Tuyệt vời! Tiếp tục nào 🚀',
+                confirmButtonColor: '#059669',
+                backdrop: `rgba(0,0,0,0.4)`,
+                padding: '2rem',
+                customClass: {
+                    popup: 'rounded-2xl'
+                }
             }).then(() => {
-                // Redirect hoặc update UI
+                // Update UI Nút bấm
                 btn.innerHTML = '<i class="fas fa-check-double"></i> Đã hoàn thành';
                 btn.style.background = '#059669';
+                btn.style.transform = 'none';
+                btn.style.boxShadow = 'none';
                 
-                // Nếu có next lesson logic thì redirect ở đây
-                // window.location.href = '/next-lesson...';
+                // [MỚI] Cập nhật số liệu trên Header (nếu có) ngay lập tức
+                const headerPoints = document.querySelector('.user-points-display'); // Class ví dụ trên header
+                const headerWater = document.querySelector('.user-water-display');
+                if(headerPoints) headerPoints.innerText = data.points;
+                if(headerWater) headerWater.innerText = data.water;
             });
         } else {
             Swal.fire('Thông báo', data.error || 'Đã xảy ra lỗi.', 'info');

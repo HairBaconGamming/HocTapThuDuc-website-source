@@ -1,30 +1,35 @@
 const mongoose = require('mongoose');
 
 const GardenSchema = new mongoose.Schema({
-    // ... các trường user, water, gold, fertilizer giữ nguyên ...
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    water: { type: Number, default: 50 },
     gold: { type: Number, default: 100 },
-    fertilizer: { type: Number, default: 5 },
+    tutorialStep: { type: Number, default: 0 },
+    water: { type: Number, default: 1 },
+    
+    // [MỚI] Lưu vị trí Camera
+    camera: {
+        x: { type: Number, default: 2048 }, // Giữa map (64*64/2)
+        y: { type: Number, default: 2048 },
+        zoom: { type: Number, default: 1 }
+    },
 
-    // [MỚI] Lưu ID background đang dùng
-    backgroundId: { type: String, default: 'default' },
-
-    // Danh sách vật phẩm
     items: [
         {
-            _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
-            type: { type: String, enum: ['plant', 'decoration'] },
-            itemId: { type: String, required: true }, 
-            x: { type: Number, default: 50 },
-            y: { type: Number, default: 50 },
-            // zIndex không cần lưu DB nữa, Frontend sẽ tự tính toán dựa trên Y
+            type: { type: String, enum: ['plant', 'decoration', 'plot'], required: true },
+            itemId: { type: String, required: true },
+            x: { type: Number, default: 0 },
+            y: { type: Number, default: 0 },
             
-            // Plant props
             stage: { type: Number, default: 0 },
-            waterCount: { type: Number, default: 0 },
-            plantedAt: { type: Date, default: Date.now },
-            isFertilized: { type: Boolean, default: false }
+            lastWatered: { type: Date, default: null }, 
+            growthProgress: { type: Number, default: 0 },
+            
+            // [MỚI] Cơ chế héo hon
+            witherProgress: { type: Number, default: 0 }, // Thời gian đã bị khát nước (ms)
+            isDead: { type: Boolean, default: false },    // Cây đã chết chưa?
+            
+            lastUpdated: { type: Date, default: Date.now },
+            plantedAt: { type: Date, default: Date.now }
         }
     ]
 }, { timestamps: true });

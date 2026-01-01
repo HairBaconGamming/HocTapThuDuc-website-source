@@ -39,8 +39,8 @@
         <main>
             <div class="stats-row" data-animate="fade-down">
                 <div class="stat-box highlight">
-                    <h3><%= user.points || 0 %></h3>
-                    <p>🔥 Điểm số</p>
+                    <h3><%= user.totalPoints || 0 %></h3>
+                    <p>🌱 Điểm Tích Lũy</p>
                 </div>
                 <div class="stat-box">
                     <h3><%= stats.completedLessons || 0 %></h3> <p>📚 Bài học</p>
@@ -67,15 +67,9 @@
                 <div class="tree-info">
                     <h3>🌳 Vườn Ươm Của Tôi</h3>
                     <p style="color: #666; margin-bottom: 15px;">Cây của bạn lớn lên nhờ kiến thức bạn nạp vào.</p>
-                    <a href="/my-tree" style="color: var(--primary); font-weight: 800; text-decoration: none;">Thăm vườn &rarr;</a>
-                </div>
-                <div class="tree-visual">
-                    <% 
-                        let treeImg = 'seed.png';
-                        if((user.points || 0) > 500) treeImg = 'tree-big.png';
-                        else if((user.points || 0) > 100) treeImg = 'sprout.png';
-                    %>
-                    <img src="https://cdn-icons-png.flaticon.com/512/2924/2924900.png" alt="Tree Stage"> 
+                    <a href="/my-garden" style="color: var(--primary); font-weight: 800; text-decoration: none;">
+                        Về vườn chăm cây &rarr;
+                    </a>
                 </div>
             </div>
 
@@ -112,6 +106,15 @@
         //gsap.from('.identity-card', { x: -50, opacity: 0, duration: 0.8, ease: 'power2.out' });
         gsap.from('.stat-box', { y: 30, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.2 });
         gsap.from('.bento-card', { y: 30, opacity: 0, duration: 0.6, stagger: 0.2, delay: 0.4 });
+    }
+
+    function copyMyLink() {
+        // Tạo link profile dựa trên ID của user hiện tại
+        const url = `${window.location.origin}/profile/view/<%= user._id %>`;
+        navigator.clipboard.writeText(url).then(() => {
+            if(window.SwalPixel) window.SwalPixel.fire({title: "Đã chép link!", icon: "success"});
+            else alert("Đã sao chép link hồ sơ!");
+        }).catch(err => console.error('Lỗi:', err));
     }
 </script>
 

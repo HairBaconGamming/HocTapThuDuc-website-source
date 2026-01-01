@@ -41,9 +41,7 @@ async function resetAllProgress() {
             $set: {
                 points: 0,              // Reset điểm thường
                 growthPoints: 0,        // Reset điểm tăng trưởng
-                treeLevel: 0,           // Reset cấp độ cây (theo default của Schema là 0)
-                lastGrowthActivity: Date.now(), // Reset ngày hoạt động
-                
+
                 // Nếu bạn có trường này (dù không hiện trong snippet) thì reset luôn:
                 completedLessons: []    
             }

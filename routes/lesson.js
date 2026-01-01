@@ -186,32 +186,40 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
         const exists = await LessonCompletion.findOne({ user: req.user._id, lesson: req.params.id });
         if (exists) return res.status(400).json({ error: "Đã hoàn thành rồi." });
 
+        // 1. Cấu hình phần thưởng
+        const POINTS_REWARD = 10;
+        const WATER_REWARD = 1;  // Cập nhật: 1 nước
+        const GOLD_REWARD = 50;  // Mới: 50 tiền vàng
+
+        // 2. Cộng điểm cho User
         const user = await User.findById(req.user._id);
-        const points = 10;
-        user.points += points;
+        user.points = (user.points || 0) + POINTS_REWARD;
+        user.totalPoints = (user.totalPoints || 0) + POINTS_REWARD;
         
         await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
         await user.save();
 
-        // -----------------------------------------------------
-        // 🔥 [MỚI] TÍCH HỢP VƯỜN TRI THỨC: TẶNG NƯỚC 
-        // -----------------------------------------------------
-        const WATER_REWARD = 5; // Số nước tặng
-        
+        // 3. Cộng Nước và Vàng vào Vườn (Garden)
         const garden = await Garden.findOneAndUpdate(
             { user: req.user._id },
-            { $inc: { water: WATER_REWARD } }, // Cộng nước
-            { upsert: true, new: true }        // Tạo vườn nếu chưa có
+            { 
+                $inc: { 
+                    water: WATER_REWARD, 
+                    gold: GOLD_REWARD // Thêm trường gold vào đây
+                } 
+            }, 
+            { upsert: true, new: true }
         );
-        // -----------------------------------------------------
 
+        // 4. Trả về kết quả (Frontend sẽ hiển thị message này)
         res.json({ 
             success: true, 
-            message: `+${points} điểm & +${WATER_REWARD} nước 💧!`, // Thông báo cho user
+            message: `Chúc mừng bạn đã hoàn thành!\n+${POINTS_REWARD} điểm 🏆\n+${WATER_REWARD} nước 💧\n+${GOLD_REWARD} vàng 💰`,
             points: user.points, 
-            leveledUp: growth.leveledUp,
-            water: garden.water // Trả về số nước mới để frontend cập nhật
+            water: garden.water,
+            gold: garden.gold
         });
+
     } catch (e) { 
         console.error(e);
         res.status(500).json({ error: "Lỗi hệ thống." }); 

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const Lesson = require('../models/Lesson');
+const Subject = require('../models/Subject');
 const News = require('../models/News'); // <--- Đã sửa thành News
 const VisitStats = require('../models/VisitStats'); // Import Model thống kê truy cập
 
@@ -195,4 +196,50 @@ exports.deleteNews = async (req, res) => {
         console.error(err);
         res.redirect('/admin');
     }
+};
+
+exports.saveSubject = async (req, res) => {
+    try {
+        const { subjectId, name, description, thumbnail } = req.body;
+
+        // 1. Nếu có ID -> Là Cập Nhật (Edit)
+        if (subjectId) {
+            await Subject.findByIdAndUpdate(subjectId, {
+                name,
+                description,
+                thumbnail
+            });
+            // (Optional) Thêm flash message
+        } 
+        // 2. Nếu không có ID -> Là Tạo Mới (Create)
+        else {
+            await Subject.create({
+                name,
+                description,
+                thumbnail
+            });
+        }
+
+        res.redirect('/admin?tab=subjects');
+    } catch (err) {
+        console.error("Save Subject Error:", err);
+        res.redirect('/admin?error=save_subject_failed');
+    }
+};
+
+exports.deleteSubject = async (req, res) => {
+    try {
+        const { subjectId } = req.body;
+        
+        // 1. Xóa môn học
+        await Subject.findByIdAndDelete(subjectId);
+
+        // 2. (Nâng cao) Bạn có thể muốn xóa luôn các Khóa học thuộc môn này
+        // await Course.deleteMany({ subjectId: subjectId });
+
+        res.redirect('/admin?tab=subjects');
+    } catch (err) {
+        console.error("Delete Subject Error:", err);
+        res.redirect('/admin');
+    }satisfies
 };

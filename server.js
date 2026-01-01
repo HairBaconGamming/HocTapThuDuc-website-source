@@ -64,7 +64,7 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use(rateLimit({ windowMs: 15*60000, max: 100 }));
+app.use(rateLimit({ windowMs: 1*60000, max: 1000 })); // Giới hạn 1000 request/phút
 
 app.use(session({
     secret: process.env.SESSION_SECRET || "s3cret",
@@ -110,7 +110,7 @@ app.use(trackVisits); // Đặt dòng này sau các app.use(express.static...)
 // --- Routes ---
 app.use("/", require("./routes/index"));
 app.use("/", require("./routes/auth"));
-app.use("/my-tree", require('./routes/garden'));
+app.use("/my-garden", require('./routes/garden'));
 
 app.use("/lesson", require("./routes/lesson"));
 app.use("/api", require("./routes/api"));
@@ -122,6 +122,7 @@ app.use("/live", require("./routes/live"));
 app.use('/search', searchRouter);        
 app.use("/api/pro-images", require("./routes/proImages"));
 app.use("/api/quiz-generator", require("./routes/quizGenerator"));
+app.use('/api/flashcards', require('./routes/flashcard'));
 
 // 404
 app.use((req, res) => res.status(404).render("404", { title: "404", user: req.user }));

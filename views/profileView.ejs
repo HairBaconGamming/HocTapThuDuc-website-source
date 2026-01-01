@@ -26,7 +26,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button class="btn-action secondary" onclick="copyProfileLink()">
+                <button class="btn-copy-link" onclick="copyProfileLink()">
                     <i class="fas fa-share-alt"></i> Sao chép Link
                 </button>
             </div>
@@ -40,7 +40,7 @@
                     <p>📅 Ngày gia nhập</p>
                 </div>
                 <div class="stat-box">
-                    <h3><%= targetUser.growthPoints || 0 %></h3>
+                    <h3><%= targetUser.totalPoints || 0 %></h3>
                     <p>🌱 Điểm Tích Lũy</p>
                 </div>
                 <div class="stat-box">
@@ -57,20 +57,14 @@
             <div class="bento-card tree-section">
                 <div class="tree-info">
                     <h3>🌳 Vườn Của <%= targetUser.username %></h3>
-                    <p style="color: #666; margin-bottom: 10px;">
-                        Đang chăm sóc cây với tất cả sự nỗ lực!
-                    </p>
-                    <div style="background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block; color: #166534; font-weight: 600;">
+                    <div style="background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block; color: #166534; font-weight: 600; margin-bottom: 10px;">
                         Cấp độ hiện tại: <%= targetUser.treeLevel || 1 %> 🌟
                     </div>
-                </div>
-                <div class="tree-visual">
-                    <% 
-                        let treeImg = 'https://cdn-icons-png.flaticon.com/512/2924/2924900.png'; // Cây mặc định
-                        if ((targetUser.treeLevel || 1) >= 5) treeImg = 'https://cdn-icons-png.flaticon.com/512/628/628283.png'; // Cây to hơn
-                        if ((targetUser.treeLevel || 1) >= 10) treeImg = 'https://cdn-icons-png.flaticon.com/512/2424/2424773.png'; // Cây cổ thụ
-                    %>
-                    <img src="<%= treeImg %>" alt="Tree" style="width: 120px; height: 120px; object-fit: contain;"> 
+                    
+                    <br>
+                    <a href="/my-garden/visit/<%= targetUser._id %>" class="btn-visit-garden">
+                        🚀 Ghé thăm vườn nhà này
+                    </a>
                 </div>
             </div>
 

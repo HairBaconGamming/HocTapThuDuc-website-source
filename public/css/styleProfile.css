@@ -195,3 +195,48 @@
 
 /* Animations */
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+.btn-visit-garden {
+    display: inline-block;
+    background: linear-gradient(45deg, #FFB74D, #FF9800);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
+    transition: transform 0.2s;
+}
+.btn-visit-garden:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* Nút Sao Chép Link */
+.btn-copy-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: #ffffff;
+    color: var(--dark-ink);
+    border: 2px dashed #cbd5e1;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-link:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #f0f9ff;
+    transform: translateY(-2px);
+}
+
+.btn-copy-link i {
+    font-size: 1.1rem;
+}

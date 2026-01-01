@@ -1,16 +1,20 @@
-// routes/garden.js
 const express = require('express');
 const router = express.Router();
 const gardenController = require('../controllers/gardenController');
 const { isLoggedIn } = require('../middlewares/auth');
 
+// --- CÁC ROUTE CŨ (Giữ nguyên) ---
 router.get('/', isLoggedIn, gardenController.getGarden);
-
-// [QUAN TRỌNG] Route xử lý mua hàng
 router.post('/buy', isLoggedIn, gardenController.buyItem);
-
 router.post('/move', isLoggedIn, gardenController.moveItem);
 router.post('/interact', isLoggedIn, gardenController.interactItem);
-router.post('/remove', isLoggedIn, gardenController.removeItem); // Route cho cái xẻng
+router.post('/remove', isLoggedIn, gardenController.removeItem);
+router.post('/save-camera', isLoggedIn, gardenController.saveCamera);
+
+// --- [MỚI] THÊM DÒNG NÀY ĐỂ FIX LỖI 404 ---
+router.post('/tutorial/next', isLoggedIn, gardenController.finishTutorialStep);
+
+// [MỚI] Route thăm vườn
+router.get('/visit/:userId', isLoggedIn, gardenController.visitGarden);
 
 module.exports = router;

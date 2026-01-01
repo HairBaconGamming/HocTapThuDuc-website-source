@@ -1,21 +1,95 @@
 const Garden = require('../models/Garden');
-const PLANT_TYPES = require('../config/plants'); // Giả sử bạn đã có file này
-const ASSETS = require('../config/gardenAssets'); // Import file Assets
+const ASSETS = require('../config/gardenAssets');
 
+// Giá đất cơ bản
+const PLOT_BASE_PRICE = 50;
+
+// Helper: Đổi thời gian config sang mili-giây
+function parseDuration(str) {
+    if (!str) return 24 * 60 * 60 * 1000; // Mặc định 1 ngày
+    const num = parseInt(str);
+    if (str.includes('phút')) return num * 60 * 1000;
+    if (str.includes('giờ')) return num * 3600000;
+    return num * 60000; // Mặc định là phút
+}
+
+// === LOGIC SINH TRƯỞNG & HÉO ===
+async function syncGardenState(garden) {
+    const now = new Date();
+    const MOISTURE_DURATION = 24 * 60 * 60 * 1000; // 24h
+
+    // Map đất
+    const plotMap = {};
+    garden.items.forEach(item => {
+        if (item.type === 'plot') plotMap[`${item.x},${item.y}`] = item;
+    });
+
+    garden.items.forEach(item => {
+        if (item.isDead) return; // Chết rồi thì thôi
+
+        const lastTime = item.lastUpdated ? new Date(item.lastUpdated).getTime() : new Date(item.plantedAt).getTime();
+        const currentTime = now.getTime();
+        const deltaTime = currentTime - lastTime;
+
+        // 1. Cập nhật Đất
+        if (item.type === 'plot' && item.lastWatered) {
+            const wateredTime = new Date(item.lastWatered).getTime();
+            if (currentTime - wateredTime > MOISTURE_DURATION) item.lastWatered = null;
+        }
+
+        // 2. Cập nhật Cây
+        else if (item.type === 'plant') {
+            const config = ASSETS.PLANTS[item.itemId];
+            if (config) {
+                const plot = plotMap[`${item.x},${item.y}`];
+                const isWet = (plot && plot.lastWatered);
+
+                // LOGIC LỚN & HÉO
+                if (isWet) {
+                    // Có nước -> Lớn lên & Hồi phục
+                    if (item.stage < config.maxStage) {
+                        // [FIX] Bỏ nhân 2, chỉ cộng deltaTime chuẩn (1x)
+                        item.growthProgress = (item.growthProgress || 0) + deltaTime;
+
+                        // Tính Stage
+                        const timePerStage = parseDuration(config.growthTime);
+                        const calculatedStage = Math.floor(item.growthProgress / timePerStage);
+                        item.stage = Math.min(calculatedStage, config.maxStage);
+                    }
+                    // Giảm héo
+                    if (item.witherProgress > 0) {
+                        item.witherProgress = Math.max(0, item.witherProgress - deltaTime);
+                    }
+                } else {
+                    // Không nước -> Héo (Giữ nguyên)
+                    if (item.stage > 0) {
+                        item.witherProgress = (item.witherProgress || 0) + deltaTime;
+                        const maxWither = parseDuration(config.witherTime || '30 phút');
+                        if (item.witherProgress >= maxWither) item.isDead = true;
+                    }
+                }
+            }
+        }
+        item.lastUpdated = now;
+    });
+
+    await garden.save();
+}
+
+// Lấy dữ liệu vườn
 exports.getGarden = async (req, res) => {
     try {
         let garden = await Garden.findOne({ user: req.user._id });
-        if (!garden) {
-            garden = await new Garden({ user: req.user._id }).save();
-        }
+        if (!garden) garden = await new Garden({ user: req.user._id }).save();
         
-        // Truyền toàn bộ config sang view
+        await syncGardenState(garden);
+
         res.render('garden', { 
-            title: 'Vườn Tri Thức', 
+            title: 'Nông Trại Vui Vẻ', 
             user: req.user, 
             garden,
-            assets: ASSETS, // Truyền assets
-            activePage: 'garden'
+            isOwner: true, // [MỚI] Xác nhận là chủ nhà
+            assets: ASSETS
         });
     } catch (err) {
         console.error(err);
@@ -23,58 +97,106 @@ exports.getGarden = async (req, res) => {
     }
 };
 
-exports.buyAndPlace = async (req, res) => {
+exports.buyItem = async (req, res) => {
     try {
         const { itemId, type, x, y } = req.body;
         const garden = await Garden.findOne({ user: req.user._id });
 
-        // Tìm item trong file config
-        let itemConfig;
-        if (type === 'plant') itemConfig = ASSETS.PLANTS[itemId];
-        else if (type === 'decoration') itemConfig = ASSETS.DECORS[itemId];
-        else if (type === 'background') itemConfig = ASSETS.BACKGROUNDS[itemId];
+        await syncGardenState(garden);
 
-        if (!itemConfig) return res.json({ success: false, msg: 'Vật phẩm không tồn tại!' });
-        if (garden.gold < itemConfig.price) return res.json({ success: false, msg: 'Không đủ vàng!' });
+        // --- A. XỬ LÝ MUA ĐẤT (PLOT) - GIÁ TĂNG DẦN ---
+        if (type === 'plot') {
+            // 1. Đếm số ô đất hiện có
+            const currentPlots = garden.items.filter(i => i.type === 'plot').length;
+            
+            // 2. Tính giá theo cấp số nhân 1.15 (Làm tròn lên)
+            // Công thức: Giá = Giá Gốc * (1.15 ^ Số lượng hiện tại)
+            const plotPrice = Math.ceil(PLOT_BASE_PRICE * Math.pow(1.005, currentPlots));
 
-        // Logic mua Background
-        if (type === 'background') {
-            garden.gold -= itemConfig.price;
-            garden.backgroundId = itemId;
+            // 3. Kiểm tra tiền
+            if (garden.gold < plotPrice) {
+                return res.json({ success: false, msg: `Cần ${plotPrice} vàng để mở rộng ô đất tiếp theo!` });
+            }
+
+            // 4. Trừ tiền và Thêm đất
+            garden.gold -= plotPrice;
+            
+            const newPlot = {
+                type: 'plot',
+                itemId: 'soil_tile',
+                x: x, 
+                y: y,
+                waterCount: 0
+            };
+            garden.items.push(newPlot);
             await garden.save();
-            return res.json({ success: true, msg: `Đã đổi nền: ${itemConfig.name}`, newGold: garden.gold, isBackground: true, backgroundId: itemId });
+            
+            return res.json({ 
+                success: true, 
+                msg: `Mở rộng đất (-${plotPrice} vàng)`, 
+                item: garden.items[garden.items.length - 1],
+                newGold: garden.gold
+            });
         }
 
-        // Logic mua Cây/Decor
+        // --- B. CÁC LOẠI KHÁC (GIỮ NGUYÊN) ---
+        let itemConfig, category;
+        if (type === 'plant') { itemConfig = ASSETS.PLANTS[itemId]; category = 'plant'; }
+        else if (type === 'decoration') { itemConfig = ASSETS.DECORS[itemId]; category = 'decoration'; }
+
+        // ... (Logic check tiền và trừ tiền như cũ) ...
+        if (!itemConfig) return res.json({ success: false, msg: 'Vật phẩm lỗi' });
+        if (garden.gold < itemConfig.price) return res.json({ success: false, msg: 'Không đủ vàng' });
+
+        // [MỚI] Ràng buộc: Cây phải trồng trên đất
+        if (type === 'plant') {
+            const hasPlot = garden.items.some(i => i.type === 'plot' && i.x === x && i.y === y);
+            if (!hasPlot) {
+                return res.json({ success: false, msg: 'Phải cuốc đất trước khi trồng cây!' });
+            }
+            // Không trồng đè lên cây khác (Backend check kỹ hơn)
+            const hasPlant = garden.items.some(i => i.type !== 'plot' && i.x === x && i.y === y);
+            if (hasPlant) return res.json({ success: false, msg: 'Ô đất này đã có cây!' });
+        }
+
         garden.gold -= itemConfig.price;
-        garden.items.push({
-            type: type,
+
+        const newItem = {
+            type: type === 'plot' ? 'plot' : (type === 'plant' ? 'plant' : 'decoration'),
             itemId: itemId,
-            x: x || 50,
-            y: y || 50
+            x: x, y: y,
+            stage: 0,
+            growthProgress: 0, // Reset progress
+            witherProgress: 0,
+            isDead: false,
+            lastWatered: null, // Mới mua đất thì khô
+            lastUpdated: new Date(),
+            plantedAt: new Date()
+        };
+        garden.items.push(newItem);
+        await garden.save();
+
+        res.json({
+            success: true,
+            msg: `Đã mua ${itemConfig.name}`,
+            newGold: garden.gold,
+            item: garden.items[garden.items.length - 1]
         });
 
-        await garden.save();
-        const newItem = garden.items[garden.items.length - 1];
-        res.json({ success: true, msg: `Đã mua ${itemConfig.name}`, newGold: garden.gold, item: newItem });
-
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error(err);
+        res.status(500).json({ success: false, msg: 'Lỗi Server' });
     }
 };
 
-// 3. Di chuyển vật phẩm (Lưu tọa độ mới)
+// Di chuyển (Lưu vị trí)
 exports.moveItem = async (req, res) => {
     try {
         const { uniqueId, x, y } = req.body;
+        // Update trong mảng items dựa trên _id
         await Garden.updateOne(
             { user: req.user._id, "items._id": uniqueId },
-            { 
-                $set: { 
-                    "items.$.x": x,
-                    "items.$.y": y
-                }
-            }
+            { $set: { "items.$.x": x, "items.$.y": y } }
         );
         res.json({ success: true });
     } catch (err) {
@@ -82,46 +204,51 @@ exports.moveItem = async (req, res) => {
     }
 };
 
-// 4. Tưới nước / Chăm sóc (Cập nhật logic cũ sang dùng uniqueId)
+// Tương tác (Tưới / Thu hoạch)
 exports.interactItem = async (req, res) => {
     try {
-        const { uniqueId, action } = req.body; // action: 'water', 'harvest', 'fertilizer'
-        const garden = await Garden.findOne({ user: req.user._id });
+        const { uniqueId, action } = req.body;
+        let garden = await Garden.findOne({ user: req.user._id });
+        
+        // Sync trạng thái trước
+        await syncGardenState(garden);
+
         const item = garden.items.id(uniqueId);
+        if (!item) return res.json({ success: false, msg: 'Lỗi vật phẩm' });
 
-        if (!item || item.type !== 'plant') return res.json({ success: false, msg: 'Vật thể không hợp lệ' });
-
-        const plantConfig = PLANT_TYPES[item.itemId];
-
-        // --- Logic cũ (Tưới nước) ---
+        // --- TƯỚI NƯỚC (Interact vào Cây hoặc Đất) ---
         if (action === 'water') {
-            if (garden.water <= 0) return res.json({ success: false, msg: 'Hết nước!' });
-            
-            garden.water--;
-            item.waterCount++;
-            
-            let evolved = false;
-            if (item.waterCount >= plantConfig.waterNeededPerStage && item.stage < plantConfig.maxStage) {
-                item.stage++;
-                item.waterCount = 0;
-                evolved = true;
+            // Tìm ô đất tại vị trí đó (nếu đang click vào cây)
+            let plot = item;
+            if (item.type !== 'plot') {
+                plot = garden.items.find(i => i.type === 'plot' && i.x === item.x && i.y === item.y);
             }
-            await garden.save();
-            return res.json({ success: true, newWater: garden.water, item, evolved, msg: evolved ? 'Cây đã lớn!' : 'Đã tưới nước' });
+
+            if (plot) {
+                plot.lastWatered = new Date(); // Cập nhật thời gian tưới
+                // [MỚI] Reset héo khi tưới
+                if (item.type === 'plant') {
+                    item.witherProgress = 0;
+                }
+                await garden.save();
+                return res.json({ success: true, msg: 'Đã tưới nước (Ẩm 24h)', item: item, evolved: false });
+            }
         }
 
-        // --- Logic cũ (Thu hoạch) ---
+        // --- THU HOẠCH ---
         if (action === 'harvest') {
-            if (item.stage < plantConfig.maxStage) return res.json({ success: false, msg: 'Chưa chín!' });
-            
-            const goldReward = Math.floor(Math.random() * (plantConfig.rewardGold.max - plantConfig.rewardGold.min)) + plantConfig.rewardGold.min;
-            garden.gold += goldReward;
-            
-            // Xóa cây sau khi thu hoạch
+            const plantConfig = ASSETS.PLANTS[item.itemId];
+            if (item.stage < plantConfig.maxStage) return res.json({ success: false, msg: 'Cây chưa chín!' });
+
+            // Random vàng thưởng
+            const reward = Math.floor(Math.random() * (plantConfig.rewardGold.max - plantConfig.rewardGold.min)) + plantConfig.rewardGold.min;
+            garden.gold += reward;
+
+            // Xóa cây (Giữ lại đất)
             garden.items.pull(uniqueId);
-            
             await garden.save();
-            return res.json({ success: true, newGold: garden.gold, msg: `Thu hoạch +${goldReward} vàng!`, removeId: uniqueId });
+
+            return res.json({ success: true, newGold: garden.gold, goldReward: reward, msg: `Thu hoạch +${reward} vàng!` });
         }
 
     } catch (err) {
@@ -129,115 +256,83 @@ exports.interactItem = async (req, res) => {
     }
 };
 
-exports.buyItem = async (req, res) => {
-    try {
-        const { itemId, type, x, y } = req.body; 
-        // x, y là toạ độ % (nếu là background thì không quan tâm x,y)
-
-        const garden = await Garden.findOne({ user: req.user._id });
-        if (!garden) return res.status(404).json({ success: false, msg: 'Chưa có vườn' });
-
-        // 1. TÌM ITEM TRONG CONFIG (Để lấy giá chuẩn)
-        let itemConfig = null;
-        let category = '';
-
-        if (type === 'plant') {
-            itemConfig = ASSETS.PLANTS[itemId];
-            category = 'plant';
-        } else if (type === 'decoration') { // Frontend gửi 'decoration' hoặc 'decors' tùy code
-            itemConfig = ASSETS.DECORS[itemId];
-            category = 'decoration';
-        } else if (type === 'background') {
-            itemConfig = ASSETS.BACKGROUNDS[itemId];
-            category = 'background';
-        }
-
-        // 2. VALIDATE
-        if (!itemConfig) {
-            return res.json({ success: false, msg: 'Vật phẩm không tồn tại trong Shop!' });
-        }
-
-        if (garden.gold < itemConfig.price) {
-            return res.json({ success: false, msg: 'Bạn không đủ Vàng! Hãy cày thêm nhé.' });
-        }
-
-        if (itemConfig.requireBg && itemConfig.requireBg.length > 0) {
-            // Nếu ID nền hiện tại không nằm trong danh sách cho phép
-            if (!itemConfig.requireBg.includes(garden.backgroundId)) {
-                // Tìm tên của các nền cho phép để báo lỗi
-                const allowedNames = itemConfig.requireBg.map(id => ASSETS.BACKGROUNDS[id]?.name || id).join(', ');
-                return res.json({ success: false, msg: `Cây này chỉ trồng được trên: ${allowedNames}` });
-            }
-        }
-
-        // 3. THỰC HIỆN GIAO DỊCH
-        // Trừ tiền
-        garden.gold -= itemConfig.price;
-
-        let newItem = null;
-
-        // Xử lý riêng cho Background
-        if (category === 'background') {
-            garden.backgroundId = itemId;
-            // Background không thêm vào items array
-        } 
-        // Xử lý cho Cây và Decor
-        else {
-            newItem = {
-                type: category,
-                itemId: itemId,
-                x: x || 50, // Mặc định giữa màn hình nếu lỗi toạ độ
-                y: y || 50,
-                stage: 0,   // Cây mới mua thì là hạt giống (stage 0)
-                waterCount: 0,
-                plantedAt: new Date()
-            };
-            garden.items.push(newItem);
-        }
-
-        // 4. LƯU DATABASE
-        await garden.save();
-
-        // Nếu thêm item mới, lấy item vừa push (có _id của mongoose tạo)
-        let returnedItem = null;
-        if (category !== 'background') {
-            returnedItem = garden.items[garden.items.length - 1];
-        }
-
-        // 5. TRẢ VỀ CLIENT
-        return res.json({ 
-            success: true, 
-            msg: `Đã mua ${itemConfig.name}!`, 
-            newGold: garden.gold,
-            isBackground: (category === 'background'),
-            item: returnedItem // Trả về để Phaser vẽ ngay lập tức
-        });
-
-    } catch (err) {
-        console.error("Buy Error:", err);
-        return res.status(500).json({ success: false, msg: 'Lỗi Server khi mua hàng.' });
-    }
-};
-
+// Xóa vật phẩm (Xẻng)
 exports.removeItem = async (req, res) => {
     try {
         const { uniqueId } = req.body;
         const garden = await Garden.findOne({ user: req.user._id });
-
-        // Tìm và xóa item khỏi mảng
-        const itemIndex = garden.items.findIndex(i => i._id.toString() === uniqueId);
-        if (itemIndex === -1) return res.json({ success: false, msg: 'Vật phẩm không tồn tại' });
-
-        // (Optional) Có thể hoàn lại 50% tiền nếu muốn:
-        // const item = garden.items[itemIndex];
-        // const config = ...
-        // garden.gold += Math.floor(config.price / 2);
-
-        garden.items.splice(itemIndex, 1);
+        
+        garden.items.pull(uniqueId);
         await garden.save();
-
+        
         res.json({ success: true, msg: 'Đã dọn dẹp!' });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.finishTutorialStep = async (req, res) => {
+    try {
+        const { step } = req.body;
+        // Chỉ cập nhật nếu bước mới lớn hơn bước hiện tại
+        await Garden.updateOne(
+            { user: req.user._id, tutorialStep: { $lt: step } },
+            { $set: { tutorialStep: step } }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    }
+};
+
+// Lưu vị trí camera
+exports.saveCamera = async (req, res) => {
+    try {
+        const { x, y, zoom } = req.body;
+        await Garden.updateOne(
+            { user: req.user._id },
+            { $set: { 'camera.x': x, 'camera.y': y, 'camera.zoom': zoom } }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+};
+
+// [MỚI] Thăm vườn người khác
+exports.visitGarden = async (req, res) => {
+    try {
+        const targetUserId = req.params.userId;
+        
+        // 1. Kiểm tra xem có đang thăm chính mình không
+        if (req.user._id.toString() === targetUserId) {
+            return res.redirect('/my-garden');
+        }
+
+        // 2. Tìm vườn của người đó
+        const garden = await Garden.findOne({ user: targetUserId }).populate('user', 'username');
+        
+        // Nếu họ chưa có vườn
+        if (!garden) {
+            return res.render('error', { message: 'Người chơi này chưa kích hoạt vườn!' });
+        }
+
+        // 3. Đồng bộ trạng thái cây (để hiển thị đúng level/héo)
+        await syncGardenState(garden);
+
+        // 4. Render với cờ isOwner = false
+        res.render('garden', { 
+            title: `Vườn của ${garden.user.username}`, 
+            user: req.user,      // Người đang xem (để hiển thị header)
+            garden: garden,      // Dữ liệu vườn của người kia
+            ownerName: garden.user.username, // Tên chủ vườn
+            isOwner: false,      // Quan trọng: Đánh dấu là khách
+            assets: ASSETS
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.redirect('/');
     }
 };
