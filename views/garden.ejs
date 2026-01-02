@@ -365,15 +365,14 @@
         </div>
 
         <div class="garden-toolbar farm-tools">
-            
-            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Xem thông tin - Phím 1)">
+            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera (Phím 7)">
                 <div class="key-hint">1</div>
-                <img src="<%= assets.FARMING.tools.cursor.icon %>">
+                <img src="<%= assets.FARMING.tools.move.icon %>">
             </div>
             
-            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera (Phím 7)">
-                <div class="key-hint">7</div>
-                <img src="<%= assets.FARMING.tools.move.icon %>">
+            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Xem thông tin - Phím 1)">
+                <div class="key-hint">2</div>
+                <img src="<%= assets.FARMING.tools.cursor.icon %>">
             </div>
 
             <% if (isOwner) { %>
