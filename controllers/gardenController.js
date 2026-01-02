@@ -1,6 +1,7 @@
 const Garden = require('../models/Garden');
 const User = require('../models/User'); // [QUAN TRỌNG] Import User để cộng XP
 const ASSETS = require('../config/gardenAssets');
+const LevelUtils = require('../utils/level');
 
 // Giá đất cơ bản
 const PLOT_BASE_PRICE = 50;
@@ -216,19 +217,24 @@ exports.interactItem = async (req, res) => {
             const rewardGold = Math.floor(Math.random() * (plantConfig.rewardGold.max - plantConfig.rewardGold.min)) + plantConfig.rewardGold.min;
             garden.gold += rewardGold;
 
-            // 2. [MỚI] Cộng XP & Tính Level
+            // 2. [CẬP NHẬT] Cộng XP & Tính Level theo hệ thống Tu Tiên
             const user = await User.findById(req.user._id);
             const rewardXP = plantConfig.rewardXP || 10;
             
-            user.xp = (user.xp || 0) + rewardXP;
-            // Công thức Level: 1 + (XP / 100)
-            const newLevel = Math.floor(user.xp / 100) + 1;
+            // Sử dụng hàm tính toán chung
+            const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, rewardXP);
+            
+            user.level = levelResult.newLevel;
+            user.xp = levelResult.newXP;
+            
+            // Lấy thông tin hiển thị
+            const levelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
             
             let levelUpMsg = "";
-            if (newLevel > (user.level || 1)) {
-                user.level = newLevel;
-                levelUpMsg = ` 🆙 LÊN CẤP ${newLevel}!`;
+            if (levelResult.hasLeveledUp) {
+                levelUpMsg = ` ⚡ ĐỘT PHÁ: ${levelInfo.fullName}!`;
             }
+            
             await user.save();
 
             // Xóa cây
@@ -240,6 +246,12 @@ exports.interactItem = async (req, res) => {
                 newGold: garden.gold, 
                 goldReward: rewardGold, 
                 xpReward: rewardXP,
+                // Trả về dữ liệu level để frontend hiển thị nếu cần
+                levelData: {
+                    level: user.level,
+                    levelName: levelInfo.fullName,
+                    hasLeveledUp: levelResult.hasLeveledUp
+                },
                 msg: `Thu hoạch: +${rewardGold} vàng, +${rewardXP} XP.${levelUpMsg}` 
             });
         }

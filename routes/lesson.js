@@ -13,6 +13,7 @@ const Course = require("../models/Course");
 const LessonCompletion = require("../models/LessonCompletion");
 const User = require("../models/User");
 const Garden = require('../models/Garden');
+const LevelUtils = require("../utils/level");
 
 // Rate Limiters
 const rateLimit = require("express-rate-limit");
@@ -187,28 +188,33 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
 
         const user = await User.findById(req.user._id);
         
-        // Phần thưởng
+        // --- LOGIC PHẦN THƯỞNG MỚI ---
         const POINTS_REWARD = 10;
-        const XP_REWARD = 50; // [MỚI] Bài học cho nhiều XP
         const WATER_REWARD = 1;
 
-        user.points += POINTS_REWARD;
-        user.xp = (user.xp || 0) + XP_REWARD;
+        // 1. Tính XP thưởng: 5% lượng XP cần thiết của cấp hiện tại
+        // Đảm bảo tối thiểu 10 XP cho các cấp thấp
+        const requiredXPForNextLevel = LevelUtils.getRequiredXP(user.level || 1);
+        const XP_REWARD = Math.max(10, Math.floor(requiredXPForNextLevel * 0.05));
+
+        // 2. Tính toán Level Up bằng Utils
+        const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
         
-        // Tính level mới
-        const newLevel = Math.floor(user.xp / 100) + 1;
-        let levelUp = false;
-        if (newLevel > user.level) {
-            user.level = newLevel;
-            levelUp = true;
-        }
+        // 3. Cập nhật User
+        user.points += POINTS_REWARD;
+        user.level = levelResult.newLevel;
+        user.xp = levelResult.newXP;
+        
+        // 4. Lấy thông tin hiển thị (Cảnh giới)
+        const levelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
         
         await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
         await user.save();
 
-        const garden = await Garden.findOneAndUpdate(
+        // Cộng nước & vàng vào vườn
+        await Garden.findOneAndUpdate(
             { user: req.user._id },
-            { $inc: { water: WATER_REWARD, gold: 50 } }, // Thêm 50 vàng khuyến khích
+            { $inc: { water: WATER_REWARD, gold: 50 } }, 
             { upsert: true, new: true }
         );
 
@@ -218,7 +224,8 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
             points: POINTS_REWARD, 
             xp: XP_REWARD,
             level: user.level,
-            isLevelUp: levelUp,
+            levelName: levelInfo.fullName, // Trả về tên cảnh giới (VD: Luyện Khí Tầng 3)
+            isLevelUp: levelResult.hasLeveledUp,
             water: WATER_REWARD,
             gold: 50
         });

@@ -3,162 +3,122 @@
 
 <div class="profile-wrapper">
     
-    <div class="profile-grid">
+    <div class="bento-grid">
         
-        <aside class="bento-card identity-card" data-animate="fade-right">
-            <div class="card-banner"></div> 
+        <div class="bento-card identity-card">
+            <div class="avatar-wrapper">
+                <img src="<%= profileUser.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="avatar-img" alt="Avatar">
+                <div class="level-badge">Lv.<%= levelInfo.level %></div>
+            </div>
             
-            <div class="id-avatar-wrapper">
-                <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="id-avatar">
-                <% if(user.isPro) { %> <div class="pro-badge" title="VIP Member">👑</div> <% } %>
+            <h1 class="user-name"><%= profileUser.username %></h1>
+            
+            <span class="user-role">
+                <%= isOwner ? 'Chủ nhân 🏠' : 'Khách ghé thăm 👋' %>
+            </span>
+
+            <div class="bio-box">
+                <%= profileUser.bio || "Chưa có lời giới thiệu nào. Một người bí ẩn..." %>
             </div>
 
-            <div class="id-content">
-                <h1 class="id-name"><%= user.username %></h1>
-                <span class="id-username">@<%= user.username.toLowerCase().replace(/\s+/g, '') %></span>
-
-                <div class="id-bio">
-                    "<%= user.bio || 'Chưa có tiểu sử. Hãy viết gì đó thật ngầu!' %>"
-                </div>
-
-                <div class="id-tags">
-                    <div class="tag-pill"><i class="fas fa-graduation-cap" style="color: #6366f1;"></i> <%= user.class || 'Lớp ?' %></div>
-                    <div class="tag-pill"><i class="fas fa-school" style="color: #ef4444;"></i> <%= user.school || 'Trường ?' %></div>
-                </div>
-
-                <a href="/profile/edit" class="btn-action btn-primary">
-                    <i class="fas fa-pen-nib"></i> Sửa hồ sơ
+            <% if (isOwner) { %>
+            <div class="action-buttons">
+                <a href="/profile/edit" class="btn-chill btn-edit">
+                    <i class="fas fa-pen"></i> Sửa
                 </a>
+                <a href="/logout" class="btn-chill btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Thoát
+                </a>
+            </div>
+            <% } %>
+        </div>
+
+        <div class="bento-card realm-card">
+            <div class="realm-header">
+                <div>
+                    <div class="realm-label">Cảnh giới hiện tại</div>
+                    <div class="realm-name"><%= levelInfo.fullName %></div>
+                </div>
+                <div class="realm-icon">⚡</div>
+            </div>
+
+            <div class="xp-section">
+                <div class="xp-track">
+                    <div class="xp-fill" style="width: <%= levelInfo.progress %>%"></div>
+                </div>
                 
-                <button class="btn-action btn-secondary" onclick="copyMyLink()">
-                    <i class="fas fa-link"></i> Sao chép Link
-                </button>
-
-                <a href="/logout" class="btn-action btn-danger" style="margin-top: 10px;">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </a>
-            </div>
-        </aside>
-
-        <main>
-            <div class="stats-grid" data-animate="fade-down">
-                <div class="stat-card">
-                    <div class="stat-val"><%= user.points || 0 %></div>
-                    <div class="stat-label">🪙 Points (Vàng)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-val"><%= user.xp || 0 %></div>
-                    <div class="stat-label">✨ Tổng XP</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-val">#<%= stats.rank || '--' %></div>
-                    <div class="stat-label">🏆 Xếp hạng</div>
+                <div class="xp-stats">
+                    <span><%= levelInfo.progress %>%</span>
+                    <span><%= levelInfo.currentXP.toLocaleString() %> / <%= levelInfo.requiredXP.toLocaleString() %> XP</span>
                 </div>
             </div>
+        </div>
 
-            <div class="bento-card level-container" data-animate="fade-up">
-                <div class="level-header">
-                    <span><i class="fas fa-bolt" style="color:#eab308"></i> Level <%= user.level || 1 %></span>
-                    <span style="color:#666; font-size: 0.9rem;"><%= (user.xp || 0) % 100 %>/100 XP</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" style="width: <%= (user.xp || 0) % 100 %>%;"></div>
-                </div>
-                <p style="margin-top: 10px; font-size: 0.85rem; color: #666; text-align: center;">
-                    ⚡ Chỉ cần cày thêm <b><%= 100 - ((user.xp || 0) % 100) %> XP</b> nữa là lên cấp!
-                </p>
+        <div class="stats-container">
+            <div class="mini-stat gold">
+                <div class="stat-emoji">💰</div>
+                <div class="stat-num"><%= stats.gold.toLocaleString() %></div>
+                <div class="stat-title">Vàng</div>
             </div>
-
-            <div class="bento-card tree-section" data-animate="fade-left">
-                <div class="tree-info">
-                    <h3>🏡 Vườn Nhà Tui</h3>
-                    <p style="color: #555; margin-bottom: 5px;">Khu vực trồng trọt, nuôi cá và chill.</p>
-                    <a href="/my-garden" class="btn-visit">Ghé thăm ngay &rarr;</a>
-                </div>
-                <div class="tree-visual">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140047.png" style="width: 100px; transform: rotate(10deg); filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.1));">
-                </div>
+            <div class="mini-stat points">
+                <div class="stat-emoji">🍀</div>
+                <div class="stat-num"><%= stats.points.toLocaleString() %></div>
+                <div class="stat-title">Điểm</div>
             </div>
+            <div class="mini-stat lessons">
+                <div class="stat-emoji">📚</div>
+                <div class="stat-num"><%= stats.lessons %></div>
+                <div class="stat-title">Bài học</div>
+            </div>
+        </div>
 
-            <div class="bento-card activity-box" style="margin-top: 25px;" data-animate="fade-up">
-                <h3 style="font-size: 1.3rem; margin-bottom: 20px; display:flex; align-items:center; gap:10px; font-weight: 800;">
-                    📜 Nhật ký hoạt động
-                </h3>
-                <ul class="activity-list">
-                    <% if (activities && activities.length > 0) { %>
-                        <% activities.forEach(activity => { %>
-                            <li class="activity-item">
-                                <div class="activity-icon">✅</div>
-                                <div class="activity-info">
-                                    <h4>Đã xong bài <b>"<%= activity.lessonId ? activity.lessonId.title : 'Bài học' %>"</b></h4>
-                                    <span class="activity-time"><i class="far fa-clock"></i> <%= new Date(activity.completedAt).toLocaleDateString('vi-VN') %></span>
+        <a href="<%= isOwner ? '/my-garden' : '/garden/visit/' + profileUser._id %>" class="bento-card garden-link-card">
+            <div class="garden-content">
+                <div><%= isOwner ? 'Về Nông Trại' : 'Ghé thăm Vườn' %></div>
+                <div>Trồng cây, nuôi cá, chill... 🌱</div>
+            </div>
+            <div class="garden-arrow">➔</div>
+        </a>
+
+        <div class="bento-card activity-card">
+            <div class="activity-header">
+                <span>🔥 Hoạt động gần đây</span>
+            </div>
+            
+            <div class="activity-list">
+                <% if (activities && activities.length > 0) { %>
+                    <% activities.forEach(activity => { %>
+                        <div class="activity-item">
+                            <div class="act-icon">📝</div>
+                            <div class="act-info">
+                                <div class="act-title">Đã học xong: <%= activity.lessonId ? activity.lessonId.title : 'Bài học ẩn' %></div>
+                                <div class="act-time">
+                                    <%= moment(activity.completedAt).fromNow() %>
                                 </div>
-                            </li>
-                        <% }); %>
-                    <% } else { %>
-                        <li style="text-align: center; color: #999; padding: 20px;">
-                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="50" style="opacity: 0.5; margin-bottom: 10px;">
-                            <p>Vắng tanh à! Gét gô đi học thôi các bạn ơi! 🏃‍♂️</p>
-                        </li>
-                    <% } %>
-                </ul>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">
+                        "Im ắng quá... Chưa có hoạt động nào." 🍃
+                    </div>
+                <% } %>
             </div>
+        </div>
 
-        </main>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
+    // Animation nhẹ cho thanh XP khi load
     document.addEventListener("DOMContentLoaded", () => {
-        // Hàm chạy animation an toàn
-        const runProfileAnimations = () => {
-            if (typeof gsap === 'undefined') return;
-
-            gsap.fromTo('.identity-card', 
-                { x: -50, opacity: 0, visibility: 'hidden' },
-                { x: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: 'power2.out' }
-            );
-
-            gsap.fromTo('.stat-card', 
-                { y: 30, opacity: 0, visibility: 'hidden' },
-                { y: 0, opacity: 1, visibility: 'visible', duration: 0.6, stagger: 0.1, delay: 0.2, ease: "back.out(1.7)" }
-            );
-
-            gsap.fromTo('.bento-card:not(.identity-card)', 
-                { y: 50, opacity: 0, visibility: 'hidden' },
-                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, stagger: 0.15, delay: 0.1, ease: "power2.out" }
-            );
-        };
-
-        if (typeof gsap !== 'undefined') {
-            runProfileAnimations();
-        } else {
-            const checkInterval = setInterval(() => {
-                if (typeof gsap !== 'undefined') {
-                    clearInterval(checkInterval);
-                    runProfileAnimations();
-                }
-            }, 50);
-
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                document.querySelectorAll('.identity-card, .stat-card, .bento-card').forEach(el => {
-                    el.style.opacity = '1';
-                    el.style.visibility = 'visible';
-                    el.style.transform = 'none';
-                });
-            }, 3000);
+        const bar = document.querySelector('.xp-pill-fill');
+        if(bar) {
+            const w = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => bar.style.width = w, 300);
         }
     });
-
-    function copyMyLink() {
-        const url = `${window.location.origin}/profile/view/<%= user._id %>`;
-        navigator.clipboard.writeText(url).then(() => {
-            if(window.SwalPixel) window.SwalPixel.fire({title: "Đã chép link!", icon: "success"});
-            else alert("Đã sao chép link hồ sơ!");
-        }).catch(err => console.error('Lỗi:', err));
-    }
 </script>
 
 <%- include('partials/footer') %>

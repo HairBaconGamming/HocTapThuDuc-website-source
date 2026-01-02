@@ -1,9 +1,10 @@
-// routes/index.js
 const express = require('express');
 const router = express.Router();
 const moment = require("moment-timezone");
+// Helper để tránh lỗi 500 khi search ký tự đặc biệt trong Dashboard
+const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
-// --- IMPORT MODELS (QUAN TRỌNG ĐỂ KHÔNG BỊ LỖI 500) ---
+// --- IMPORT MODELS ---
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const LessonCompletion = require('../models/LessonCompletion');
@@ -13,12 +14,14 @@ const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const VisitStats = require('../models/VisitStats');
 const Achievement = require('../models/Achievement');
+
+// --- IMPORT CONTROLLERS ---
 const courseController = require('../controllers/courseController');
-
-
-// Import Middleware & Controller
-const { isLoggedIn } = require('../middlewares/auth');
+const profileController = require('../controllers/profileController'); // [QUAN TRỌNG]
 const leaderboardController = require('../controllers/leaderboardController');
+
+// Import Middleware
+const { isLoggedIn } = require('../middlewares/auth');
 
 // --- 1. HOME PAGE ---
 router.get("/", async (req, res) => {
@@ -28,18 +31,15 @@ router.get("/", async (req, res) => {
             User.countDocuments(),
             VisitStats.findOne({ key: "totalVisits" }),
             VisitStats.findOne({ key: `dailyVisits_${today}` }),
-            Lesson.find().sort({ createdAt: -1 }).limit(5).lean()
+            Lesson.find({ isPublished: true }).sort({ createdAt: -1 }).limit(5).lean()
         ]);
-
-        const totalVisits = totalVisitsDoc ? totalVisitsDoc.count : 0;
-        const dailyVisits = dailyVisitsDoc ? dailyVisitsDoc.count : 0;
 
         res.render("index", {
             user: req.user,
             latestLessons,
             totalUsers,
-            totalVisits,
-            dailyVisits
+            totalVisits: totalVisitsDoc ? totalVisitsDoc.count : 0,
+            dailyVisits: dailyVisitsDoc ? dailyVisitsDoc.count : 0
         });
     } catch (error) {
         console.error("Home Error:", error);
@@ -47,7 +47,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// --- 2. DASHBOARD (FIX BUG 500) ---
+// --- 2. DASHBOARD ---
 router.get("/dashboard", isLoggedIn, async (req, res) => {
     try {
         const sortOption = req.query.sort || "desc";
@@ -57,15 +57,19 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
         const lessonFilter = { createdBy: req.user._id };
         if (req.query.subject) lessonFilter.subject = req.query.subject;
         if (req.query.category) lessonFilter.category = req.query.category;
+        
+        // [FIX BUG 500] Escape Regex để tránh crash khi user nhập ký tự lạ (vd: "(" )
         if (req.query.q) {
-            const regex = new RegExp(req.query.q, "i");
+            const regex = new RegExp(escapeRegex(req.query.q), "i");
             lessonFilter.$or = [{ title: regex }, { content: regex }];
         }
 
         // Filter News
         const newsFilter = { postedBy: req.user._id };
         if (req.query.newsCategory) newsFilter.category = req.query.newsCategory;
-        if (req.query.newsQuery) newsFilter.title = { $regex: req.query.newsQuery, $options: "i" };
+        if (req.query.newsQuery) {
+            newsFilter.title = { $regex: escapeRegex(req.query.newsQuery), $options: "i" };
+        }
 
         // Fetch Data
         const [subjects, userNews, lessons] = await Promise.all([
@@ -73,7 +77,7 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             News.find(newsFilter).sort({ createdAt: req.query.newsSort === "asc" ? 1 : -1 }).lean(),
             Lesson.find(lessonFilter)
                 .populate('subject')
-                .populate('createdBy', 'username avatar isTeacher') // Populate đủ field
+                .populate('createdBy', 'username avatar isTeacher')
                 .sort(sortObj)
                 .lean()
         ]);
@@ -87,7 +91,6 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             currentCategory: req.query.category || "",
             currentSort: sortOption, 
             currentQuery: req.query.q || "",
-            // Các biến news
             currentNewsCategory: req.query.newsCategory || "",
             currentNewsQuery: req.query.newsQuery || "",
             currentNewsSort: req.query.newsSort || "desc",
@@ -95,8 +98,8 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Dashboard Error:", err); // Log lỗi ra console để debug
-        req.flash("error", "Lỗi tải bảng điều khiển: " + err.message);
+        console.error("Dashboard Error:", err);
+        req.flash("error", "Lỗi tải bảng điều khiển.");
         res.redirect("/");
     }
 });
@@ -112,14 +115,13 @@ router.get("/subjects", async (req, res) => {
     }
 });
 
-// --- 4. SUBJECT DETAIL (Course/Tree Logic) ---
+// --- 4. SUBJECT DETAIL ---
 router.get("/subjects/:id", async (req, res) => {
     try {
         const subjectId = req.params.id;
         const subject = await Subject.findById(subjectId).lean();
         if (!subject) return res.redirect('/subjects');
 
-        // Lấy danh sách Courses thuộc Subject
         const courses = await Course.find({ subjectId: subject._id, isPublished: true }).sort({ createdAt: -1 }).lean();
         
         let selectedCourse = null;
@@ -129,13 +131,10 @@ router.get("/subjects/:id", async (req, res) => {
         let units = [];
         if (selectedCourse) {
             units = await Unit.find({ courseId: selectedCourse._id })
-                .populate({ path: 'lessons', options: { sort: { order: 1 } } }) // Lấy cả bài chưa public để check logic
+                .populate({ path: 'lessons', options: { sort: { order: 1 } } })
                 .sort({ order: 1 }).lean();
-            
-            // Filter bài học public phía client view nếu cần, hoặc filter ngay tại query
         }
 
-        // Lấy bài học lẻ (Legacy support cho hệ thống cũ không có Course)
         let lessons = [];
         if (courses.length === 0) {
              lessons = await Lesson.find({ subject: subject._id }).sort({ createdAt: -1 }).lean();
@@ -154,10 +153,10 @@ router.get("/subjects/:id", async (req, res) => {
     }
 });
 
-// --- 5. LEADERBOARD (ROUTE MỚI) ---
+// --- 5. LEADERBOARD ---
 router.get("/leaderboard", isLoggedIn, leaderboardController.getLeaderboard);
 
-// --- 6. PRO IMAGES (KHO ẢNH - ROUTE MỚI) ---
+// --- 6. PRO IMAGES ---
 router.get("/pro-images", isLoggedIn, (req, res) => {
     if (req.user && req.user.isPro) {
         res.render("proImages", { user: req.user, activePage: "proImages" });
@@ -167,55 +166,23 @@ router.get("/pro-images", isLoggedIn, (req, res) => {
     }
 });
 
-// --- 7. PROFILE & MY TREE ---
-router.get("/profile", isLoggedIn, async (req, res) => {
-    try {
-        const user = req.user;
+// --- 7. PROFILE (ĐÃ CẬP NHẬT DÙNG CONTROLLER) ---
 
-        // Calculate completed lessons count
-        const completedLessonsCount = await LessonCompletion.countDocuments({
-            userId: user._id,
-            completed: true
-        });
+// Xem Profile của chính mình (Tự động redirect hoặc render view của mình)
+// Sử dụng profileController để lấy Level, XP, Cảnh Giới
+router.get("/profile", isLoggedIn, profileController.getProfile);
 
-        // Calculate user rank based on points
-        const rank = await User.countDocuments({ points: { $gt: user.points || 0 } }) + 1;
+// Xem Profile người khác
+router.get("/profile/view/:id", profileController.getProfile);
 
-        // Get recent lesson completions as activities
-        const recentCompletions = await LessonCompletion.find({
-            userId: user._id,
-            completed: true
-        })
-        .populate('lessonId', 'title')
-        .sort({ completedAt: -1 })
-        .limit(5)
-        .lean();
-
-        const achievements = await Achievement.find({ user: req.user._id }).lean();
-
-        res.render("profile", {
-            user: req.user,
-            achievements,
-            stats: {
-                completedLessons: completedLessonsCount,
-                rank: rank
-            },
-            activities: recentCompletions,
-            activePage: "profile"
-        });
-    } catch(e) {
-        console.error(e);
-        res.redirect('/');
-    }
-});
-
+// Edit Profile UI (Giữ nguyên logic cũ vì chưa chuyển sang controller)
 router.get("/profile/edit", isLoggedIn, (req, res) => {
     res.render("editProfile", { user: req.user, activePage: "profile" });
 });
 
+// Edit Profile Submit (Giữ nguyên logic cũ)
 router.post("/profile/edit", isLoggedIn, async (req, res) => {
     try {
-        // Added 'avatar' to destructuring
         const { email, bio, class: userClass, school, avatar } = req.body; 
         const user = await User.findById(req.user._id);
         
@@ -224,10 +191,7 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
         user.class = userClass; 
         user.school = school;
         
-        // Explicitly update avatar if provided
-        if (avatar && avatar.trim() !== "") {
-            user.avatar = avatar.trim();
-        }
+        if (avatar && avatar.trim() !== "") user.avatar = avatar.trim();
         
         if (req.body.resetPassword === "true") {
             const { currentPassword, newPassword, confirmNewPassword } = req.body;
@@ -248,51 +212,7 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/profile/view/:id", async (req, res) => {
-    try {
-        const targetUser = await User.findById(req.params.id).lean();
-        if(!targetUser) return res.redirect("/");
-
-        // Calculate completed lessons count for target user
-        const completedLessonsCount = await LessonCompletion.countDocuments({
-            userId: targetUser._id,
-            completed: true
-        });
-
-        // Calculate user rank based on points for target user
-        const rank = await User.countDocuments({ points: { $gt: targetUser.points || 0 } }) + 1;
-
-        // Get recent lesson completions as activities for target user
-        const recentCompletions = await LessonCompletion.find({
-            userId: targetUser._id,
-            completed: true
-        })
-        .populate('lessonId', 'title')
-        .sort({ completedAt: -1 })
-        .limit(5)
-        .lean();
-
-        const achievements = await Achievement.find({ user: targetUser._id }).lean();
-
-        res.render("profileView", {
-            title: `Hồ sơ ${targetUser.username}`,
-            profile: targetUser,
-            targetUser,
-            user: req.user,
-            viewedUserAchievements: achievements,
-            stats: {
-                completedLessons: completedLessonsCount,
-                rank: rank
-            },
-            activities: recentCompletions,
-            activePage: "profileView"
-        });
-    } catch(e) {
-        console.error(e);
-        res.redirect("/");
-    }
-});
-
+// --- 8. COURSE DETAIL ---
 router.get('/course/:id', courseController.getCourseDetail);
 
 module.exports = router;

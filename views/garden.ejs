@@ -27,19 +27,20 @@
     /* --- KHUNG GAME CHÍNH (HÌNH VUÔNG) --- */
     .garden-wrapper {
         position: relative;
-        aspect-ratio: 1 / 1; /* Tỉ lệ 1:1 */
-        height: 95%; 
-        max-width: 95%;
+        /* aspect-ratio: 1 / 1;  <-- ĐÃ BỎ: Không ép vuông nữa */
+        
+        /* Full kích thước container cha */
+        width: 100%; 
+        height: 100%; 
         
         background: #1e3323; 
         overflow: hidden; 
-        font-family: 'VT323', monospace;
+        /* Bỏ bo góc và border dày để nhìn liền mạch hơn (tùy chọn) */
+        border-top: 4px solid #5d4037; 
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
         user-select: none;
-        
-        /* Khung viền */
-        border: 4px solid #5d4037;
-        border-radius: 12px;
-        box-shadow: 0 0 50px rgba(0,0,0,0.8);
+
+        font-family: 'VT323', monospace;
     }
 
     #game-container {
@@ -97,15 +98,27 @@
 
     /* --- 3. TOOLBAR (Thanh Công Cụ Dưới) --- */
     .garden-toolbar {
-        position: absolute;
-        bottom: 15px; left: 50%; transform: translateX(-50%);
+        position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
         background: rgba(45, 27, 14, 0.95);
-        border: 3px solid #5d4037; border-radius: 14px; padding: 6px;
-        display: flex; gap: 8px;
+        border: 3px solid #5d4037; border-radius: 14px; padding: 8px;
+        display: flex; gap: 10px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.6); z-index: 1000;
+        
+        /* [FIX] Hỗ trợ scroll ngang trên mobile */
+        max-width: 90vw; /* Giới hạn chiều rộng tối đa */
+        overflow-x: auto; /* Cho phép cuộn ngang */
+        white-space: nowrap; /* Không xuống dòng */
+        -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
+        
+        /* Ẩn thanh cuộn nhưng vẫn cuộn được */
+        scrollbar-width: none; /* Firefox */
     }
+    .garden-toolbar::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
     .tool-slot {
-        width: 54px; height: 54px;
+        width: 54px; height: 54px; 
+        min-width: 54px; /* [FIX] Không bị co nhỏ khi thiếu chỗ */
+        flex-shrink: 0;  /* [FIX] Đảm bảo kích thước cố định */
+        
         background: #8d6e63; border: 2px solid #5d4037; border-radius: 8px;
         cursor: pointer; display: flex; justify-content: center; align-items: center;
         position: relative; transition: all 0.1s;
@@ -240,10 +253,14 @@
     
     @media (max-width: 650px) {
         .rpg-shop-window { flex-direction: column; height: 90%; }
-        .shop-npc-col { width: 100%; height: 120px; flex-direction: row; align-items: center; padding: 10px; }
-        .npc-sprite { width: 80px; height: 80px; object-fit: contain; margin-right: 10px; }
-        .npc-bubble { position: static; flex: 1; font-size: 1.1rem; margin-top: 0; box-shadow: 2px 2px 0 #000; }
+        .shop-npc-col { width: 100%; height: 120px; flex-direction: row; border-right: none; border-bottom: 4px solid #5d4037; }
+        .npc-sprite { width: 80px; margin-left: 10px; }
+        .npc-bubble { flex: 1; margin: 0; font-size: 1rem; }
         .npc-bubble::after { display: none; }
+        
+        /* Stats Panel trên mobile */
+        .plant-stats-panel { top: 50px; right: -250px; width: 220px; }
+        .plant-stats-panel.active { right: 10px; }
     }
 
     /* Font Pixel cho Floating Text */
@@ -349,17 +366,17 @@
 
         <% if (isOwner) { %>
         <div class="garden-toolbar farm-tools">
-            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Di chuyển/Xem)">
+            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera">
                 <div class="key-hint">1</div>
+                <img src="<%= assets.FARMING.tools.move.icon %>">
+            </div>
+            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Di chuyển/Xem)">
+                <div class="key-hint">2</div>
                 <img src="<%= assets.FARMING.tools.cursor.icon %>">
             </div>
             <div class="tool-slot" onclick="selectTool('hoe')" title="Cuốc Đất">
-                <div class="key-hint">2</div>
-                <img src="<%= assets.FARMING.tools.hoe.icon %>">
-            </div>
-            <div class="tool-slot" onclick="openShopHTML('plants')" title="Cửa Hàng">
                 <div class="key-hint">3</div>
-                <img src="/api/pro-images/1767285084901-romnys.png">
+                <img src="<%= assets.FARMING.tools.hoe.icon %>">
             </div>
             <div class="tool-slot" onclick="selectTool('water')" title="Tưới Nước">
                 <div class="key-hint">4</div>
@@ -372,6 +389,10 @@
             <div class="tool-slot" onclick="selectTool('shovel')" title="Dọn Dẹp">
                 <div class="key-hint">6</div>
                 <img src="<%= assets.FARMING.tools.shovel.icon %>">
+            </div>
+            <div class="tool-slot" onclick="openShopHTML('plants')" title="Cửa Hàng">
+                <div class="key-hint">F</div>
+                <img src="/api/pro-images/1767285084901-romnys.png">
             </div>
         </div>
         <% } %>
@@ -471,17 +492,24 @@
         const soilTimerRow = document.getElementById('soilTimerRow');
         const speedRow = document.getElementById('speedRow');
 
+        // [FIX QUAN TRỌNG] Clear interval cũ nhưng KHÔNG remove class 'active' ngay
+        // Điều này giúp panel giữ nguyên trạng thái mở khi chuyển từ cây này sang cây khác
         if (statsInterval) clearInterval(statsInterval);
 
         const isPlot = itemData.type === 'plot';
         const config = isPlot ? null : window.gardenAssets.PLANTS[itemData.itemId];
 
+        // Nếu dữ liệu lỗi thì mới đóng
         if (!isPlot && !config) {
             window.hidePlantStats();
             return;
         }
 
         const render = () => {
+            // ... (Toàn bộ nội dung logic render bên trong giữ nguyên như cũ) ...
+            // [Copy lại logic render từ bản trước vào đây]
+            // Để ngắn gọn, mình chỉ note là phần tính toán hiển thị không đổi
+            
             if (isPlot) {
                 document.getElementById('statName').innerText = "Ô Đất";
                 document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png";
@@ -537,7 +565,7 @@
                 
                 // 1. GROWTH
                 const speed = 1;
-                const additionalGrowth = isWet ? (elapsed * speed) : 0;
+                const additionalGrowth = isWet ? (elapsed * speed) : 0; 
                 const currentProgress = (itemData.growthProgress || 0) + additionalGrowth;
                 const timePerStage = parseDuration(config.growthTime);
                 const msInCurrent = currentProgress % timePerStage;
@@ -565,16 +593,13 @@
 
                 document.getElementById('statPrice').innerText = config.rewardGold.min + "-" + config.rewardGold.max;
                 
-                // 2. [FIXED] WITHER - TÍNH TOÁN REALTIME
+                // 2. WITHER
                 const witherTime = parseDuration(config.witherTime || '30 phút');
                 let realWither = itemData.witherProgress || 0;
 
-                // Nếu đất khô và cây chưa chết -> Tăng độ héo theo thời gian trôi qua
                 if (!isWet && itemData.stage > 0 && !itemData.isDead) {
                     realWither += elapsed;
-                } 
-                // Nếu đất ẩm -> Giảm độ héo (hồi phục)
-                else if (isWet && itemData.stage > 0 && !itemData.isDead) {
+                } else if (isWet && itemData.stage > 0 && !itemData.isDead) {
                     realWither = Math.max(0, realWither - elapsed);
                 }
 
@@ -609,8 +634,10 @@
             }
         };
 
-        render();
+        render(); // Render ngay lập tức
         statsInterval = setInterval(render, 1000);
+        
+        // Chỉ thêm class active, không toggle -> Đảm bảo luôn mở
         panel.classList.add('active');
     };
 
@@ -630,12 +657,13 @@
 
     document.addEventListener('keydown', (e) => {
         if(e.target.tagName === 'INPUT') return;
-        if(e.key === '1') selectTool('cursor');
-        if(e.key === '2') selectTool('hoe');
-        if(e.key === '3') openShopHTML('plants');
+        if(e.key === '1') selectTool('move');
+        if(e.key === '2') selectTool('cursor');
+        if(e.key === '3') selectTool('hoe');
         if(e.key === '4') selectTool('water');
         if(e.key === '5') selectTool('basket');
         if(e.key === '6') selectTool('shovel');
+        if(e.key === 'f') openShopHTML('plants');
     });
 
     function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }
