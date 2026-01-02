@@ -19,6 +19,8 @@ const UserSchema = new mongoose.Schema(
     avatar: { type: String, default: "https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191" }, // Default avatar
     points: { type: Number, default: 0 },
     totalPoints: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+    xp: { type: Number, default: 0 },
   },
   {
     timestamps: true,

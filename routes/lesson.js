@@ -180,44 +180,47 @@ router.post("/:id/delete", isLoggedIn, async (req, res) => {
     res.redirect("/dashboard");
 });
 
-// Complete Lesson
 router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
     try {
         const exists = await LessonCompletion.findOne({ user: req.user._id, lesson: req.params.id });
         if (exists) return res.status(400).json({ error: "Đã hoàn thành rồi." });
 
-        // 1. Cấu hình phần thưởng
-        const POINTS_REWARD = 10;
-        const WATER_REWARD = 1;  // Cập nhật: 1 nước
-        const GOLD_REWARD = 50;  // Mới: 50 tiền vàng
-
-        // 2. Cộng điểm cho User
         const user = await User.findById(req.user._id);
-        user.points = (user.points || 0) + POINTS_REWARD;
-        user.totalPoints = (user.totalPoints || 0) + POINTS_REWARD;
+        
+        // Phần thưởng
+        const POINTS_REWARD = 10;
+        const XP_REWARD = 50; // [MỚI] Bài học cho nhiều XP
+        const WATER_REWARD = 1;
+
+        user.points += POINTS_REWARD;
+        user.xp = (user.xp || 0) + XP_REWARD;
+        
+        // Tính level mới
+        const newLevel = Math.floor(user.xp / 100) + 1;
+        let levelUp = false;
+        if (newLevel > user.level) {
+            user.level = newLevel;
+            levelUp = true;
+        }
         
         await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
         await user.save();
 
-        // 3. Cộng Nước và Vàng vào Vườn (Garden)
         const garden = await Garden.findOneAndUpdate(
             { user: req.user._id },
-            { 
-                $inc: { 
-                    water: WATER_REWARD, 
-                    gold: GOLD_REWARD // Thêm trường gold vào đây
-                } 
-            }, 
+            { $inc: { water: WATER_REWARD, gold: 50 } }, // Thêm 50 vàng khuyến khích
             { upsert: true, new: true }
         );
 
-        // 4. Trả về kết quả (Frontend sẽ hiển thị message này)
         res.json({ 
             success: true, 
-            message: `Chúc mừng bạn đã hoàn thành!\n+${POINTS_REWARD} điểm 🏆\n+${WATER_REWARD} nước 💧\n+${GOLD_REWARD} vàng 💰`,
-            points: user.points, 
-            water: garden.water,
-            gold: garden.gold
+            message: `Hoàn thành xuất sắc!\n+${POINTS_REWARD} điểm\n+${XP_REWARD} XP\n+${WATER_REWARD} nước`,
+            points: POINTS_REWARD, 
+            xp: XP_REWARD,
+            level: user.level,
+            isLevelUp: levelUp,
+            water: WATER_REWARD,
+            gold: 50
         });
 
     } catch (e) { 

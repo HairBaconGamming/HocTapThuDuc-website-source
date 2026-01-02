@@ -6,91 +6,99 @@
     <div class="profile-grid">
         
         <aside class="bento-card identity-card" data-animate="fade-right">
+            <div class="card-banner"></div> 
+            
             <div class="id-avatar-wrapper">
                 <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="id-avatar">
-                <% if(user.isPro) { %>
-                    <div class="pro-badge" title="Tài khoản VIP">👑</div>
-                <% } %>
+                <% if(user.isPro) { %> <div class="pro-badge" title="VIP Member">👑</div> <% } %>
             </div>
 
-            <h1 class="id-name"><%= user.username %></h1>
-            <p class="id-username">@<%= user.username.toLowerCase().replace(/\s+/g, '') %></p>
+            <div class="id-content">
+                <h1 class="id-name"><%= user.username %></h1>
+                <span class="id-username">@<%= user.username.toLowerCase().replace(/\s+/g, '') %></span>
 
-            <div class="id-meta">
-                <span class="meta-tag"><i class="fas fa-graduation-cap"></i> <%= user.class || 'Lớp ?' %></span>
-                <span class="meta-tag"><i class="fas fa-school"></i> <%= user.school || 'Trường ?' %></span>
-            </div>
+                <div class="id-bio">
+                    "<%= user.bio || 'Chưa có tiểu sử. Hãy viết gì đó thật ngầu!' %>"
+                </div>
 
-            <div class="id-bio">
-                "<%= user.bio || 'Chưa có tiểu sử. Hãy viết gì đó thật ngầu!' %>"
-            </div>
+                <div class="id-tags">
+                    <div class="tag-pill"><i class="fas fa-graduation-cap" style="color: #6366f1;"></i> <%= user.class || 'Lớp ?' %></div>
+                    <div class="tag-pill"><i class="fas fa-school" style="color: #ef4444;"></i> <%= user.school || 'Trường ?' %></div>
+                </div>
 
-            <a href="/profile/edit" class="btn-edit-profile">
-                <i class="fas fa-pen"></i> Chỉnh sửa hồ sơ
-            </a>
-            
-            <div style="margin-top: 15px;">
-                <a href="/logout" style="color: #ff6b6b; font-weight: 700; font-size: 0.9rem;">
+                <a href="/profile/edit" class="btn-action btn-primary">
+                    <i class="fas fa-pen-nib"></i> Sửa hồ sơ
+                </a>
+                
+                <button class="btn-action btn-secondary" onclick="copyMyLink()">
+                    <i class="fas fa-link"></i> Sao chép Link
+                </button>
+
+                <a href="/logout" class="btn-action btn-danger" style="margin-top: 10px;">
                     <i class="fas fa-sign-out-alt"></i> Đăng xuất
                 </a>
             </div>
         </aside>
 
         <main>
-            <div class="stats-row" data-animate="fade-down">
-                <div class="stat-box highlight">
-                    <h3><%= user.totalPoints || 0 %></h3>
-                    <p>🌱 Điểm Tích Lũy</p>
+            <div class="stats-grid" data-animate="fade-down">
+                <div class="stat-card">
+                    <div class="stat-val"><%= user.points || 0 %></div>
+                    <div class="stat-label">🪙 Points (Vàng)</div>
                 </div>
-                <div class="stat-box">
-                    <h3><%= stats.completedLessons || 0 %></h3> <p>📚 Bài học</p>
+                <div class="stat-card">
+                    <div class="stat-val"><%= user.xp || 0 %></div>
+                    <div class="stat-label">✨ Tổng XP</div>
                 </div>
-                <div class="stat-box">
-                    <h3>#<%= stats.rank || '--' %></h3> <p>🏆 Xếp hạng</p>
+                <div class="stat-card">
+                    <div class="stat-val">#<%= stats.rank || '--' %></div>
+                    <div class="stat-label">🏆 Xếp hạng</div>
                 </div>
             </div>
 
             <div class="bento-card level-container" data-animate="fade-up">
                 <div class="level-header">
-                    <span>Level <%= Math.floor((user.points || 0) / 100) + 1 %>: Học Giả Tập Sự</span>
-                    <span><%= (user.points || 0) % 100 %>/100 XP</span>
+                    <span><i class="fas fa-bolt" style="color:#eab308"></i> Level <%= user.level || 1 %></span>
+                    <span style="color:#666; font-size: 0.9rem;"><%= (user.xp || 0) % 100 %>/100 XP</span>
                 </div>
                 <div class="progress-track">
-                    <div class="progress-fill" style="width: <%= (user.points || 0) % 100 %>%;"></div>
+                    <div class="progress-fill" style="width: <%= (user.xp || 0) % 100 %>%;"></div>
                 </div>
-                <p style="margin-top: 10px; font-size: 0.85rem; color: #666;">
-                    Cố lên! <b><%= 100 - ((user.points || 0) % 100) %> điểm</b> nữa để lên cấp tiếp theo.
+                <p style="margin-top: 10px; font-size: 0.85rem; color: #666; text-align: center;">
+                    ⚡ Chỉ cần cày thêm <b><%= 100 - ((user.xp || 0) % 100) %> XP</b> nữa là lên cấp!
                 </p>
             </div>
 
             <div class="bento-card tree-section" data-animate="fade-left">
                 <div class="tree-info">
-                    <h3>🌳 Vườn Ươm Của Tôi</h3>
-                    <p style="color: #666; margin-bottom: 15px;">Cây của bạn lớn lên nhờ kiến thức bạn nạp vào.</p>
-                    <a href="/my-garden" style="color: var(--primary); font-weight: 800; text-decoration: none;">
-                        Về vườn chăm cây &rarr;
-                    </a>
+                    <h3>🏡 Vườn Nhà Tui</h3>
+                    <p style="color: #555; margin-bottom: 5px;">Khu vực trồng trọt, nuôi cá và chill.</p>
+                    <a href="/my-garden" class="btn-visit">Ghé thăm ngay &rarr;</a>
+                </div>
+                <div class="tree-visual">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140047.png" style="width: 100px; transform: rotate(10deg); filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.1));">
                 </div>
             </div>
 
-            <div class="bento-card" data-animate="fade-up">
-                <h3 style="font-size: 1.2rem; margin-bottom: 20px;">📜 Hoạt động gần đây</h3>
+            <div class="bento-card activity-box" style="margin-top: 25px;" data-animate="fade-up">
+                <h3 style="font-size: 1.3rem; margin-bottom: 20px; display:flex; align-items:center; gap:10px; font-weight: 800;">
+                    📜 Nhật ký hoạt động
+                </h3>
                 <ul class="activity-list">
                     <% if (activities && activities.length > 0) { %>
                         <% activities.forEach(activity => { %>
                             <li class="activity-item">
-                                <div class="activity-icon"><i class="fas fa-check"></i></div>
-                                <div class="activity-content">
-                                    <h4>Hoàn thành bài "<%= activity.lessonId ? activity.lessonId.title : 'Bài học' %>"</h4>
-                                    <span class="activity-time"><%= new Date(activity.completedAt).toLocaleDateString('vi-VN') %></span>
+                                <div class="activity-icon">✅</div>
+                                <div class="activity-info">
+                                    <h4>Đã xong bài <b>"<%= activity.lessonId ? activity.lessonId.title : 'Bài học' %>"</b></h4>
+                                    <span class="activity-time"><i class="far fa-clock"></i> <%= new Date(activity.completedAt).toLocaleDateString('vi-VN') %></span>
                                 </div>
                             </li>
                         <% }); %>
                     <% } else { %>
-                        <li class="activity-item">
-                            <div class="activity-content">
-                                <p style="color: #666; font-style: italic;">Chưa có hoạt động nào</p>
-                            </div>
+                        <li style="text-align: center; color: #999; padding: 20px;">
+                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="50" style="opacity: 0.5; margin-bottom: 10px;">
+                            <p>Vắng tanh à! Gét gô đi học thôi các bạn ơi! 🏃‍♂️</p>
                         </li>
                     <% } %>
                 </ul>
@@ -102,14 +110,49 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-    if(typeof gsap !== 'undefined') {
-        //gsap.from('.identity-card', { x: -50, opacity: 0, duration: 0.8, ease: 'power2.out' });
-        gsap.from('.stat-box', { y: 30, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.2 });
-        gsap.from('.bento-card', { y: 30, opacity: 0, duration: 0.6, stagger: 0.2, delay: 0.4 });
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+        // Hàm chạy animation an toàn
+        const runProfileAnimations = () => {
+            if (typeof gsap === 'undefined') return;
+
+            gsap.fromTo('.identity-card', 
+                { x: -50, opacity: 0, visibility: 'hidden' },
+                { x: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: 'power2.out' }
+            );
+
+            gsap.fromTo('.stat-card', 
+                { y: 30, opacity: 0, visibility: 'hidden' },
+                { y: 0, opacity: 1, visibility: 'visible', duration: 0.6, stagger: 0.1, delay: 0.2, ease: "back.out(1.7)" }
+            );
+
+            gsap.fromTo('.bento-card:not(.identity-card)', 
+                { y: 50, opacity: 0, visibility: 'hidden' },
+                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, stagger: 0.15, delay: 0.1, ease: "power2.out" }
+            );
+        };
+
+        if (typeof gsap !== 'undefined') {
+            runProfileAnimations();
+        } else {
+            const checkInterval = setInterval(() => {
+                if (typeof gsap !== 'undefined') {
+                    clearInterval(checkInterval);
+                    runProfileAnimations();
+                }
+            }, 50);
+
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                document.querySelectorAll('.identity-card, .stat-card, .bento-card').forEach(el => {
+                    el.style.opacity = '1';
+                    el.style.visibility = 'visible';
+                    el.style.transform = 'none';
+                });
+            }, 3000);
+        }
+    });
 
     function copyMyLink() {
-        // Tạo link profile dựa trên ID của user hiện tại
         const url = `${window.location.origin}/profile/view/<%= user._id %>`;
         navigator.clipboard.writeText(url).then(() => {
             if(window.SwalPixel) window.SwalPixel.fire({title: "Đã chép link!", icon: "success"});

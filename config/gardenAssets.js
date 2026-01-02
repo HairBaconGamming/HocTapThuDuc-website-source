@@ -6,14 +6,16 @@ module.exports = {
             price: 50,
             maxStage: 3,
             waterNeeded: 6,
-            rewardGold: { min: 80, max: 120 },
+            rewardGold: { min: 60, max: 90 },
+            
+            // [MỚI] Cấu hình Level
+            unlockLevel: 1,  // Cấp 1 trồng được ngay
+            rewardXP: 15,    // Thu hoạch được 15 XP
+            
             size: { w: 1, h: 1 },
-            growthTime: '6 phút/cấp',
-            totalTime: '24 phút',
-            
-            // [MỚI] Thời gian héo (Nếu không có nước quá lâu sẽ chết)
+            growthTime: '5 phút/cấp',
+            totalTime: '20 phút',
             witherTime: '5 phút', 
-            
             stages: [
                 '/api/pro-images/1767282830562-cb26a4.png',
                 '/api/pro-images/1767283026974-wmnw2v.png',
@@ -21,9 +23,32 @@ module.exports = {
                 '/api/pro-images/1767283174918-vvfz7i.png'
             ]
         },
-        // ... (Thêm witherTime cho các cây khác nếu muốn)
+        'wheat': {
+            name: 'Lúa Mì',
+            type: 'plant',
+            price: 60,
+            maxStage: 4,
+            waterNeeded: 4,
+            rewardGold: { min: 70, max: 100 },
+            
+            // [MỚI] Yêu cầu cấp 3 mới mua được
+            unlockLevel: 3,
+            rewardXP: 30,    // Thu hoạch được nhiều XP hơn
+            
+            size: { w: 1, h: 1 },
+            growthTime: '4 phút/cấp',
+            totalTime: '20 phút',
+            witherTime: '3 phút',
+            stages: [
+                '/api/pro-images/1767344323984-uvbj9k.png',
+                '/api/pro-images/1767344484389-wozd1r.png',
+                '/api/pro-images/1767344718200-ri0b40.png',
+                '/api/pro-images/1767344776642-rd3z59.png',
+                '/api/pro-images/1767344824123-375yyj.png'
+            ]
+        }
     },
-    // ... (Các phần khác giữ nguyên)
+    // ... (Giữ nguyên phần còn lại)
     BACKGROUNDS: { default: { name: 'Nông Trại Xanh', textureUrl: '/api/pro-images/1767279348273-pugf3p.png', color: '#4caf50' } },
     FARMING: {
         soil_dry: '/api/pro-images/1767279361492-y0oaxm.png',

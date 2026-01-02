@@ -4,11 +4,20 @@
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 
 <style>
-    /* Wrapper bao ngoài để căn giữa khung game */
+    /* [FIX] Khóa cuộn trang để game không bị trôi */
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Ngăn thanh cuộn trình duyệt */
+        height: 100%;
+        width: 100%;
+    }
+    
+    /* Đảm bảo container game chiếm trọn phần còn lại */
     .game-stage-container {
         width: 100vw;
         height: calc(100vh - 70px); /* Trừ header */
-        background-color: #111; /* Màu nền tối cho phần thừa */
+        background-color: #111;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -18,22 +27,16 @@
     /* --- KHUNG GAME CHÍNH (HÌNH VUÔNG) --- */
     .garden-wrapper {
         position: relative;
-        /* Thiết lập tỉ lệ 1:1 (Hình vuông) */
-        aspect-ratio: 1 / 1;
-        
-        /* Logic tự co giãn: 
-           - Mặc định cao bằng màn hình
-           - Nhưng không được rộng quá màn hình 
-        */
+        aspect-ratio: 1 / 1; /* Tỉ lệ 1:1 */
         height: 95%; 
         max-width: 95%;
         
-        background: #1e3323; /* Màu nền load game */
+        background: #1e3323; 
         overflow: hidden; 
         font-family: 'VT323', monospace;
         user-select: none;
         
-        /* Trang trí khung viền */
+        /* Khung viền */
         border: 4px solid #5d4037;
         border-radius: 12px;
         box-shadow: 0 0 50px rgba(0,0,0,0.8);
@@ -44,14 +47,15 @@
         height: 100%;
         display: block;
         cursor: grab;
-        border-radius: 8px; /* Bo góc canvas */
+        border-radius: 8px;
         overflow: hidden;
     }
     #game-container:active { cursor: grabbing; }
 
     /* --- 1. HUD (Góc Trái Trên) --- */
     .garden-hud {
-        position: absolute; top: 15px; left: 15px; z-index: 10;
+        position: absolute;
+        top: 15px; left: 15px; z-index: 10;
         display: flex; flex-direction: column; gap: 8px; pointer-events: none;
     }
     .hud-stat {
@@ -66,8 +70,9 @@
 
     /* --- 2. STATS PANEL (Bên Phải) --- */
     .plant-stats-panel {
-        position: absolute; top: 15px; right: -320px;
-        width: 260px; /* Thu nhỏ chút cho gọn trong hình vuông */
+        position: absolute;
+        top: 15px; right: -320px;
+        width: 260px;
         background: rgba(33, 33, 33, 0.95);
         border: 3px solid #ffb300; border-radius: 12px; padding: 15px;
         color: white; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -92,14 +97,15 @@
 
     /* --- 3. TOOLBAR (Thanh Công Cụ Dưới) --- */
     .garden-toolbar {
-        position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+        position: absolute;
+        bottom: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(45, 27, 14, 0.95);
         border: 3px solid #5d4037; border-radius: 14px; padding: 6px;
         display: flex; gap: 8px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.6); z-index: 1000;
     }
     .tool-slot {
-        width: 54px; height: 54px; /* Nhỏ hơn chút */
+        width: 54px; height: 54px;
         background: #8d6e63; border: 2px solid #5d4037; border-radius: 8px;
         cursor: pointer; display: flex; justify-content: center; align-items: center;
         position: relative; transition: all 0.1s;
@@ -112,39 +118,146 @@
     }
     .key-hint { position: absolute; top: 1px; left: 3px; font-size: 0.9rem; color: #fff; opacity: 0.8; font-weight: bold; }
 
-    /* --- 4. SHOP MODAL --- */
+    /* --- 4. SHOP MODAL "XỊN SÒ" --- */
     .garden-modal-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); z-index: 2000;
-        display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px);
-        border-radius: 12px; /* Bo góc theo wrapper */
+        background: rgba(0,0,0,0.7); z-index: 2000;
+        display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
     }
-    .rpg-shop-window {
-        width: 90%; height: 85%;
-        background: #e3d5ca; border: 4px solid #3e2723; border-radius: 4px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        display: flex; flex-direction: column; position: relative; font-family: 'VT323', monospace;
-    }
-    .shop-title-bar { background: #3e2723; color: #ffb300; padding: 10px; font-size: 2rem; text-align: center; border-bottom: 4px solid #1a1a1a; position: relative; }
-    .btn-close-shop { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #d32f2f; color: white; border: 2px solid #fff; width: 30px; height: 30px; cursor: pointer; font-size: 1.2rem; }
-    .shop-content { flex: 1; display: flex; overflow: hidden; }
-    .shop-tabs { width: 140px; background: #5d4037; border-right: 4px solid #3e2723; display: flex; flex-direction: column; }
-    .tab-rpg { padding: 15px; font-size: 1.3rem; color: #bbb; cursor: pointer; border-bottom: 2px solid #3e2723; transition: 0.2s; text-align: center; }
-    .tab-rpg:hover { background: #4e342e; color: #fff; }
-    .tab-rpg.active { background: #e3d5ca; color: #3e2723; font-weight: bold; border-right: none; margin-right: -4px; position: relative; z-index: 2;}
-    .shop-grid { flex: 1; padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; overflow-y: auto; background: #d7ccc8; scrollbar-width: thin; scrollbar-color: #5d4037 #d7ccc8; }
-    .item-card { background: #fff; border: 2px solid #8d6e63; padding: 8px; text-align: center; cursor: pointer; transition: 0.1s; border-radius: 6px; }
-    .item-card:hover { transform: scale(1.05); border-color: #ffb300; background: #fff8e1; }
-    .item-card img { width: 48px; height: 48px; object-fit: contain; margin-bottom: 5px; }
-    .item-name { font-size: 1.2rem; color: #3e2723; line-height: 1; margin-bottom: 2px; }
-    .item-price { font-size: 1.1rem; color: #d84315; font-weight: bold; }
 
-    /* RESPONSIVE */
-    @media (max-width: 600px) {
-        .shop-content { flex-direction: column; }
-        .shop-tabs { width: 100%; flex-direction: row; height: 50px; border-right: none; border-bottom: 4px solid #3e2723; }
-        .tab-rpg { flex: 1; padding: 10px; font-size: 1.1rem; border-bottom: none; border-right: 2px solid #3e2723; }
+    .rpg-shop-window {
+        width: 850px; height: 550px; max-width: 95%; max-height: 95%;
+        background: #fdfbf7;
+        border: 4px solid #5d4037; border-radius: 16px;
+        box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
+        display: flex; flex-direction: column; overflow: hidden;
+        font-family: 'VT323', monospace; position: relative;
     }
+
+    .shop-header {
+        background: #8d6e63; color: #fff;
+        padding: 10px 20px; border-bottom: 4px solid #5d4037;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2);
+    }
+    .shop-title { font-size: 2rem; text-transform: uppercase; text-shadow: 2px 2px 0 #3e2723; }
+    .btn-close-shop {
+        background: #ef5350; border: 2px solid #b71c1c; color: white;
+        width: 35px; height: 35px; cursor: pointer; font-size: 1.5rem; font-family: inherit;
+        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3); transition: 0.1s;
+    }
+    .btn-close-shop:active { transform: translateY(3px); box-shadow: none; }
+
+    /* Fix lỗi tràn và scroll */
+    .shop-body { 
+        display: flex; flex: 1; overflow: hidden; 
+        background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+        min-height: 0; 
+    }
+
+    /* Cột NPC */
+    .shop-npc-col {
+        width: 240px; background: #eefebe;
+        border-right: 4px solid #5d4037;
+        display: flex; flex-direction: column; align-items: center; 
+        justify-content: center; /* Căn giữa */
+        gap: 20px; 
+        padding: 20px; position: relative;
+    }
+    .npc-sprite {
+        width: 180px; image-rendering: pixelated;
+        filter: drop-shadow(5px 5px 0 rgba(0,0,0,0.1));
+        transition: transform 0.2s;
+    }
+    .npc-sprite:hover { transform: scale(1.05) rotate(2deg); }
+    
+    /* Bong bóng chat */
+    .npc-bubble {
+        position: relative; /* Không dùng absolute */
+        width: 95%; background: #fff; border: 3px solid #000; border-radius: 12px;
+        padding: 10px; font-size: 1.3rem; color: #333;
+        box-shadow: 4px 4px 0 #000;
+        animation: floatBubble 3s infinite ease-in-out;
+        z-index: 2;
+    }
+    .npc-bubble::after {
+        content: ''; position: absolute; bottom: -10px; left: 50%;
+        border-width: 10px 10px 0; border-style: solid; border-color: #000 transparent;
+        transform: translateX(-50%);
+    }
+
+    /* Cột Hàng hóa */
+    .shop-items-col { 
+        flex: 1; display: flex; flex-direction: column; 
+        padding: 20px; background: #fff8e1; 
+        min-height: 0;
+    }
+
+    .shop-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+    .shop-tab {
+        flex: 1; text-align: center; padding: 8px; font-size: 1.4rem;
+        background: #d7ccc8; border: 3px solid #8d6e63; border-radius: 8px;
+        cursor: pointer; color: #5d4037; transition: 0.2s;
+        box-shadow: 0 4px 0 #5d4037;
+    }
+    .shop-tab:active { transform: translateY(4px); box-shadow: none; }
+    .shop-tab.active {
+        background: #ffecb3; border-color: #ffa000; color: #e65100;
+        transform: translateY(4px); box-shadow: none; font-weight: bold;
+    }
+
+    .shop-grid {
+        flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 15px; overflow-y: auto; padding-right: 5px;
+    }
+    .shop-grid::-webkit-scrollbar { width: 8px; }
+    .shop-grid::-webkit-scrollbar-track { background: #eee; }
+    .shop-grid::-webkit-scrollbar-thumb { background: #8d6e63; border-radius: 4px; }
+
+    .item-card {
+        background: #fff; border: 3px solid #e0e0e0; border-radius: 12px;
+        padding: 10px; text-align: center; cursor: pointer; transition: 0.2s;
+        position: relative; overflow: hidden;
+    }
+    .item-card:hover { border-color: #ffa000; transform: translateY(-3px); box-shadow: 0 5px 0 #e0e0e0; }
+    .item-card.locked { filter: grayscale(1); opacity: 0.7; cursor: not-allowed; }
+    
+    .item-img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 5px; }
+    .item-name { font-size: 1.3rem; font-weight: bold; color: #3e2723; }
+    .item-price { 
+        display: inline-block; background: #fff3e0; color: #e65100; 
+        padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 1.1rem;
+        border: 1px solid #ffe0b2; margin-top: 5px;
+    }
+    .lock-overlay {
+        position: absolute; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.1); display: flex; align-items:center; justify-content:center;
+        color: #d32f2f; font-weight: bold; font-size: 1.2rem; transform: rotate(-15deg);
+        text-shadow: 1px 1px 0 #fff;
+    }
+
+    @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    
+    @media (max-width: 650px) {
+        .rpg-shop-window { flex-direction: column; height: 90%; }
+        .shop-npc-col { width: 100%; height: 120px; flex-direction: row; align-items: center; padding: 10px; }
+        .npc-sprite { width: 80px; height: 80px; object-fit: contain; margin-right: 10px; }
+        .npc-bubble { position: static; flex: 1; font-size: 1.1rem; margin-top: 0; box-shadow: 2px 2px 0 #000; }
+        .npc-bubble::after { display: none; }
+    }
+
+    /* Font Pixel cho Floating Text */
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    
+    .swal2-popup.swal2-toast-pixel {
+        background: #3e2723 !important;
+        border: 3px solid #ffb300 !important;
+        border-radius: 0 !important;
+        font-family: 'VT323', monospace !important;
+        color: #ffb300 !important;
+        box-shadow: 5px 5px 0px rgba(0,0,0,0.5) !important;
+    }
+    .swal2-title { font-size: 1.4rem !important; }
 </style>
 
 <div class="game-stage-container">
@@ -233,6 +346,7 @@
                     </div>
             </div>
         </div>
+
         <% if (isOwner) { %>
         <div class="garden-toolbar farm-tools">
             <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Di chuyển/Xem)">
@@ -262,19 +376,35 @@
         </div>
         <% } %>
 
-        <div class="garden-modal-overlay" id="shopOverlay">
+        <div class="garden-modal-overlay" id="shopOverlay"
+             onwheel="event.stopPropagation()" 
+             onmousedown="event.stopPropagation()"
+             ontouchstart="event.stopPropagation()">
+             
             <div class="rpg-shop-window">
-                <div class="shop-title-bar">
-                    Cửa Hàng Nông Dân
+                <div class="shop-header">
+                    <div class="shop-title">🛒 Tạp Hóa Cô Thắm</div>
                     <button class="btn-close-shop" onclick="closeShop()">X</button>
                 </div>
-                <div class="shop-content">
-                    <div class="shop-tabs">
-                        <div class="tab-rpg active" onclick="switchShopTab('plants')">Hạt Giống</div>
-                        <div class="tab-rpg" onclick="switchShopTab('decors')">Trang Trí</div>
-                        <div class="tab-rpg" onclick="switchShopTab('backgrounds')">Mở Rộng</div>
+
+                <div class="shop-body">
+                    <div class="shop-npc-col">
+                        <div class="npc-bubble" id="npcSpeech">
+                            Hế lô cưng! Nay mua gì nè? 💖
+                        </div>
+                        <img src="/api/pro-images/1767353474437-ddk8r4.png" class="npc-sprite" alt="NPC">
                     </div>
-                    <div class="shop-grid" id="shopGrid"></div>
+
+                    <div class="shop-items-col">
+                        <div class="shop-tabs">
+                            <div class="shop-tab active" onclick="switchShopTab('plants')" id="tab-plants">🌱 Hạt Giống</div>
+                            <div class="shop-tab" onclick="switchShopTab('decors')" id="tab-decors">🎨 Decor</div>
+                            <div class="shop-tab" onclick="switchShopTab('backgrounds')" id="tab-backgrounds">🚜 Mở Rộng</div>
+                        </div>
+                        
+                        <div class="shop-grid" id="shopGrid">
+                            </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -300,9 +430,11 @@
 <script>
     /* eslint-disable */
     // @ts-nocheck
+    
     // Inject dữ liệu
     window.gardenAssets = JSON.parse(document.getElementById('gardenAssets').textContent);
     window.gardenData = JSON.parse(document.getElementById('gardenData').textContent);
+    window.userLevel = <%= user.level || 1 %>;
 
     // Biến lưu bộ đếm thời gian
     let statsInterval = null;
@@ -316,7 +448,6 @@
         return m.toString().padStart(2,'0') + ":" + sec.toString().padStart(2,'0');
     }
 
-    // Thêm helper format ra HH:MM:SS
     function formatTimeHMS(ms) {
         if (ms <= 0) return "00:00:00";
         const s = Math.floor(ms / 1000);
@@ -330,7 +461,7 @@
         if (!str) return 5 * 60000;
         const num = parseInt(str);
         if (str.includes('giờ')) return num * 3600000;
-        return num * 60000; // Mặc định là phút
+        return num * 60000; 
     }
 
     // --- LOGIC HIỂN THỊ STATS (AUTO UPDATE) ---
@@ -340,39 +471,32 @@
         const soilTimerRow = document.getElementById('soilTimerRow');
         const speedRow = document.getElementById('speedRow');
 
-        // Xóa bộ đếm cũ nếu đang chạy
         if (statsInterval) clearInterval(statsInterval);
 
-        // Kiểm tra loại item
         const isPlot = itemData.type === 'plot';
         const config = isPlot ? null : window.gardenAssets.PLANTS[itemData.itemId];
 
-        // Nếu không phải cây hoặc đất thì đóng bảng
         if (!isPlot && !config) {
             window.hidePlantStats();
             return;
         }
 
-        // Hàm render (chạy mỗi giây)
         const render = () => {
-            // 1. Thông tin cơ bản
             if (isPlot) {
                 document.getElementById('statName').innerText = "Ô Đất";
-                document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png"; // Không có hình cho đất
+                document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png";
                 document.getElementById('statType').innerText = "Đất Trống";
-                plantInfoSection.style.display = 'none'; // Ẩn phần thông tin cây
+                plantInfoSection.style.display = 'none';
             } else {
                 document.getElementById('statName').innerText = config.name;
                 document.getElementById('statImg').src = config.stages[itemData.stage || 0];
                 document.getElementById('statType').innerText = "Cây Trồng";
-                plantInfoSection.style.display = 'block'; // Hiển thị phần thông tin cây
+                plantInfoSection.style.display = 'block';
             }
             if (coords) document.getElementById('statCoords').innerText = "Pos: (" + coords.x + ", " + coords.y + ")";
 
-            // 2. Kiểm tra môi trường (Đất ẩm hay khô)
             let plot = itemData;
             if (!isPlot) {
-                // Tìm ô đất tại vị trí cây
                 plot = window.gardenData.items.find(i => i.type === 'plot' && i.x === itemData.x && i.y === itemData.y);
             }
 
@@ -382,7 +506,7 @@
                 const waterTime = new Date(plot.lastWatered).getTime();
                 const now = Date.now();
                 const elapsed = now - waterTime;
-                const maxWetTime = 24 * 60 * 60 * 1000; // 24 giờ
+                const maxWetTime = 24 * 60 * 60 * 1000;
                 if (elapsed < maxWetTime) {
                     isWet = true;
                     remainingWetTime = maxWetTime - elapsed;
@@ -391,8 +515,7 @@
 
             document.getElementById('statSoilStatus').innerText = isWet ? "Đất Ẩm (Tốt)" : "Đất Khô";
             document.getElementById('statSoilStatus').style.color = isWet ? "#4fc3f7" : "#aaa";
-
-            // Hiển thị timer nếu đất ẩm
+            
             if (isWet) {
                 soilTimerRow.style.display = 'block';
                 document.getElementById('statSoilTimer').innerText = formatTimeHMS(remainingWetTime);
@@ -400,29 +523,25 @@
                 soilTimerRow.style.display = 'none';
             }
 
-            // Hiển thị tốc độ lớn chỉ khi có cây
             if (isPlot) {
                 speedRow.style.display = 'none';
             } else {
                 speedRow.style.display = 'block';
-                const speed = 1;
-                document.getElementById('statSpeed').innerText = (speed * 100) + "%";
+                document.getElementById('statSpeed').innerText = "100%";
             }
 
-            // 3. Nếu là cây, tính toán tiến độ
             if (!isPlot) {
-                // Tính toán Tiến độ (Real-time Simulation)
                 const now = Date.now();
                 const lastUpdate = itemData.lastUpdated ? new Date(itemData.lastUpdated).getTime() : new Date(itemData.plantedAt).getTime();
                 const elapsed = now - lastUpdate;
-
+                
+                // 1. GROWTH
                 const speed = 1;
-                const currentProgress = (itemData.growthProgress || 0) + (elapsed * speed);
+                const additionalGrowth = isWet ? (elapsed * speed) : 0;
+                const currentProgress = (itemData.growthProgress || 0) + additionalGrowth;
                 const timePerStage = parseDuration(config.growthTime);
-
                 const msInCurrent = currentProgress % timePerStage;
-                const msRemaining = Math.max(0, (timePerStage - msInCurrent) / speed);
-
+                
                 const pct = Math.min(100, (msInCurrent / timePerStage) * 100);
                 document.getElementById('statGrowthBar').style.width = pct + "%";
                 document.getElementById('statTimeProgress').innerText = formatTime(msInCurrent) + " / " + formatTime(timePerStage);
@@ -445,42 +564,62 @@
                 }
 
                 document.getElementById('statPrice').innerText = config.rewardGold.min + "-" + config.rewardGold.max;
-
-                // Tính toán Wither
+                
+                // 2. [FIXED] WITHER - TÍNH TOÁN REALTIME
                 const witherTime = parseDuration(config.witherTime || '30 phút');
-                const currentWither = itemData.witherProgress || 0;
+                let realWither = itemData.witherProgress || 0;
 
-                if (itemData.isDead) {
-                    document.getElementById('statWitherBar').style.width = "0%";
-                    document.getElementById('statWitherVal').innerText = "Đã Chết 💀";
-                    document.getElementById('statWitherVal').style.color = "red";
-                    document.getElementById('statStageVal').innerText = "Cần dọn dẹp";
+                // Nếu đất khô và cây chưa chết -> Tăng độ héo theo thời gian trôi qua
+                if (!isWet && itemData.stage > 0 && !itemData.isDead) {
+                    realWither += elapsed;
+                } 
+                // Nếu đất ẩm -> Giảm độ héo (hồi phục)
+                else if (isWet && itemData.stage > 0 && !itemData.isDead) {
+                    realWither = Math.max(0, realWither - elapsed);
+                }
+
+                const witherBar = document.getElementById('statWitherBar');
+                const witherVal = document.getElementById('statWitherVal');
+
+                if (realWither >= witherTime || itemData.isDead) {
+                    witherBar.style.width = "0%";
+                    witherVal.innerText = "Đã Chết 💀";
+                    witherVal.style.color = "#ef5350";
+                    witherBar.style.background = "#ef5350";
+                    witherVal.style.animation = "none";
                 } else {
-                    const healthPct = Math.max(0, 100 - (currentWither / witherTime * 100));
-                    document.getElementById('statWitherBar').style.width = healthPct + "%";
-                    document.getElementById('statWitherVal').innerText = Math.floor(healthPct) + "%";
-                    document.getElementById('statWitherVal').style.color = "white";
+                    const healthPct = Math.max(0, 100 - (realWither / witherTime * 100));
+                    witherBar.style.width = healthPct + "%";
+                    witherVal.innerText = Math.floor(healthPct) + "%";
+                    witherVal.style.color = "white";
+                    witherVal.style.animation = "none";
+
+                    if (healthPct > 50) {
+                        witherBar.style.background = "#4caf50";
+                        witherVal.innerText += " (Tốt)";
+                    } else if (healthPct > 20) {
+                        witherBar.style.background = "#ffeb3b";
+                        witherVal.innerText += " (Khát)";
+                    } else {
+                        witherBar.style.background = "#ef5350";
+                        witherVal.innerText += " (Nguy!)";
+                        witherVal.style.animation = "pulse 1s infinite"; 
+                    }
                 }
             }
         };
 
-        // Chạy ngay lập tức
         render();
-
-        // Cập nhật mỗi giây
         statsInterval = setInterval(render, 1000);
-
         panel.classList.add('active');
     };
 
     window.hidePlantStats = function() {
-        if (statsInterval) clearInterval(statsInterval); // Dừng bộ đếm
+        if (statsInterval) clearInterval(statsInterval);
         document.getElementById('plantStats').classList.remove('active');
     };
 
-    // --- CÁC HÀM KHÁC GIỮ NGUYÊN ---
     function selectTool(toolName) {
-        console.log("Chọn công cụ:", toolName);
         if(window.gameEvents) window.gameEvents.emit('toolChanged', toolName);
         document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
         const slots = document.querySelectorAll('.tool-slot');
@@ -505,16 +644,12 @@
 <script>
     /* eslint-disable */
     // @ts-nocheck
-    // Inject dữ liệu (already parsed above)
 
-    // --- SCRIPT HƯỚNG DẪN (UPDATED) ---
-
-    // [MỚI] Nhận biến isOwner từ Server (Mặc định true nếu không có)
+    // --- SCRIPT HƯỚNG DẪN (TUTORIAL) ---
     /* eslint-disable */
-    window.isOwner = JSON.parse('<%= JSON.stringify(typeof isOwner !== "undefined" ? isOwner : true) %>');
+    window.isOwner = <%= typeof isOwner !== "undefined" ? isOwner : true %>;
     /* eslint-enable */
 
-    // [CẬP NHẬT 1] Lấy tiến độ từ Database (thay vì số 0 cứng)
     const currentStep = window.gardenData.tutorialStep || 0;
 
     const tutorialScript = [
@@ -543,11 +678,10 @@
             target: '.tool-slot[onclick*="plants"]'
         },
         { 
-            // [CẬP NHẬT] Nội dung Bước 4 xịn hơn
             title: "Bước 4: Chốt đơn Hướng Dương 🌻",
             content: "Hàng tuyển đây! Mua em 'Hướng Dương' về trồng lấy hên. Rẻ, dễ nuôi mà bán được giá. Click vô nó lẹ!",
             action: 'wait_buy_plant',
-            target: '.item-card' // Target tạm, sẽ được xử lý chi tiết trong code
+            target: '.item-card'
         },
         { 
             title: "Bước 5: Gieo mầm 🌱",
@@ -584,7 +718,6 @@
     let activeStep = currentStep;
 
     function initTutorial() {
-        // Check if guest, hide tutorial
         /* eslint-disable */
         if (!window.isOwner) {
             document.getElementById('tutorialOverlay').style.display = 'none';
@@ -600,54 +733,43 @@
         const dialog = document.getElementById('tutorialOverlay');
         const pointer = document.getElementById('tutPointer');
         
-        // Render nội dung
         document.getElementById('tutTitle').innerText = stepData.title;
         document.getElementById('tutContent').innerText = stepData.content;
         
-        // Nút Next
         const btn = document.getElementById('tutNextBtn');
         if (stepData.action) {
-            btn.style.display = 'none'; 
+            btn.style.display = 'none';
         } else {
             btn.style.display = 'block';
             btn.innerText = (activeStep === tutorialScript.length - 1) ? "Chiến thôi! 🔥" : "Tiếp theo 👉";
         }
 
-        // Reset Highlight cũ
         document.querySelectorAll('.highlight-tutorial').forEach(el => el.classList.remove('highlight-tutorial'));
         pointer.style.display = 'none';
 
-        // Xử lý Highlight mới
         if (stepData.target) {
-            // Delay nhẹ để chờ DOM render (đặc biệt là Shop)
             setTimeout(() => {
                 let els = document.querySelectorAll(stepData.target);
                 let targetEl = null;
 
-                // [FIX] Logic tìm đúng thẻ Hướng Dương ở Bước 4
                 if (activeStep === 4) { 
-                    // Tìm item card nào có chứa chữ 'sunflower' trong hàm onclick hoặc tên hiển thị
                     els.forEach(el => {
                         if (el.getAttribute('onclick') && el.getAttribute('onclick').includes('sunflower')) {
                             targetEl = el;
                         }
                     });
                 } else {
-                    targetEl = els[0]; // Mặc định lấy phần tử đầu tiên tìm thấy
+                    targetEl = els[0];
                 }
 
                 if (targetEl) {
                     targetEl.classList.add('highlight-tutorial');
-                    
-                    // Tính toán vị trí mũi tên chỉ tay
                     const rect = targetEl.getBoundingClientRect();
                     pointer.style.display = 'block';
-                    // Chỉ vào giữa element
                     pointer.style.left = (rect.left + rect.width/2 - 20) + 'px';
-                    pointer.style.top = (rect.top - 60) + 'px'; // Nằm trên element 60px
+                    pointer.style.top = (rect.top - 60) + 'px';
                     
-                    // Nếu là Shop Item thì mũi tên cần z-index cao hơn modal
-                    if (activeStep === 4) pointer.style.zIndex = "2005"; 
+                    if (activeStep === 4) pointer.style.zIndex = "2005";
                     else pointer.style.zIndex = "100000";
                 }
             }, 100);
@@ -662,8 +784,6 @@
 
     async function advanceStep() {
         activeStep++;
-        
-        // [QUAN TRỌNG] Gọi đúng đường dẫn API đã khai báo ở route
         fetch('/my-garden/tutorial/next', {
             method: 'POST', 
             headers: {'Content-Type': 'application/json'},
@@ -680,11 +800,9 @@
         }
     }
 
-    // Bridge function
     window.checkTutorialAction = function(actionType) {
         if (activeStep >= tutorialScript.length) return;
         const requiredAction = tutorialScript[activeStep].action;
-        
         if (requiredAction === actionType) {
             advanceStep();
         }
@@ -703,10 +821,8 @@
     window.openShopHTML = function(tab) {
         originalOpenShop(tab);
         window.checkTutorialAction('wait_open_shop');
-        
-        // [FIX] Nếu đang ở bước mua hàng, gọi lại initTutorial để nó tính toán vị trí highlight item
         if (activeStep === 4) {
-            setTimeout(() => initTutorial(), 50); 
+            setTimeout(() => initTutorial(), 50);
         }
     };
 
@@ -722,25 +838,28 @@
 <style>
     /* CSS CHO TUTORIAL */
     .tutorial-wrapper {
-        position: absolute; bottom: 120px; left: 20px; z-index: 99999;
+        position: absolute;
+        bottom: 120px; left: 20px; z-index: 99999;
         display: flex; align-items: flex-end; font-family: 'VT323', monospace;
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
         transition: all 0.3s;
     }
     
     .mascot-img {
-        width: 100px; height: 100px; 
+        width: 100px;
+        height: 100px; 
         animation: bounce 2s infinite;
     }
     
     .dialog-box {
-        background: #fff; border: 4px solid #3e2723; border-radius: 15px;
+        background: #fff;
+        border: 4px solid #3e2723; border-radius: 15px;
         padding: 15px; max-width: 300px; position: relative; margin-left: -20px;
         margin-bottom: 20px;
     }
-    /* Mũi nhọn hội thoại */
     .dialog-box::before {
-        content: ''; position: absolute; left: -10px; bottom: 20px;
+        content: '';
+        position: absolute; left: -10px; bottom: 20px;
         border-top: 10px solid transparent; border-bottom: 10px solid transparent; 
         border-right: 15px solid #3e2723;
     }
@@ -749,21 +868,21 @@
     .dialog-box p { margin: 0 0 10px 0; color: #333; font-size: 1.2rem; line-height: 1.2; }
 
     .btn-genz {
-        background: #ffeb3b; border: 2px solid #f57f17; padding: 5px 15px;
+        background: #ffeb3b; border: 2px solid #f57f17;
+        padding: 5px 15px;
         font-family: inherit; font-size: 1.2rem; font-weight: bold; cursor: pointer;
         border-radius: 8px; width: 100%; transition: 0.2s;
     }
     .btn-genz:hover { background: #fff176; transform: scale(1.05); }
 
-    /* Hiệu ứng chỉ tay */
     .hand-pointer {
-        position: fixed; font-size: 3rem; 
+        position: fixed;
+        font-size: 3rem; 
         animation: point 1s infinite alternate;
         display: none; z-index: 100000;
         pointer-events: none; text-shadow: 0 0 10px white;
     }
 
-    /* Hiệu ứng Highlight (Làm nổi bật nút cần bấm) */
     .highlight-tutorial {
         box-shadow: 0 0 0 4px #ffff00, 0 0 20px #ffff00 !important;
         z-index: 100001 !important; position: relative;
@@ -771,11 +890,10 @@
     }
 
     @keyframes pulse { 0% { box-shadow: 0 0 0 0px #ffff00; } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 0, 0); } }
-</style>
-
-<style>
+    
     .swal2-popup.swal2-toast {
-        background: #3e2723; color: #ffb300; border: 2px solid #ffb300; border-radius: 0; font-family: 'VT323'; font-size: 1.2rem;
+        background: #3e2723; color: #ffb300;
+        border: 2px solid #ffb300; border-radius: 0; font-family: 'VT323'; font-size: 1.2rem;
     }
 </style>
 

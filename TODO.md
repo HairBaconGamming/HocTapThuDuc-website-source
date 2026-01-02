@@ -1,16 +1,9 @@
-# TODO: Add Soil Details and Moisture Timer to Garden
+# TODO: Update Points, Level, and XP System
 
-## 1. Update views/garden.ejs
-- [ ] Add HTML elements for soil status and moisture timer in the stats panel
-- [ ] Add helper function `formatTimeHMS` for HH:MM:SS formatting
-- [ ] Modify `showPlantStats` function to handle plots and plants, including soil checks
-
-## 2. Update public/js/gardenPhaser.js
-- [ ] Make plot sprites interactive in `renderItem` and add hover/out events for mini HUD
-- [ ] Update `createMiniHUD` to support plots (only "Xem" button, no progress bar or move)
-- [ ] Update `handleToolAction` for cursor tool to show plot stats if no plant
-
-## 3. Testing
-- [ ] Test garden page: interact with plots and plants
-- [ ] Verify moisture timer updates in real-time
-- [ ] Ensure soil status displays correctly
+## Completed Tasks
+- [x] Create TODO.md file
+- [x] Update views/profile.ejs: Change totalPoints to points in stats-grid
+- [x] Update views/profileView.ejs: Change totalPoints to points and add level display
+- [x] Update views/leaderboard.ejs: Replace all totalPoints with points
+- [x] Update controllers/leaderboardController.js: Change queries and sorts to use points
+- [x] Update public/js/lessonDetail.js: Modify reward popup to show points, XP, water with level-up message

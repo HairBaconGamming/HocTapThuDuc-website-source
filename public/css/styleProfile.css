@@ -1,8 +1,30 @@
 /* public/css/styleProfile.css */
 
+:root {
+    --bg-chill: #fdfbf7;
+    --card-bg: #ffffff;
+    --ink: #2d3436; /* Màu đen chì */
+    --border-color: #1e1e1e;
+    --shadow-pop: 4px 4px 0px rgba(0,0,0,0.15); /* Bóng đổ cứng */
+    --accent-blue: #bfdbfe;
+    --accent-green: #bbf7d0;
+    --accent-yellow: #fef08a;
+    --accent-pink: #fbcfe8;
+    --radius-lg: 24px;
+    --radius-md: 16px;
+    --radius-pill: 50px;
+}
+
+body {
+    background-color: var(--bg-chill);
+    /* Họa tiết chấm bi nhỏ tạo nền chill */
+    background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
 .profile-wrapper {
     max-width: 1100px;
-    margin: 40px auto;
+    margin: 40px auto 80px;
     font-family: 'Quicksand', sans-serif;
     padding: 0 20px;
 }
@@ -10,233 +32,183 @@
 /* --- BENTO GRID LAYOUT --- */
 .profile-grid {
     display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 30px;
+    grid-template-columns: 360px 1fr; /* Cột trái cố định, phải co giãn */
+    gap: 25px;
     align-items: start;
 }
 
-/* --- CARD STYLE CHUNG --- */
+/* --- CARD STYLE SYSTEM (NEO-BRUTALISM LITE) --- */
 .bento-card {
-    background: #fff;
-    border: 3px solid var(--dark-ink);
-    border-radius: 30px;
-    padding: 25px;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
+    background: var(--card-bg);
+    border: 2px solid var(--border-color); /* Viền đậm */
+    border-radius: var(--radius-lg);
+    padding: 0; /* Reset padding để xử lý banner */
+    box-shadow: var(--shadow-pop);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative;
     overflow: hidden;
-    transition: transform 0.3s;
 }
 
 .bento-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 12px 12px 0px rgba(0,0,0,0.15);
+    transform: translate(-2px, -4px);
+    box-shadow: 6px 6px 0px var(--border-color); /* Hiệu ứng nổi lên khi hover */
 }
 
 /* --- CỘT TRÁI: IDENTITY CARD --- */
 .identity-card {
+    display: flex;
+    flex-direction: column;
     text-align: center;
-    background: #fff;
+}
+
+.card-banner {
+    height: 120px;
+    background: linear-gradient(135deg, #a5f3fc 0%, #c4b5fd 100%); /* Gradient pastel */
+    border-bottom: 2px solid var(--border-color);
 }
 
 .id-avatar-wrapper {
+    width: 130px; height: 130px;
+    margin: -65px auto 15px; /* Kéo avatar lên đè banner */
     position: relative;
-    width: 140px;
-    height: 140px;
-    margin: 0 auto 20px;
 }
 
 .id-avatar {
     width: 100%; height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid var(--pop-yellow);
+    background: #fff;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 0px rgba(0,0,0,0.1);
 }
 
 .pro-badge {
-    position: absolute;
-    bottom: 5px; right: 5px;
-    background: gold;
-    color: #b45309;
-    width: 35px; height: 35px;
+    position: absolute; bottom: 5px; right: 5px;
+    background: #fbbf24; color: #78350f;
+    width: 32px; height: 32px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    border: 2px solid #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; border: 2px solid #fff;
     animation: bounce 2s infinite;
 }
 
-.id-name {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: var(--dark-ink);
-    margin: 0;
-}
+.id-content { padding: 0 25px 25px; }
 
-.id-username {
-    color: #888;
-    font-weight: 600;
-    margin-bottom: 15px;
+.id-name { font-size: 1.6rem; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.5px; }
+.id-username { 
+    color: #64748b; font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; 
+    background: #f1f5f9; display: inline-block; padding: 4px 12px; border-radius: 12px;
+    font-family: monospace; 
 }
 
 .id-bio {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 15px;
-    font-size: 0.95rem;
-    color: #555;
-    font-style: italic;
-    margin-bottom: 20px;
+    font-size: 0.95rem; color: #475569; line-height: 1.5;
+    margin-bottom: 20px; font-style: italic; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 12px;
 }
 
-.id-meta {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 25px;
+.id-tags { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 25px; }
+.tag-pill {
+    font-size: 0.8rem; font-weight: 700; padding: 6px 14px; border-radius: 50px;
+    border: 2px solid var(--border-color); background: #fff; color: var(--ink);
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
 
-.meta-tag {
-    background: #e3f2fd;
-    color: #1565c0;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.85rem;
+/* Buttons Action */
+.btn-action {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px; border-radius: 16px;
+    font-weight: 800; text-decoration: none; font-size: 1rem;
+    transition: 0.2s; border: 2px solid var(--border-color);
+    cursor: pointer; margin-bottom: 10px; position: relative;
 }
 
-.btn-edit-profile {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    border-radius: 50px;
-    background: var(--dark-ink);
-    color: white;
-    font-weight: 800;
-    text-decoration: none;
-    transition: 0.2s;
-}
-.btn-edit-profile:hover { background: #000; color: white; }
+.btn-primary { background: var(--ink); color: #fff; box-shadow: 3px 3px 0px rgba(0,0,0,0.2); }
+.btn-primary:hover { background: #000; transform: translate(-2px, -2px); box-shadow: 5px 5px 0px rgba(0,0,0,0.2); }
+.btn-primary:active { transform: translate(0, 0); box-shadow: 0 0 0; }
+
+.btn-secondary { background: #fff; color: var(--ink); box-shadow: 3px 3px 0px #e2e8f0; }
+.btn-secondary:hover { background: #f8fafc; transform: translate(-2px, -2px); box-shadow: 5px 5px 0px #cbd5e1; }
+
+.btn-danger { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
 /* --- CỘT PHẢI: STATS & CONTENT --- */
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
+.stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;
 }
 
-.stat-box {
-    background: #fff;
-    padding: 20px;
-    border-radius: 20px;
-    border: 2px solid #eee;
-    text-align: center;
+.stat-card {
+    background: #fff; border: 2px solid var(--border-color); border-radius: 20px;
+    padding: 15px; text-align: center; position: relative;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    transition: 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); }
+
+/* Màu sắc riêng cho từng thẻ stat */
+.stat-card:nth-child(1) { background: var(--accent-pink); }
+.stat-card:nth-child(2) { background: var(--accent-green); }
+.stat-card:nth-child(3) { background: var(--accent-yellow); }
+
+.stat-val { font-size: 1.8rem; font-weight: 900; color: var(--ink); line-height: 1.1; font-family: 'Arial', sans-serif; letter-spacing: -1px; }
+.stat-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: rgba(0,0,0,0.6); margin-top: 5px; letter-spacing: 0.5px; }
+
+/* Level Bar - Striped Effect */
+.level-container { padding: 25px; margin-bottom: 25px; }
+.level-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 800; color: var(--ink); font-size: 1.1rem; }
+.progress-track { 
+    width: 100%; height: 20px; background: #f1f5f9; 
+    border: 2px solid var(--border-color); border-radius: 50px; overflow: hidden; 
+}
+.progress-fill { 
+    height: 100%; 
+    /* Hiệu ứng sọc chéo */
+    background: repeating-linear-gradient(
+        45deg,
+        #4ade80,
+        #4ade80 10px,
+        #22c55e 10px,
+        #22c55e 20px
+    );
+    width: 0%; transition: width 1s ease-out; border-right: 2px solid var(--border-color); 
 }
 
-.stat-box h3 { font-size: 2rem; font-weight: 900; margin: 0; color: var(--dark-ink); }
-.stat-box p { margin: 5px 0 0; color: #888; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
-
-.stat-box.highlight { border-color: var(--pop-green); background: #f0fff4; }
-
-/* Level Bar */
-.level-container {
-    margin-bottom: 30px;
-}
-.level-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 700; }
-.progress-track { width: 100%; height: 12px; background: #eee; border-radius: 10px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, var(--pop-green), #00b894); border-radius: 10px; width: 0%; transition: 1s; }
-
-/* My Tree Section */
+/* My Garden - Ticket Style */
 .tree-section {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: linear-gradient(135deg, #fff 50%, #e8f5e9 100%);
-    margin-bottom: 30px;
+    background: #ecfdf5; /* Nền xanh lá nhạt */
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 25px; margin-bottom: 25px;
+    border-style: dashed; /* Viền nét đứt tạo kiểu vé */
 }
-.tree-visual img { width: 120px; height: auto; }
-.tree-info h3 { font-size: 1.5rem; margin: 0 0 10px; }
+.tree-info h3 { margin: 0 0 5px; font-size: 1.5rem; font-weight: 800; }
+.btn-visit { 
+    background: #fff; border: 2px solid var(--border-color); padding: 8px 20px; 
+    border-radius: 50px; font-weight: 800; text-decoration: none; color: var(--ink); 
+    box-shadow: 3px 3px 0 var(--border-color); display: inline-block; margin-top: 10px; 
+    transition: 0.2s;
+}
+.btn-visit:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--border-color); background: #ffeb3b; }
 
-/* Activity List */
-.activity-list {
-    list-style: none;
-    padding: 0;
-}
+/* Activity List (Chat Bubble Style) */
+.activity-box { padding: 25px; }
+.activity-list { list-style: none; padding: 0; }
 .activity-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
+    display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px dashed #cbd5e1; align-items: center;
 }
+.activity-item:last-child { border-bottom: none; }
+
 .activity-icon {
-    width: 40px; height: 40px;
-    background: #fff0f5;
-    color: #d81b60;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem;
+    width: 45px; height: 45px; background: #fff; border: 2px solid var(--border-color); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
 }
-.activity-content h4 { margin: 0; font-size: 1rem; color: var(--dark-ink); }
-.activity-time { font-size: 0.8rem; color: #999; }
+.activity-info h4 { margin: 0 0 4px; font-size: 1rem; color: var(--ink); font-weight: 700; }
+.activity-time { font-size: 0.8rem; color: #94a3b8; font-weight: 600; font-family: monospace; }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (max-width: 850px) {
     .profile-grid { grid-template-columns: 1fr; }
-    .identity-card { max-width: 100%; }
-    .stats-row { grid-template-columns: 1fr 1fr 1fr; }
+    .identity-card { overflow: visible; margin-bottom: 20px;}
+    .stats-grid { gap: 10px; }
 }
-@media (max-width: 600px) {
-    .stats-row { grid-template-columns: 1fr; }
-}
-
-/* Animations */
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-.btn-visit-garden {
-    display: inline-block;
-    background: linear-gradient(45deg, #FFB74D, #FF9800);
-    color: white;
-    padding: 8px 20px;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
-    transition: transform 0.2s;
-}
-.btn-visit-garden:hover {
-    transform: translateY(-2px) scale(1.05);
-}
-
-/* Nút Sao Chép Link */
-.btn-copy-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px;
-    background: #ffffff;
-    color: var(--dark-ink);
-    border: 2px dashed #cbd5e1;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-copy-link:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: #f0f9ff;
-    transform: translateY(-2px);
-}
-
-.btn-copy-link i {
-    font-size: 1.1rem;
-}

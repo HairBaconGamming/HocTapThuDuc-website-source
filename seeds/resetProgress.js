@@ -57,14 +57,6 @@ async function resetAllProgress() {
             console.log("ℹ️ Không tìm thấy model LessonCompletion (hoặc bạn lưu trực tiếp trong User), bỏ qua bước này.");
         }
 
-        // 3. Reset thống kê truy cập (Nếu dùng VisitStats)
-        if (VisitStats) {
-            const visitDeleteResult = await VisitStats.deleteMany({});
-            console.log(`✅ Đã xóa ${visitDeleteResult.deletedCount} bản ghi thống kê truy cập (VisitStats).`);
-        } else {
-            console.log("ℹ️ Không tìm thấy model VisitStats, bỏ qua bước này.");
-        }
-
         console.log("\n🎉 HOÀN TẤT! Tất cả đã về vạch xuất phát.");
         process.exit(0);
 

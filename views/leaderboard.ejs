@@ -20,7 +20,7 @@
                     </div>
                     <div class="podium-info">
                         <div class="podium-name"><%= top3[1].username %></div>
-                        <div class="podium-score"><%= top3[1].totalPoints || 0 %> pts</div>
+                        <div class="podium-score"><%= top3[1].points || 0 %> pts</div>
                     </div>
                 </div>
             </a>
@@ -39,7 +39,7 @@
                             <%= top3[0].username %>
                             <% if(top3[0].isPro) { %><span class="pro-badge">PRO</span><% } %>
                         </div>
-                        <div class="podium-score" style="font-size: 2rem;"><%= top3[0].totalPoints || 0 %> pts</div>
+                        <div class="podium-score" style="font-size: 2rem;"><%= top3[0].points || 0 %> pts</div>
                         <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔥 Out Trình 🔥</div>
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                             </div>
                             <div class="rank-meta"><%= u.class || 'Lớp ?' %> • <%= u.school || 'THPT Thủ Đức' %></div>
                         </div>
-                        <div class="rank-pts"><%= u.totalPoints || 0 %></div>
+                        <div class="rank-pts"><%= u.points || 0 %></div>
                     </div>
                 </a>
             <% }) %>
@@ -102,7 +102,7 @@
                 </div>
             </div>
             <div class="hud-right">
-                <%= user.totalPoints || 0 %> <span style="font-size: 1rem;">pts</span>
+                <%= user.points || 0 %> <span style="font-size: 1rem;">pts</span>
             </div>
         </div>
     </a>

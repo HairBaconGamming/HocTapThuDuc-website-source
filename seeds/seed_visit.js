@@ -21,14 +21,14 @@ async function seedVisitStats() {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset giờ về 00:00:00
 
-        // 3. Cập nhật hoặc tạo mới bản ghi với count = 3459 cho totalVisits
+        // 3. Cập nhật hoặc tạo mới bản ghi với count = 4739 cho totalVisits
         const result = await VisitStats.findOneAndUpdate(
             { key: "totalVisits" },
-            { $set: { count: 3459 } },
+            { $set: { count: 4739 } },
             { upsert: true, new: true }
         );
 
-        console.log(`✅ Đã thiết lập tổng số lượt truy cập là 3459.`);
+        console.log(`✅ Đã thiết lập tổng số lượt truy cập là 4739.`);
         console.log("🎉 SEEDING COMPLETED SUCCESSFULLY!");
         process.exit(0);
 

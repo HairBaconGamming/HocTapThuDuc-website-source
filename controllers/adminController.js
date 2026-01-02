@@ -200,46 +200,60 @@ exports.deleteNews = async (req, res) => {
 
 exports.saveSubject = async (req, res) => {
     try {
-        const { subjectId, name, description, thumbnail } = req.body;
+        // Lấy dữ liệu từ Form (admin.ejs dòng 1031)
+        const { subjectId, name, image } = req.body;
 
-        // 1. Nếu có ID -> Là Cập Nhật (Edit)
-        if (subjectId) {
+        // Validate cơ bản
+        if (!name) {
+            req.flash('error', 'Tên môn học không được để trống!');
+            return res.redirect('/admin?tab=subjects');
+        }
+
+        // 1. TRƯỜNG HỢP CẬP NHẬT (NẾU CÓ ID)
+        if (subjectId && subjectId.trim() !== '') {
             await Subject.findByIdAndUpdate(subjectId, {
-                name,
-                description,
-                thumbnail
+                name: name.trim(),
+                image: image ? image.trim() : ''
             });
-            // (Optional) Thêm flash message
+            req.flash('success', 'Cập nhật môn học thành công!');
         } 
-        // 2. Nếu không có ID -> Là Tạo Mới (Create)
+        // 2. TRƯỜNG HỢP THÊM MỚI (KHÔNG CÓ ID)
         else {
-            await Subject.create({
-                name,
-                description,
-                thumbnail
+            const newSubject = new Subject({
+                name: name.trim(),
+                image: image ? image.trim() : ''
             });
+            await newSubject.save();
+            req.flash('success', 'Thêm môn học mới thành công!');
         }
 
         res.redirect('/admin?tab=subjects');
+
     } catch (err) {
-        console.error("Save Subject Error:", err);
-        res.redirect('/admin?error=save_subject_failed');
+        console.error("Lỗi Save Subject:", err);
+        req.flash('error', 'Lỗi hệ thống: ' + err.message);
+        res.redirect('/admin?tab=subjects');
     }
 };
 
+// --- [FIX] XÓA MÔN HỌC ---
 exports.deleteSubject = async (req, res) => {
     try {
-        const { subjectId } = req.body;
+        const { subjectId } = req.body; // Lấy ID từ form delete
         
-        // 1. Xóa môn học
+        if (!subjectId) {
+            req.flash('error', 'Không tìm thấy ID môn học cần xóa.');
+            return res.redirect('/admin?tab=subjects');
+        }
+
         await Subject.findByIdAndDelete(subjectId);
-
-        // 2. (Nâng cao) Bạn có thể muốn xóa luôn các Khóa học thuộc môn này
-        // await Course.deleteMany({ subjectId: subjectId });
-
+        
+        req.flash('success', 'Đã xóa môn học!');
         res.redirect('/admin?tab=subjects');
+        
     } catch (err) {
-        console.error("Delete Subject Error:", err);
-        res.redirect('/admin');
-    }satisfies
+        console.error("Lỗi Delete Subject:", err);
+        req.flash('error', 'Lỗi khi xóa: ' + err.message);
+        res.redirect('/admin?tab=subjects');
+    }
 };

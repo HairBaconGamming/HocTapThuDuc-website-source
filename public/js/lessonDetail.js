@@ -336,86 +336,202 @@ function getEmbedUrl(url, autoplay) {
     return embedUrl;
 }
 
-// Hoàn thành bài học
+// --- [GEN Z UPDATE] Danh sách câu khen "mặn mòi" ---
+const genZPraises = [
+    "Đỉnh nóc, kịch trần! 🏠",
+    "Slay quá fen ơi! 💅",
+    "10 điểm về chỗ! 💯",
+    "Kiến thức này đã được tiếp thu! 🧠",
+    "Out trình server! 🚀",
+    "Gét gô! Quá dữ luôn! 🔥",
+    "Nghệ cả củ! 🎨"
+];
+
+// Hàm lấy câu chúc ngẫu nhiên
+function getRandomPraise() {
+    return genZPraises[Math.floor(Math.random() * genZPraises.length)];
+}
+
+// Hàm bắn pháo giấy ăn mừng
+function triggerConfetti() {
+    if (typeof confetti === 'function') {
+        var duration = 3 * 1000;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+        var randomInRange = function(min, max) {
+            return Math.random() * (max - min) + min;
+        };
+
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            var particleCount = 50 * (timeLeft / duration);
+            // Bắn từ 2 bên màn hình vào
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    }
+}
+
+// [NÂNG CẤP] Hoàn thành bài học
 async function completeLesson(lessonId) {
     const btn = document.getElementById('btnComplete');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+    
+    // Hiệu ứng loading "chill"
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...';
     btn.disabled = true;
+    btn.style.opacity = '0.8';
 
     try {
         const res = await fetch(`/lesson/${lessonId}/complete`, { method: 'POST' });
         const data = await res.json();
 
         if (res.ok) {
-            // [NÂNG CẤP] Giao diện phần thưởng đẹp mắt
+            // 1. Kích hoạt pháo giấy ngay lập tức
+            triggerConfetti();
+
+            // 2. Chuẩn bị nội dung Popup
+            const praise = getRandomPraise();
+            
+            // Xử lý thông báo Level Up (nếu có)
+            let levelUpHtml = '';
+            if (data.isLevelUp) {
+                levelUpHtml = `
+                    <div class="level-up-badge animate-bounce">
+                        <span style="font-size: 3rem;">🆙</span>
+                        <div style="font-weight: 900; font-size: 1.5rem; color: #fff; text-shadow: 2px 2px 0 #d97706;">
+                            LÊN CẤP ${data.level || 'MỚI'}!
+                        </div>
+                        <div style="font-size: 0.9rem; color: #fff;">Đẳng cấp đã được khẳng định!</div>
+                    </div>
+                `;
+            }
+
+            // 3. Hiển thị SweetAlert xịn sò
             Swal.fire({
-                title: '<span style="color: #059669; font-weight: 800; font-size: 1.8rem;">XUẤT SẮC! 🎉</span>',
+                title: `<div class="genz-title">${praise}</div>`,
                 html: `
-                    <div style="font-size: 1.1rem; color: #4b5563; margin-bottom: 20px;">
-                        Bạn đã nỗ lực hết mình! Đây là phần thưởng xứng đáng:
+                    <div style="margin-bottom: 20px;">
+                        ${levelUpHtml}
+                        <div style="font-size: 1.1rem; color: #4b5563; margin-top: 10px;">
+                            Bạn vừa "bỏ túi" được mớ quà nè:
+                        </div>
                     </div>
                     
-                    <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <div class="reward-card" style="background: #ecfdf5; color: #059669; border: 2px solid #a7f3d0;">
-                            <div style="font-size: 2rem; margin-bottom: 5px;">🏆</div>
-                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.points || 0}</div>
-                            <div style="font-size: 0.9rem; font-weight: 600;">Điểm</div>
+                    <div class="reward-container">
+                        <div class="reward-card card-points">
+                            <div class="reward-icon">🪙</div>
+                            <div class="reward-value">+${data.points || 0}</div>
+                            <div class="reward-label">Points</div>
                         </div>
 
-                        <div class="reward-card" style="background: #eff6ff; color: #2563eb; border: 2px solid #bfdbfe;">
-                            <div style="font-size: 2rem; margin-bottom: 5px;">💧</div>
-                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.water || 0}</div>
-                            <div style="font-size: 0.9rem; font-weight: 600;">Nước</div>
+                        <div class="reward-card card-xp">
+                            <div class="reward-icon">✨</div>
+                            <div class="reward-value">+${data.xp || 0}</div>
+                            <div class="reward-label">XP</div>
                         </div>
 
-                        <div class="reward-card" style="background: #fffbeb; color: #d97706; border: 2px solid #fde68a;">
-                            <div style="font-size: 2rem; margin-bottom: 5px;">💰</div>
-                            <div style="font-weight: 800; font-size: 1.2rem;">+${data.gold || 0}</div>
-                            <div style="font-size: 0.9rem; font-weight: 600;">Vàng</div>
+                        <div class="reward-card card-water">
+                            <div class="reward-icon">💧</div>
+                            <div class="reward-value">+${data.gold || 0}</div> 
+                            <div class="reward-label">Vàng</div>
                         </div>
                     </div>
                     
                     <style>
-                        .reward-card {
-                            width: 90px; padding: 10px; border-radius: 15px;
-                            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-                            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        .genz-title { 
+                            font-family: 'Quicksand', sans-serif; 
+                            font-weight: 800; 
+                            font-size: 2rem; 
+                            background: linear-gradient(to right, #10b981, #3b82f6); 
+                            -webkit-background-clip: text; 
+                            -webkit-text-fill-color: transparent;
                         }
-                        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                        .level-up-badge {
+                            background: linear-gradient(135deg, #f59e0b, #d97706);
+                            padding: 15px;
+                            border-radius: 15px;
+                            margin: 10px auto;
+                            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.4);
+                            transform: scale(1);
+                            animation: pulse 1s infinite;
+                        }
+                        .reward-container {
+                            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
+                        }
+                        .reward-card {
+                            width: 90px; padding: 15px 10px; border-radius: 16px;
+                            text-align: center; position: relative; overflow: hidden;
+                            transition: transform 0.3s;
+                            box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+                        }
+                        .reward-card:hover { transform: translateY(-5px); }
+                        
+                        .card-points { background: #ecfdf5; border: 2px solid #10b981; color: #047857; }
+                        .card-xp { background: #fff7ed; border: 2px solid #f97316; color: #c2410c; }
+                        .card-water { background: #eff6ff; border: 2px solid #3b82f6; color: #1d4ed8; }
+
+                        .reward-icon { font-size: 2rem; margin-bottom: 5px; }
+                        .reward-value { font-weight: 900; font-size: 1.3rem; }
+                        .reward-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
+
+                        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
                     </style>
                 `,
-                icon: null, // Tắt icon mặc định để dùng giao diện custom
+                icon: null,
                 showConfirmButton: true,
-                confirmButtonText: 'Tuyệt vời! Tiếp tục nào 🚀',
-                confirmButtonColor: '#059669',
-                backdrop: `rgba(0,0,0,0.4)`,
-                padding: '2rem',
+                confirmButtonText: 'Tiếp tục cày cuốc! 🚀',
+                confirmButtonColor: '#10b981',
+                background: '#fff',
+                backdrop: `
+                    rgba(0, 0, 50, 0.6)
+                    url("https://melmagazine.com/uploads/2021/01/Gigachad.jpg")
+                    center center / cover
+                    no-repeat
+                `,
                 customClass: {
-                    popup: 'rounded-2xl'
+                    popup: 'rounded-3xl shadow-2xl'
                 }
             }).then(() => {
-                // Update UI Nút bấm
-                btn.innerHTML = '<i class="fas fa-check-double"></i> Đã hoàn thành';
-                btn.style.background = '#059669';
+                // Update UI Nút bấm sau khi đóng popup
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Xong phim!';
+                btn.style.background = '#10b981';
+                btn.style.opacity = '1';
                 btn.style.transform = 'none';
                 btn.style.boxShadow = 'none';
                 
-                // [MỚI] Cập nhật số liệu trên Header (nếu có) ngay lập tức
-                const headerPoints = document.querySelector('.user-points-display'); // Class ví dụ trên header
-                const headerWater = document.querySelector('.user-water-display');
-                if(headerPoints) headerPoints.innerText = data.points;
-                if(headerWater) headerWater.innerText = data.water;
+                // Cập nhật số liệu trên Header (nếu có)
+                const headerPoints = document.querySelector('.user-points-display');
+                if(headerPoints && data.points) {
+                    // Hiệu ứng nhảy số đơn giản
+                    let current = parseInt(headerPoints.innerText) || 0;
+                    headerPoints.innerText = current + data.points;
+                    headerPoints.style.color = '#10b981';
+                    setTimeout(() => headerPoints.style.color = '', 1000);
+                }
             });
         } else {
-            Swal.fire('Thông báo', data.error || 'Đã xảy ra lỗi.', 'info');
+            Swal.fire({
+                title: 'Úi chà!',
+                text: data.error || 'Có lỗi gì đó sai sai rồi...',
+                icon: 'warning',
+                confirmButtonText: 'Để thử lại'
+            });
             btn.innerHTML = originalText;
             btn.disabled = false;
+            btn.style.opacity = '1';
         }
     } catch (e) {
         console.error(e);
-        Swal.fire('Lỗi', 'Không thể kết nối đến server.', 'error');
+        Swal.fire('Lỗi mạng', 'Không kết nối được server, kiểm tra wifi đi fen!', 'error');
         btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.style.opacity = '1';
     }
 }
