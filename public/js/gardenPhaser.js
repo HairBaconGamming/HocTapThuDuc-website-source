@@ -287,6 +287,14 @@ class MainScene extends Phaser.Scene {
             window.hidePlantStats();
         }
 
+        // --- [BẢO MẬT CLIENT] CHẶN KHÁCH DÙNG TOOL KHÁC ---
+        if (!window.isOwner) {
+            showToast('Chỉ chủ nhà mới được làm việc này! 👀', 'warning');
+            this.currentTool = 'cursor'; // Reset về tay
+            window.selectTool('cursor');
+            return;
+        }
+
         // --- TOOL: HOE ---
         if (this.currentTool === 'hoe') {
             if (!plot) {
@@ -519,6 +527,7 @@ class MainScene extends Phaser.Scene {
     }
 
     startMovingSprite(sprite) {
+        if (!window.isOwner) return;
         const item = sprite.itemData;
         const cfg = ASSETS.PLANTS[item.itemId] || ASSETS.DECORS[item.itemId];
         const canMove = !item.isDead && (item.type === 'decoration' || item.stage === 0 || (cfg && item.stage >= cfg.maxStage));

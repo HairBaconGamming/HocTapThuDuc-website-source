@@ -364,38 +364,45 @@
             </div>
         </div>
 
-        <% if (isOwner) { %>
         <div class="garden-toolbar farm-tools">
-            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera">
+            
+            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Xem thông tin - Phím 1)">
                 <div class="key-hint">1</div>
-                <img src="<%= assets.FARMING.tools.move.icon %>">
-            </div>
-            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Di chuyển/Xem)">
-                <div class="key-hint">2</div>
                 <img src="<%= assets.FARMING.tools.cursor.icon %>">
             </div>
-            <div class="tool-slot" onclick="selectTool('hoe')" title="Cuốc Đất">
-                <div class="key-hint">3</div>
-                <img src="<%= assets.FARMING.tools.hoe.icon %>">
+            
+            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera (Phím 7)">
+                <div class="key-hint">7</div>
+                <img src="<%= assets.FARMING.tools.move.icon %>">
             </div>
-            <div class="tool-slot" onclick="selectTool('water')" title="Tưới Nước">
-                <div class="key-hint">4</div>
-                <img src="<%= assets.FARMING.tools.water.icon %>">
-            </div>
-            <div class="tool-slot" onclick="selectTool('basket')" title="Thu Hoạch">
-                <div class="key-hint">5</div>
-                <img src="<%= assets.FARMING.tools.basket.icon %>">
-            </div>
-            <div class="tool-slot" onclick="selectTool('shovel')" title="Dọn Dẹp">
-                <div class="key-hint">6</div>
-                <img src="<%= assets.FARMING.tools.shovel.icon %>">
-            </div>
-            <div class="tool-slot" onclick="openShopHTML('plants')" title="Cửa Hàng">
-                <div class="key-hint">F</div>
-                <img src="/api/pro-images/1767285084901-romnys.png">
-            </div>
+
+            <% if (isOwner) { %>
+                <div class="tool-slot" onclick="selectTool('hoe')" title="Cuốc Đất (Phím 2)">
+                    <div class="key-hint">2</div>
+                    <img src="<%= assets.FARMING.tools.hoe.icon %>">
+                </div>
+                
+                <div class="tool-slot" onclick="selectTool('water')" title="Tưới Nước (Phím 4)">
+                    <div class="key-hint">4</div>
+                    <img src="<%= assets.FARMING.tools.water.icon %>">
+                </div>
+                
+                <div class="tool-slot" onclick="selectTool('basket')" title="Thu Hoạch (Phím 5)">
+                    <div class="key-hint">5</div>
+                    <img src="<%= assets.FARMING.tools.basket.icon %>">
+                </div>
+                
+                <div class="tool-slot" onclick="selectTool('shovel')" title="Dọn Dẹp (Phím 6)">
+                    <div class="key-hint">6</div>
+                    <img src="<%= assets.FARMING.tools.shovel.icon %>">
+                </div>
+
+                <div class="tool-slot" onclick="openShopHTML('plants')" title="Cửa Hàng">
+                    <div class="key-hint">F</div>
+                    <img src="/api/pro-images/1767285084901-romnys.png">
+                </div>
+            <% } %>
         </div>
-        <% } %>
 
         <div class="garden-modal-overlay" id="shopOverlay"
              onwheel="event.stopPropagation()" 
@@ -655,15 +662,23 @@
         });
     }
 
+    // --- KEYBOARD SHORTCUTS (Đã cập nhật mapping mới) ---
     document.addEventListener('keydown', (e) => {
-        if(e.target.tagName === 'INPUT') return;
-        if(e.key === '1') selectTool('move');
-        if(e.key === '2') selectTool('cursor');
-        if(e.key === '3') selectTool('hoe');
-        if(e.key === '4') selectTool('water');
-        if(e.key === '5') selectTool('basket');
-        if(e.key === '6') selectTool('shovel');
-        if(e.key === 'f') openShopHTML('plants');
+        // Bỏ qua nếu đang gõ trong ô input (chat, search...)
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Logic phím tắt
+        if (e.key === '1') selectTool('move');      // Phím 1: Di chuyển (Bàn tay)
+        if (e.key === '2') selectTool('cursor');    // Phím 2: Chọn / Xem info
+        
+        // Các tool chỉ chủ nhà mới dùng được (check thêm isOwner để chắc chắn)
+        if (window.isOwner) {
+            if (e.key === '3') selectTool('hoe');       // Phím 3: Cuốc
+            if (e.key === '4') selectTool('water');     // Phím 4: Tưới
+            if (e.key === '5') selectTool('basket');    // Phím 5: Thu hoạch
+            if (e.key === '6') selectTool('shovel');    // Phím 6: Xẻng
+            if (e.key.toLowerCase() === 'f') openShopHTML('plants'); // Phím F: Mở Shop
+        }
     });
 
     function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }

@@ -182,12 +182,25 @@ exports.moveItem = async (req, res) => {
 exports.interactItem = async (req, res) => {
     try {
         const { uniqueId, action } = req.body;
+        
+        // 1. Luôn load vườn của NGƯỜI ĐANG ĐĂNG NHẬP
+        // Điều này đảm bảo User A không bao giờ tác động được vào vườn User B
         let garden = await Garden.findOne({ user: req.user._id });
         
+        if (!garden) {
+            // Trường hợp hy hữu: User chưa có vườn nhưng cố gọi API
+            return res.status(404).json({ success: false, msg: 'Bạn chưa có vườn!' });
+        }
+
         await syncGardenState(garden);
 
+        // 2. Tìm item trong vườn CỦA CHÍNH MÌNH
         const item = garden.items.id(uniqueId);
-        if (!item) return res.json({ success: false, msg: 'Lỗi vật phẩm' });
+        
+        // Nếu uniqueId là của vườn người khác, dòng trên sẽ trả về null -> An toàn tuyệt đối
+        if (!item) {
+            return res.status(404).json({ success: false, msg: 'Vật phẩm không tồn tại hoặc không thuộc về bạn!' });
+        }
 
         // --- TƯỚI NƯỚC ---
         if (action === 'water') {
