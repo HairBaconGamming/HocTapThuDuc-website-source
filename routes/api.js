@@ -4,7 +4,9 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { isLoggedIn, isPro, isTeacher } = require('../middlewares/auth'); // Thêm isTeacher
+const unitController = require('../controllers/unitController');
 const lessonController = require('../controllers/lessonController'); // Import lessonController
+const courseController = require('../controllers/courseController');
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -142,5 +144,11 @@ router.post('/lesson/save', isTeacher, lessonController.saveLessonAjax);
 // Lấy chi tiết bài học (JSON để load vào Editor)
 // Route này dùng để load dữ liệu khi bấm vào cây thư mục
 router.get('/lesson/:id', isTeacher, lessonController.getLessonDetail);
+
+router.post('/unit/bulk-status', unitController.bulkUpdateStatus);
+
+router.post('/course/:id/update-full', courseController.updateCourseFull);
+
+router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
 
 module.exports = router;

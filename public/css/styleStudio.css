@@ -548,3 +548,30 @@ input:checked + .slider:before { transform: translateX(20px); }
 .btn-secondary:hover { background: #e2e8f0; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Thêm vào CSS */
+.tree-unit-header.active-unit {
+    background-color: #e0f2fe; /* Màu xanh nhạt */
+    border-left: 3px solid #0284c7;
+}
+
+.tree-unit-header {
+    cursor: pointer; /* Hiển thị con trỏ tay để biết click được */
+    transition: background 0.2s;
+    /* Các style cũ giữ nguyên... */
+}
+
+.tree-unit-header:hover {
+    background-color: #f8fafc;
+}
+
+.tree-root-item.active-root {
+    background-color: #eff6ff;
+    color: #1d4ed8 !important;
+    border-left: 3px solid #2563eb;
+    padding-left: 8px !important; /* Bù lại border */
+}
+
+.tree-root-item:hover {
+    background-color: #f8fafc;
+}

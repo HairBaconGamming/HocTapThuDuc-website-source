@@ -270,3 +270,93 @@ exports.bulkUpdateUnitStatus = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+
+// [NEW] API Update Full Course & Structure
+exports.updateCourseFull = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const { 
+            title, description, thumbnail, isPro, isPublished, 
+            curriculumSnapshot 
+        } = req.body;
+
+        // 1. Cập nhật thông tin cơ bản của Course
+        await Course.findByIdAndUpdate(courseId, {
+            title, description, thumbnail, isPro, isPublished
+        });
+
+        let unitMapping = {};
+
+        // 2. Xử lý đồng bộ Cấu trúc (Nếu có gửi lên)
+        if (curriculumSnapshot) {
+            const tree = JSON.parse(curriculumSnapshot);
+
+            // A. Lọc danh sách Unit ID đang tồn tại trên UI (loại bỏ ID tạm)
+            const activeUnitIds = tree
+                .map(u => u.id)
+                .filter(id => !id.startsWith('new_unit_'));
+
+            // B. [QUAN TRỌNG] XÓA CÁC UNIT KHÔNG CÒN TRONG DANH SÁCH (Hard Delete)
+            const unitsToDelete = await Unit.find({
+                courseId: courseId,
+                _id: { $nin: activeUnitIds }
+            });
+
+            if (unitsToDelete.length > 0) {
+                const deleteIds = unitsToDelete.map(u => u._id);
+                console.log(`CourseSync: Deleting ${deleteIds.length} orphan units...`);
+                
+                // Xóa Unit
+                await Unit.deleteMany({ _id: { $in: deleteIds } });
+                // Xóa Lesson thuộc Unit đó
+                await Lesson.deleteMany({ unitId: { $in: deleteIds } });
+            }
+
+            // C. Cập nhật/Tạo mới Unit theo thứ tự
+            let unitOrder = 0;
+            for (let uNode of tree) {
+                unitOrder++;
+                let currentUnitId = uNode.id;
+
+                if (uNode.id.startsWith('new_unit_')) {
+                    // Tạo mới
+                    const newUnit = await Unit.create({
+                        title: uNode.title || "Chương mới",
+                        courseId: courseId,
+                        order: unitOrder
+                    });
+                    currentUnitId = newUnit._id.toString();
+                    unitMapping[uNode.id] = currentUnitId;
+                } else {
+                    // Update cũ
+                    await Unit.findByIdAndUpdate(currentUnitId, { 
+                        title: uNode.title,
+                        order: unitOrder 
+                    });
+                }
+
+                // Cập nhật Lesson Order (nếu cần thiết, dù bài học thường save bên lessonController)
+                // Nhưng để chắc chắn thứ tự đúng, ta update luôn order
+                if (uNode.lessons && uNode.lessons.length > 0) {
+                    let lessonOrder = 0;
+                    for (let lNode of uNode.lessons) {
+                        lessonOrder++;
+                        if (!lNode.id.startsWith('new_lesson_')) { // Chỉ update bài đã có ID
+                            await Lesson.findByIdAndUpdate(lNode.id, {
+                                unitId: currentUnitId, // Move bài sang chương mới nếu có kéo thả
+                                order: lessonOrder
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        res.json({ success: true, unitMapping });
+
+    } catch (err) {
+        console.error("Update Course Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};

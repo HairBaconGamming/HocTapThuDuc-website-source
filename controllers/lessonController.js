@@ -8,7 +8,7 @@ exports.saveLessonAjax = async (req, res) => {
         const { 
             title, content, type, subjectId, isPro, quizData, isPublished,
             curriculumSnapshot, currentEditingId, 
-            courseId 
+            courseId // <--- Bắt buộc phải có courseId gửi lên
         } = req.body;
 
         let savedLessonId = currentEditingId;
@@ -52,92 +52,71 @@ exports.saveLessonAjax = async (req, res) => {
         if (curriculumSnapshot && courseId) {
             let tree = JSON.parse(curriculumSnapshot);
 
-            // A. Duyệt tree để tạo các Unit/Lesson mới và map ID giả -> ID thật
-            for (let uNode of tree) {
-                // --- XỬ LÝ UNIT ---
-                if (uNode.id.startsWith('new_unit_')) {
-                    const tempId = uNode.id;
-                    const newUnit = await Unit.create({
-                        title: uNode.title,
-                        courseId: courseId,
-                        order: 9999 // Order tạm
-                    });
-                    
-                    // Cập nhật ID trong tree memory để lưu xuống DB (Draft/Live)
-                    uNode.id = newUnit._id.toString();
-                    
-                    // [QUAN TRỌNG] Lưu vào mapping để trả về Client
-                    unitMapping[tempId] = uNode.id;
-                } else {
-                    // Cập nhật tên Unit cũ
-                    if (require('mongoose').Types.ObjectId.isValid(uNode.id)) {
-                        await Unit.findByIdAndUpdate(uNode.id, { title: uNode.title });
-                    }
-                }
+            // 1. Lấy danh sách các Unit ID hợp lệ đang tồn tại trên cây (UI)
+            // Lọc bỏ các ID tạm (new_unit_...) vì chúng chưa có trong DB
+            const activeUnitIds = tree
+                .map(u => u.id)
+                .filter(id => !id.startsWith('new_unit_'));
 
-                // --- XỬ LÝ LESSONS CON ---
-                if (uNode.lessons && uNode.lessons.length > 0) {
-                    for (let lNode of uNode.lessons) {
-                        
-                        // Case 1: Bài đang sửa (Main)
-                        if (lNode.id === currentEditingId || lNode.id === 'current_new_lesson') {
-                            lNode.id = savedLessonId;
-                        } 
-                        // Case 2: Bài mới khác được tạo nhanh trên cây (new_lesson_...)
-                        else if (lNode.id.startsWith('new_lesson_')) {
-                            const tempLId = lNode.id;
-                            const newL = await Lesson.create({
-                                title: lNode.title,
-                                unitId: uNode.id, // Gán vào ID thật của Unit (vừa tạo hoặc có sẵn)
-                                courseId: courseId,
-                                subjectId: subjectId,
-                                order: 9999,
-                                type: 'theory', content: '',
-                                isPublished: false,
-                                createdBy: req.user._id
-                            });
-                            
-                            lNode.id = newL._id.toString();
-                            lessonMapping[tempLId] = lNode.id; // Lưu mapping
-                        } 
-                        // Case 3: Bài cũ -> Cập nhật tên
-                        else {
-                            if (require('mongoose').Types.ObjectId.isValid(lNode.id)) {
-                                await Lesson.findByIdAndUpdate(lNode.id, { title: lNode.title });
-                            }
-                        }
-                    }
-                }
+            // 2. [QUAN TRỌNG] XÓA CÁC UNIT KHÔNG CÒN TRONG DANH SÁCH
+            // Tìm tất cả Unit của khóa học này trong DB mà KHÔNG nằm trong activeUnitIds
+            const unitsToDelete = await Unit.find({
+                courseId: courseId,
+                _id: { $nin: activeUnitIds }
+            });
+
+            if (unitsToDelete.length > 0) {
+                const deleteIds = unitsToDelete.map(u => u._id);
+                console.log(`🧹 Cleanup: Deleting ${deleteIds.length} orphan units...`);
+
+                // Bước A: Xóa các Unit đó
+                await Unit.deleteMany({ _id: { $in: deleteIds } });
+
+                // Bước B: Xóa luôn tất cả bài học (Lessons) thuộc về các Unit đó (Cascading Delete)
+                await Lesson.deleteMany({ unitId: { $in: deleteIds } });
             }
 
-            // B. Chế độ PUBLISH -> APPLY cấu trúc vào DB (cập nhật order, unitId)
-            if (isPublished) {
-                console.log('🚀 Publishing tree to live...');
-                for (let [uIdx, uNode] of tree.entries()) {
-                    await Unit.findByIdAndUpdate(uNode.id, { order: uIdx + 1 });
-                    
-                    if (uNode.lessons && uNode.lessons.length > 0) {
-                        for (let [lIdx, lNode] of uNode.lessons.entries()) {
-                            if (require('mongoose').Types.ObjectId.isValid(lNode.id)) {
-                                await Lesson.findByIdAndUpdate(lNode.id, {
-                                    unitId: uNode.id,
-                                    order: lIdx + 1
-                                });
-                            }
+            // 3. Xử lý Thêm mới / Cập nhật vị trí (Logic cũ + Refactor nhẹ)
+            let unitOrder = 0;
+            for (let uNode of tree) {
+                unitOrder++;
+                let currentUnitId = uNode.id;
+
+                // A. Tạo Unit mới nếu là ID tạm
+                if (uNode.id.startsWith('new_unit_')) {
+                    const newUnit = await Unit.create({
+                        title: uNode.title || "Chương mới",
+                        courseId: courseId,
+                        order: unitOrder
+                    });
+                    currentUnitId = newUnit._id.toString();
+                    unitMapping[uNode.id] = currentUnitId; // Map ID tạm -> thật
+                } 
+                // B. Update Unit cũ
+                else {
+                    await Unit.findByIdAndUpdate(currentUnitId, { 
+                        title: uNode.title,
+                        order: unitOrder
+                    });
+                }
+
+                // C. Cập nhật thứ tự các bài học trong Unit này
+                if (uNode.lessons && uNode.lessons.length > 0) {
+                    let lessonOrder = 0;
+                    for (let lNode of uNode.lessons) {
+                        lessonOrder++;
+                        // Nếu bài học đang sửa là bài mới tạo, ID của nó sẽ được update ở phần trên (logic Lesson cũ)
+                        // Ở đây ta chỉ update order và unitId cho các bài *khác* trong list
+                        const lId = (lNode.id === 'current_new_lesson') ? savedLessonId : lNode.id;
+                        
+                        if (lId && !lId.startsWith('new_lesson_')) {
+                            await Lesson.findByIdAndUpdate(lId, {
+                                unitId: currentUnitId,
+                                order: lessonOrder
+                            });
                         }
                     }
                 }
-
-                // Xóa bản nháp sau khi Publish
-                await Course.findByIdAndUpdate(courseId, { draftTree: null, lastEditedLessonId: savedLessonId });
-
-            } else {
-                // C. Chế độ DRAFT -> Lưu JSON vào Course.draftTree
-                console.log('📝 Saving draft tree...');
-                await Course.findByIdAndUpdate(courseId, {
-                    draftTree: JSON.stringify(tree), // Tree này đã chứa toàn bộ ID thật
-                    lastEditedLessonId: savedLessonId
-                });
             }
         }
 

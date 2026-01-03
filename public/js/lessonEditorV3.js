@@ -13,6 +13,9 @@ let activeLessonId = null; // ID bài đang chọn (có thể là new_... hoặc
 let blockInsertIndex = -1; // Vị trí chèn khối mới
 let currentLessonId = window.location.pathname.split('/').pop(); // ID từ URL
 
+let activeContext = 'course'; // 'course' | 'unit' | 'lesson'
+let activeUnitId = null;      // ID chương đang chọn
+
 // Xử lý trường hợp URL là /add
 if (currentLessonId === 'add') currentLessonId = 'current_new_lesson';
 
@@ -55,12 +58,76 @@ function initApp() {
             }
         }
     });
+
+    const unitInput = document.getElementById('settingUnitTitle');
+    if(unitInput) {
+        unitInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Lấy bài đang active -> tìm cha -> update title
+            const activeItem = document.querySelector(`.tree-lesson.active`);
+            if(activeItem) {
+                const parentUnit = activeItem.closest('.tree-unit');
+                if(parentUnit) {
+                    const treeInput = parentUnit.querySelector('.unit-title-input');
+                    if(treeInput) treeInput.value = val;
+                }
+            }
+        });
+    }
 }
 
 // Helper set text status
 function setSaveStatus(text) {
     const el = document.getElementById('saveStatus');
     if (el) el.innerText = text;
+}
+
+// --- HÀM CHUYỂN NGỮ CẢNH RIGHT PANEL ---
+function switchPanelMode(mode) {
+    activeContext = mode;
+    
+    const pCourse = document.getElementById('panel-course');
+    const pUnit = document.getElementById('panel-unit');
+    const pLesson = document.getElementById('panel-lesson');
+
+    // Reset tất cả về ẩn
+    if(pCourse) pCourse.style.display = 'none';
+    if(pUnit) pUnit.style.display = 'none';
+    if(pLesson) pLesson.style.display = 'none';
+
+    // Hiện cái cần thiết
+    const target = document.getElementById(`panel-${mode}`);
+    if(target) {
+        target.style.display = 'block';
+    } else {
+        console.error(`Không tìm thấy panel: panel-${mode}. Hãy kiểm tra file ManageLesson.ejs`);
+    }
+
+    // Cập nhật giao diện chính (Center Panel)
+    const editorPanel = document.getElementById('editorMainPanel');
+    const emptyPanel = document.getElementById('emptyStatePanel');
+    
+    if (mode === 'lesson') {
+        if(editorPanel) editorPanel.style.display = 'contents';
+        if(emptyPanel) emptyPanel.style.display = 'none';
+    } else {
+        if(editorPanel) editorPanel.style.display = 'none';
+        if(emptyPanel) {
+            emptyPanel.style.display = 'flex';
+            // Cập nhật nội dung Empty State cho sinh động
+            let icon = mode === 'unit' ? 'fa-folder-open' : 'fa-book';
+            let title = mode === 'unit' ? 'Quản lý Chương' : 'Quản lý Khóa học';
+            let msg = mode === 'unit' ? 'Cài đặt tên chương và thao tác hàng loạt bên phải.' : 'Cài đặt chung cho khóa học bên phải.';
+            
+            emptyPanel.innerHTML = `
+                <div style="text-align:center; color:#ccc;">
+                    <i class="fas ${icon} fa-4x" style="margin-bottom:20px; opacity:0.3"></i>
+                    <h3 style="color:#666; margin-bottom:10px;">${title}</h3>
+                    <p>${msg}</p>
+                </div>
+            `;
+        }
+    }
 }
 
 /* ==========================================================================
@@ -109,7 +176,7 @@ async function loadCourses(subjectId) {
     }
 }
 
-// --- 2. KHI CHỌN KHÓA HỌC -> LOAD CẤU TRÚC (TREE) ---
+// --- LOAD CẤU TRÚC (TREE) & THÔNG TIN KHÓA HỌC ---
 async function loadCurriculumByCourse(courseId) {
     const container = document.getElementById('treeContainer');
     const btnAdd = document.getElementById('btnAddUnitMain');
@@ -127,13 +194,14 @@ async function loadCurriculumByCourse(courseId) {
     if(container) container.innerHTML = '<div style="text-align:center; padding:30px; color:#666;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Đang tải giáo trình...</div>';
 
     try {
-        const res = await fetch(`/api/tree/by-course/${courseId}`);
-        const data = await res.json();
+        // 1. Fetch Tree Structure
+        const resTree = await fetch(`/api/tree/by-course/${courseId}`);
+        const dataTree = await resTree.json();
         
         if(container) container.innerHTML = '';
 
         // KIỂM TRA: LÀ BẢN NHÁP HAY LIVE?
-        if (data.source === 'draft') {
+        if (dataTree.source === 'draft') {
             const alertHtml = `
                 <div style="background:#fff7ed; color:#c2410c; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ffedd5; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
                     <div>
@@ -146,18 +214,32 @@ async function loadCurriculumByCourse(courseId) {
                     </button>
                 </div>`;
             container.innerHTML = alertHtml;
-            renderTreeFromJson(data.tree); 
+            renderTreeFromJson(dataTree.tree); 
         } else {
             // Live mode
-            renderTreeFromJson(data.tree); 
+            renderTreeFromJson(dataTree.tree); 
         }
 
         if(btnAdd) btnAdd.style.display = 'block';
 
-        // Tự động mở bài học lần trước đang sửa
-        if(data.lastEditedId) {
+        // 2. [NEW] Fetch Course Details & Fill Right Panel
+        try {
+            const resDetail = await fetch(`/api/course/${courseId}/details`);
+            const dataDetail = await resDetail.json();
+            if(dataDetail.success && typeof fillCoursePanel === 'function') {
+                fillCoursePanel(dataDetail.course);
+            }
+        } catch(e) { console.error("Lỗi tải chi tiết khóa học:", e); }
+
+        // 3. [NEW] Mặc định chọn Panel Khóa học
+        if(typeof selectCourse === 'function') {
+            selectCourse(); 
+        }
+
+        // Tự động mở bài học lần trước đang sửa (nếu có)
+        if(dataTree.lastEditedId) {
             setTimeout(() => {
-                const item = document.querySelector(`.tree-lesson[data-lesson-id="${data.lastEditedId}"]`);
+                const item = document.querySelector(`.tree-lesson[data-lesson-id="${dataTree.lastEditedId}"]`);
                 if(item) item.click();
             }, 500);
         }
@@ -172,7 +254,7 @@ async function loadCurriculumByCourse(courseId) {
 function renderTreeFromJson(units) {
     const container = document.getElementById('treeContainer');
     
-    // Tạo wrapper riêng để không xóa mất Alert Draft
+    // Tạo wrapper riêng
     let listWrapper = document.getElementById('treeListWrapper');
     if(!listWrapper) {
         listWrapper = document.createElement('div');
@@ -182,48 +264,179 @@ function renderTreeFromJson(units) {
         listWrapper.innerHTML = '';
     }
 
-    if(!units || units.length === 0) {
-        listWrapper.innerHTML = '<div class="empty-state" style="margin-top:20px;">Khóa học này chưa có chương nào.</div>';
-        return;
-    }
+    // [NEW] 1. Render COURSE ROOT (Dòng đầu tiên của cây)
+    const courseSelect = document.getElementById('selectCourse');
+    const courseName = courseSelect && courseSelect.options[courseSelect.selectedIndex] 
+                       ? courseSelect.options[courseSelect.selectedIndex].text 
+                       : 'Khóa học hiện tại';
+    
+    const rootEl = document.createElement('div');
+    rootEl.className = 'tree-root-item';
+    rootEl.style.cssText = 'padding: 10px 5px; font-weight: 700; color: #2563eb; cursor: pointer; border-bottom: 2px solid #eff6ff; display: flex; align-items: center;';
+    rootEl.innerHTML = `
+        <i class="fas fa-graduation-cap" style="margin-right: 8px;"></i>
+        <span style="flex-grow: 1;">${courseName}</span>
+        <i class="fas fa-chevron-right" style="font-size: 0.8rem; color: #bfdbfe;"></i>
+    `;
+    
+    // Click vào root -> Chọn khóa học
+    rootEl.onclick = () => selectCourse();
+    listWrapper.appendChild(rootEl);
 
-    // Render từng Unit
-    units.forEach(u => {
-        const uId = u.id || u._id;
-        createUnitDOM(uId, u.title, u.lessons, listWrapper);
-    });
+
+    // 2. Render các Unit như cũ
+    if(!units || units.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.style.marginTop = '20px';
+        empty.innerText = 'Khóa học này chưa có chương nào.';
+        listWrapper.appendChild(empty);
+    } else {
+        units.forEach(u => {
+            const uId = u.id || u._id;
+            createUnitDOM(uId, u.title, u.lessons, listWrapper);
+        });
+    }
     
     // Sortable cho Chương
     if(typeof Sortable !== 'undefined') {
         new Sortable(listWrapper, {
-            handle: '.tree-unit-header',
+            handle: '.tree-unit-header', // Chỉ kéo thả được unit, không kéo được root
             animation: 150,
-            ghostClass: 'sortable-ghost'
+            ghostClass: 'sortable-ghost',
+            filter: '.tree-root-item' // Không cho sort cái root
         });
+    }
+}
+
+// --- LOGIC CHỌN CHƯƠNG ---
+function selectUnit(uId, headerEl) {
+    console.log("Selected Unit:", uId); // Log để debug xem có nhận không
+
+    // 1. Update UI Active (Highlight dòng được chọn)
+    document.querySelectorAll('.tree-lesson').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tree-unit-header').forEach(el => el.classList.remove('active-unit')); // Reset highlight cũ
+    
+    // Nếu headerEl chưa được truyền vào (trường hợp gọi từ code), tìm nó
+    if (!headerEl) {
+        const unitEl = document.querySelector(`.tree-unit[data-unit-id="${uId}"]`);
+        if(unitEl) headerEl = unitEl.querySelector('.tree-unit-header');
+    }
+    
+    if(headerEl) headerEl.classList.add('active-unit'); // Thêm class highlight (nhớ CSS class này)
+    
+    // 2. Load data vào Right Panel
+    activeUnitId = uId;
+    activeLessonId = null; // Bỏ chọn bài học
+    
+    // Lấy tên từ input trên cây để điền vào panel phải
+    let title = '';
+    if(headerEl) {
+        const treeInput = headerEl.querySelector('.unit-title-input');
+        title = treeInput ? treeInput.value : '';
+    }
+
+    const panelInput = document.getElementById('settingUnitTitle');
+    if(panelInput) {
+        panelInput.value = title;
+        panelInput.dataset.bindingId = uId; // Bind ID để sync ngược lại khi gõ
+        panelInput.disabled = false;
+    }
+
+    // 3. Switch Mode sang Panel Chương
+    if (typeof switchPanelMode === 'function') {
+        switchPanelMode('unit');
+    } else {
+        console.error("Thiếu hàm switchPanelMode!");
+    }
+}
+
+// --- LOGIC CHỌN KHÓA HỌC (Default) ---
+// Gọi hàm này khi load trang hoặc khi click ra ngoài (nếu muốn)
+function selectCourse() {
+    activeLessonId = null;
+    activeUnitId = null;
+    
+    // 1. Reset UI Active cũ
+    document.querySelectorAll('.tree-lesson').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tree-unit-header').forEach(el => el.classList.remove('active-unit'));
+    document.querySelectorAll('.tree-root-item').forEach(el => el.classList.remove('active-root')); // Reset root
+
+    // 2. Highlight Root Item
+    const rootItem = document.querySelector('.tree-root-item');
+    if(rootItem) rootItem.classList.add('active-root');
+
+    // 3. Chuyển Panel
+    if(typeof switchPanelMode === 'function') {
+        switchPanelMode('course');
+    }
+}
+
+// 1. Gõ ở Panel Phải -> Cập nhật Cây (Cho Unit)
+function syncUnitTitleToTree(panelInput) {
+    const val = panelInput.value;
+    const uId = panelInput.dataset.bindingId;
+    if(!uId) return;
+
+    // Tìm input trên cây
+    const unitEl = document.querySelector(`.tree-unit[data-unit-id="${uId}"]`);
+    if(unitEl) {
+        const treeInput = unitEl.querySelector('.unit-title-input');
+        if(treeInput) treeInput.value = val;
+    }
+}
+
+// 2. Gõ ở Cây -> Cập nhật Panel Phải (Cho Unit)
+function syncTreeToUnitPanel(treeInput) {
+    // Chỉ cập nhật nếu đang chọn đúng unit đó
+    const unitEl = treeInput.closest('.tree-unit');
+    const uId = unitEl.dataset.unitId;
+    
+    if(activeContext === 'unit' && activeUnitId === uId) {
+        const panelInput = document.getElementById('settingUnitTitle');
+        if(panelInput) panelInput.value = treeInput.value;
+    }
+}
+
+// 3. Xóa Unit từ Panel
+function triggerDeleteActiveUnit() {
+    if(!activeUnitId) return;
+    const unitEl = document.querySelector(`.tree-unit[data-unit-id="${activeUnitId}"]`);
+    if(unitEl) {
+        // Tìm nút xóa trong DOM ảo và click nó (tận dụng hàm deleteUnitDOM cũ)
+        // Hoặc viết lại hàm deleteUnitDirect(activeUnitId)
+        // Cách nhanh:
+        const btnDelete = unitEl.querySelector('.tree-actions .btn-icon-mini[onclick*="deleteUnitDOM"]'); 
+        // Lưu ý: Code cũ tôi đã xóa nút delete ở header để chuyển vào panel.
+        // NẾU BẠN MUỐN GIỮ NÚT TRÊN CÂY THÌ OK. NẾU KHÔNG THÌ GỌI LOGIC TRỰC TIẾP:
+        deleteUnitDOM({ closest: () => unitEl }); // Mock element
     }
 }
 
 // --- 4. CREATE UNIT DOM (Hỗ trợ targetContainer) ---
 function createUnitDOM(id, title, lessons = [], targetContainer) {
-    // Nếu không truyền container thì lấy mặc định (cho trường hợp thêm mới)
+    // Nếu không truyền container thì lấy mặc định
     const container = targetContainer || document.getElementById('treeListWrapper') || document.getElementById('treeContainer');
 
     const unitEl = document.createElement('div');
     unitEl.className = 'tree-unit';
     unitEl.dataset.unitId = id; 
 
+    // [QUAN TRỌNG] Thêm onclick="selectUnit(...)" vào class tree-unit-header
     unitEl.innerHTML = `
-        <div class="tree-unit-header">
+        <div class="tree-unit-header" onclick="selectUnit('${id}', this)">
             <div style="display:flex; align-items:center; flex-grow:1;">
-                <i class="fas fa-grip-vertical" style="color:#ccc; cursor:grab; margin-right:8px;" title="Kéo để sắp xếp chương"></i>
-                <input type="text" class="unit-title-input" value="${title}" 
+                <i class="fas fa-grip-vertical drag-handle-unit" 
+                   style="color:#ccc; cursor:grab; margin-right:8px;" 
+                   title="Kéo để sắp xếp chương"
+                   onclick="event.stopPropagation()"></i> <input type="text" class="unit-title-input" value="${title}" 
                        placeholder="Nhập tên chương..."
-                       onchange="this.setAttribute('value', this.value)">
-            </div>
+                       onchange="this.setAttribute('value', this.value)"
+                       oninput="syncTreeToUnitPanel(this)"
+                       onclick="event.stopPropagation()"> </div>
             <div class="tree-actions">
-                <button type="button" class="btn-icon-mini" onclick="addTempLessonToUnit(this)" title="Thêm bài vào chương này"><i class="fas fa-plus"></i></button>
-                <button type="button" class="btn-icon-mini" onclick="deleteUnitDOM(this)" title="Xóa chương"><i class="fas fa-trash"></i></button>
-            </div>
+                <button type="button" class="btn-icon-mini" onclick="addTempLessonToUnit(this); event.stopPropagation();" title="Thêm bài vào chương này"><i class="fas fa-plus"></i></button>
+                </div>
         </div>
         <div class="tree-lesson-list" data-unit-id="${id}"></div>
     `;
@@ -234,7 +447,8 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
     if(lessons && lessons.length > 0) {
         lessons.forEach(l => {
             const lId = l.id || l._id;
-            const lessonObj = { _id: lId, title: l.title, type: l.type, isPublished: l.isPublished };
+            const lessonObj = { _id: lId, title: l.title, type: l.type, isPublished: l.isPublished, isPro: l.isPro };
+            // Check active
             const isCurrent = (String(lId) === String(activeLessonId));
             listContainer.appendChild(createLessonDOM(lessonObj, isCurrent));
         });
@@ -242,7 +456,7 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
 
     container.appendChild(unitEl);
 
-    // Sortable cho Bài học
+    // Sortable cho Bài học (Kéo thả bài giữa các chương)
     if(typeof Sortable !== 'undefined') {
         new Sortable(listContainer, {
             group: 'lessons', 
@@ -252,9 +466,12 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
         });
     }
     
-    // Auto focus nếu tên rỗng
+    // Auto focus nếu tên rỗng (khi tạo mới)
     if(title === '') {
-        setTimeout(() => unitEl.querySelector('.unit-title-input').focus(), 100);
+        setTimeout(() => {
+            const inp = unitEl.querySelector('.unit-title-input');
+            if(inp) inp.focus();
+        }, 100);
     }
 }
 
@@ -406,20 +623,23 @@ function addTempLessonToUnit(btn) {
     }, 200);
 }
 
-/* --- HÀM XÓA CHƯƠNG (CẬP NHẬT: XÓA CẢ BÀI HỌC CON) --- */
+/**
+ * TÌM hàm deleteUnitDOM và THAY THẾ bằng nội dung sau:
+ */
 async function deleteUnitDOM(btn) {
     const unitEl = btn.closest('.tree-unit');
+    const unitId = unitEl.dataset.unitId;
     const lessons = unitEl.querySelectorAll('.tree-lesson');
     const lessonCount = lessons.length;
 
     // 1. Xác định nội dung cảnh báo
     let title = 'Xóa chương này?';
-    let text = "Hành động này sẽ xóa chương khỏi cấu trúc.";
-    let confirmBtnText = 'Xóa chương';
+    let text = "Hành động này sẽ XÓA VĨNH VIỄN chương này khỏi Database.";
+    let confirmBtnText = 'Xóa vĩnh viễn';
 
     if (lessonCount > 0) {
         title = `CẢNH BÁO: Chương này có ${lessonCount} bài học!`;
-        text = "Nếu bạn xóa chương này, TẤT CẢ bài học bên trong cũng sẽ bị xóa khỏi danh sách. Bạn có chắc chắn không?";
+        text = "Nếu xóa, TẤT CẢ bài học bên trong cũng sẽ bị XÓA VĨNH VIỄN và KHÔNG THỂ KHÔI PHỤC. Bạn chắc chắn chứ?";
         confirmBtnText = 'Đồng ý xóa tất cả';
     }
 
@@ -438,6 +658,38 @@ async function deleteUnitDOM(btn) {
     if (!result.isConfirmed) return;
 
     // 3. Xử lý Logic Xóa
+    
+    // TRƯỜNG HỢP A: Chương mới tạo (chưa lưu vào DB - ID bắt đầu bằng new_unit_)
+    if (unitId.startsWith('new_unit_')) {
+        removeUnitUI(unitEl);
+        Swal.fire('Đã xóa', 'Đã xóa chương nháp.', 'success');
+        return;
+    }
+
+    // TRƯỜNG HỢP B: Chương đã có trong DB -> Gọi API xóa thật
+    try {
+        const res = await fetch(`/api/unit/${unitId}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            removeUnitUI(unitEl);
+            Swal.fire('Đã xóa', 'Chương và bài học đã được xóa vĩnh viễn.', 'success');
+        } else {
+            Swal.fire('Lỗi', data.error || 'Không thể xóa chương.', 'error');
+        }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
+    }
+}
+
+// Helper: Hàm phụ trách việc xóa UI và reset Editor nếu cần
+function removeUnitUI(unitEl) {
     // Kiểm tra xem bài đang sửa (activeLessonId) có nằm trong chương bị xóa không
     let isActiveLessonInside = false;
     if (activeLessonId) {
@@ -456,12 +708,11 @@ async function deleteUnitDOM(btn) {
         // Nếu bài đang mở bị xóa theo chương -> Reset màn hình Editor về trống
         if (isActiveLessonInside) {
             document.getElementById('editorMainPanel').style.display = 'none';
-            document.getElementById('emptyStatePanel').style.display = 'block';
+            document.getElementById('emptyStatePanel').style.display = 'flex';
             activeLessonId = null;
-            document.getElementById('currentEditingId').value = '';
+            const currentIdInp = document.getElementById('currentEditingId');
+            if(currentIdInp) currentIdInp.value = '';
         }
-
-        Swal.fire('Đã xóa', 'Chương và các bài học bên trong đã được xóa.', 'success');
     }, 300);
 }
 
@@ -655,21 +906,24 @@ async function saveCourseSettings() {
    PART 2: CENTER PANEL - LESSON SELECTION & BLOCK EDITOR
    ========================================================================== */
 
-// --- 1. SELECT LESSON (SPA LOGIC) ---
+// --- SELECT LESSON (SPA LOGIC) ---
 async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theory') {
-    // A. UI Updates
+    // 1. UI Updates (Tree Highlight)
     document.querySelectorAll('.tree-lesson').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tree-unit-header').forEach(el => el.classList.remove('active-unit')); // Bỏ active của Unit/Course
+
     const activeItem = document.querySelector(`.tree-lesson[data-lesson-id="${id}"]`);
     if(activeItem) activeItem.classList.add('active');
 
-    const emptyStatePanel = document.getElementById('emptyStatePanel');
-    if(emptyStatePanel) emptyStatePanel.style.display = 'none';
-    
-    const mainPanel = document.getElementById('editorMainPanel');
-    if(mainPanel) mainPanel.style.display = 'contents';
+    // 2. [NEW] Switch Right Panel Mode -> Lesson
+    if(typeof switchPanelMode === 'function') {
+        switchPanelMode('lesson');
+    }
 
-    // B. Update State
+    // 3. State Updates
     activeLessonId = id;
+    activeUnitId = null; // Reset Unit selection
+
     const currentIdInput = document.getElementById('currentEditingId');
     if(currentIdInput) currentIdInput.value = id;
     
@@ -678,7 +932,7 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
     
     setSaveStatus('Đang tải...');
 
-    // C. Check New vs Old
+    // 4. Load Data
     if(id === 'current_new_lesson' || String(id).startsWith('new_lesson_')) {
         // --- BÀI MỚI (Reset trắng) ---
         initBlocks(''); 
@@ -701,12 +955,8 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
         try {
             const res = await fetch(`/api/lesson/${id}`);
             if (!res.ok) {
-                // Nếu lỗi 404 hoặc 500
-                if (res.status === 404) {
-                    Swal.fire('Không tìm thấy', 'Bài học này có thể đã bị xóa.', 'warning');
-                } else {
-                    Swal.fire('Lỗi', `Server trả về lỗi: ${res.status}`, 'error');
-                }
+                if (res.status === 404) Swal.fire('Không tìm thấy', 'Bài học này có thể đã bị xóa.', 'warning');
+                else Swal.fire('Lỗi', `Server trả về lỗi: ${res.status}`, 'error');
                 setSaveStatus('Lỗi tải');
                 return; 
             }
@@ -1434,6 +1684,7 @@ async function submitLessonAJAX(publishStatus) {
             subjectId, courseId, // New field for hierarchy
             quizData: JSON.stringify(quizData),
             curriculumSnapshot: JSON.stringify(treeData),
+            courseId: courseId,
             currentEditingId: activeLessonId
         };
 
@@ -1446,6 +1697,30 @@ async function submitLessonAJAX(publishStatus) {
         const result = await res.json();
 
         if(result.success) {
+            if (result.unitMapping) {
+                Object.keys(result.unitMapping).forEach(tempId => {
+                    const realId = result.unitMapping[tempId];
+                    // Tìm unit có id tạm trên giao diện
+                    const unitEl = document.querySelector(`.tree-unit[data-unit-id="${tempId}"]`);
+                    if (unitEl) {
+                        unitEl.dataset.unitId = realId; // Update ID thật
+                        
+                        // Update luôn binding ở Right Panel nếu đang focus
+                        const rightPanelUnitTitle = document.getElementById('settingUnitTitle');
+                        if(rightPanelUnitTitle && rightPanelUnitTitle.dataset.bindingId === tempId) {
+                            rightPanelUnitTitle.dataset.bindingId = realId;
+                        }
+                    }
+                });
+            }
+            // [FIX] Cập nhật ID cho Lesson mới tạo (như cũ)
+            if (result.lessonMapping) {
+                Object.keys(result.lessonMapping).forEach(tempId => {
+                    const realId = result.lessonMapping[tempId];
+                    const lessonEl = document.querySelector(`.tree-lesson[data-lesson-id="${tempId}"]`);
+                    if(lessonEl) lessonEl.dataset.lessonId = realId;
+                });
+            }
             const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
             
             if(publishStatus) {
@@ -1461,12 +1736,14 @@ async function submitLessonAJAX(publishStatus) {
 
             // Cập nhật ID thật nếu là bài mới
             if(String(activeLessonId).startsWith('new_lesson_') || activeLessonId === 'current_new_lesson') {
-                const treeItem = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
-                if(treeItem) treeItem.dataset.lessonId = result.newLessonId;
-                
                 activeLessonId = result.newLessonId;
+                // Update input hidden
                 const currentIdInp = document.getElementById('currentEditingId');
                 if(currentIdInp) currentIdInp.value = result.newLessonId;
+                
+                // Update DOM item
+                const treeItem = document.querySelector('.tree-lesson.active');
+                if(treeItem) treeItem.dataset.lessonId = result.newLessonId;
             }
 
             // Reload tree nếu vừa lưu nháp/publish để đồng bộ ID thật cho các item
@@ -1582,4 +1859,212 @@ async function importLessonJSON(input) {
     };
 
     reader.readAsText(file);
+}
+/**
+ * THÊM VÀO CUỐI FILE hoặc bất kỳ chỗ nào trống
+ */
+
+async function saveUnitStatus(isPublished) {
+    const unitTitleInput = document.getElementById('settingUnitTitle');
+    const unitId = unitTitleInput.dataset.bindingId;
+    const unitName = unitTitleInput.value;
+
+    if (!unitId || unitId.startsWith('new_unit_')) {
+        return Swal.fire('Chưa lưu chương', 'Vui lòng lưu cấu trúc (nút Lưu Nháp/Đăng Bài ở dưới) trước khi thao tác hàng loạt.', 'warning');
+    }
+
+    const actionName = isPublished ? "ĐĂNG (Publish)" : "LƯU NHÁP (Draft)";
+    
+    // 1. Xác nhận
+    const confirm = await Swal.fire({
+        title: `${actionName} cả chương?`,
+        html: `Bạn có chắc muốn chuyển tất cả bài học trong chương <b>"${unitName}"</b> sang trạng thái <b>${actionName}</b> không?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Làm luôn',
+        cancelButtonText: 'Thôi'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    // 2. Gọi API
+    try {
+        const res = await fetch('/api/unit/bulk-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ unitId, isPublished })
+        });
+        
+        const data = await res.json();
+
+        if (data.success) {
+            // 3. Cập nhật UI cây thư mục (Không cần F5)
+            const unitList = document.querySelector(`.tree-lesson-list[data-unit-id="${unitId}"]`);
+            if (unitList) {
+                const lessons = unitList.querySelectorAll('.tree-lesson');
+                lessons.forEach(l => {
+                    const statusDiv = l.querySelector('.lesson-actions');
+                    // Xóa icon cũ
+                    const oldIcon = statusDiv.querySelector('.fa-pencil-ruler');
+                    if (oldIcon) oldIcon.remove();
+
+                    // Nếu là Draft -> Thêm icon bút chì
+                    if (!isPublished) {
+                        const iconHtml = `<i class="fas fa-pencil-ruler" style="font-size: 0.7rem; color: #f59e0b;" title="Bản nháp"></i>`;
+                        statusDiv.insertAdjacentHTML('afterbegin', iconHtml);
+                    }
+                });
+            }
+
+            // Nếu bài đang mở nằm trong chương đó, update luôn badge trạng thái
+            if (activeLessonId) {
+                const currentLessonEl = document.querySelector(`.tree-lesson.active`);
+                if(currentLessonEl && currentLessonEl.closest(`.tree-lesson-list[data-unit-id="${unitId}"]`)) {
+                    updateStatusBadge(isPublished);
+                }
+            }
+
+            Swal.fire('Thành công', `Đã cập nhật trạng thái cho ${data.updatedCount} bài học.`, 'success');
+        } else {
+            Swal.fire('Lỗi', data.error || 'Có lỗi xảy ra', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+    }
+}
+
+let courseSaveTimeout;
+function autoSaveCourse() {
+    clearTimeout(courseSaveTimeout);
+    
+    // UI Feedback: Đang lưu...
+    const headerLabel = document.getElementById('panelHeaderLabel');
+    headerLabel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu cấu hình...';
+
+    courseSaveTimeout = setTimeout(async () => {
+        const courseId = document.getElementById('hiddenCourseId').value;
+        if(!courseId) return;
+
+        const title = document.getElementById('pCourseTitle').value;
+        const thumbnail = document.getElementById('pCourseThumb').value;
+        const description = document.getElementById('pCourseDesc').value;
+        const isPro = document.getElementById('pCoursePro').checked;
+        const isPublished = document.getElementById('pCoursePublic').checked;
+
+        try {
+            const res = await fetch(`/api/course/${courseId}/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, thumbnail, description, isPro, isPublished })
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                headerLabel.innerHTML = '<i class="fas fa-check" style="color:#22c55e"></i> Đã lưu cấu hình';
+                // Update select box tên khóa học nếu cần
+                const select = document.getElementById('selectCourse');
+                if(select && select.options[select.selectedIndex]) {
+                    select.options[select.selectedIndex].text = title;
+                }
+                setTimeout(() => { headerLabel.innerHTML = '<i class="fas fa-sliders-h"></i> Thiết lập'; }, 2000);
+            }
+        } catch(e) {
+            headerLabel.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:red"></i> Lỗi lưu';
+        }
+    }, 1000); // Lưu sau 1s ngừng gõ
+}
+
+function updateCourseThumbPreview() {
+    const url = document.getElementById('pCourseThumb').value;
+    document.getElementById('pCourseThumbPreview').src = url || '/img/default-course.jpg';
+}
+
+// --- LOGIC LƯU KHÓA HỌC (New) ---
+async function saveCourseStatus(isPublished) {
+    const courseId = document.getElementById('hiddenCourseId').value;
+    if(!courseId) return Swal.fire('Lỗi', 'Không tìm thấy ID khóa học', 'error');
+
+    // 1. Lấy dữ liệu form
+    const title = document.getElementById('pCourseTitle').value;
+    const description = document.getElementById('pCourseDesc').value;
+    const thumbnail = document.getElementById('pCourseThumb').value;
+    const isPro = document.getElementById('pCoursePro').checked;
+
+    // 2. Lấy Snapshot cây cấu trúc (Để server biết cái nào đã bị xóa)
+    const curriculumSnapshot = getTreeStructure();
+
+    // UI Feedback
+    const btnText = isPublished ? 'Đang đăng...' : 'Đang lưu...';
+    setSaveStatus(btnText); // Tận dụng hàm setSaveStatus có sẵn hoặc dùng Swal loading
+
+    try {
+        const res = await fetch(`/api/course/${courseId}/update-full`, { // Gọi route mới
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title, description, thumbnail, isPro, isPublished,
+                curriculumSnapshot: JSON.stringify(curriculumSnapshot) // Gửi kèm cây
+            })
+        });
+
+        const data = await res.json();
+
+        if(data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: isPublished ? 'Đã Công Khai!' : 'Đã Lưu Nháp!',
+                text: 'Thông tin khóa học và cấu trúc chương đã được đồng bộ.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            // Cập nhật Badge trạng thái
+            const badge = document.getElementById('courseStatusBadge');
+            if(badge) {
+                badge.innerText = isPublished ? 'CÔNG KHAI' : 'BẢN NHÁP';
+                badge.style.background = isPublished ? '#dcfce7' : '#f1f5f9';
+                badge.style.color = isPublished ? '#166534' : '#475569';
+            }
+
+            // Nếu server trả về mapping ID mới (cho chương mới tạo), update lại DOM
+            if (data.unitMapping) {
+                Object.keys(data.unitMapping).forEach(tempId => {
+                    const realId = data.unitMapping[tempId];
+                    const unitEl = document.querySelector(`.tree-unit[data-unit-id="${tempId}"]`);
+                    if (unitEl) {
+                        unitEl.dataset.unitId = realId;
+                        // Update click handler để nó trỏ vào ID thật
+                        const header = unitEl.querySelector('.tree-unit-header');
+                        if(header) header.setAttribute('onclick', `selectUnit('${realId}', this)`);
+                    }
+                });
+            }
+            
+            // Reload lại cây nếu cần thiết (optional)
+            // loadCurriculumByCourse(courseId); 
+        } else {
+            Swal.fire('Lỗi', data.error || 'Lỗi khi lưu khóa học', 'error');
+        }
+    } catch(e) {
+        console.error(e);
+        Swal.fire('Lỗi', 'Không thể kết nối server', 'error');
+    }
+}
+
+// Cập nhật hàm fillCoursePanel để hiển thị đúng trạng thái ban đầu
+function fillCoursePanel(course) {
+    document.getElementById('pCourseTitle').value = course.title;
+    document.getElementById('pCourseDesc').value = course.description || '';
+    document.getElementById('pCourseThumb').value = course.thumbnail || '';
+    document.getElementById('pCourseThumbPreview').src = course.thumbnail || '/img/default-course.jpg';
+    document.getElementById('pCoursePro').checked = course.isPro || false;
+    
+    // Update Badge
+    const badge = document.getElementById('courseStatusBadge');
+    if(badge) {
+        badge.innerText = course.isPublished ? 'CÔNG KHAI' : 'BẢN NHÁP';
+        badge.style.background = course.isPublished ? '#dcfce7' : '#f1f5f9';
+        badge.style.color = course.isPublished ? '#166534' : '#475569';
+    }
 }

@@ -1,6 +1,7 @@
 // controllers/unitController.js
 const Unit = require('../models/Unit');
 const Subject = require('../models/Subject');
+const Lesson = require('../models/Lesson');
 
 // 1. API: Tạo Chương mới
 exports.createUnit = async (req, res) => {
@@ -35,9 +36,46 @@ exports.getUnitsBySubject = async (req, res) => {
 // 3. API: Xóa Chương
 exports.deleteUnit = async (req, res) => {
     try {
-        await Unit.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message: 'Đã xóa chương.' });
+        const unitId = req.params.id;
+
+        // 1. Kiểm tra xem Unit có tồn tại không
+        const unit = await Unit.findById(unitId);
+        if (!unit) {
+            return res.status(404).json({ success: false, error: 'Không tìm thấy chương này.' });
+        }
+
+        // 2. Xóa tất cả bài học thuộc chương này trước
+        await Lesson.deleteMany({ unitId: unitId });
+
+        // 3. Xóa chính chương đó
+        await Unit.findByIdAndDelete(unitId);
+
+        res.json({ success: true, message: 'Đã xóa vĩnh viễn chương và các bài học bên trong.' });
     } catch (err) {
-        res.status(500).json({ error: 'Lỗi xóa chương' });
+        console.error("Delete Unit Error:", err);
+        res.status(500).json({ success: false, error: 'Lỗi server khi xóa chương.' });
+    }
+};
+
+exports.bulkUpdateStatus = async (req, res) => {
+    try {
+        const { unitId, isPublished } = req.body;
+
+        if (!unitId) return res.status(400).json({ success: false, error: 'Thiếu Unit ID' });
+
+        // Update tất cả lesson có unitId tương ứng
+        const result = await Lesson.updateMany(
+            { unitId: unitId },
+            { isPublished: isPublished }
+        );
+
+        res.json({ 
+            success: true, 
+            updatedCount: result.modifiedCount 
+        });
+
+    } catch (err) {
+        console.error("Bulk Update Error:", err);
+        res.status(500).json({ success: false, error: err.message });
     }
 };
