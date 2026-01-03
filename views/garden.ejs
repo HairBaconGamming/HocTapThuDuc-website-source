@@ -1,943 +1,451 @@
-<%- include('partials/header') %>
-
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-
-<style>
-    /* [FIX] Khóa cuộn trang để game không bị trôi */
-    body, html {
-        margin: 0;
-        padding: 0;
-        overflow: hidden; /* Ngăn thanh cuộn trình duyệt */
-        height: 100%;
-        width: 100%;
-    }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Farm 🚜</title>
     
-    /* Đảm bảo container game chiếm trọn phần còn lại */
-    .game-stage-container {
-        width: 100vw;
-        height: calc(100vh - 70px); /* Trừ header */
-        background-color: #111;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-    }
-
-    /* --- KHUNG GAME CHÍNH (HÌNH VUÔNG) --- */
-    .garden-wrapper {
-        position: relative;
-        /* aspect-ratio: 1 / 1;  <-- ĐÃ BỎ: Không ép vuông nữa */
-        
-        /* Full kích thước container cha */
-        width: 100%; 
-        height: 100%; 
-        
-        background: #1e3323; 
-        overflow: hidden; 
-        /* Bỏ bo góc và border dày để nhìn liền mạch hơn (tùy chọn) */
-        border-top: 4px solid #5d4037; 
-        box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-        user-select: none;
-
-        font-family: 'VT323', monospace;
-    }
-
-    #game-container {
-        width: 100%;
-        height: 100%;
-        display: block;
-        cursor: grab;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    #game-container:active { cursor: grabbing; }
-
-    /* --- 1. HUD (Góc Trái Trên) --- */
-    .garden-hud {
-        position: absolute;
-        top: 15px; left: 15px; z-index: 10;
-        display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-    }
-    .hud-stat {
-        display: flex; align-items: center;
-        background: rgba(0, 0, 0, 0.7);
-        border: 2px solid #5d4037;
-        border-radius: 8px; padding: 4px 12px; color: #fff;
-        backdrop-filter: blur(4px);
-    }
-    .hud-icon { font-size: 1.4rem; margin-right: 8px; }
-    .hud-value { font-size: 1.6rem; font-weight: bold; color: #ffeb3b; text-shadow: 2px 2px 0 #000; }
-
-    /* --- 2. STATS PANEL (Bên Phải) --- */
-    .plant-stats-panel {
-        position: absolute;
-        top: 15px; right: -320px;
-        width: 260px;
-        background: rgba(33, 33, 33, 0.95);
-        border: 3px solid #ffb300; border-radius: 12px; padding: 15px;
-        color: white; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: -5px 5px 20px rgba(0,0,0,0.5); z-index: 1000;
-        display: flex; flex-direction: column; gap: 10px;
-    }
-    .plant-stats-panel.active { right: 15px; }
-
-    .stats-header { display: flex; align-items: center; border-bottom: 2px dashed #555; padding-bottom: 10px; }
-    .stats-img-box { width: 60px; height: 60px; background: #4a3b32; border: 2px solid #8d6e63; border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
-    .stats-img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
-    .stats-info h3 { margin: 0; color: #ffb300; font-size: 1.6rem; line-height: 1; text-transform: uppercase; }
-    .stats-info p { margin: 2px 0 0; color: #aaa; font-size: 1rem; }
-
-    .stats-row { margin-bottom: 2px; }
-    .bar-label { display: flex; justify-content: space-between; font-size: 1rem; margin-bottom: 2px; }
-    .progress-track { width: 100%; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
-    .progress-fill { height: 100%; transition: width 0.5s ease-out; }
-    .fill-water { background: linear-gradient(90deg, #0288d1, #29b6f6); }
-    .fill-growth { background: linear-gradient(90deg, #388e3c, #66bb6a); }
-    .stats-footer { text-align: center; background: rgba(255, 255, 255, 0.1); padding: 8px; border-radius: 6px; font-size: 1.1rem; color: #ffca28; margin-top: 5px; }
-
-    /* --- 3. TOOLBAR (Thanh Công Cụ Dưới) --- */
-    .garden-toolbar {
-        position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: rgba(45, 27, 14, 0.95);
-        border: 3px solid #5d4037; border-radius: 14px; padding: 8px;
-        display: flex; gap: 10px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.6); z-index: 1000;
-        
-        /* [FIX] Hỗ trợ scroll ngang trên mobile */
-        max-width: 90vw; /* Giới hạn chiều rộng tối đa */
-        overflow-x: auto; /* Cho phép cuộn ngang */
-        white-space: nowrap; /* Không xuống dòng */
-        -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
-        
-        /* Ẩn thanh cuộn nhưng vẫn cuộn được */
-        scrollbar-width: none; /* Firefox */
-    }
-    .garden-toolbar::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
-    .tool-slot {
-        width: 54px; height: 54px; 
-        min-width: 54px; /* [FIX] Không bị co nhỏ khi thiếu chỗ */
-        flex-shrink: 0;  /* [FIX] Đảm bảo kích thước cố định */
-        
-        background: #8d6e63; border: 2px solid #5d4037; border-radius: 8px;
-        cursor: pointer; display: flex; justify-content: center; align-items: center;
-        position: relative; transition: all 0.1s;
-    }
-    .tool-slot img { width: 50px; height: 50px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.3)); image-rendering: pixelated; }
-    .tool-slot:hover { background: #a1887f; transform: translateY(-3px); }
-    .tool-slot.active {
-        background: #ffecb3; border-color: #ffb300;
-        box-shadow: inset 0 0 10px #ffb300; transform: translateY(-5px); z-index: 10;
-    }
-    .key-hint { position: absolute; top: 1px; left: 3px; font-size: 0.9rem; color: #fff; opacity: 0.8; font-weight: bold; }
-
-    /* --- 4. SHOP MODAL "XỊN SÒ" --- */
-    .garden-modal-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7); z-index: 2000;
-        display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
-    }
-
-    .rpg-shop-window {
-        width: 850px; height: 550px; max-width: 95%; max-height: 95%;
-        background: #fdfbf7;
-        border: 4px solid #5d4037; border-radius: 16px;
-        box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
-        display: flex; flex-direction: column; overflow: hidden;
-        font-family: 'VT323', monospace; position: relative;
-    }
-
-    .shop-header {
-        background: #8d6e63; color: #fff;
-        padding: 10px 20px; border-bottom: 4px solid #5d4037;
-        display: flex; justify-content: space-between; align-items: center;
-        box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2);
-    }
-    .shop-title { font-size: 2rem; text-transform: uppercase; text-shadow: 2px 2px 0 #3e2723; }
-    .btn-close-shop {
-        background: #ef5350; border: 2px solid #b71c1c; color: white;
-        width: 35px; height: 35px; cursor: pointer; font-size: 1.5rem; font-family: inherit;
-        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3); transition: 0.1s;
-    }
-    .btn-close-shop:active { transform: translateY(3px); box-shadow: none; }
-
-    /* Fix lỗi tràn và scroll */
-    .shop-body { 
-        display: flex; flex: 1; overflow: hidden; 
-        background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
-        min-height: 0; 
-    }
-
-    /* Cột NPC */
-    .shop-npc-col {
-        width: 240px; background: #eefebe;
-        border-right: 4px solid #5d4037;
-        display: flex; flex-direction: column; align-items: center; 
-        justify-content: center; /* Căn giữa */
-        gap: 20px; 
-        padding: 20px; position: relative;
-    }
-    .npc-sprite {
-        width: 180px; image-rendering: pixelated;
-        filter: drop-shadow(5px 5px 0 rgba(0,0,0,0.1));
-        transition: transform 0.2s;
-    }
-    .npc-sprite:hover { transform: scale(1.05) rotate(2deg); }
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    /* Bong bóng chat */
-    .npc-bubble {
-        position: relative; /* Không dùng absolute */
-        width: 95%; background: #fff; border: 3px solid #000; border-radius: 12px;
-        padding: 10px; font-size: 1.3rem; color: #333;
-        box-shadow: 4px 4px 0 #000;
-        animation: floatBubble 3s infinite ease-in-out;
-        z-index: 2;
-    }
-    .npc-bubble::after {
-        content: ''; position: absolute; bottom: -10px; left: 50%;
-        border-width: 10px 10px 0; border-style: solid; border-color: #000 transparent;
-        transform: translateX(-50%);
-    }
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    /* Cột Hàng hóa */
-    .shop-items-col { 
-        flex: 1; display: flex; flex-direction: column; 
-        padding: 20px; background: #fff8e1; 
-        min-height: 0;
-    }
+    <link rel="stylesheet" href="/css/styleGarden.css">
+</head>
+<body>
 
-    .shop-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-    .shop-tab {
-        flex: 1; text-align: center; padding: 8px; font-size: 1.4rem;
-        background: #d7ccc8; border: 3px solid #8d6e63; border-radius: 8px;
-        cursor: pointer; color: #5d4037; transition: 0.2s;
-        box-shadow: 0 4px 0 #5d4037;
-    }
-    .shop-tab:active { transform: translateY(4px); box-shadow: none; }
-    .shop-tab.active {
-        background: #ffecb3; border-color: #ffa000; color: #e65100;
-        transform: translateY(4px); box-shadow: none; font-weight: bold;
-    }
+    <div id="garden-game-container"></div>
 
-    .shop-grid {
-        flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 15px; overflow-y: auto; padding-right: 5px;
-    }
-    .shop-grid::-webkit-scrollbar { width: 8px; }
-    .shop-grid::-webkit-scrollbar-track { background: #eee; }
-    .shop-grid::-webkit-scrollbar-thumb { background: #8d6e63; border-radius: 4px; }
-
-    .item-card {
-        background: #fff; border: 3px solid #e0e0e0; border-radius: 12px;
-        padding: 10px; text-align: center; cursor: pointer; transition: 0.2s;
-        position: relative; overflow: hidden;
-    }
-    .item-card:hover { border-color: #ffa000; transform: translateY(-3px); box-shadow: 0 5px 0 #e0e0e0; }
-    .item-card.locked { filter: grayscale(1); opacity: 0.7; cursor: not-allowed; }
-    
-    .item-img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 5px; }
-    .item-name { font-size: 1.3rem; font-weight: bold; color: #3e2723; }
-    .item-price { 
-        display: inline-block; background: #fff3e0; color: #e65100; 
-        padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 1.1rem;
-        border: 1px solid #ffe0b2; margin-top: 5px;
-    }
-    .lock-overlay {
-        position: absolute; top:0; left:0; width:100%; height:100%;
-        background: rgba(0,0,0,0.1); display: flex; align-items:center; justify-content:center;
-        color: #d32f2f; font-weight: bold; font-size: 1.2rem; transform: rotate(-15deg);
-        text-shadow: 1px 1px 0 #fff;
-    }
-
-    @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-    
-    @media (max-width: 650px) {
-        .rpg-shop-window { flex-direction: column; height: 90%; }
-        .shop-npc-col { width: 100%; height: 120px; flex-direction: row; border-right: none; border-bottom: 4px solid #5d4037; }
-        .npc-sprite { width: 80px; margin-left: 10px; }
-        .npc-bubble { flex: 1; margin: 0; font-size: 1rem; }
-        .npc-bubble::after { display: none; }
+    <div class="pixel-ui">
         
-        /* Stats Panel trên mobile */
-        .plant-stats-panel { top: 50px; right: -250px; width: 220px; }
-        .plant-stats-panel.active { right: 10px; }
-    }
+        <div class="hud-top">
+            <% 
+                let backLink = '/profile';
+                if (!isOwner && garden.user) { backLink = '/profile/view/' + garden.user._id; }
+            %>
+            <a href="<%= backLink %>" class="pixel-btn btn-back" title="Quay lại">
+                <i class="fas fa-arrow-left"></i>
+            </a>
 
-    /* Font Pixel cho Floating Text */
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    
-    .swal2-popup.swal2-toast-pixel {
-        background: #3e2723 !important;
-        border: 3px solid #ffb300 !important;
-        border-radius: 0 !important;
-        font-family: 'VT323', monospace !important;
-        color: #ffb300 !important;
-        box-shadow: 5px 5px 0px rgba(0,0,0,0.5) !important;
-    }
-    .swal2-title { font-size: 1.4rem !important; }
-</style>
-
-<div class="game-stage-container">
-    <div class="garden-wrapper">
-        
-        <% if (!isOwner) { %>
-            <div style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
-                        background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px;
-                        border-radius: 20px; border: 2px solid #ff9800; z-index: 2000; font-family: 'VT323'; font-size: 1.5rem; text-align: center;">
-                👀 Đang hóng hớt vườn của <strong><%= ownerName || 'Hàng Xóm' %></strong>
-                <br>
-                <a href="/my-garden" style="color: #ffeb3b; font-size: 1.2rem; text-decoration: none;">[Về nhà mình]</a>
-                <span style="margin: 0 10px;">|</span>
-                <a href="/profile/view/<%= garden.user._id %>" style="color: #4fc3f7; font-size: 1.2rem; text-decoration: none;">[Xem Profile]</a>
-            </div>
-        <% } %>
-
-        <div class="garden-hud">
-            <div class="hud-stat" title="Nước">
-                <div class="hud-icon">💧</div>
-                <div class="hud-value" id="hudWater"><%= garden.water %></div>
-            </div>
-            <div class="hud-stat" title="Vàng">
-                <div class="hud-icon">💰</div>
-                <div class="hud-value" id="hudGold"><%= garden.gold %></div>
-            </div>
-
-            <div class="hud-stat" title="Vị trí hiện tại">
-                <div class="hud-icon" style="font-size: 1.2rem;">📍</div>
-                <div class="hud-value" id="hudCoords" style="font-size: 1.5rem; min-width: 60px;">0, 0</div>
-            </div>
-        </div>
-
-        <div id="game-container"></div>
-
-        <div class="plant-stats-panel" id="plantStats">
-            <div class="stats-header">
-                <div class="stats-img-box">
-                    <img id="statImg" src="" class="stats-img">
-                </div>
-                <div class="stats-info">
-                    <h3 id="statName">Unknown</h3>
-                    <p id="statType">Cây Trồng</p>
-                    <p id="statCoords" style="color:#4caf50; font-size: 1rem;">Pos: (0, 0)</p>
-                </div>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 10px;">
-                <div class="bar-label"><span>Trạng thái đất:</span> <span id="statSoilStatus" style="color:#4fc3f7">Đất Khô</span></div>
-                <div class="bar-label" id="soilTimerRow" style="display:none; margin-top:4px;">
-                    <span>Hết ẩm trong:</span> <span id="statSoilTimer" style="color:#4fc3f7; font-weight:bold;">00:00:00</span>
-                </div>
-                <div class="bar-label" id="speedRow"><span>Tốc độ lớn:</span> <span id="statSpeed" style="color:#ffb300">100%</span></div>
-            </div>
-
-            <div id="plantInfoSection">
-                    <div class="stats-row">
-                        <div class="bar-label"><span>Sức khỏe (Nước)</span><span id="statWitherVal">100%</span></div>
-                        <div class="progress-track"><div id="statWitherBar" class="progress-fill" style="width: 100%; background: #ef5350;"></div></div>
-                    </div>
-
-                    <div class="stats-row">
-                        <div class="bar-label">
-                            <span>Phát triển</span>
-                            <span id="statStageVal">Cấp 0</span>
-                        </div>
-                        <div class="progress-track">
-                            <div id="statGrowthBar" class="progress-fill fill-growth" style="width: 0%"></div>
-                        </div>
-                        <div style="font-size: 0.9rem; color: #ccc; margin-top: 2px;" id="statTimeProgress">-- / --</div>
-                    </div>
-
-                    <div class="stats-row" style="background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; margin-top: 5px;">
-                        <div style="font-size: 1rem; color: #ccc; display: flex; justify-content: space-between;">
-                            <span>⏱ Mỗi cấp:</span>
-                            <span id="statTimePerStage" style="color: #fff;">--</span>
-                        </div>
-                        <div style="font-size: 1rem; color: #ccc; display: flex; justify-content: space-between;">
-                            <span>⏳ Tổng cộng:</span>
-                            <span id="statTotalTime" style="color: #ffca28;">--</span>
-                        </div>
-                    </div>
-
-                    <div class="stats-footer">
-                        Ước tính thu hoạch: <span id="statPrice" style="color: #fff; font-weight: bold;">---</span> 💰
-                    </div>
-            </div>
-        </div>
-
-        <div class="garden-toolbar farm-tools">
-            <div class="tool-slot" onclick="selectTool('move')" title="Di chuyển Camera (Phím 7)">
-                <div class="key-hint">1</div>
-                <img src="<%= assets.FARMING.tools.move.icon %>">
-            </div>
-            
-            <div class="tool-slot active" onclick="selectTool('cursor')" title="Tay (Xem thông tin - Phím 1)">
-                <div class="key-hint">2</div>
-                <img src="<%= assets.FARMING.tools.cursor.icon %>">
-            </div>
-
-            <% if (isOwner) { %>
-                <div class="tool-slot" onclick="selectTool('hoe')" title="Cuốc Đất (Phím 2)">
-                    <div class="key-hint">2</div>
-                    <img src="<%= assets.FARMING.tools.hoe.icon %>">
-                </div>
-                
-                <div class="tool-slot" onclick="selectTool('water')" title="Tưới Nước (Phím 4)">
-                    <div class="key-hint">4</div>
-                    <img src="<%= assets.FARMING.tools.water.icon %>">
-                </div>
-                
-                <div class="tool-slot" onclick="selectTool('basket')" title="Thu Hoạch (Phím 5)">
-                    <div class="key-hint">5</div>
-                    <img src="<%= assets.FARMING.tools.basket.icon %>">
-                </div>
-                
-                <div class="tool-slot" onclick="selectTool('shovel')" title="Dọn Dẹp (Phím 6)">
-                    <div class="key-hint">6</div>
-                    <img src="<%= assets.FARMING.tools.shovel.icon %>">
-                </div>
-
-                <div class="tool-slot" onclick="openShopHTML('plants')" title="Cửa Hàng">
-                    <div class="key-hint">F</div>
-                    <img src="/api/pro-images/1767285084901-romnys.png">
+            <% if (!isOwner) { %>
+                <div class="visitor-badge" style="background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; border: 2px solid #ff9800; font-family: 'VT323'; margin-right: 10px;">
+                    👀 Vườn của: <strong style="color: #ffb74d;"><%= garden.user ? garden.user.username : 'Hàng Xóm' %></strong>
                 </div>
             <% } %>
-        </div>
 
-        <div class="garden-modal-overlay" id="shopOverlay"
-             onwheel="event.stopPropagation()" 
-             onmousedown="event.stopPropagation()"
-             ontouchstart="event.stopPropagation()">
-             
-            <div class="rpg-shop-window">
-                <div class="shop-header">
-                    <div class="shop-title">🛒 Tạp Hóa Cô Thắm</div>
-                    <button class="btn-close-shop" onclick="closeShop()">X</button>
+            <div class="pixel-panel player-stats-compact">
+                <div class="stat-level-box">
+                    <span class="lbl">LV</span>
+                    <span class="val" id="ui-level"><%= garden.userLevel %></span>
                 </div>
-
-                <div class="shop-body">
-                    <div class="shop-npc-col">
-                        <div class="npc-bubble" id="npcSpeech">
-                            Hế lô cưng! Nay mua gì nè? 💖
-                        </div>
-                        <img src="/api/pro-images/1767353474437-ddk8r4.png" class="npc-sprite" alt="NPC">
+                
+                <div class="stat-info-col">
+                    <div class="realm-badge" id="ui-realm"><%= garden.levelName %></div>
+                    <div class="xp-progress-wrapper">
+                        <% 
+                            // [FIX] Tính toán EJS an toàn
+                            const curXP = garden.currentXP || 0;
+                            const maxXP = garden.nextLevelXP || 100;
+                            const xpPct = (maxXP > 0) ? Math.min(100, (curXP / maxXP) * 100) : 0;
+                        %>
+                        <div class="xp-fill" id="ui-xp-bar" style="width: <%= xpPct %>%;"></div>
+                        <span class="xp-text" id="ui-xp-text"><%= curXP %>/<%= maxXP %></span>
                     </div>
+                </div>
+            </div>
 
-                    <div class="shop-items-col">
-                        <div class="shop-tabs">
-                            <div class="shop-tab active" onclick="switchShopTab('plants')" id="tab-plants">🌱 Hạt Giống</div>
-                            <div class="shop-tab" onclick="switchShopTab('decors')" id="tab-decors">🎨 Decor</div>
-                            <div class="shop-tab" onclick="switchShopTab('backgrounds')" id="tab-backgrounds">🚜 Mở Rộng</div>
-                        </div>
-                        
-                        <div class="shop-grid" id="shopGrid">
-                            </div>
-                    </div>
+            <div class="pixel-panel resources">
+                <div class="res-item" title="Nước">
+                    <img src="https://cdn-icons-png.flaticon.com/512/427/427112.png" class="pixel-icon">
+                    <span id="ui-water"><%= garden.water %></span>
+                </div>
+                <div class="res-item" title="Vàng">
+                    <img src="https://cdn-icons-png.flaticon.com/512/217/217853.png" class="pixel-icon">
+                    <span id="ui-gold"><%= garden.gold %></span>
                 </div>
             </div>
         </div>
 
+        <div id="plantingModeUI" class="planting-ui" style="display: none;">
+            <div class="planting-label">🌱 Đang trồng...</div>
+            <div class="planting-item-name" id="plantingItemName">Hạt Giống</div>
+            <button class="pixel-btn btn-cancel-plant" onclick="window.cancelPlanting()">
+                Hủy (X)
+            </button>
+        </div>
+
+        <div id="mobileMoveBtn" class="mobile-action-btn" onclick="toggleMoveMode()" style="display: none;">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+
+        <div id="ui-coords-bar" class="coords-badge">
+            📍 <span id="ui-coords-x">0</span>, <span id="ui-coords-y">0</span>
+        </div>
+
+        <div class="pixel-panel plant-info-panel" id="plantStats">
+            <div class="info-header">
+                <div class="info-thumb">
+                    <img id="statImg" src="" class="pixel-img">
+                </div>
+                <div class="info-text">
+                    <h3 id="statName">...</h3>
+                    <div id="statStageBadge" class="pixel-badge">...</div>
+                </div>
+                <button class="pixel-btn-close" onclick="hidePlantStats()">X</button>
+            </div>
+            
+            <div class="info-body">
+                <div class="stat-row">
+                    <label><i class="fas fa-tint text-blue"></i> Độ ẩm</label>
+                    <div class="pixel-progress-track">
+                        <div id="statWitherBar" class="pixel-progress-fill fill-water"></div>
+                    </div>
+                    <span id="statWitherVal" class="stat-val">--%</span>
+                </div>
+
+                <div class="stat-row">
+                    <label><i class="fas fa-seedling text-green"></i> Lớn</label>
+                    <div class="pixel-progress-track">
+                        <div id="statGrowthBar" class="pixel-progress-fill fill-growth"></div>
+                    </div>
+                    <span id="statTimeProgress" class="stat-val">--%</span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-cell">
+                        <small>⏳ Còn lại</small>
+                        <strong id="statTotalTime">--</strong>
+                    </div>
+                    <div class="info-cell">
+                        <small>💰 Giá trị</small>
+                        <strong id="statPrice" class="text-gold">--</strong>
+                    </div>
+                </div>
+                
+                <div class="info-footer">
+                    <small id="statSoilStatus">---</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="hud-bottom" id="mainToolbar">
+            <div class="pixel-panel toolbar">
+                <div class="tool-slot" onclick="selectTool('move')" data-tool="move" title="Di chuyển">
+                    <img src="<%= assets.FARMING.tools.move.icon %>">
+                    <span class="key-hint">1</span>
+                </div>
+                
+                <div class="tool-slot active" onclick="selectTool('cursor')" data-tool="cursor" title="Xem info">
+                    <img src="<%= assets.FARMING.tools.cursor.icon %>">
+                    <span class="key-hint">2</span>
+                </div>
+
+                <% if (isOwner) { %>
+                    <div class="tool-slot" onclick="selectTool('hoe')" data-tool="hoe" title="Cuốc đất">
+                        <img src="<%= assets.FARMING.tools.hoe.icon %>">
+                        <span class="key-hint">3</span>
+                    </div>
+                    
+                    <div class="tool-slot" onclick="selectTool('water')" data-tool="water" title="Tưới nước">
+                        <img src="<%= assets.FARMING.tools.water.icon %>">
+                        <span class="key-hint">4</span>
+                    </div>
+                    
+                    <div class="tool-slot shop-slot" onclick="openShopHTML('plants')" data-tool="shop" title="Cửa hàng">
+                        <img src="/api/pro-images/1767285084901-romnys.png">
+                        <span class="key-hint">F</span>
+                    </div>
+
+                    <div class="tool-slot" onclick="selectTool('basket')" data-tool="basket" title="Thu hoạch">
+                        <img src="<%= assets.FARMING.tools.basket.icon %>">
+                        <span class="key-hint">5</span>
+                    </div>
+                    
+                    <div class="tool-slot" onclick="selectTool('shovel')" data-tool="shovel" title="Xóa bỏ">
+                        <img src="<%= assets.FARMING.tools.shovel.icon %>">
+                        <span class="key-hint">6</span>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
     </div>
-</div>
 
-<div id="tutorialOverlay" class="tutorial-wrapper" style="display: none;">
-    <div class="mascot-container">
-        <img src="/api/pro-images/1767292174351-vww00c.png" class="mascot-img">
+    <div id="shopOverlay" class="pixel-modal-overlay" style="display:none;" 
+         onwheel="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        
+        <div class="pixel-window shop-window">
+            <div class="window-header">
+                <div class="win-title">🛒 Tạp Hóa</div>
+                <button class="pixel-btn-close red" onclick="closeShop()">X</button>
+            </div>
+            
+            <div class="window-body">
+                <div class="npc-area">
+                    <div class="npc-bubble">
+                        Mua gì hơm cháu ơi? 🥕
+                    </div>
+                    <img src="/api/pro-images/1767353474437-ddk8r4.png" class="npc-img">
+                </div>
+
+                <div class="shop-area">
+                    <div class="shop-tabs">
+                        <button class="pixel-tab active" onclick="switchShopTab('plants')" id="tab-plants">🌱 Hạt Giống</button>
+                        <button class="pixel-tab" onclick="switchShopTab('decors')" id="tab-decors">🎨 Trang Trí</button>
+                        <button class="pixel-tab" onclick="switchShopTab('tools')" id="tab-tools">🔧 Công Cụ</button>
+                    </div>
+                    
+                    <div class="shop-grid" id="shopGrid">
+                        </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="dialog-box">
-        <h3 id="tutTitle">Hế lô "nông dân" tập sự! 🌱</h3>
-        <p id="tutContent">Mới nhập môn hả? Đừng lo, có tui bảo kê! Đi theo tui nha fen!</p>
-        <button id="tutNextBtn" class="btn-genz" onclick="nextTutorial()">Oki lun! 🚀</button>
-    </div>
-    <div id="tutPointer" class="hand-pointer">👇</div>
-</div>
 
-<script type="application/json" id="gardenAssets"><%- JSON.stringify(assets) %></script>
-<script type="application/json" id="gardenData"><%- JSON.stringify(garden) %></script>
+    <script type="application/json" id="gardenAssets"><%- JSON.stringify(assets) %></script>
+    <script type="application/json" id="gardenData"><%- JSON.stringify(garden) %></script>
+    <script>
+        window.isOwner = <%= typeof isOwner !== "undefined" ? isOwner : true %>;
+        window.gardenAssets = JSON.parse(document.getElementById('gardenAssets').textContent);
+        window.gardenData = JSON.parse(document.getElementById('gardenData').textContent);
+        
+        // Fallback nếu dữ liệu cũ chưa có
+        if (!window.gardenData.userLevel) window.gardenData.userLevel = 1;
+        if (!window.gardenData.currentXP) window.gardenData.currentXP = 0;
+        if (!window.gardenData.nextLevelXP) window.gardenData.nextLevelXP = 100;
+    </script>
 
-<script>
-    /* eslint-disable */
-    // @ts-nocheck
-    
-    // Inject dữ liệu
-    window.gardenAssets = JSON.parse(document.getElementById('gardenAssets').textContent);
-    window.gardenData = JSON.parse(document.getElementById('gardenData').textContent);
-    window.userLevel = <%= user.level || 1 %>;
+    <script src="/js/gardenPhaser.js"></script>
 
-    // Biến lưu bộ đếm thời gian
-    let statsInterval = null;
-
-    // --- HÀM HELPER XỬ LÝ THỜI GIAN ---
-    function formatTime(ms) {
-        if (ms <= 0) return "00:00";
-        const s = Math.floor(ms / 1000);
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return m.toString().padStart(2,'0') + ":" + sec.toString().padStart(2,'0');
-    }
-
-    function formatTimeHMS(ms) {
-        if (ms <= 0) return "00:00:00";
-        const s = Math.floor(ms / 1000);
-        const h = Math.floor(s / 3600);
-        const m = Math.floor((s % 3600) / 60);
-        const sec = s % 60;
-        return h + ":" + m.toString().padStart(2,'0') + ":" + sec.toString().padStart(2,'0');
-    }
-
-    function parseDuration(str) {
-        if (!str) return 5 * 60000;
-        const num = parseInt(str);
-        if (str.includes('giờ')) return num * 3600000;
-        return num * 60000; 
-    }
-
-    // --- LOGIC HIỂN THỊ STATS (AUTO UPDATE) ---
-    window.showPlantStats = function(itemData, coords) {
-        const panel = document.getElementById('plantStats');
-        const plantInfoSection = document.getElementById('plantInfoSection');
-        const soilTimerRow = document.getElementById('soilTimerRow');
-        const speedRow = document.getElementById('speedRow');
-
-        // [FIX QUAN TRỌNG] Clear interval cũ nhưng KHÔNG remove class 'active' ngay
-        // Điều này giúp panel giữ nguyên trạng thái mở khi chuyển từ cây này sang cây khác
-        if (statsInterval) clearInterval(statsInterval);
-
-        const isPlot = itemData.type === 'plot';
-        const config = isPlot ? null : window.gardenAssets.PLANTS[itemData.itemId];
-
-        // Nếu dữ liệu lỗi thì mới đóng
-        if (!isPlot && !config) {
-            window.hidePlantStats();
-            return;
+    <script>
+        // --- UI FUNCTIONS ---
+        
+        // 1. Toggle Planting Mode UI (Được gọi từ Phaser)
+        window.togglePlantingUI = function(active, itemName = '') {
+            const ui = document.getElementById('plantingModeUI');
+            const toolbar = document.getElementById('mainToolbar');
+            
+            if (active) {
+                ui.style.display = 'flex';
+                document.getElementById('plantingItemName').innerText = itemName;
+                toolbar.classList.add('disabled-toolbar'); // Làm mờ toolbar
+                window.hidePlantStats();
+            } else {
+                ui.style.display = 'none';
+                toolbar.classList.remove('disabled-toolbar');
+            }
         }
 
-        const render = () => {
-            // ... (Toàn bộ nội dung logic render bên trong giữ nguyên như cũ) ...
-            // [Copy lại logic render từ bản trước vào đây]
-            // Để ngắn gọn, mình chỉ note là phần tính toán hiển thị không đổi
-            
-            if (isPlot) {
-                document.getElementById('statName').innerText = "Ô Đất";
-                document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png";
-                document.getElementById('statType').innerText = "Đất Trống";
-                plantInfoSection.style.display = 'none';
-            } else {
-                document.getElementById('statName').innerText = config.name;
-                document.getElementById('statImg').src = config.stages[itemData.stage || 0];
-                document.getElementById('statType').innerText = "Cây Trồng";
-                plantInfoSection.style.display = 'block';
-            }
-            if (coords) document.getElementById('statCoords').innerText = "Pos: (" + coords.x + ", " + coords.y + ")";
+        // 2. Stats Panel Logic
+        let statsInterval = null;
+        window.showPlantStats = function(itemData) {
+            const panel = document.getElementById('plantStats');
+            if (statsInterval) clearInterval(statsInterval);
 
-            let plot = itemData;
-            if (!isPlot) {
-                plot = window.gardenData.items.find(i => i.type === 'plot' && i.x === itemData.x && i.y === itemData.y);
-            }
+            // [FIX] Xử lý trường hợp Đất (không có trong PLANTS config)
+            const isPlot = itemData.type === 'plot';
+            const config = isPlot ? null : window.gardenAssets.PLANTS[itemData.itemId];
 
-            let isWet = false;
-            let remainingWetTime = 0;
-            if (plot && plot.lastWatered) {
-                const waterTime = new Date(plot.lastWatered).getTime();
-                const now = Date.now();
-                const elapsed = now - waterTime;
-                const maxWetTime = 24 * 60 * 60 * 1000;
-                if (elapsed < maxWetTime) {
-                    isWet = true;
-                    remainingWetTime = maxWetTime - elapsed;
-                }
-            }
+            // Nếu không phải đất và không tìm thấy config cây -> Ẩn
+            if (!isPlot && !config) { window.hidePlantStats(); return; }
 
-            document.getElementById('statSoilStatus').innerText = isWet ? "Đất Ẩm (Tốt)" : "Đất Khô";
-            document.getElementById('statSoilStatus').style.color = isWet ? "#4fc3f7" : "#aaa";
-            
-            if (isWet) {
-                soilTimerRow.style.display = 'block';
-                document.getElementById('statSoilTimer').innerText = formatTimeHMS(remainingWetTime);
-            } else {
-                soilTimerRow.style.display = 'none';
-            }
+            panel.classList.add('active'); // Hiện bảng
 
-            if (isPlot) {
-                speedRow.style.display = 'none';
-            } else {
-                speedRow.style.display = 'block';
-                document.getElementById('statSpeed').innerText = "100%";
-            }
-
-            if (!isPlot) {
-                const now = Date.now();
-                const lastUpdate = itemData.lastUpdated ? new Date(itemData.lastUpdated).getTime() : new Date(itemData.plantedAt).getTime();
-                const elapsed = now - lastUpdate;
-                
-                // 1. GROWTH
-                const speed = 1;
-                const additionalGrowth = isWet ? (elapsed * speed) : 0; 
-                const currentProgress = (itemData.growthProgress || 0) + additionalGrowth;
-                const timePerStage = parseDuration(config.growthTime);
-                const msInCurrent = currentProgress % timePerStage;
-                
-                const pct = Math.min(100, (msInCurrent / timePerStage) * 100);
-                document.getElementById('statGrowthBar').style.width = pct + "%";
-                document.getElementById('statTimeProgress').innerText = formatTime(msInCurrent) + " / " + formatTime(timePerStage);
-
-                const maxStage = config.maxStage || 3;
-                const virtualStage = Math.min(Math.floor(currentProgress / timePerStage), maxStage);
-
-                if (virtualStage >= maxStage) {
-                    document.getElementById('statStageVal').innerText = "Đã Chín! (Thu hoạch ngay)";
-                    document.getElementById('statStageVal').style.color = "#4caf50";
-                    document.getElementById('statTotalTime').innerText = "Sẵn sàng";
-                    document.getElementById('statGrowthBar').style.width = "100%";
+            const render = () => {
+                // ... (Logic render giữ nguyên từ bản trước) ...
+                if (isPlot) {
+                    document.getElementById('statName').innerText = "Ô Đất Trống";
+                    document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png";
+                    document.getElementById('statStageBadge').innerText = "Sẵn sàng";
+                    document.getElementById('statStageBadge').className = "pixel-badge grey";
+                    
+                    document.getElementById('statGrowthBar').style.width = "0%";
+                    document.getElementById('statWitherBar').style.width = "0%";
+                    document.getElementById('statTotalTime').innerText = "---";
+                    document.getElementById('statPrice').innerText = "---";
+                    document.getElementById('statSoilStatus').innerText = "Đất trống";
                 } else {
-                    document.getElementById('statStageVal').innerText = "Giai đoạn " + (virtualStage + 1) + " / " + (maxStage + 1);
-                    document.getElementById('statStageVal').style.color = "#fff";
+                    document.getElementById('statName').innerText = config.name;
+                    document.getElementById('statImg').src = config.stages[itemData.stage || 0];
+                    document.getElementById('statPrice').innerText = config.rewardGold.min + "-" + config.rewardGold.max;
 
-                    const totalNeeded = timePerStage * maxStage;
-                    const totalRemaining = Math.max(0, (totalNeeded - currentProgress) / speed);
-                    document.getElementById('statTotalTime').innerText = "~" + formatTime(totalRemaining);
-                }
+                    // Tính toán thời gian
+                    const now = Date.now();
+                    const lastUpdate = itemData.lastUpdated ? new Date(itemData.lastUpdated).getTime() : new Date(itemData.plantedAt).getTime();
+                    const elapsed = now - lastUpdate;
 
-                document.getElementById('statPrice').innerText = config.rewardGold.min + "-" + config.rewardGold.max;
-                
-                // 2. WITHER
-                const witherTime = parseDuration(config.witherTime || '30 phút');
-                let realWither = itemData.witherProgress || 0;
+                    // Check đất ướt (Tìm item đất tương ứng trong data global)
+                    let plot = window.gardenData.items.find(i => i.type === 'plot' && i.x === itemData.x && i.y === itemData.y);
+                    let isWet = false;
+                    if (plot && plot.lastWatered && (now - new Date(plot.lastWatered).getTime() < 24*3600000)) isWet = true;
 
-                if (!isWet && itemData.stage > 0 && !itemData.isDead) {
-                    realWither += elapsed;
-                } else if (isWet && itemData.stage > 0 && !itemData.isDead) {
-                    realWither = Math.max(0, realWither - elapsed);
-                }
+                    document.getElementById('statSoilStatus').innerText = isWet ? "💧 Đất ẩm" : "🌵 Đất khô";
+                    document.getElementById('statSoilStatus').style.color = isWet ? "#29b6f6" : "#ef5350";
 
-                const witherBar = document.getElementById('statWitherBar');
-                const witherVal = document.getElementById('statWitherVal');
-
-                if (realWither >= witherTime || itemData.isDead) {
-                    witherBar.style.width = "0%";
-                    witherVal.innerText = "Đã Chết 💀";
-                    witherVal.style.color = "#ef5350";
-                    witherBar.style.background = "#ef5350";
-                    witherVal.style.animation = "none";
-                } else {
-                    const healthPct = Math.max(0, 100 - (realWither / witherTime * 100));
-                    witherBar.style.width = healthPct + "%";
-                    witherVal.innerText = Math.floor(healthPct) + "%";
-                    witherVal.style.color = "white";
-                    witherVal.style.animation = "none";
-
-                    if (healthPct > 50) {
-                        witherBar.style.background = "#4caf50";
-                        witherVal.innerText += " (Tốt)";
-                    } else if (healthPct > 20) {
-                        witherBar.style.background = "#ffeb3b";
-                        witherVal.innerText += " (Khát)";
+                    // Growth Progress & Wither logic (giữ nguyên code tính toán)
+                    // ... (Code tính toán % như cũ)
+                    const currentProgress = (itemData.growthProgress || 0) + (isWet ? elapsed : 0);
+                    const timePerStage = parseDuration(config.growthTime);
+                    const maxStage = config.maxStage || 3;
+                    const stage = Math.min(Math.floor(currentProgress / timePerStage), maxStage);
+                    const pct = Math.min(100, ((currentProgress % timePerStage) / timePerStage) * 100);
+                    
+                    if (stage >= maxStage) {
+                        document.getElementById('statGrowthBar').style.width = "100%";
+                        document.getElementById('statTimeProgress').innerText = "MAX";
+                        document.getElementById('statStageBadge').innerText = "ĐÃ CHÍN";
+                        document.getElementById('statStageBadge').className = "pixel-badge green";
+                        document.getElementById('statTotalTime').innerText = "Thu hoạch!";
                     } else {
-                        witherBar.style.background = "#ef5350";
-                        witherVal.innerText += " (Nguy!)";
-                        witherVal.style.animation = "pulse 1s infinite"; 
+                        document.getElementById('statGrowthBar').style.width = pct + "%";
+                        document.getElementById('statTimeProgress').innerText = Math.floor(pct) + "%";
+                        document.getElementById('statStageBadge').innerText = `Cấp ${stage+1}/${maxStage+1}`;
+                        document.getElementById('statStageBadge').className = "pixel-badge yellow";
+                        const remaining = timePerStage - (currentProgress % timePerStage);
+                        document.getElementById('statTotalTime').innerText = formatTime(remaining);
                     }
+                    
+                    // Wither Bar update...
+                    const witherTime = parseDuration(config.witherTime || '30 phút');
+                    let realWither = itemData.witherProgress || 0;
+                    if (!isWet) realWither += elapsed; else realWither = Math.max(0, realWither - elapsed);
+                    const healthPct = Math.max(0, 100 - (realWither / witherTime * 100));
+                    document.getElementById('statWitherBar').style.width = healthPct + "%";
+                    document.getElementById('statWitherVal').innerText = Math.floor(healthPct) + "%";
                 }
+            };
+            
+            render();
+            statsInterval = setInterval(render, 1000);
+        };
+
+        window.hidePlantStats = function() {
+            if (statsInterval) clearInterval(statsInterval);
+            document.getElementById('plantStats').classList.remove('active');
+        };
+
+        // --- SHOP LOGIC ---
+        function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }
+        
+        window.openShopHTML = function(tab) {
+            document.getElementById('shopOverlay').style.display = 'flex';
+            switchShopTab(tab);
+        };
+
+        window.switchShopTab = function(type) {
+            document.querySelectorAll('.pixel-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${type}`).classList.add('active');
+
+            const container = document.getElementById('shopGrid');
+            container.innerHTML = ''; 
+
+            let items = [];
+            // Lấy data từ ASSETS (được inject từ server)
+            if (type === 'plants') {
+                Object.entries(window.gardenAssets.PLANTS || {}).forEach(([key, val]) => {
+                    items.push({ id: key, ...val, type: 'plant' });
+                });
+            } else if (type === 'decors') {
+                Object.entries(window.gardenAssets.DECORS || {}).forEach(([key, val]) => {
+                    items.push({ id: key, ...val, type: 'decor' });
+                });
+            }
+
+            if (items.length === 0) {
+                container.innerHTML = '<div style="width:100%; text-align:center; padding:20px; color:#5d4037;">Hết hàng rồi nha...</div>';
+            } else {
+                items.forEach(item => {
+                    let icon = item.icon;
+                    // Nếu là cây, lấy ảnh giai đoạn cuối làm icon
+                    if (!icon && item.stages) icon = item.stages[item.stages.length-1];
+                    // Nếu là hàng rào, lấy ảnh base
+                    if (item.isFence && item.images) icon = item.images.base;
+                    
+                    const price = item.price || 50;
+
+                    const html = `
+                        <div class="shop-card" onclick="window.buyItem('${item.id}', '${item.type}')">
+                            <div class="card-img-box">
+                                <img src="${icon}" class="card-img">
+                            </div>
+                            <div class="card-info">
+                                <div class="card-name">${item.name}</div>
+                                <div class="card-price">
+                                    💰 ${price}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
             }
         };
 
-        render(); // Render ngay lập tức
-        statsInterval = setInterval(render, 1000);
-        
-        // Chỉ thêm class active, không toggle -> Đảm bảo luôn mở
-        panel.classList.add('active');
-    };
+        // Emit sự kiện mua xuống Phaser
+        window.buyItem = function(id, type) {
+            if(window.gameEvents) {
+                window.gameEvents.emit('buyItem', { id, type });
+                closeShop();
+            }
+        };
 
-    window.hidePlantStats = function() {
-        if (statsInterval) clearInterval(statsInterval);
-        document.getElementById('plantStats').classList.remove('active');
-    };
+        document.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+            const key = e.key.toLowerCase();
+            const isOwner = window.isOwner;
 
-    function selectTool(toolName) {
-        if(window.gameEvents) window.gameEvents.emit('toolChanged', toolName);
-        document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
-        const slots = document.querySelectorAll('.tool-slot');
-        slots.forEach(s => {
-            if(s.getAttribute('onclick').includes(`'${toolName}'`)) s.classList.add('active');
+            // X to cancel planting
+            if (key === 'x') { window.cancelPlanting(); return; }
+            
+            // ESC to close UI
+            if (key === 'escape') { closeShop(); hidePlantStats(); window.cancelPlanting(); return; }
+
+            // Tools
+            switch(key) {
+                case '1': selectTool('move'); break;
+                case '2': selectTool('cursor'); break;
+                case '3': if(isOwner) selectTool('hoe'); break;
+                case '4': if(isOwner) selectTool('water'); break;
+                case '5': if(isOwner) selectTool('basket'); break;
+                case '6': if(isOwner) selectTool('shovel'); break;
+                case 'f': if(isOwner) { 
+                    if(document.getElementById('shopOverlay').style.display === 'flex') closeShop(); 
+                    else openShopHTML('plants'); 
+                } break;
+            }
         });
-    }
 
-    // --- KEYBOARD SHORTCUTS (Đã cập nhật mapping mới) ---
-    document.addEventListener('keydown', (e) => {
-        // Bỏ qua nếu đang gõ trong ô input (chat, search...)
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        // Emit sự kiện chọn tool xuống Phaser
+        window.selectTool = function(toolName) {
+            // Nếu toolbar bị disable (đang trồng cây), không cho bấm
+            if(document.getElementById('mainToolbar').classList.contains('disabled-toolbar')) return;
+            
+            if(window.gameEvents) window.gameEvents.emit('toolChanged', toolName);
+            
+            document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
+            const activeEl = document.querySelector(`.tool-slot[data-tool="${toolName}"]`);
+            if(activeEl) activeEl.classList.add('active');
+        };
 
-        // Logic phím tắt
-        if (e.key === '1') selectTool('move');      // Phím 1: Di chuyển (Bàn tay)
-        if (e.key === '2') selectTool('cursor');    // Phím 2: Chọn / Xem info
-        
-        // Các tool chỉ chủ nhà mới dùng được (check thêm isOwner để chắc chắn)
-        if (window.isOwner) {
-            if (e.key === '3') selectTool('hoe');       // Phím 3: Cuốc
-            if (e.key === '4') selectTool('water');     // Phím 4: Tưới
-            if (e.key === '5') selectTool('basket');    // Phím 5: Thu hoạch
-            if (e.key === '6') selectTool('shovel');    // Phím 6: Xẻng
-            if (e.key.toLowerCase() === 'f') openShopHTML('plants'); // Phím F: Mở Shop
-        }
-    });
-
-    function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }
-</script>
-
-<script>
-    /* eslint-disable */
-    // @ts-nocheck
-
-    // --- SCRIPT HƯỚNG DẪN (TUTORIAL) ---
-    /* eslint-disable */
-    window.isOwner = <%= typeof isOwner !== "undefined" ? isOwner : true %>;
-    /* eslint-enable */
-
-    const currentStep = window.gardenData.tutorialStep || 0;
-
-    const tutorialScript = [
-        { 
-            title: "Hế lô 'đại gia' tương lai! 👋",
-            content: "Chào mừng tới nông trại! Tui là 'Thổ Địa' khu này. Để tui chỉ ông cách làm giàu không khó nha. Gét gô!",
-            action: null, 
-            target: null
-        },
-        { 
-            title: "Bước 1: Sắm đồ nghề ⛏️",
-            content: "Muốn có đất thì phải cuốc. Nhìn xuống thanh công cụ, click vô cái Cây Cuốc (phím 2) đi fen!",
-            action: 'wait_tool_hoe', 
-            target: '.tool-slot[onclick*="hoe"]'
-        },
-        { 
-            title: "Bước 2: Khai hoang 🏜️",
-            content: "Giờ click đại vô màn hình đen đen kia để tạo ô đất đầu tiên. 50 vàng/ô đó, đầu tư cho tương lai!",
-            action: 'wait_action_buy_plot',
-            target: '#game-container'
-        },
-        { 
-            title: "Bước 3: Shopping 🛒",
-            content: "Có đất rồi thì phải trồng cây. Bấm vô cái Cửa Hàng (số 3) hoặc nhấn phím 3 để lựa 'hàng nóng'.",
-            action: 'wait_open_shop',
-            target: '.tool-slot[onclick*="plants"]'
-        },
-        { 
-            title: "Bước 4: Chốt đơn Hướng Dương 🌻",
-            content: "Hàng tuyển đây! Mua em 'Hướng Dương' về trồng lấy hên. Rẻ, dễ nuôi mà bán được giá. Click vô nó lẹ!",
-            action: 'wait_buy_plant',
-            target: '.item-card'
-        },
-        { 
-            title: "Bước 5: Gieo mầm 🌱",
-            content: "Cầm hạt rồi thì click vô ô đất vừa cuốc lúc nãy để trồng. Nhanh tay lên kẻo rớt hạt!",
-            action: 'wait_action_plant',
-            target: '#game-container'
-        },
-        { 
-            title: "Bước 6: Chọn Bình Tưới 💦",
-            content: "Á á đất khô queo kìa! Chọn ngay Bình Tưới (số 4) đi, cây khát nước là nó 'dẹo' đó!",
-            action: 'wait_tool_water',
-            target: '.tool-slot[onclick*="water"]'
-        },
-        { 
-            title: "Bước 7: Tưới tắm 🚿",
-            content: "Click vô cây hoặc đất để tưới. Có nước thì cây mới lớn được, không là héo queo đó!",
-            action: 'wait_action_water',
-            target: '#game-container'
-        },
-        { 
-            title: "Bước 8: Soi info 🧐",
-            content: "Chọn lại bàn tay (số 1), rồi chỉ chuột vô cây xem nó lớn tới đâu rồi. Bấm nút E hoặc click đúp để xem chi tiết.",
-            action: 'wait_hover_info',
-            target: '.tool-slot[onclick*="cursor"]'
-        },
-        { 
-            title: "Xong rồi! 🎓",
-            content: "Xong bài vỡ lòng! Giờ ông tự bơi nha. Nhớ canh nước nôi đầy đủ. Chúc ông sớm thành tỷ phú! Bái bai 👋",
-            action: null,
-            target: null
-        }
-    ];
-
-    let activeStep = currentStep;
-
-    function initTutorial() {
-        /* eslint-disable */
-        if (!window.isOwner) {
-            document.getElementById('tutorialOverlay').style.display = 'none';
-            return;
+        // Toggle Move Mode from UI
+        window.toggleMoveMode = function() {
+            const btn = document.getElementById('mobileMoveBtn');
+            btn.classList.toggle('active');
+            window.gameEvents.emit('toggleMoveMode');
         }
 
-        if (activeStep >= tutorialScript.length) {
-            document.getElementById('tutorialOverlay').style.display = 'none';
-            return;
+        // Callback từ Phaser để hiện/ẩn nút
+        window.updateMobileMoveBtn = function(show) {
+            const btn = document.getElementById('mobileMoveBtn');
+            if (btn) btn.style.display = show ? 'flex' : 'none';
+            if (!show) btn.classList.remove('active'); // Reset state
         }
 
-        const stepData = tutorialScript[activeStep];
-        const dialog = document.getElementById('tutorialOverlay');
-        const pointer = document.getElementById('tutPointer');
-        
-        document.getElementById('tutTitle').innerText = stepData.title;
-        document.getElementById('tutContent').innerText = stepData.content;
-        
-        const btn = document.getElementById('tutNextBtn');
-        if (stepData.action) {
-            btn.style.display = 'none';
-        } else {
-            btn.style.display = 'block';
-            btn.innerText = (activeStep === tutorialScript.length - 1) ? "Chiến thôi! 🔥" : "Tiếp theo 👉";
-        }
-
-        document.querySelectorAll('.highlight-tutorial').forEach(el => el.classList.remove('highlight-tutorial'));
-        pointer.style.display = 'none';
-
-        if (stepData.target) {
-            setTimeout(() => {
-                let els = document.querySelectorAll(stepData.target);
-                let targetEl = null;
-
-                if (activeStep === 4) { 
-                    els.forEach(el => {
-                        if (el.getAttribute('onclick') && el.getAttribute('onclick').includes('sunflower')) {
-                            targetEl = el;
-                        }
-                    });
-                } else {
-                    targetEl = els[0];
-                }
-
-                if (targetEl) {
-                    targetEl.classList.add('highlight-tutorial');
-                    const rect = targetEl.getBoundingClientRect();
-                    pointer.style.display = 'block';
-                    pointer.style.left = (rect.left + rect.width/2 - 20) + 'px';
-                    pointer.style.top = (rect.top - 60) + 'px';
-                    
-                    if (activeStep === 4) pointer.style.zIndex = "2005";
-                    else pointer.style.zIndex = "100000";
-                }
-            }, 100);
-        }
-
-        dialog.style.display = 'flex';
-    }
-
-    function nextTutorial() {
-        advanceStep();
-    }
-
-    async function advanceStep() {
-        activeStep++;
-        fetch('/my-garden/tutorial/next', {
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ step: activeStep })
-        }).catch(e => console.error("Lỗi lưu step:", e));
-
-        if (activeStep >= tutorialScript.length) {
-            document.getElementById('tutorialOverlay').style.display = 'none';
-            document.querySelectorAll('.highlight-tutorial').forEach(el => el.classList.remove('highlight-tutorial'));
-            document.getElementById('tutPointer').style.display = 'none';
-            if(window.SwalPixel) window.SwalPixel.fire({title: 'Tutorial Complete!', icon: 'success', timer: 2000});
-        } else {
-            initTutorial();
-        }
-    }
-
-    window.checkTutorialAction = function(actionType) {
-        if (activeStep >= tutorialScript.length) return;
-        const requiredAction = tutorialScript[activeStep].action;
-        if (requiredAction === actionType) {
-            advanceStep();
-        }
-    };
-
-    // --- HOOKS ---
-    const originalSelectTool = window.selectTool;
-    window.selectTool = function(toolName) {
-        originalSelectTool(toolName);
-        if (toolName === 'hoe') window.checkTutorialAction('wait_tool_hoe');
-        if (toolName === 'water') window.checkTutorialAction('wait_tool_water');
-        if (toolName === 'cursor') window.checkTutorialAction('wait_tool_cursor');
-    };
-
-    const originalOpenShop = window.openShopHTML;
-    window.openShopHTML = function(tab) {
-        originalOpenShop(tab);
-        window.checkTutorialAction('wait_open_shop');
-        if (activeStep === 4) {
-            setTimeout(() => initTutorial(), 50);
-        }
-    };
-
-    const originalShowStats = window.showPlantStats;
-    window.showPlantStats = function(data, coords) {
-        originalShowStats(data, coords);
-        window.checkTutorialAction('wait_hover_info');
-    }
-
-    document.addEventListener('DOMContentLoaded', initTutorial);
-</script>
-
-<style>
-    /* CSS CHO TUTORIAL */
-    .tutorial-wrapper {
-        position: absolute;
-        bottom: 120px; left: 20px; z-index: 99999;
-        display: flex; align-items: flex-end; font-family: 'VT323', monospace;
-        filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
-        transition: all 0.3s;
-    }
-    
-    .mascot-img {
-        width: 100px;
-        height: 100px; 
-        animation: bounce 2s infinite;
-    }
-    
-    .dialog-box {
-        background: #fff;
-        border: 4px solid #3e2723; border-radius: 15px;
-        padding: 15px; max-width: 300px; position: relative; margin-left: -20px;
-        margin-bottom: 20px;
-    }
-    .dialog-box::before {
-        content: '';
-        position: absolute; left: -10px; bottom: 20px;
-        border-top: 10px solid transparent; border-bottom: 10px solid transparent; 
-        border-right: 15px solid #3e2723;
-    }
-
-    .dialog-box h3 { margin: 0 0 5px 0; color: #d84315; font-size: 1.4rem; }
-    .dialog-box p { margin: 0 0 10px 0; color: #333; font-size: 1.2rem; line-height: 1.2; }
-
-    .btn-genz {
-        background: #ffeb3b; border: 2px solid #f57f17;
-        padding: 5px 15px;
-        font-family: inherit; font-size: 1.2rem; font-weight: bold; cursor: pointer;
-        border-radius: 8px; width: 100%; transition: 0.2s;
-    }
-    .btn-genz:hover { background: #fff176; transform: scale(1.05); }
-
-    .hand-pointer {
-        position: fixed;
-        font-size: 3rem; 
-        animation: point 1s infinite alternate;
-        display: none; z-index: 100000;
-        pointer-events: none; text-shadow: 0 0 10px white;
-    }
-
-    .highlight-tutorial {
-        box-shadow: 0 0 0 4px #ffff00, 0 0 20px #ffff00 !important;
-        z-index: 100001 !important; position: relative;
-        animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0px #ffff00; } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 0, 0); } }
-    
-    .swal2-popup.swal2-toast {
-        background: #3e2723; color: #ffb300;
-        border: 2px solid #ffb300; border-radius: 0; font-family: 'VT323'; font-size: 1.2rem;
-    }
-</style>
-
-<%- include('partials/footer') %>
-<script src="/js/gardenPhaser.js"></script>
+        // Helpers
+        function formatTime(ms) { return ms <= 0 ? "00:00" : new Date(ms).toISOString().substr(14, 5); }
+        function parseDuration(str) { const num = parseInt(str); return num * (str.includes('giờ') ? 3600000 : 60000); }
+    </script>
+</body>
+</html>

@@ -15,6 +15,7 @@ function initLessonContent() {
         // Kiểm tra nếu là JSON Array
         if (rawContent && (rawContent.startsWith('[') || rawContent.startsWith('{'))) {
             blocks = JSON.parse(rawContent);
+            if (!Array.isArray(blocks)) blocks = [blocks]; // Wrap nếu là object lẻ
         } else {
             // Fallback: Nếu là string thường (Markdown cũ)
             blocks = [{ type: 'text', data: { text: rawContent } }];
@@ -37,6 +38,19 @@ function initLessonContent() {
     } else {
         contentArea.innerHTML = '<p class="text-muted text-center">Bài học chưa có nội dung.</p>';
     }
+
+    // 5. [QUAN TRỌNG] RENDER CÔNG THỨC TOÁN (KaTeX) SAU KHI HTML ĐÃ CÓ
+    if (window.renderMathInElement) {
+        renderMathInElement(contentArea, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},  // Công thức Block
+                {left: '$', right: '$', display: false},   // Công thức Inline
+                {left: '\\(', right: '\\)', display: false},
+                {left: '\\[', right: '\\]', display: true}
+            ],
+            throwOnError: false
+        });
+    }
 }
 
 /* --- BLOCK RENDERER ENGINE --- */
@@ -49,7 +63,13 @@ function renderSingleBlock(block, idx) {
     switch (block.type) {
         case 'text':
             // Sử dụng Marked.js để render Markdown thành HTML
-            const htmlContent = marked.parse(block.data.text || '');
+            let htmlContent = marked.parse(block.data.text || '');
+            
+            // Dùng DOMPurify (nếu có) để sanitize HTML, tránh XSS
+            if (window.DOMPurify) {
+                htmlContent = DOMPurify.sanitize(htmlContent);
+            }
+            
             wrapper.innerHTML = htmlContent;
             break;
 
@@ -58,10 +78,9 @@ function renderSingleBlock(block, idx) {
                 const img = document.createElement('img');
                 img.src = block.data.url;
                 img.alt = 'Lesson Image';
-                img.loading = 'lazy'; // Tối ưu hiệu năng
+                img.loading = 'lazy'; 
                 wrapper.appendChild(img);
                 
-                // Caption (nếu có - trong data cấu trúc editor V3 có thể thêm field caption)
                 if(block.data.caption) {
                     const cap = document.createElement('div');
                     cap.className = 'text-center text-muted small fst-italic';
@@ -76,11 +95,11 @@ function renderSingleBlock(block, idx) {
                 const videoWrapper = document.createElement('div');
                 videoWrapper.className = 'block-video';
                 
+                // Hàm getEmbedUrl cần được định nghĩa (copy từ file cũ hoặc thêm vào)
                 const embedUrl = getEmbedUrl(block.data.url, block.data.autoplay);
                 if (embedUrl) {
                     videoWrapper.innerHTML = `<iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
                 } else {
-                    // Fallback cho file mp4 trực tiếp
                     videoWrapper.innerHTML = `<video src="${block.data.url}" controls style="width:100%; height:100%"></video>`;
                 }
                 wrapper.appendChild(videoWrapper);
@@ -96,13 +115,14 @@ function renderSingleBlock(block, idx) {
 
         case 'callout':
             wrapper.className += ' block-callout';
-            wrapper.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i> ${block.data.text || ''}`;
+            // Render markdown bên trong callout luôn
+            const calloutText = marked.parse(block.data.text || '');
+            wrapper.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i> <div>${calloutText}</div>`;
             break;
 
         case 'quiz':
         case 'question':
             if (block.data.questions && block.data.questions.length > 0) {
-                // Pass the whole data object so settings are available
                 wrapper.appendChild(renderQuizBlock(block.data, idx));
             }
             break;
@@ -326,14 +346,14 @@ function getEmbedUrl(url, autoplay) {
     const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*).*/);
     if (ytMatch && ytMatch[1]) {
         embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
-        if(autoplay) embedUrl += "&autoplay=1&mute=1"; 
+        if(autoplay) embedUrl += "&autoplay=1&mute=1";
     }
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch && vimeoMatch[1]) {
         embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
     }
     if (!embedUrl && url.match(/\.(mp4|webm|ogg)$/)) return null; 
-    return embedUrl;
+    return embedUrl || url; 
 }
 
 // --- [GEN Z UPDATE] Danh sách câu khen "mặn mòi" ---

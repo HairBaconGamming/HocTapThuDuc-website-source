@@ -12,7 +12,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '5 phút/cấp',
             totalTime: '20 phút',
-            witherTime: '5 phút', 
+            witherTime: '60 phút', 
             stages: [
                 '/api/pro-images/1767282830562-cb26a4.png',
                 '/api/pro-images/1767283026974-wmnw2v.png',
@@ -28,11 +28,11 @@ module.exports = {
             waterNeeded: 4,
             rewardGold: { min: 50, max: 100 },
             unlockLevel: 3,
-            rewardXP: 30,
+            rewardXP: 100,
             size: { w: 1, h: 1 },
             growthTime: '6 phút/cấp',
             totalTime: '30 phút',
-            witherTime: '3 phút',
+            witherTime: '40 phút',
             stages: [
                 '/api/pro-images/1767344323984-uvbj9k.png',
                 '/api/pro-images/1767344484389-wozd1r.png',

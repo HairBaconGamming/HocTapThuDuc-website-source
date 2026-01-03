@@ -74,18 +74,41 @@ async function syncGardenState(garden) {
     await garden.save();
 }
 
-// Lấy dữ liệu vườn
+// [FIX] Hàm chuẩn hóa dữ liệu (Adapter)
+// Map dữ liệu từ LevelUtils sang format mà Frontend (EJS/Phaser) đang đợi
+function getLevelViewData(user) {
+    const info = LevelUtils.getLevelInfo(user.level, user.xp);
+    return {
+        level: user.level,
+        currentXP: info.currentXP,       // User XP hiện tại
+        nextLevelXP: info.requiredXP,    // XP cần lên cấp (Từ file utils của bạn là requiredXP)
+        levelName: info.fullName         // Tên cảnh giới (VD: Luyện Khí Tầng 1)
+    };
+}
+
 exports.getGarden = async (req, res) => {
     try {
-        let garden = await Garden.findOne({ user: req.user._id });
+        let garden = await Garden.findOne({ user: req.user._id }).populate('user');
         if (!garden) garden = await new Garden({ user: req.user._id }).save();
-        
         await syncGardenState(garden);
+
+        // Lấy thông tin level chuẩn
+        const levelData = getLevelViewData(req.user);
+
+        // Merge vào gardenData để EJS render
+        const gardenData = {
+            ...garden.toObject(),
+            userLevel: levelData.level,
+            currentXP: levelData.currentXP,
+            nextLevelXP: levelData.nextLevelXP,
+            levelName: levelData.levelName,
+            ownerName: req.user.username
+        };
 
         res.render('garden', { 
             title: 'Nông Trại Vui Vẻ', 
             user: req.user, 
-            garden,
+            garden: gardenData, 
             isOwner: true, 
             assets: ASSETS
         });
@@ -223,49 +246,40 @@ exports.interactItem = async (req, res) => {
 
         // --- THU HOẠCH ---
         if (action === 'harvest') {
-            const plantConfig = ASSETS.PLANTS[item.itemId];
-            if (item.stage < plantConfig.maxStage) return res.json({ success: false, msg: 'Cây chưa chín!' });
+            const config = ASSETS.PLANTS[item.itemId];
+            if (item.stage < config.maxStage) return res.json({ success: false, msg: 'Chưa chín!' });
 
-            // 1. Cộng Vàng
-            const rewardGold = Math.floor(Math.random() * (plantConfig.rewardGold.max - plantConfig.rewardGold.min)) + plantConfig.rewardGold.min;
+            const rewardGold = Math.floor(Math.random() * (config.rewardGold.max - config.rewardGold.min)) + config.rewardGold.min;
             garden.gold += rewardGold;
 
-            // 2. [CẬP NHẬT] Cộng XP & Tính Level theo hệ thống Tu Tiên
             const user = await User.findById(req.user._id);
-            const rewardXP = plantConfig.rewardXP || 10;
+            const rewardXP = config.rewardXP || 10;
             
-            // Sử dụng hàm tính toán chung
+            // Tính toán Level Up bằng file utils của bạn
             const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, rewardXP);
-            
             user.level = levelResult.newLevel;
             user.xp = levelResult.newXP;
-            
-            // Lấy thông tin hiển thị
-            const levelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
-            
-            let levelUpMsg = "";
-            if (levelResult.hasLeveledUp) {
-                levelUpMsg = ` ⚡ ĐỘT PHÁ: ${levelInfo.fullName}!`;
-            }
-            
             await user.save();
 
-            // Xóa cây
+            // Lấy info mới nhất để trả về cho Frontend update thanh bar
+            const nextLevelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
+
             garden.items.pull(uniqueId);
             await garden.save();
 
             return res.json({ 
                 success: true, 
                 newGold: garden.gold, 
-                goldReward: rewardGold, 
-                xpReward: rewardXP,
-                // Trả về dữ liệu level để frontend hiển thị nếu cần
+                goldReward: rewardGold, xpReward: rewardXP,
+                // Data chuẩn form cho hàm updateHUD bên Phaser
                 levelData: {
                     level: user.level,
-                    levelName: levelInfo.fullName,
+                    currentXP: nextLevelInfo.currentXP, // Khớp với utils
+                    nextLevelXP: nextLevelInfo.requiredXP, // Khớp với utils
+                    levelName: nextLevelInfo.fullName,
                     hasLeveledUp: levelResult.hasLeveledUp
                 },
-                msg: `Thu hoạch: +${rewardGold} vàng, +${rewardXP} XP.${levelUpMsg}` 
+                msg: `Thu hoạch: +${rewardGold}G, +${rewardXP}XP`
             });
         }
 
@@ -308,16 +322,25 @@ exports.visitGarden = async (req, res) => {
         const targetUserId = req.params.userId;
         if (req.user._id.toString() === targetUserId) return res.redirect('/my-garden');
 
-        const garden = await Garden.findOne({ user: targetUserId }).populate('user', 'username');
+        const garden = await Garden.findOne({ user: targetUserId }).populate('user');
         if (!garden) return res.render('error', { message: 'Vườn không tồn tại!' });
 
-        await syncGardenState(garden);
+        // Lấy thông tin level của CHỦ VƯỜN
+        const levelData = getLevelViewData(garden.user);
+
+        const gardenData = {
+            ...garden.toObject(),
+            userLevel: levelData.level,
+            currentXP: levelData.currentXP,
+            nextLevelXP: levelData.nextLevelXP,
+            levelName: levelData.levelName,
+            ownerName: garden.user.username
+        };
 
         res.render('garden', { 
-            title: `Vườn của ${garden.user.username}`, 
+            title: `Vườn của ${gardenData.ownerName}`, 
             user: req.user, 
-            garden: garden,
-            ownerName: garden.user.username,
+            garden: gardenData,
             isOwner: false, 
             assets: ASSETS
         });

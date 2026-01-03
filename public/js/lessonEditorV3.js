@@ -74,6 +74,12 @@ function initApp() {
             }
         });
     }
+
+    // Đóng modal khi click ra ngoài
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('mathLiveModal');
+        if (e.target === modal) closeMathModal();
+    });
 }
 
 // Helper set text status
@@ -1267,6 +1273,12 @@ function cleanupEditors() {
     editors = {};
 }
 
+/* =========================================================
+   MATH LIVE & LATEX INTEGRATION FOR EASYMDE
+   ========================================================= */
+
+let currentMathEditorInstance = null; // Biến lưu editor đang focus để chèn công thức vào đúng chỗ
+
 function initMarkdownEditors() {
     const textareas = document.querySelectorAll('.easymde-input');
     textareas.forEach(el => {
@@ -1278,8 +1290,57 @@ function initMarkdownEditors() {
             spellChecker: false,
             status: false,
             minHeight: "150px",
-            placeholder: "Viết nội dung bài học...",
-            toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "table", "|", "preview", "side-by-side", "fullscreen"],
+            placeholder: "Viết nội dung bài học... (Bấm nút ∑ để chèn toán)",
+            
+            // 1. CUSTOM TOOLBAR
+            toolbar: [
+                "bold", "italic", "heading", "|", 
+                "quote", "unordered-list", "ordered-list", "|", 
+                "link", "image", "table", "|", 
+                {
+                    name: "math",
+                    action: (editor) => {
+                        currentMathEditorInstance = editor; // Lưu instance hiện tại
+                        openMathModal();
+                    },
+                    className: "fa fa-square-root-alt", // Icon căn bậc 2 (FontAwesome)
+                    title: "Chèn công thức Toán (MathLive)",
+                },
+                "|", "preview", "side-by-side", "fullscreen"
+            ],
+
+            // 2. CUSTOM PREVIEW RENDER (Để hiển thị LaTeX)
+            previewRender: function(plainText) {
+                // Bước A: Render Markdown cơ bản trước
+                // (EasyMDE dùng marked bên trong, ta gọi hàm mặc định của nó)
+                const preview = this.parent.markdown(plainText);
+
+                // Bước B: Tìm và render LaTeX bằng KaTeX
+                // Chúng ta dùng container ảo để xử lý HTML string
+                const div = document.createElement('div');
+                div.innerHTML = preview;
+
+                // Render KaTeX (yêu cầu thư viện KaTeX đã load ở ManageLesson.ejs)
+                if (window.renderMathInElement) {
+                    window.renderMathInElement(div, {
+                        delimiters: [
+                            {left: "$$", right: "$$", display: true},
+                            {left: "$", right: "$", display: false}
+                        ],
+                        throwOnError: false
+                    });
+                } else if (window.katex) {
+                    // Fallback nếu không có auto-render extension
+                    // Regex thay thế thủ công (Đơn giản hóa)
+                    div.innerHTML = div.innerHTML.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
+                        return katex.renderToString(tex, { displayMode: true, throwOnError: false });
+                    }).replace(/\$([\s\S]*?)\$/g, (match, tex) => {
+                        return katex.renderToString(tex, { displayMode: false, throwOnError: false });
+                    });
+                }
+
+                return div.innerHTML;
+            },
         });
 
         easyMDE.codemirror.on("change", () => {
@@ -1289,6 +1350,45 @@ function initMarkdownEditors() {
         });
         editors[idx] = easyMDE;
     });
+}
+
+// --- MATH MODAL LOGIC ---
+
+function openMathModal() {
+    const modal = document.getElementById('mathLiveModal');
+    const mf = document.getElementById('mathLiveInput');
+    if (modal && mf) {
+        modal.style.display = 'flex';
+        mf.value = ''; // Reset
+        setTimeout(() => mf.focus(), 100);
+    }
+}
+
+function closeMathModal() {
+    const modal = document.getElementById('mathLiveModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Chèn công thức từ MathLive vào EasyMDE
+function insertMathToEditor(isBlock) {
+    const mf = document.getElementById('mathLiveInput');
+    if (!mf || !currentMathEditorInstance) return;
+
+    const latex = mf.value;
+    if (!latex.trim()) {
+        closeMathModal();
+        return;
+    }
+
+    // Format: $$ công_thức $$ (Block) hoặc $ công_thức $ (Inline)
+    const textToInsert = isBlock 
+        ? `\n$$ ${latex} $$\n` 
+        : `$ ${latex} $`;
+
+    // Chèn vào vị trí con trỏ
+    currentMathEditorInstance.codemirror.replaceSelection(textToInsert);
+    
+    closeMathModal();
 }
 
 function openBlockMenu(index, event) {
@@ -1980,6 +2080,34 @@ function updateCourseThumbPreview() {
     document.getElementById('pCourseThumbPreview').src = url || '/img/default-course.jpg';
 }
 
+// --- HELPER: LẤY CẤU TRÚC CÂY HIỆN TẠI ---
+function getTreeStructure() {
+    const treeData = [];
+    document.querySelectorAll('.tree-unit').forEach((uEl, uIdx) => {
+        const unitId = uEl.dataset.unitId || '';
+        // Lấy tên chương từ input
+        const unitTitleInput = uEl.querySelector('.unit-title-input');
+        const unitTitle = unitTitleInput ? unitTitleInput.value : 'Chương mới';
+        
+        const lessonIds = [];
+        uEl.querySelectorAll('.tree-lesson').forEach(lEl => {
+            const lessonTitleInp = lEl.querySelector('.lesson-title-input');
+            lessonIds.push({
+                id: lEl.dataset.lessonId,
+                title: lessonTitleInp ? lessonTitleInp.value : 'Bài học'
+            });
+        });
+        
+        treeData.push({ 
+            id: unitId, 
+            title: unitTitle, 
+            order: uIdx + 1, 
+            lessons: lessonIds 
+        });
+    });
+    return treeData;
+}
+
 // --- LOGIC LƯU KHÓA HỌC (New) ---
 async function saveCourseStatus(isPublished) {
     const courseId = document.getElementById('hiddenCourseId').value;
@@ -1999,6 +2127,8 @@ async function saveCourseStatus(isPublished) {
     setSaveStatus(btnText); // Tận dụng hàm setSaveStatus có sẵn hoặc dùng Swal loading
 
     try {
+        const curriculumSnapshot = getTreeStructure();
+
         const res = await fetch(`/api/course/${courseId}/update-full`, { // Gọi route mới
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
