@@ -61,20 +61,21 @@ app.set("trust proxy", 1);
 
 const corsOptions = {
     origin: (origin, cb) => {
-        // [DEV MODE] Nếu đang chạy dev thì cho qua hết (return true) để đỡ đau đầu
+        // [DEV MODE]
         if (process.env.NODE_ENV !== 'production') {
             return cb(null, true); 
         }
 
-        // [PRODUCTION] Chỉ cho phép domain chính chủ
         const allowed = ['https://hoctapthuduc.onrender.com'];
         
-        // !origin là cho phép request từ server-to-server (không có browser)
-        if (!origin || allowed.includes(origin)) {
+        // CẬP NHẬT LOGIC TẠI ĐÂY:
+        // 1. !origin: Cho phép request không có origin (Postman, Server-to-Server)
+        // 2. origin === 'null': Cho phép origin là chuỗi "null" (thường gặp khi redirect, local file, hoặc sandbox iframe)
+        // 3. allowed.includes(origin): Domain nằm trong whitelist
+        if (!origin || origin === 'null' || allowed.includes(origin)) {
             return cb(null, true);
         }
         
-        // Log nhẹ cái origin lạ để biết ai đang gọi cửa
         console.log(`🚫 Blocked CORS Origin: ${origin}`);
         cb(new Error('CORS blocked this request'));
     },
