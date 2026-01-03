@@ -187,47 +187,54 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
         if (exists) return res.status(400).json({ error: "Đã hoàn thành rồi." });
 
         const user = await User.findById(req.user._id);
+        const currentLevel = user.level || 1;
         
-        // --- LOGIC PHẦN THƯỞNG MỚI ---
+        // --- 1. TÍNH TOÁN PHẦN THƯỞNG [MỚI] ---
         const POINTS_REWARD = 10;
-        const WATER_REWARD = 1;
+        
+        // Nước = Level (VD: Lv 3 -> 3 nước)
+        const WATER_REWARD = currentLevel; 
+        
+        // Vàng = 50 * Level^1.5 (Lấy nguyên)
+        // VD: Lv 3 -> 50 * 5.19... = 259 Vàng
+        const GOLD_REWARD = Math.floor(50 * Math.pow(currentLevel, 1.5));
 
-        // 1. Tính XP thưởng: 5% lượng XP cần thiết của cấp hiện tại
-        // Đảm bảo tối thiểu 10 XP cho các cấp thấp
-        const requiredXPForNextLevel = LevelUtils.getRequiredXP(user.level || 1);
+        // XP = 5% XP cần thiết của cấp hiện tại (Giữ logic cũ)
+        const requiredXPForNextLevel = LevelUtils.getRequiredXP(currentLevel);
         const XP_REWARD = Math.max(10, Math.floor(requiredXPForNextLevel * 0.05));
 
-        // 2. Tính toán Level Up bằng Utils
+        // --- 2. CẬP NHẬT USER & LEVEL ---
         const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
         
-        // 3. Cập nhật User
         user.points += POINTS_REWARD;
         user.level = levelResult.newLevel;
         user.xp = levelResult.newXP;
         
-        // 4. Lấy thông tin hiển thị (Cảnh giới)
         const levelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
         
         await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
         await user.save();
 
-        // Cộng nước & vàng vào vườn
+        // --- 3. CẬP NHẬT VƯỜN (NƯỚC & VÀNG) ---
         await Garden.findOneAndUpdate(
             { user: req.user._id },
-            { $inc: { water: WATER_REWARD, gold: 50 } }, 
+            { $inc: { water: WATER_REWARD, gold: GOLD_REWARD } }, 
             { upsert: true, new: true }
         );
 
         res.json({ 
             success: true, 
-            message: `Hoàn thành xuất sắc!\n+${POINTS_REWARD} điểm\n+${XP_REWARD} XP\n+${WATER_REWARD} nước`,
+            message: `Hoàn thành!`,
+            // Trả về số liệu để hiển thị
             points: POINTS_REWARD, 
             xp: XP_REWARD,
-            level: user.level,
-            levelName: levelInfo.fullName, // Trả về tên cảnh giới (VD: Luyện Khí Tầng 3)
-            isLevelUp: levelResult.hasLeveledUp,
             water: WATER_REWARD,
-            gold: 50
+            gold: GOLD_REWARD,
+            
+            // Thông tin Level
+            level: user.level,
+            levelName: levelInfo.fullName,
+            isLevelUp: levelResult.hasLeveledUp
         });
 
     } catch (e) { 

@@ -154,7 +154,7 @@ exports.getTreeByCourse = async (req, res) => {
             }))
         }));
 
-        res.json({ source: 'live', tree: treeFromDB, lastEditedId: null });
+        res.json({ source: 'live', tree: treeFromDB, lastEditedId: null, courseIsPublished: course.isPublished });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Lỗi tải cấu trúc' });
@@ -230,5 +230,43 @@ exports.updateCourse = async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
+    }
+};
+
+// 1. Cập nhật trạng thái Khóa Học
+exports.updateCourseStatus = async (req, res) => {
+    try {
+        const { courseId, isPublished } = req.body;
+        // Chỉ chủ sở hữu mới được sửa (Middleware check rồi hoặc check thêm ở đây)
+        await Course.findByIdAndUpdate(courseId, { isPublished: isPublished });
+
+        res.json({ success: true, msg: isPublished ? 'Đã công khai khóa học!' : 'Đã chuyển khóa học về nháp.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// 2. Cập nhật trạng thái toàn bộ Bài học trong 1 Chương (Unit)
+exports.bulkUpdateUnitStatus = async (req, res) => {
+    try {
+        const { unitId, isPublished } = req.body;
+
+        // Kiểm tra ID hợp lệ
+        if (!unitId || unitId.startsWith('new_')) {
+            return res.status(400).json({ success: false, error: 'Vui lòng lưu cấu trúc chương trước khi thao tác hàng loạt.' });
+        }
+
+        // Cập nhật tất cả Lesson thuộc Unit này
+        await Lesson.updateMany(
+            { unitId: unitId },
+            { $set: { isPublished: isPublished } }
+        );
+
+        res.json({
+            success: true,
+            msg: isPublished ? 'Đã đăng tất cả bài trong chương!' : 'Đã gỡ tất cả bài trong chương về nháp.'
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };

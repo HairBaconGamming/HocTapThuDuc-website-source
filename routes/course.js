@@ -29,4 +29,8 @@ router.get('/course/:courseId/details', isTeacher, courseController.getCourseDet
 // Route cập nhật thông tin
 router.post('/course/:courseId/update', isTeacher, courseController.updateCourse);
 
+// New routes for publication management
+router.post('/course/status', isTeacher, courseController.updateCourseStatus);
+router.post('/unit/bulk-status', isTeacher, courseController.bulkUpdateUnitStatus);
+
 module.exports = router;

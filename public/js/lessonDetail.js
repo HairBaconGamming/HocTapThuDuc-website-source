@@ -378,69 +378,133 @@ function triggerConfetti() {
     }
 }
 
-// [REMAKE] Hoàn thành bài học: Phong cách Gen Z, Code gọn nhẹ
+// [NÂNG CẤP] Hoàn thành bài học
 async function completeLesson(lessonId) {
     const btn = document.getElementById('btnComplete');
-    
-    // 1. Hiệu ứng loading "chill"
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ Đang "loát" dữ liệu...';
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang "loát"...';
     btn.disabled = true;
+    btn.style.opacity = '0.8';
 
     try {
-        // 2. Gọi API
         const res = await fetch(`/lesson/${lessonId}/complete`, { method: 'POST' });
         const data = await res.json();
 
         if (res.ok) {
-            // 3. Bắn pháo giấy ăn mừng (nếu có thư viện confetti)
-            if (typeof triggerConfetti === 'function') triggerConfetti();
+            triggerConfetti(); // Bắn pháo giấy
 
-            // 4. Nội dung thông báo
-            let msg = `+${data.points} Điểm | +${data.xp} XP`;
-            if (data.gold) msg += ` | +${data.gold} Vàng`;
+            const praise = getRandomPraise(); // Câu khen ngẫu nhiên
             
-            // Check lên cấp để "gáy" to hơn
-            let title = "Xong phim! 🎬";
+            // Xử lý thông báo Level Up
+            let levelUpHtml = '';
             if (data.isLevelUp) {
-                title = `Lên Cấp ${data.level}! Đỉnh nóc kịch trần! 🏠`;
+                levelUpHtml = `
+                    <div class="level-up-badge animate-bounce">
+                        <span style="font-size: 3rem;">🆙</span>
+                        <div style="font-weight: 900; font-size: 1.5rem; color: #fff; text-shadow: 2px 2px 0 #d97706;">
+                            LÊN CẤP ${data.level || 'MỚI'}!
+                        </div>
+                        <div style="font-size: 0.9rem; color: #fff;">${data.levelName || 'Đẳng cấp mới'}</div>
+                    </div>
+                `;
             }
 
-            // 5. Hiện Popup đơn giản, không màu mè HTML
+            // Popup 4 thẻ bài
             Swal.fire({
-                title: title,
-                text: `Bỏ túi ngay: ${msg}. Uy tín luôn!`,
-                icon: 'success',
-                confirmButtonText: 'Tiếp tục cày cuốc! 🚀',
-                confirmButtonColor: '#10b981'
+                title: `<div class="genz-title">${praise}</div>`,
+                html: `
+                    <div style="margin-bottom: 20px;">
+                        ${levelUpHtml}
+                        <div style="font-size: 1.1rem; color: #4b5563; margin-top: 10px;">
+                            Thu hoạch được nè:
+                        </div>
+                    </div>
+                    
+                    <div class="reward-container">
+                        <div class="reward-card card-points">
+                            <div class="reward-icon">🪙</div>
+                            <div class="reward-value">+${data.points}</div>
+                            <div class="reward-label">Điểm</div>
+                        </div>
+
+                        <div class="reward-card card-xp">
+                            <div class="reward-icon">✨</div>
+                            <div class="reward-value">+${data.xp}</div>
+                            <div class="reward-label">XP</div>
+                        </div>
+
+                        <div class="reward-card card-water">
+                            <div class="reward-icon">💧</div>
+                            <div class="reward-value">+${data.water}</div> 
+                            <div class="reward-label">Nước</div>
+                        </div>
+
+                        <div class="reward-card card-gold">
+                            <div class="reward-icon">💰</div>
+                            <div class="reward-value">+${data.gold}</div> 
+                            <div class="reward-label">Vàng</div>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        .genz-title { 
+                            font-family: 'Quicksand', sans-serif; font-weight: 800; font-size: 2rem; 
+                            background: linear-gradient(to right, #10b981, #3b82f6); 
+                            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                        }
+                        .level-up-badge {
+                            background: linear-gradient(135deg, #f59e0b, #d97706);
+                            padding: 15px; border-radius: 15px; margin: 10px auto;
+                            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.4); animation: pulse 1s infinite;
+                        }
+                        .reward-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+                        .reward-card {
+                            width: 80px; padding: 10px 5px; border-radius: 16px;
+                            text-align: center; position: relative; overflow: hidden;
+                            transition: transform 0.3s; box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+                        }
+                        .reward-card:hover { transform: translateY(-5px); }
+                        
+                        .card-points { background: #ecfdf5; border: 2px solid #10b981; color: #047857; }
+                        .card-xp { background: #fff7ed; border: 2px solid #f97316; color: #c2410c; }
+                        .card-water { background: #eff6ff; border: 2px solid #3b82f6; color: #1d4ed8; }
+                        .card-gold { background: #fefce8; border: 2px solid #eab308; color: #854d0e; } /* Thẻ vàng */
+
+                        .reward-icon { font-size: 1.8rem; margin-bottom: 2px; }
+                        .reward-value { font-weight: 900; font-size: 1.1rem; }
+                        .reward-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
+
+                        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+                    </style>
+                `,
+                icon: null,
+                showConfirmButton: true,
+                confirmButtonText: 'Tiếp tục cày! 🚀',
+                confirmButtonColor: '#10b981',
+                width: '450px' // Rộng hơn xíu để chứa 4 thẻ
+            }).then(() => {
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Đã học xong';
+                btn.className = "btn btn-success w-100";
+                
+                // Update Header Points (nếu có)
+                const headerPoints = document.querySelector('.user-points-display');
+                if(headerPoints && data.points) {
+                    let current = parseInt(headerPoints.innerText) || 0;
+                    headerPoints.innerText = current + data.points;
+                }
             });
-
-            // 6. Update nút bấm cho ngầu
-            btn.innerHTML = '✅ Đã thẩm thấu kiến thức';
-            btn.classList.remove('btn-primary'); // Xóa màu cũ (nếu có)
-            btn.classList.add('btn-success');    // Thêm màu xanh lá
-            btn.style.opacity = '1';
-
-            // 7. Cập nhật điểm trên Header (nhảy số nhẹ)
-            const headerPoints = document.querySelector('.user-points-display');
-            if(headerPoints && data.points) {
-                let current = parseInt(headerPoints.innerText) || 0;
-                headerPoints.innerText = current + data.points;
-                headerPoints.classList.add('text-success'); // Nháy xanh
-            }
-
         } else {
-            // Lỗi logic (đã học rồi)
-            Swal.fire('Khoan đã fen!', data.error || 'Hình như học rồi mà?', 'warning');
-            btn.innerHTML = 'Đã hoàn thành';
-            btn.classList.add('btn-secondary');
+            Swal.fire('Hả?', data.error || 'Lỗi gì đó rồi...', 'warning');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
         }
-
     } catch (e) {
         console.error(e);
-        // Lỗi mạng
-        Swal.fire('Toang rồi!', 'Mạng lag quá, check wifi đi fen!', 'error');
+        Swal.fire('Toang', 'Mạng lag quá fen ơi!', 'error');
         btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.style.opacity = '1';
     }
 }
