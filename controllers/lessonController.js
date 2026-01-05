@@ -2,6 +2,7 @@
 const Lesson = require('../models/Lesson');
 const Unit = require('../models/Unit');
 const Course = require('../models/Course');
+const LessonRevision = require('../models/LessonRevision');
 
 exports.saveLessonAjax = async (req, res) => {
     try {
@@ -105,19 +106,48 @@ exports.saveLessonAjax = async (req, res) => {
                     let lessonOrder = 0;
                     for (let lNode of uNode.lessons) {
                         lessonOrder++;
-                        // Nếu bài học đang sửa là bài mới tạo, ID của nó sẽ được update ở phần trên (logic Lesson cũ)
-                        // Ở đây ta chỉ update order và unitId cho các bài *khác* trong list
-                        const lId = (lNode.id === 'current_new_lesson') ? savedLessonId : lNode.id;
                         
+                        // [FIX] Kiểm tra xem node này có phải là bài vừa mới tạo không
+                        // Map cả 'current_new_lesson' HOẶC ID tạm đang edit (currentEditingId) sang ID thật (savedLessonId)
+                        const isCurrentCreatedLesson = (lNode.id === 'current_new_lesson') || 
+                                                    (currentEditingId && lNode.id === currentEditingId);
+
+                        const lId = isCurrentCreatedLesson ? savedLessonId : lNode.id;
+                        
+                        // Chỉ update những bài có ID thật (bỏ qua các ID new_lesson_ rác nếu có)
                         if (lId && !lId.startsWith('new_lesson_')) {
                             await Lesson.findByIdAndUpdate(lId, {
-                                unitId: currentUnitId,
-                                order: lessonOrder
+                                unitId: currentUnitId, // Gán bài vào chương (Unit)
+                                order: lessonOrder     // Cập nhật vị trí
                             });
                         }
                     }
                 }
             }
+        }
+
+        // [NEW] LƯU LỊCH SỬ PHIÊN BẢN (REVISION)
+        try {
+            // 1. Tạo bản lưu mới
+            await LessonRevision.create({
+                lessonId: lesson._id,
+                title: lesson.title,
+                content: lesson.content,
+                updatedBy: req.user._id
+            });
+
+            // 2. Giới hạn 50 phiên bản (Xóa bản cũ nhất nếu vượt quá)
+            const count = await LessonRevision.countDocuments({ lessonId: lesson._id });
+            if (count > 50) {
+                // Tìm và xóa bản cũ nhất (sort createdAt tăng dần -> cũ nhất lên đầu)
+                const oldest = await LessonRevision.findOne({ lessonId: lesson._id }).sort({ createdAt: 1 });
+                if (oldest) {
+                    await LessonRevision.findByIdAndDelete(oldest._id);
+                }
+            }
+        } catch (revErr) {
+            console.error('Lỗi lưu lịch sử:', revErr);
+            // Không return lỗi, vì việc lưu bài chính đã thành công
         }
 
         // --- 3. TRẢ KẾT QUẢ ---
@@ -147,5 +177,43 @@ exports.getLessonDetail = async (req, res) => {
         res.json({ success: true, lesson });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Lỗi server: ' + err.message });
+    }
+};
+
+// [NEW] Lấy danh sách lịch sử
+exports.getRevisions = async (req, res) => {
+    try {
+        const { id } = req.params; // lessonId
+        // Chỉ lấy các trường cần thiết để nhẹ gánh (bỏ content)
+        const revisions = await LessonRevision.find({ lessonId: id })
+            .select('title createdAt updatedBy') 
+            .populate('updatedBy', 'username')
+            .sort({ createdAt: -1 }) // Mới nhất lên đầu
+            .limit(50);
+            
+        res.json({ success: true, revisions });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// [NEW] Khôi phục phiên bản
+exports.restoreRevision = async (req, res) => {
+    try {
+        const { revisionId } = req.params;
+        const revision = await LessonRevision.findById(revisionId);
+        
+        if (!revision) return res.status(404).json({ success: false, error: 'Phiên bản không tồn tại' });
+
+        // Update bài học hiện tại bằng nội dung của revision
+        await Lesson.findByIdAndUpdate(revision.lessonId, {
+            title: revision.title,
+            content: revision.content,
+            updatedAt: new Date()
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };

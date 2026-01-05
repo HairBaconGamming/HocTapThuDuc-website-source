@@ -447,5 +447,8 @@
         function formatTime(ms) { return ms <= 0 ? "00:00" : new Date(ms).toISOString().substr(14, 5); }
         function parseDuration(str) { const num = parseInt(str); return num * (str.includes('giờ') ? 3600000 : 60000); }
     </script>
+
+    <link rel="stylesheet" href="/css/styleTutorial.css">
+    <script src="/js/tutorial.js"></script>
 </body>
 </html>

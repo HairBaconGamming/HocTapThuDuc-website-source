@@ -1,12 +1,12 @@
 /**
  * ============================================================================
- * PIXEL FARM ENGINE - ULTIMATE EDITION (v9.2)
+ * PIXEL FARM ENGINE - ULTIMATE EDITION (v10.3 - Fix Star UI Bug)
  * Author: Senior Node.js Dev
- * Fixed: Mobile Input Conflict (Tap to Select vs Drag to Pan)
- * Features:
- * - Smart Input: Distinguish between Click and Drag via Threshold (10px).
- * - Mobile: Tap = Select, Drag = Pan.
- * - Desktop: Click = Select, Q + Move = Pan.
+ * Status: Production Ready
+ * Fixes: 
+ * - [v10.3] Destroy UI (Star/Water Icon) correctly when harvesting or removing.
+ * - [v10.2] Auto-select item after placing.
+ * - [v10.1] Smart Input for Camera Pan.
  * ============================================================================
  */
 
@@ -15,9 +15,9 @@ const GRID_SIZE = 64;
 const WORLD_W = 64 * GRID_SIZE; 
 const WORLD_H = 64 * GRID_SIZE; 
 
-const ASSETS = window.gardenAssets;
-const GARDEN_DATA = window.gardenData;
-const IS_OWNER = window.isOwner;
+const ASSETS = window.gardenAssets || {};
+const GARDEN_DATA = window.gardenData || {};
+const IS_OWNER = window.isOwner || false;
 
 const PHASER_CONFIG = {
     type: Phaser.AUTO,
@@ -31,7 +31,7 @@ const PHASER_CONFIG = {
     },
     physics: { default: 'arcade', arcade: { debug: false } },
     render: { pixelArt: true, antialias: false, roundPixels: true },
-    input: { activePointers: 3 },
+    input: { activePointers: 3 }, 
     scene: null 
 };
 
@@ -43,20 +43,18 @@ function parseDuration(str) {
     return num * (str.includes('giờ') ? 3600000 : 60000);
 }
 
-if (typeof Swal !== 'undefined') {
-    window.SwalPixel = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
-        timerProgressBar: true, background: '#3e2723', color: '#ffb300', iconColor: '#ffb300',
-        customClass: { popup: 'swal2-toast-pixel' },
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-        }
-    });
-}
 function showToast(msg, type = 'info') {
-    if (window.SwalPixel) window.SwalPixel.fire({ title: msg, icon: type });
-    else console.log(`[Toast] ${msg}`);
+    if (typeof Swal !== 'undefined' && window.SwalPixel) {
+        window.SwalPixel.fire({ title: msg, icon: type });
+    } else if (typeof Swal !== 'undefined') {
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
+            timerProgressBar: true, background: '#3e2723', color: '#ffb300', iconColor: '#ffb300'
+        });
+        Toast.fire({ title: msg, icon: type });
+    } else {
+        console.log(`[${type.toUpperCase()}] ${msg}`);
+    }
 }
 
 async function apiCall(url, body) {
@@ -73,31 +71,40 @@ async function apiCall(url, body) {
 }
 
 function updateHUD(data) {
-    if (data.newWater !== undefined) document.getElementById('ui-water').innerText = data.newWater;
-    if (data.newGold !== undefined) document.getElementById('ui-gold').innerText = data.newGold;
+    if (data.newWater !== undefined) {
+        const el = document.getElementById('ui-water');
+        if (el) el.innerText = data.newWater;
+    }
+    if (data.newGold !== undefined) {
+        const el = document.getElementById('ui-gold');
+        if (el) el.innerText = data.newGold;
+    }
     
-    // [FIXED] Cập nhật Level Bar chuẩn xác
     if (data.levelData) {
         const bar = document.getElementById('ui-xp-bar');
         const txt = document.getElementById('ui-xp-text');
         const lvl = document.getElementById('ui-level');
         const realm = document.getElementById('ui-realm');
         
-        // Kiểm tra kỹ dữ liệu trước khi render
         if (data.levelData.currentXP !== undefined && data.levelData.nextLevelXP) {
             const current = data.levelData.currentXP;
             const max = data.levelData.nextLevelXP;
-            
-            // Tính phần trăm, chặn max 100% để không bị tràn
-            const pct = Math.min(100, Math.max(0, (current / max) * 100));
+            const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
             
             if (bar) bar.style.width = pct + "%";
-            if (txt) txt.innerText = `${current}/${max}`; // Hiển thị dạng 23/100
+            if (txt) txt.innerText = `${current}/${max}`;
         }
         
         if (lvl && data.levelData.level) lvl.innerText = data.levelData.level;
         if (realm && data.levelData.levelName) realm.innerText = data.levelData.levelName;
     }
+}
+
+function updateCoords(x, y) {
+    const elX = document.getElementById('ui-coords-x');
+    const elY = document.getElementById('ui-coords-y');
+    if (elX) elX.innerText = x;
+    if (elY) elY.innerText = y;
 }
 
 // --- 3. MAIN SCENE ---
@@ -108,8 +115,10 @@ class MainScene extends Phaser.Scene {
         
         this.currentTool = 'cursor';
         this.plantingMode = { active: false, itemId: null, type: null };
+        
         this.movingSprite = null;
         this.isMovingObject = false;
+        this.originalPos = null;
 
         this.isPanning = false;
         this.dragStartPoint = new Phaser.Math.Vector2();
@@ -120,6 +129,8 @@ class MainScene extends Phaser.Scene {
         this.maxZoom = 2.5;
         
         this.selectedTile = null;
+        this.selectionMarker = null;
+        this.marker = null;
         this.waterEmitter = null;
 
         this.keys = null;
@@ -129,6 +140,7 @@ class MainScene extends Phaser.Scene {
     preload() {
         this.load.image('water_drop', '/api/pro-images/1767290687212-2rlhp4.png');
         this.load.image('star_particle', '/api/pro-images/1767290642605-hz0cd0.png');
+        
         if (ASSETS.PLOT && ASSETS.PLOT.grass) this.load.image('grass_tile', ASSETS.PLOT.grass.textureUrl);
         if (ASSETS.FARMING) {
             this.load.image('soil_dry', ASSETS.FARMING.soil_dry);
@@ -140,22 +152,22 @@ class MainScene extends Phaser.Scene {
         for (let key in ASSETS.DECORS) {
             const item = ASSETS.DECORS[key];
             if (item.isFence) {
-                this.load.image(`decor_${key}_base`, item.images?.base || 'https://i.imgur.com/8BiKzXw.png');
-                this.load.image(`decor_${key}_h`, item.images?.h || 'https://i.imgur.com/GzJzM9S.png');
-                this.load.image(`decor_${key}_v`, item.images?.v || 'https://i.imgur.com/vPqAlqL.png');
-            } else this.load.image(`decor_${key}`, item.image);
+                this.load.image(`decor_${key}_base`, item.images?.base || item.image);
+                this.load.image(`decor_${key}_h`, item.images?.h || item.image);
+                this.load.image(`decor_${key}_v`, item.images?.v || item.image);
+            } else {
+                this.load.image(`decor_${key}`, item.image);
+            }
         }
     }
 
     create() {
         window.sceneContext = this; 
         this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
-        this.input.addPointer(2); 
+        this.input.addPointer(2);
 
-        // Key Setup
         this.keys = this.input.keyboard.addKeys({ Q: Phaser.Input.Keyboard.KeyCodes.Q });
 
-        // Background
         this.bgTile = this.add.tileSprite(0, 0, WORLD_W, WORLD_H, 'grass_tile').setOrigin(0);
         if (this.textures.exists('grass_tile')) {
             const img = this.textures.get('grass_tile').getSourceImage();
@@ -163,22 +175,20 @@ class MainScene extends Phaser.Scene {
         }
         this.drawGrid();
 
-        // Markers
         this.marker = this.add.graphics().lineStyle(3, 0xffffff, 1).strokeRect(0, 0, GRID_SIZE, GRID_SIZE).setDepth(999999);
         this.selectionMarker = this.add.graphics().lineStyle(4, 0x00ffff, 1).strokeRect(0, 0, GRID_SIZE, GRID_SIZE).setDepth(999998).setVisible(false);
         this.waterEmitter = this.add.particles(0, 0, 'water_drop', { speed: { min: 100, max: 200 }, scale: { start: 0.05, end: 0 }, lifespan: 600, gravityY: 300, quantity: 5, emitting: false });
 
-        // Setup
         this.setupCamera();
-        this.setupInput(); // [FIXED HERE]
+        this.setupInput();
         this.setupExternalEvents();
         this.initHUD();
 
-        // Render
-        if (GARDEN_DATA.items) GARDEN_DATA.items.forEach(item => this.renderItem(item));
+        if (GARDEN_DATA.items && Array.isArray(GARDEN_DATA.items)) {
+            GARDEN_DATA.items.forEach(item => this.renderItem(item));
+        }
         this.time.delayedCall(100, () => this.updateAllFences());
 
-        // Loop
         this.time.addEvent({ delay: 1000, callback: this.updateRealtimeGrowth, callbackScope: this, loop: true });
     }
 
@@ -195,37 +205,42 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // --- CAMERA & DEPTH UPDATE ---
     update(time, delta) {
-        // Desktop Q Key Pan
         if (this.game.device.os.desktop && this.keys.Q.isDown) {
             const pointer = this.input.activePointer;
-            const threshold = 100;
-            const maxSpeed = 15;
+            const threshold = 80; 
+            const maxSpeed = 15; 
             let targetVX = 0; let targetVY = 0;
 
             if (pointer.x < threshold) targetVX = -maxSpeed;
             else if (pointer.x > this.scale.width - threshold) targetVX = maxSpeed;
+
             if (pointer.y < threshold) targetVY = -maxSpeed;
             else if (pointer.y > this.scale.height - threshold) targetVY = maxSpeed;
 
             this.camVelocity.x = Phaser.Math.Linear(this.camVelocity.x, targetVX, 0.1);
             this.camVelocity.y = Phaser.Math.Linear(this.camVelocity.y, targetVY, 0.1);
+
             this.cameras.main.scrollX += this.camVelocity.x;
             this.cameras.main.scrollY += this.camVelocity.y;
+        } else {
+            this.camVelocity.x = Phaser.Math.Linear(this.camVelocity.x, 0, 0.2);
+            this.camVelocity.y = Phaser.Math.Linear(this.camVelocity.y, 0, 0.2);
+            if (Math.abs(this.camVelocity.x) > 0.1 || Math.abs(this.camVelocity.y) > 0.1) {
+                this.cameras.main.scrollX += this.camVelocity.x;
+                this.cameras.main.scrollY += this.camVelocity.y;
+            }
         }
 
-        // Depth Sorting
         this.children.list.forEach(c => {
             if (c.isGardenItem) {
-                c.setDepth(c === this.movingSprite ? 999999 : c.y);
+                c.setDepth(c === this.movingSprite ? 9999999 : c.y);
                 if (c.ui) c.ui.setPosition(c.x, c.y - c.displayHeight - 10);
                 if (c.thirstyIcon) c.thirstyIcon.setPosition(c.x, c.y - c.displayHeight);
             }
         });
     }
 
-    // --- EXTERNAL EVENTS ---
     setupExternalEvents() {
         window.addEventListener('resize', () => {
             this.game.scale.resize(window.innerWidth, window.innerHeight);
@@ -234,17 +249,17 @@ class MainScene extends Phaser.Scene {
 
         window.gameEvents.on('toolChanged', (toolName) => {
             this.currentTool = toolName;
-            // Cursor Grab chỉ dùng cho Move Tool
             this.input.setDefaultCursor(toolName === 'move' ? 'grab' : 'default');
             
             if (this.isMovingObject) this.cancelMoveObject();
+            
             if (toolName !== 'move' && toolName !== 'cursor' && this.plantingMode.active) {
                 this.cancelPlanting();
             }
             if (toolName !== 'cursor') {
                 this.selectedTile = null;
                 this.selectionMarker.setVisible(false);
-                window.hidePlantStats();
+                if(window.hidePlantStats) window.hidePlantStats();
             }
         });
 
@@ -254,7 +269,7 @@ class MainScene extends Phaser.Scene {
                 const itemData = ASSETS.PLANTS[id] || ASSETS.DECORS[id];
                 window.togglePlantingUI(true, itemData ? itemData.name : "Vật phẩm");
             }
-            showToast('Bấm chuột hoặc Space để trồng 🌱', 'info');
+            showToast('Đã lấy hàng! Bấm chuột để đặt 🌱', 'info');
         });
 
         window.gameEvents.on('cancelPlanting', () => this.cancelPlanting());
@@ -273,10 +288,9 @@ class MainScene extends Phaser.Scene {
         this.plantingMode = { active: false, itemId: null, type: null };
         if (window.togglePlantingUI) window.togglePlantingUI(false);
         this.currentTool = 'cursor';
-        window.selectTool('cursor');
+        if(window.selectTool) window.selectTool('cursor');
     }
 
-    // --- CAMERA SETUP ---
     setupCamera() {
         this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
         this.updateCameraBounds();
@@ -291,11 +305,9 @@ class MainScene extends Phaser.Scene {
         this.minZoom = Math.max(minX, minY, 0.5);
     }
 
-    // --- [CORE] INPUT HANDLING FIXED ---
     setupInput() {
         this.input.mouse.disableContextMenu();
 
-        // Keyboard Action (Space)
         this.input.keyboard.on('keydown-SPACE', () => {
             const pointer = this.input.activePointer;
             const worldPoint = pointer.positionToCamera(this.cameras.main);
@@ -331,9 +343,7 @@ class MainScene extends Phaser.Scene {
             this.scheduleSaveCamera();
         });
 
-        // --- POINTER DOWN ---
         this.input.on('pointerdown', (pointer) => {
-            // 1. Pinch Start
             if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
                 this.isPanning = false;
                 this.initialZoomDistance = Phaser.Math.Distance.Between(this.input.pointer1.x, this.input.pointer1.y, this.input.pointer2.x, this.input.pointer2.y);
@@ -341,27 +351,21 @@ class MainScene extends Phaser.Scene {
                 return;
             }
 
-            // 2. Place Moving Object
             if (this.isMovingObject && this.movingSprite && pointer.button === 0) {
                 this.placeMovingSprite();
                 return;
             }
 
-            // 3. Prepare for Pan or Click
-            // Reset panning state
-            this.isPanning = false; 
+            this.isPanning = false;
             this.dragStartPoint.set(pointer.x, pointer.y);
         });
 
-        // --- POINTER MOVE ---
         this.input.on('pointermove', (pointer) => {
-            // Update UI Coords
             const worldPoint = pointer.positionToCamera(this.cameras.main);
             const gx = Math.floor(worldPoint.x / GRID_SIZE);
             const gy = Math.floor(worldPoint.y / GRID_SIZE);
-            if(window.updateCoords) window.updateCoords(gx, gy);
+            updateCoords(gx, gy);
 
-            // A. Pinch Update
             if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
                 const dist = Phaser.Math.Distance.Between(this.input.pointer1.x, this.input.pointer1.y, this.input.pointer2.x, this.input.pointer2.y);
                 if (this.initialZoomDistance > 0) {
@@ -371,26 +375,25 @@ class MainScene extends Phaser.Scene {
                 return;
             }
 
-            // B. Pan Logic
             const isTouch = this.game.device.os.android || this.game.device.os.iOS;
-            const isMiddleClick = pointer.button === 1; // Chuột giữa
+            const isMiddleClick = pointer.button === 1;
             const isMoveTool = this.currentTool === 'move';
             
-            // Pan KHI: 
-            // 1. Đã được xác nhận là đang Pan
-            // 2. HOẶC (Chưa Pan NHƯNG di chuyển > 10px VÀ thỏa điều kiện Pan)
-            //    Điều kiện Pan: Chuột giữa HOẶC Move Tool HOẶC (Mobile + Cursor Mode + Không trồng cây + Không dời vật)
-            const canPan = isMiddleClick || isMoveTool || (isTouch && this.currentTool === 'cursor' && !this.plantingMode.active && !this.isMovingObject);
+            const canPan = pointer.isDown && (
+                isMiddleClick || 
+                isMoveTool || 
+                (isTouch && this.currentTool === 'cursor' && !this.plantingMode.active && !this.isMovingObject)
+            );
             
             if (canPan) {
-                // Kiểm tra ngưỡng di chuyển để tránh nhầm với Click
                 if (!this.isPanning) {
                     const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.dragStartPoint.x, this.dragStartPoint.y);
                     if (dist > 10) {
-                        this.isPanning = true; // Bắt đầu Pan
+                        this.isPanning = true;
                         this.input.setDefaultCursor('grabbing');
-                        // Nếu bắt đầu pan thì bỏ chọn vật (để tránh vừa chọn vừa kéo)
-                        this.selectedTile = null; this.selectionMarker.setVisible(false); window.hidePlantStats();
+                        this.selectedTile = null; 
+                        this.selectionMarker.setVisible(false); 
+                        if(window.hidePlantStats) window.hidePlantStats();
                     }
                 }
 
@@ -402,7 +405,6 @@ class MainScene extends Phaser.Scene {
                 }
             }
 
-            // C. Marker Update
             if (this.isMovingObject && this.movingSprite) {
                 const w = this.movingSprite.displayWidth;
                 const h = this.movingSprite.displayHeight;
@@ -418,19 +420,16 @@ class MainScene extends Phaser.Scene {
             }
         });
 
-        // --- POINTER UP ---
         this.input.on('pointerup', (pointer) => { 
-            // Nếu KHÔNG phải là Pan -> Thì là Click (Select / Action)
             if (!this.isPanning && pointer.button === 0) {
                 const worldPoint = pointer.positionToCamera(this.cameras.main);
                 const gx = Math.floor(worldPoint.x / GRID_SIZE) * GRID_SIZE;
                 const gy = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
                 
                 if (this.plantingMode.active) this.handlePlantingAction(gx, gy);
-                else this.handleToolAction(gx, gy);
+                else if (!this.isMovingObject) this.handleToolAction(gx, gy);
             }
 
-            // Reset state
             this.isPanning = false; 
             this.input.setDefaultCursor(this.currentTool === 'move' ? 'grab' : 'default');
             this.initialZoomDistance = 0;
@@ -438,7 +437,6 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // --- LOGIC: MOVE OBJECT ---
     startMovingSprite(sprite) {
         if (!IS_OWNER) return showToast('Chỉ chủ nhà mới được di chuyển!', 'warning');
         
@@ -446,7 +444,7 @@ class MainScene extends Phaser.Scene {
         if (item.type === 'plot') return showToast('Không thể di chuyển đất! 🚜', 'warning');
 
         const cfg = ASSETS.PLANTS[item.itemId] || ASSETS.DECORS[item.itemId];
-        const canMove = !item.isDead && (item.type === 'decoration' || item.stage === 0 || (cfg && item.stage >= cfg.maxStage));
+        const canMove = !item.isDead && (item.type === 'decoration' || item.type === 'decor' || item.stage === 0 || (cfg && item.stage >= cfg.maxStage));
         
         if (canMove) {
             this.isMovingObject = true;
@@ -455,12 +453,16 @@ class MainScene extends Phaser.Scene {
             
             if (sprite.ui) sprite.ui.setVisible(false);
             if (sprite.thirstyIcon) sprite.thirstyIcon.setVisible(true);
-            this.selectedTile = null; this.selectionMarker.setVisible(false); window.hidePlantStats();
+            this.selectedTile = null; 
+            this.selectionMarker.setVisible(false); 
+            if(window.hidePlantStats) window.hidePlantStats();
             
             this.input.setDefaultCursor('grabbing');
             showToast('Chế độ di chuyển: Click để đặt lại 🏗️', 'info');
             if (window.updateMobileMoveBtn) window.updateMobileMoveBtn(true);
-        } else showToast('Cây đang lớn, không nên động vào!', 'warning');
+        } else {
+            showToast(item.isDead ? 'Cây chết không dời được!' : 'Cây đang lớn, không nên động vào!', 'warning');
+        }
     }
 
     async placeMovingSprite() {
@@ -479,15 +481,10 @@ class MainScene extends Phaser.Scene {
 
         if (conflict) return showToast('Vị trí bị trùng!', 'error');
 
-        // Validation Rules
-        if (sprite.itemData.type === 'plant') {
-            const hasPlot = this.children.list.some(o => o.itemData?.type === 'plot' && Math.abs(o.itemData.x - gx) < 1 && Math.abs(o.itemData.y - gy) < 1);
-            if (!hasPlot) return showToast('Cây phải đặt trên đất!', 'warning');
-        }
-        if (sprite.itemData.type === 'decor' || sprite.itemData.type === 'decoration') {
-            const hasPlot = this.children.list.some(o => o.itemData?.type === 'plot' && Math.abs(o.itemData.x - gx) < 1 && Math.abs(o.itemData.y - gy) < 1);
-            if (hasPlot) return showToast('Decor phải đặt trên cỏ!', 'warning');
-        }
+        const hasPlot = this.children.list.some(o => o.itemData?.type === 'plot' && Math.abs(o.itemData.x - gx) < 1 && Math.abs(o.itemData.y - gy) < 1);
+        
+        if (sprite.itemData.type === 'plant' && !hasPlot) return showToast('Cây phải đặt trên đất!', 'warning');
+        if ((sprite.itemData.type === 'decoration' || sprite.itemData.type === 'decor') && hasPlot) return showToast('Decor phải đặt trên cỏ!', 'warning');
 
         const res = await apiCall('/my-garden/move', { uniqueId: sprite.itemData._id, x: gx, y: gy });
         if (res.success) {
@@ -496,6 +493,8 @@ class MainScene extends Phaser.Scene {
             if (ASSETS.DECORS[sprite.itemData.itemId]?.isFence) this.updateAllFences();
             showToast('Đã di chuyển!', 'success');
             this.cancelMoveObject(false);
+            
+            this.selectItem(sprite);
         } else {
             showToast(res.msg, 'error');
             this.cancelMoveObject(true);
@@ -513,7 +512,6 @@ class MainScene extends Phaser.Scene {
         if (window.updateMobileMoveBtn) window.updateMobileMoveBtn(false);
     }
 
-    // --- ACTIONS ---
     async handlePlantingAction(gx, gy) {
         if (!this.plantingMode.active) return;
         const { itemId, type } = this.plantingMode;
@@ -549,13 +547,16 @@ class MainScene extends Phaser.Scene {
         if (this.currentTool === 'cursor') {
             if (plant) this.selectItem(plant);
             else if (plot) this.selectItem(plot);
-            else { this.selectedTile = null; this.selectionMarker.setVisible(false); window.hidePlantStats(); }
+            else { 
+                this.selectedTile = null; 
+                this.selectionMarker.setVisible(false); 
+                if(window.hidePlantStats) window.hidePlantStats(); 
+            }
             return;
         }
 
         if (!IS_OWNER) return showToast('Chỉ chủ vườn mới được làm!', 'warning');
 
-        // Logic Tool
         if (this.currentTool === 'hoe') {
             if (!plot && !plant) {
                 const res = await apiCall('/my-garden/buy', { type: 'plot', itemId: 'soil_tile', x: gx, y: gy });
@@ -576,6 +577,7 @@ class MainScene extends Phaser.Scene {
                         const subPlot = allItems.find(i => i.itemData.type === 'plot' && Math.abs(i.itemData.x - gx)<1 && Math.abs(i.itemData.y - gy)<1);
                         if (subPlot) { subPlot.setTexture('soil_wet').setDisplaySize(GRID_SIZE, GRID_SIZE); subPlot.itemData.lastWatered = now; }
                     }
+                    window.gameEvents.emit('actionSuccess', { action: 'water', target: targetId }); 
                     showToast('Đã tưới! 💦', 'success');
                 } else showToast(res.msg, 'warning');
             }
@@ -588,8 +590,14 @@ class MainScene extends Phaser.Scene {
                     updateHUD(res);
                     if (res.xpReward) this.showFloatingText(gx + 32, gy, `+${res.xpReward} XP`, 'green');
                     if (res.goldReward) this.showFloatingText(gx + 32, gy - 20, `+${res.goldReward} Gold`, 'gold');
+                    
+                    // [FIX] Destroy UI (Star) manually
+                    if (plant.ui) { plant.ui.destroy(); plant.ui = null; }
+
                     this.tweens.add({ targets: plant, y: plant.y - 60, alpha: 0, duration: 500, onComplete: () => { if(plant.thirstyIcon) plant.thirstyIcon.destroy(); plant.destroy(); } });
-                    this.selectedTile = null; window.hidePlantStats();
+                    this.selectedTile = null; if(window.hidePlantStats) window.hidePlantStats();
+                    
+                    window.gameEvents.emit('actionSuccess', { action: 'harvest' });
                     showToast('Thu hoạch! 🌾', 'success');
                 } else showToast(res.msg, 'warning');
             }
@@ -599,17 +607,19 @@ class MainScene extends Phaser.Scene {
             if (target) {
                 const res = await apiCall('/my-garden/remove', { uniqueId: target.itemData._id });
                 if (res.success) {
+                    // [FIX] Destroy UI
+                    if (target.ui) { target.ui.destroy(); target.ui = null; }
                     if (target.thirstyIcon) target.thirstyIcon.destroy();
+                    
                     target.destroy();
                     if (ASSETS.DECORS[target.itemData.itemId]?.isFence) this.updateAllFences();
-                    this.selectedTile = null; window.hidePlantStats();
+                    this.selectedTile = null; if(window.hidePlantStats) window.hidePlantStats();
                     showToast('Đã dọn dẹp!', 'success');
                 }
             }
         }
     }
 
-    // --- RENDER & VISUALS ---
     renderItem(item) {
         item.clientRefTime = Date.now();
         if (item.type === 'plot') {
@@ -622,15 +632,17 @@ class MainScene extends Phaser.Scene {
         }
         const config = ASSETS.PLANTS[item.itemId] || ASSETS.DECORS[item.itemId];
         if (!config) return null;
+        
         let key = config.isFence ? `decor_${item.itemId}_base` : (item.type === 'plant' ? `plant_${item.itemId}_${item.stage || 0}` : `decor_${item.itemId}`);
         const w = config.size?.w || 1; const h = config.size?.h || 1;
+        
         const sprite = this.add.sprite(item.x + (w * GRID_SIZE) / 2, item.y + (h * GRID_SIZE), key)
             .setOrigin(0.5, 1).setDisplaySize(w * GRID_SIZE, h * GRID_SIZE);
+        
         sprite.itemData = item; sprite.isGardenItem = true; sprite.setDepth(item.y);
         if (item.isDead) sprite.setTint(0x555555);
+        
         sprite.setInteractive(); this.input.setDraggable(sprite);
-
-        // [REMOVED] pointerdown listener for hold timer (removed feature)
 
         if (item.type === 'plant') this.updatePlantUI(sprite);
         return sprite;
@@ -640,27 +652,34 @@ class MainScene extends Phaser.Scene {
         const now = Date.now();
         const plotMap = {};
         this.children.list.forEach(c => { if(c.itemData && c.itemData.type==='plot') plotMap[`${c.itemData.x},${c.itemData.y}`] = c; });
+        
         this.children.list.forEach(sprite => {
             if(!sprite.isGardenItem || !sprite.itemData) return;
             const item = sprite.itemData;
+            
             if(item.type==='plot' && item.lastWatered && (now - new Date(item.lastWatered).getTime() >= 24*3600000)) {
                 sprite.setTexture('soil_dry').setDisplaySize(GRID_SIZE,GRID_SIZE); item.lastWatered = null;
             }
+            
             if(item.type==='plant' && !item.isDead) {
                 const config = ASSETS.PLANTS[item.itemId];
                 if(!config) return;
+                
                 const plotSprite = plotMap[`${item.x},${item.y}`];
                 const isWet = plotSprite && plotSprite.itemData.lastWatered;
                 this.updateThirstyIcon(sprite, !isWet && item.stage > 0);
+                
                 if(isWet) {
                     const elapsed = now - (item.clientRefTime || now);
                     const currentProgress = (item.growthProgress || 0) + elapsed;
                     const timePerStage = parseDuration(config.growthTime);
                     const newStage = Math.min(Math.floor(currentProgress / timePerStage), config.maxStage);
+                    
                     if(newStage > item.stage) {
                         item.stage = newStage;
                         sprite.setTexture(`plant_${item.itemId}_${newStage}`);
                         sprite.setDisplaySize((config.size?.w||1)*GRID_SIZE, (config.size?.h||1)*GRID_SIZE).setOrigin(0.5,1);
+                        
                         if(newStage < config.maxStage) this.showFloatingText(sprite.x, sprite.y-sprite.displayHeight, "Lớn lên! 🌱", "green");
                         else this.showFloatingText(sprite.x, sprite.y-sprite.displayHeight, "Chín rồi! ⭐", "gold");
                         
@@ -688,7 +707,7 @@ class MainScene extends Phaser.Scene {
         const drawY = sprite.y - (h * sprite.originY);
         
         this.selectionMarker.clear().lineStyle(4, 0x00ffff, 1).strokeRect(drawX, drawY, w, h);
-        window.showPlantStats(sprite.itemData);
+        if(window.showPlantStats) window.showPlantStats(sprite.itemData);
         if (IS_OWNER && window.updateMobileMoveBtn) window.updateMobileMoveBtn(true);
     }
 
@@ -744,9 +763,4 @@ window.gameEvents = new Phaser.Events.EventEmitter();
 
 window.selectTool = function(t) { window.gameEvents.emit('toolChanged', t); };
 window.cancelPlanting = function() { window.gameEvents.emit('cancelPlanting'); };
-window.updateCoords = function(x, y) {
-    const elX = document.getElementById('ui-coords-x');
-    const elY = document.getElementById('ui-coords-y');
-    if (elX) elX.innerText = x;
-    if (elY) elY.innerText = y;
-}
+window.updateCoords = updateCoords;

@@ -151,4 +151,7 @@ router.post('/course/:id/update-full', courseController.updateCourseFull);
 
 router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
 
+router.get('/lesson/:id/revisions', lessonController.getRevisions);
+router.post('/lesson/restore/:revisionId', lessonController.restoreRevision);
+
 module.exports = router;

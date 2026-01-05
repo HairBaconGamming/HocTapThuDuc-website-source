@@ -1053,8 +1053,24 @@ function initBlocks(initialContent) {
     }
 }
 
-// RENDER ALL BLOCKS
+// --- VIDEO SETTINGS HELPER ---
+function toggleVideoSettings(idx) {
+    if (!blocks[idx]) return;
+    // Đảo trạng thái hiển thị
+    blocks[idx]._settingsOpen = !blocks[idx]._settingsOpen;
+    // Render lại để áp dụng thay đổi UI mà không mất dữ liệu
+    renderBlocks();
+}
+
+// RENDER ALL BLOCKS (FIX SCROLL JUMP)
 function renderBlocks() {
+    // 1. [FIX] Lưu vị trí cuộn hiện tại của Editor Panel (hoặc window)
+    // Nếu thanh cuộn nằm ở body chính:
+    const scrollPos = window.scrollY || document.documentElement.scrollTop;
+    // Nếu thanh cuộn nằm trong panel editor (id="editorMainPanel" hoặc class="studio-workspace"):
+    const editorPanel = document.querySelector('.center-panel') || document.body;
+    const panelScroll = editorPanel.scrollTop;
+
     cleanupEditors(); // Dọn dẹp editor cũ
 
     const canvas = document.getElementById('editorCanvas');
@@ -1062,6 +1078,7 @@ function renderBlocks() {
     canvas.innerHTML = '';
 
     blocks.forEach((b, idx) => {
+        // ... (Giữ nguyên toàn bộ logic tạo element của bạn ở đây) ...
         const el = document.createElement('div');
         el.className = 'content-block';
         el.dataset.index = idx;
@@ -1087,6 +1104,8 @@ function renderBlocks() {
             ta.id = `editor-area-${idx}`;
             ta.className = 'easymde-input';
             ta.value = b.data && b.data.text ? b.data.text : '';
+            // [OPTIMIZE] Không render lại toàn bộ khi gõ phím
+            // Sự kiện 'change' của EasyMDE tự xử lý, không cần gọi renderBlocks() trong onchange của textarea này
             body.appendChild(ta);
 
         // --- RENDER TYPE: IMAGE ---
@@ -1096,7 +1115,11 @@ function renderBlocks() {
             inp.className = 'studio-select';
             inp.placeholder = 'URL ảnh...';
             inp.value = b.data?.url || '';
-            inp.addEventListener('change', (e) => { blocks[idx].data.url = e.target.value; renderBlocks(); });
+            // [FIX] onchange thay vì oninput để tránh re-render liên tục khi gõ
+            inp.addEventListener('change', (e) => { 
+                blocks[idx].data.url = e.target.value; 
+                renderBlocks(); 
+            });
             body.appendChild(inp);
             if(b.data?.url) {
                 const img = document.createElement('img');
@@ -1104,11 +1127,12 @@ function renderBlocks() {
                 body.appendChild(img);
             }
 
-        // --- RENDER TYPE: VIDEO (SMART) ---
+        // --- RENDER TYPE: VIDEO (FIXED) ---
         } else if (b.type === 'video') {
             const data = b.data || {};
             const ratio = data.ratio || '16/9';
             const isAutoplay = data.autoplay || false;
+            const isSettingsOpen = b._settingsOpen === true;
 
             body.innerHTML = `<div class="block-label"><i class="fab fa-youtube"></i> Video / Embed Link</div>`;
             
@@ -1119,73 +1143,174 @@ function renderBlocks() {
             wrapper.innerHTML = `
                 <div class="video-input-group">
                     <input type="text" class="studio-select" 
-                           placeholder="Dán link Youtube, Vimeo hoặc link file .mp4..." 
-                           value="${data.url || ''}" 
+                           placeholder="Dán link Youtube (Shorts ok), Vimeo hoặc file .mp4..." 
+                           value="${(data.url || '').replace(/"/g, '&quot;')}" 
                            onchange="updateVideoBlock(${idx}, 'url', this.value)">
                 </div>
             `;
 
-            // Preview
+            // Preview Box
             const preview = document.createElement('div');
             preview.className = 'video-preview-box';
             preview.style.aspectRatio = ratio.replace('/', ' / ');
             
-            if (data.url) {
-                const embedInfo = getVideoTypeInfo(data.url);
-                if (embedInfo.type === 'iframe') {
-                    const embedSrc = getEmbedUrl(data.url, isAutoplay);
-                    preview.innerHTML = embedSrc ? 
-                        `<iframe src="${embedSrc}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>` : 
-                        `<div class="empty-preview">Link không hỗ trợ</div>`;
+           if (data.url) {
+                const videoInfo = getEmbedUrl(data.url, isAutoplay);
+                
+                if (videoInfo.type === 'iframe') {
+                    preview.innerHTML = `<iframe src="${videoInfo.url}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen referrerpolicy="origin"></iframe>`;
                 } else {
-                    preview.innerHTML = `<video src="${data.url}" controls ${isAutoplay ? 'autoplay muted' : ''} style="width:100%; height:100%"></video>`;
+                    preview.innerHTML = `<video src="${videoInfo.url}" controls ${isAutoplay ? 'autoplay muted' : ''} style="width:100%; height:100%"></video>`;
                 }
-            } else {
-                preview.innerHTML = `<div class="empty-preview"><i class="fas fa-play-circle" style="font-size:2rem; opacity:0.3;"></i><span>Preview</span></div>`;
             }
             wrapper.appendChild(preview);
 
-            // Settings
+            // Settings Panel
             const settingsDiv = document.createElement('div');
+            const displayStyle = isSettingsOpen ? 'display:block' : 'display:none';
+            const toggleIcon = isSettingsOpen ? 'fa-chevron-up' : 'fa-chevron-down';
+
             settingsDiv.innerHTML = `
-                <input type="text" class="studio-select" style="margin-top:10px; border:none; border-bottom:1px dashed #ccc;" placeholder="Chú thích (Caption)..." value="${data.caption || ''}" onchange="updateVideoBlock(${idx}, 'caption', this.value)">
-                <div class="video-settings-toggle" onclick="this.nextElementSibling.classList.toggle('show')">Cấu hình nâng cao</div>
-                <div class="video-settings-panel">
-                    <div class="v-setting-item">
-                        <label>Tỷ lệ</label>
+                <input type="text" class="studio-select" style="margin-top:10px; border:none; border-bottom:1px dashed #ccc;" 
+                       placeholder="Chú thích (Caption)..." 
+                       value="${(data.caption || '').replace(/"/g, '&quot;')}" 
+                       onchange="updateVideoBlock(${idx}, 'caption', this.value)">
+                
+                <div class="video-settings-toggle" onclick="toggleVideoSettings(${idx})" style="cursor:pointer; color:#2563eb; margin-top:8px; font-size:0.85rem; font-weight:600;">
+                    Cấu hình nâng cao <i class="fas ${toggleIcon}"></i>
+                </div>
+                
+                <div class="video-settings-panel" style="background:#f8fafc; padding:10px; border-radius:6px; margin-top:5px; ${displayStyle}">
+                    <div class="v-setting-item" style="margin-bottom:10px;">
+                        <label style="display:block; font-size:0.8rem; color:#64748b; margin-bottom:4px;">Tỷ lệ khung hình</label>
                         <select class="studio-select" onchange="updateVideoBlock(${idx}, 'ratio', this.value)">
-                            <option value="16/9" ${ratio === '16/9' ? 'selected' : ''}>16:9</option>
-                            <option value="9/16" ${ratio === '9/16' ? 'selected' : ''}>9:16</option>
+                            <option value="16/9" ${ratio === '16/9' ? 'selected' : ''}>16:9 (Mặc định)</option>
+                            <option value="21/9" ${ratio === '21/9' ? 'selected' : ''}>21:9 (Điện ảnh)</option>
+                            <option value="4/3" ${ratio === '4/3' ? 'selected' : ''}>4:3 (Cũ)</option>
+                            <option value="9/16" ${ratio === '9/16' ? 'selected' : ''}>9:16 (Tiktok/Shorts)</option>
                         </select>
                     </div>
-                    <div class="v-setting-item">
-                        <label>Autoplay</label>
-                        <input type="checkbox" ${isAutoplay ? 'checked' : ''} onchange="updateVideoBlock(${idx}, 'autoplay', this.checked)">
+                    <div class="v-setting-item" style="display:flex; align-items:center;">
+                        <input type="checkbox" id="vid-auto-${idx}" ${isAutoplay ? 'checked' : ''} 
+                               onchange="updateVideoBlock(${idx}, 'autoplay', this.checked)"
+                               style="margin-right:8px;">
+                        <label for="vid-auto-${idx}" style="font-size:0.9rem;">Tự động phát</label>
                     </div>
                 </div>
             `;
             wrapper.appendChild(settingsDiv);
             body.appendChild(wrapper);
 
-        // --- RENDER TYPE: QUESTION (QUIZ) ---
+        // --- RENDER TYPE: RESOURCE ---
+        } else if (b.type === 'resource') {
+            body.innerHTML = `<div class="block-label"><i class="fas fa-cloud-download-alt"></i> Tài liệu (Google Drive / Link ngoài)</div>`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'resource-block-wrapper';
+            wrapper.style.cssText = "padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;";
+            wrapper.innerHTML = `
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex-grow:1;">
+                        <label style="font-size:0.8rem; color:#6b7280;">Tên tài liệu hiển thị</label>
+                        <input type="text" class="studio-select" 
+                               value="${b.data.title || ''}" 
+                               onchange="updateBlockData(${idx}, 'title', this.value)"
+                               style="font-weight:600;">
+                    </div>
+                    <div style="width:120px;">
+                        <label style="font-size:0.8rem; color:#6b7280;">Loại icon</label>
+                        <select class="studio-select" onchange="updateBlockData(${idx}, 'iconType', this.value)">
+                            <option value="drive" ${b.data.iconType === 'drive' ? 'selected' : ''}>Google Drive</option>
+                            <option value="pdf" ${b.data.iconType === 'pdf' ? 'selected' : ''}>PDF File</option>
+                            <option value="doc" ${b.data.iconType === 'doc' ? 'selected' : ''}>Word/Docs</option>
+                            <option value="zip" ${b.data.iconType === 'zip' ? 'selected' : ''}>File Zip</option>
+                            <option value="link" ${b.data.iconType === 'link' ? 'selected' : ''}>Link Web</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; color:#6b7280;">Đường dẫn (URL)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="studio-select" 
+                               value="${b.data.url || ''}" 
+                               onchange="updateBlockData(${idx}, 'url', this.value)">
+                        <a href="${b.data.url || '#'}" target="_blank" class="btn-icon-mini" style="width:40px; text-decoration:none; display:flex; align-items:center; justify-content:center; border:1px solid #ddd;"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                </div>
+            `;
+            el.appendChild(wrapper);
+
+        // --- RENDER TYPE: CODE SNIPPET ---
+        } else if (b.type === 'code') {
+            body.innerHTML = `<div class="block-label"><i class="fas fa-code"></i> Code Snippet</div>`;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-editor-wrapper';
+            wrapper.style.cssText = "background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #333;";
+
+            // Select Language
+            const langSelect = document.createElement('select');
+            langSelect.className = 'studio-select';
+            langSelect.style.cssText = "background: #333; color: #fff; border: none; margin-bottom: 10px; width: auto;";
+            
+            const languages = [
+                {val: 'javascript', label: 'JavaScript'},
+                {val: 'html', label: 'HTML'},
+                {val: 'css', label: 'CSS'},
+                {val: 'python', label: 'Python'},
+                {val: 'java', label: 'Java'},
+                {val: 'cpp', label: 'C++'},
+                {val: 'sql', label: 'SQL'},
+                {val: 'json', label: 'JSON'}
+            ];
+
+            languages.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.val;
+                opt.innerText = l.label;
+                if(b.data.language === l.val) opt.selected = true;
+                langSelect.appendChild(opt);
+            });
+
+            langSelect.onchange = (e) => { blocks[idx].data.language = e.target.value; };
+
+            // Textarea nhập code
+            const codeArea = document.createElement('textarea');
+            codeArea.className = 'code-input';
+            codeArea.placeholder = 'Paste code vào đây...';
+            codeArea.value = b.data.code || '';
+            codeArea.spellcheck = false;
+            // Style cho giống Editor thật
+            codeArea.style.cssText = "width: 100%; height: 200px; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; border: none; outline: none; resize: vertical; padding: 5px; line-height: 1.5;";
+            
+            // Dùng oninput thay vì onchange để mượt mà, nhưng không gọi renderBlocks
+            codeArea.oninput = (e) => { blocks[idx].data.code = e.target.value; };
+            // Tab key support (thụt đầu dòng)
+            codeArea.addEventListener('keydown', function(e) {
+                if (e.key == 'Tab') {
+                    e.preventDefault();
+                    var start = this.selectionStart;
+                    var end = this.selectionEnd;
+                    this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 4;
+                    blocks[idx].data.code = this.value;
+                }
+            });
+
+            wrapper.appendChild(langSelect);
+            wrapper.appendChild(codeArea);
+            body.appendChild(wrapper);
+
+        // --- RENDER TYPE: QUIZ ---
         } else if (b.type === 'question' || b.type === 'quiz') {
              el.classList.add('block-quiz');
-             // Ensure settings exist (backward compatible)
              if (!b.data) b.data = {};
              if (!b.data.settings) {
-                 b.data.settings = {
-                     randomizeQuestions: false,
-                     randomizeOptions: false,
-                     passingScore: 50,
-                     showFeedback: 'submit'
-                 };
+                 b.data.settings = { randomizeQuestions: false, randomizeOptions: false, passingScore: 50, showFeedback: 'submit' };
              }
              const settings = b.data.settings;
-
              const questions = b.data?.questions || [];
              const summary = questions.length + ' câu hỏi';
              
-             // Settings panel
              const settingsHTML = `
                 <div class="quiz-settings-bar">
                     <div class="quiz-settings-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'grid' : 'none'">
@@ -1193,26 +1318,15 @@ function renderBlocks() {
                     </div>
                     <div class="quiz-settings-content" style="display:grid;">
                         <label class="q-setting-item">
-                            <input type="checkbox" 
-                                   onchange="updateBlockData(${idx}, 'settings.randomizeQuestions', this.checked)"
-                                   ${settings.randomizeQuestions ? 'checked' : ''}>
-                            Đảo ngẫu nhiên câu hỏi
+                            <input type="checkbox" onchange="updateBlockData(${idx}, 'settings.randomizeQuestions', this.checked)" ${settings.randomizeQuestions ? 'checked' : ''}> Đảo ngẫu nhiên câu hỏi
                         </label>
-
                         <label class="q-setting-item">
-                            <input type="checkbox" 
-                                   onchange="updateBlockData(${idx}, 'settings.randomizeOptions', this.checked)"
-                                   ${settings.randomizeOptions ? 'checked' : ''}>
-                            Đảo vị trí đáp án
+                            <input type="checkbox" onchange="updateBlockData(${idx}, 'settings.randomizeOptions', this.checked)" ${settings.randomizeOptions ? 'checked' : ''}> Đảo vị trí đáp án
                         </label>
-
                         <label class="q-setting-item">
                             <span>Điểm đạt (%):</span>
-                            <input type="number" min="0" max="100" 
-                                   value="${settings.passingScore}"
-                                   onchange="updateBlockData(${idx}, 'settings.passingScore', Number(this.value))">
+                            <input type="number" min="0" max="100" value="${settings.passingScore}" onchange="updateBlockData(${idx}, 'settings.passingScore', Number(this.value))">
                         </label>
-
                         <label class="q-setting-item">
                             <span>Xem đáp án:</span>
                             <select onchange="updateBlockData(${idx}, 'settings.showFeedback', this.value)">
@@ -1240,6 +1354,8 @@ function renderBlocks() {
              const ta = document.createElement('textarea');
              ta.className = 'studio-select';
              ta.value = b.data?.text || '';
+             // [FIX] Dùng onchange thay vì oninput để giảm tần suất re-render (dù callout là input thuần)
+             // Nhưng nếu dùng textarea thuần thì không render lại cả block nên oninput vẫn ok, chỉ cần không gọi renderBlocks() trong đó
              ta.addEventListener('input', (e) => { blocks[idx].data.text = e.target.value; });
              body.appendChild(ta);
         }
@@ -1251,14 +1367,19 @@ function renderBlocks() {
         const inserter = document.createElement('div');
         inserter.className = 'inserter-line';
         inserter.innerHTML = `<div class="inserter-btn"><i class="fas fa-plus"></i></div>`;
-        
-        // SỬA DÒNG NÀY: Truyền thêm (e) vào hàm
         inserter.onclick = (e) => openBlockMenu(idx, e);
         canvas.appendChild(inserter);
     });
 
     // Init EasyMDE for all text blocks
-    initMarkdownEditors();
+    initMarkdownEditors(); // Hàm này cần được viết lại để không re-focus linh tinh
+
+    // 2. [FIX] Khôi phục vị trí cuộn sau khi render xong
+    // Dùng setTimeout để đảm bảo DOM đã vẽ xong
+    setTimeout(() => {
+        window.scrollTo(0, scrollPos);
+        if(editorPanel) editorPanel.scrollTop = panelScroll;
+    }, 0);
 }
 
 // --- 3. BLOCK HELPERS ---
@@ -1446,6 +1567,8 @@ function addBlock(type) {
         text: { type: 'text', data: { text: '' } },
         image: { type: 'image', data: { url: '' } },
         video: { type: 'video', data: { url: '' } },
+        resource: { type: 'resource', data: { title: '', url: '', iconType: 'drive' } },
+        code: { type: 'code', data: { language: 'javascript', code: '' } },
         callout: { type: 'callout', data: { text: '' } },
         question: { type: 'question', data: { questions: [] } }
     };
@@ -1495,20 +1618,29 @@ function getVideoTypeInfo(url) {
     return { type: 'video' };
 }
 
+// --- VIDEO HELPERS (Fix Bug 153 & Config Error) ---
 function getEmbedUrl(url, autoplay) {
     if (!url) return null;
-    let embedUrl = null;
-    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*).*/);
+
+    // 1. YouTube (Bắt chặt ID 11 ký tự, hỗ trợ mọi dạng link: shorts, m., youtu.be...)
+    const ytMatch = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/);
+    
     if (ytMatch && ytMatch[1]) {
-        embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
-        if(autoplay) embedUrl += "&autoplay=1&mute=1";
+        let embed = `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+        if (autoplay) embed += "&autoplay=1&mute=1"; 
+        return { type: 'iframe', url: embed };
     }
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+
+    // 2. Vimeo
+    const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
     if (vimeoMatch && vimeoMatch[1]) {
-        embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-        if(autoplay) embedUrl += "?autoplay=1&muted=1";
+        let embed = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        if (autoplay) embed += "?autoplay=1&muted=1";
+        return { type: 'iframe', url: embed };
     }
-    return embedUrl || url; // Fallback to raw url
+
+    // 3. File trực tiếp (.mp4) hoặc link không xác định -> Dùng thẻ Video
+    return { type: 'video', url: url };
 }
 
 // Update nested data path in a block (e.g. 'settings.randomizeQuestions')
@@ -2196,5 +2328,111 @@ function fillCoursePanel(course) {
         badge.innerText = course.isPublished ? 'CÔNG KHAI' : 'BẢN NHÁP';
         badge.style.background = course.isPublished ? '#dcfce7' : '#f1f5f9';
         badge.style.color = course.isPublished ? '#166534' : '#475569';
+    }
+}
+
+// Hàm đăng (hoặc ẩn) tất cả bài học trong 1 chương
+async function toggleUnitPublish(unitId, isPublished) {
+    const actionName = isPublished ? "ĐĂNG" : "ẨN";
+    
+    // Confirm cho chắc chắn
+    if (!confirm(`Bạn có chắc muốn ${actionName} toàn bộ bài học trong chương này không?`)) return;
+
+    try {
+        const res = await fetch('/api/unit/bulk-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                unitId: unitId, 
+                isPublished: isPublished 
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Show thông báo đẹp (hoặc alert)
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Thành công', `Đã cập nhật ${data.updatedCount} bài học!`, 'success')
+                .then(() => location.reload());
+            } else {
+                alert(`Thành công! Đã cập nhật ${data.updatedCount} bài học.`);
+                location.reload();
+            }
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Lỗi kết nối server!');
+    }
+}
+
+// --- REVISION HISTORY SYSTEM ---
+
+async function openRevisionHistory() {
+    const lessonId = document.getElementById('currentEditingId').value;
+    if (!lessonId) return alert('Vui lòng lưu bài học trước khi xem lịch sử.');
+
+    const modal = document.getElementById('revisionModal');
+    const list = document.getElementById('revisionList');
+    
+    modal.style.display = 'flex';
+    list.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
+
+    try {
+        const res = await fetch(`/api/lesson/${lessonId}/revisions`);
+        const data = await res.json();
+
+        if (data.success) {
+            if (data.revisions.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted py-4">Chưa có lịch sử lưu nào.</div>';
+                return;
+            }
+
+            let html = '';
+            data.revisions.forEach(rev => {
+                const timeStr = new Date(rev.createdAt).toLocaleString('vi-VN');
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #f1f5f9; hover:bg-gray-50;">
+                        <div>
+                            <div style="font-weight:600; color:#334155;">${timeStr}</div>
+                            <div style="font-size:0.8rem; color:#64748b;">
+                                <i class="fas fa-user"></i> ${rev.updatedBy ? rev.updatedBy.username : 'Ẩn danh'} 
+                                - Tiêu đề: <b>${rev.title}</b>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="restoreRevision('${rev._id}')">
+                            <i class="fas fa-undo"></i> Khôi phục
+                        </button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = '<div class="text-danger text-center">Lỗi tải dữ liệu.</div>';
+        }
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div class="text-danger text-center">Lỗi kết nối.</div>';
+    }
+}
+
+async function restoreRevision(revId) {
+    if (!confirm('CẢNH BÁO: Nội dung hiện tại sẽ bị thay thế bằng phiên bản này. Bạn có chắc không?')) return;
+
+    try {
+        const res = await fetch(`/api/lesson/restore/${revId}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+            alert('Khôi phục thành công! Trang sẽ tải lại.');
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Lỗi kết nối server.');
     }
 }

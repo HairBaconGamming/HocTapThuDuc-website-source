@@ -7,6 +7,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
 <div class="container-fluid" style="padding: 0; background: var(--studio-bg);">
     
@@ -116,6 +117,14 @@
                                     <div class="menu-icon" style="background:#fee2e2; color:#dc2626"><i class="fab fa-youtube"></i></div>
                                     <span>Video Youtube</span>
                                 </div>
+                                <div class="menu-item" onclick="addBlock('resource')">
+                                    <div class="menu-icon" style="background:#f3f4f6; color:#4b5563"><i class="fas fa-link"></i></div>
+                                    <span>Link Tài liệu</span>
+                                </div>
+                                <div class="menu-item" onclick="addBlock('code')">
+                                    <div class="menu-icon" style="background:#1e293b; color:#38bdf8"><i class="fas fa-code"></i></div>
+                                    <span>Code Snippet</span>
+                                </div>
                                 <div class="menu-item" onclick="addBlock('question')">
                                     <div class="menu-icon" style="background:#fef3c7; color:#d97706"><i class="fas fa-question-circle"></i></div>
                                     <span>Câu hỏi & Bài tập</span>
@@ -212,7 +221,7 @@
                             *Áp dụng cho tất cả bài học trong chương này.
                         </div>
                     </div>
-                    
+                   
                     <div class="control-item" style="border-top:1px dashed #eee; padding-top:10px; margin-top:10px;">
                         <button type="button" class="btn-icon-mini delete-btn" style="width:100%; justify-content:center; color:#ef4444; border:1px solid #fca5a5; background:#fef2f2;" onclick="triggerDeleteActiveUnit()">
                             <i class="fas fa-trash"></i> Xóa Chương Này
@@ -258,6 +267,12 @@
                             <button type="button" class="btn-secondary" onclick="document.getElementById('importJsonInput').click()" style="flex:1; font-size:0.8rem;"><i class="fas fa-upload"></i> Nhập JSON</button>
                             <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importLessonJSON(this)">
                         </div>
+
+                        <div class="control-item" style="border-top:1px dashed #eee; margin-top:10px; padding-top:10px;">
+                            <button type="button" class="btn-studio" onclick="openRevisionHistory()" style="width:100%; background:#f8fafc; color:#334155; border:1px solid #cbd5e1;">
+                                <i class="fas fa-history"></i> Lịch sử phiên bản
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -266,7 +281,7 @@
 
     </form>
 
-    </div>
+</div>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -310,8 +325,27 @@
     </div>
 </div>
 
+<div id="revisionModal" class="math-modal-overlay">
+    <div class="math-modal-box" style="width: 600px; max-width: 95%;">
+        <h3 style="margin-bottom:15px; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <span><i class="fas fa-history"></i> Lịch sử chỉnh sửa (Max 50)</span>
+            <span onclick="document.getElementById('revisionModal').style.display='none'" style="cursor:pointer; color:#999;">&times;</span>
+        </h3>
+        
+        <div id="revisionList" style="max-height: 400px; overflow-y: auto;">
+            <div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+        </div>
+        
+        <div style="text-align:right; margin-top:15px; font-size:0.8rem; color:#666;">
+            *Khôi phục sẽ ghi đè lên nội dung hiện tại.
+        </div>
+    </div>
+</div>
+
 <%- include('partials/footer') %>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <script src="/js/lessonEditorV3.js"></script>
 
 <script>
