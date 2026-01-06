@@ -11,5 +11,22 @@
 </footer>
 
 <script src="/js/alerts.js"></script>
+<script>
+    // --- KEEP ALIVE SYSTEM ---
+    // Render.com Free Tier sẽ ngủ sau 15p không hoạt động.
+    // Script này sẽ "chọc" server mỗi 10 phút (600.000ms) để giữ kết nối.
+    
+    const PING_INTERVAL = 10 * 60 * 1000; // 10 phút
+
+    setInterval(() => {
+        fetch('/api/ping')
+            .then(res => {
+                // console.log('Keep-alive ping:', res.status); // Bật nếu muốn debug
+            })
+            .catch(err => {
+                console.warn('Keep-alive failed:', err);
+            });
+    }, PING_INTERVAL);
+</script>
 </body>
 </html>

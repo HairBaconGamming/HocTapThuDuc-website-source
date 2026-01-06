@@ -525,12 +525,25 @@ function triggerConfetti() {
     }
 }
 
-// [NÂNG CẤP] Hoàn thành bài học
+// [FIXED] Hoàn thành bài học
 async function completeLesson(lessonId) {
-    const btn = document.getElementById('btnComplete');
+    // 1. [FIX] Tìm nút bằng cả 2 ID (ID cũ hoặc ID của bộ chống AFK)
+    // Hoặc tìm theo class nếu không có ID
+    const btn = document.getElementById('btnComplete') 
+             || document.getElementById('btn-finish-lesson')
+             || document.querySelector('.btn-finish'); 
+
+    // 2. [Safety Check] Nếu vẫn không tìm thấy nút thì dừng ngay, không chạy tiếp để tránh lỗi crash
+    if (!btn) {
+        console.error("LỖI: Không tìm thấy nút hoàn thành trong HTML!");
+        Swal.fire('Lỗi Code', 'Không tìm thấy nút bấm (ID mismatch). Hãy F12 kiểm tra console.', 'error');
+        return;
+    }
+
     const originalText = btn.innerHTML;
     
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang "loát"...';
+    // UI Loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
     btn.disabled = true;
     btn.style.opacity = '0.8';
 
@@ -539,9 +552,10 @@ async function completeLesson(lessonId) {
         const data = await res.json();
 
         if (res.ok) {
-            triggerConfetti();
+            // Hiệu ứng pháo hoa (nếu có thư viện)
+            if (typeof triggerConfetti === 'function') triggerConfetti();
 
-            const praise = getRandomPraise();
+            const praise = (typeof getRandomPraise === 'function') ? getRandomPraise() : "Xuất sắc!";
             
             let levelUpHtml = '';
             if (data.isLevelUp) {
@@ -567,22 +581,22 @@ async function completeLesson(lessonId) {
                     <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
                         <div style="background: #ecfdf5; border: 2px solid #10b981; color: #047857; width: 80px; padding: 10px 5px; border-radius: 16px;">
                             <div style="font-size: 1.8rem;">🪙</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.points}</div>
+                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.points || 0}</div>
                             <div style="font-size: 0.7rem; text-transform: uppercase;">Điểm</div>
                         </div>
                         <div style="background: #fff7ed; border: 2px solid #f97316; color: #c2410c; width: 80px; padding: 10px 5px; border-radius: 16px;">
                             <div style="font-size: 1.8rem;">✨</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.xp}</div>
+                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.xp || 0}</div>
                             <div style="font-size: 0.7rem; text-transform: uppercase;">XP</div>
                         </div>
                         <div style="background: #eff6ff; border: 2px solid #3b82f6; color: #1d4ed8; width: 80px; padding: 10px 5px; border-radius: 16px;">
                             <div style="font-size: 1.8rem;">💧</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.water}</div> 
+                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.water || 0}</div> 
                             <div style="font-size: 0.7rem; text-transform: uppercase;">Nước</div>
                         </div>
                         <div style="background: #fefce8; border: 2px solid #eab308; color: #854d0e; width: 80px; padding: 10px 5px; border-radius: 16px;">
                             <div style="font-size: 1.8rem;">💰</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.gold}</div> 
+                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.gold || 0}</div> 
                             <div style="font-size: 0.7rem; text-transform: uppercase;">Vàng</div>
                         </div>
                     </div>
@@ -592,9 +606,11 @@ async function completeLesson(lessonId) {
                 confirmButtonColor: '#10b981',
                 width: '450px'
             }).then(() => {
+                // Đổi trạng thái nút sau khi xong
                 btn.innerHTML = '<i class="fas fa-check-double"></i> Đã học xong';
-                btn.className = "btn btn-success w-100";
+                btn.className = "btn btn-success w-100 disabled"; // Thêm disabled class
                 
+                // Cập nhật điểm trên Header (nếu có)
                 const headerPoints = document.querySelector('.user-points-display');
                 if(headerPoints && data.points) {
                     let current = parseInt(headerPoints.innerText) || 0;
@@ -602,16 +618,210 @@ async function completeLesson(lessonId) {
                 }
             });
         } else {
-            Swal.fire('Hả?', data.error || 'Lỗi gì đó rồi...', 'warning');
+            // Xử lý lỗi trả về từ server
+            Swal.fire('Hả?', data.error || data.message || 'Lỗi gì đó rồi...', 'warning');
             btn.innerHTML = originalText;
             btn.disabled = false;
             btn.style.opacity = '1';
         }
     } catch (e) {
-        console.error(e);
-        Swal.fire('Toang', 'Mạng lag quá fen ơi!', 'error');
+        console.error("Fetch Error:", e);
+        Swal.fire('Toang', 'Mạng lag hoặc lỗi server rồi fen ơi!', 'error');
         btn.innerHTML = originalText;
         btn.disabled = false;
         btn.style.opacity = '1';
     }
 }
+
+/**
+ * HỆ THỐNG QUẢN LÝ THỜI GIAN HỌC TẬP & CHỐNG AFK
+ */
+const StudyManager = {
+    // Config
+    REWARD_INTERVAL: 300, // 5 phút (300 giây)
+    AFK_TIMEOUT: 60,      // 60 giây không làm gì là AFK
+    MIN_LEARN_TIME: 60,   // Phải học ít nhất 60s mới được bấm Hoàn thành
+    
+    // State
+    secondsStudied: 0,
+    secondsSinceLastInput: 0,
+    isAFK: false,
+    timerInterval: null,
+    totalTimeInPage: 0,
+
+    init: function() {
+        this.setupUI();
+        this.setupAntiAFK();
+        this.startTimer();
+        this.lockFinishButton();
+    },
+
+    setupUI: function() {
+        // Thêm thanh hiển thị thời gian học
+        const container = document.querySelector('.lesson-header-actions') || document.body;
+        const timerBadge = document.createElement('div');
+        timerBadge.id = 'study-timer-badge';
+        timerBadge.style.cssText = "position:fixed; bottom:20px; right:20px; background:#2d3748; color:#fff; padding:10px 15px; border-radius:30px; font-family:monospace; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999; display:flex; align-items:center; gap:10px; border:2px solid #4fd1c5;";
+        timerBadge.innerHTML = `<i class="fas fa-clock"></i> <span id="study-time-display">00:00</span>`;
+        document.body.appendChild(timerBadge);
+    },
+
+    setupAntiAFK: function() {
+        // Reset bộ đếm AFK khi có tương tác
+        const resetAFK = () => {
+            this.secondsSinceLastInput = 0;
+            if (this.isAFK) {
+                this.isAFK = false;
+                this.updateStatus(true);
+            }
+        };
+
+        ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetAFK);
+        });
+        
+        // Dừng khi tab bị ẩn (người dùng chuyển tab khác)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.isAFK = true;
+                this.updateStatus(false);
+            }
+        });
+    },
+
+    startTimer: function() {
+        this.timerInterval = setInterval(() => {
+            // Nếu tab ẩn hoặc đang AFK thì không đếm
+            if (document.hidden || this.isAFK) return;
+
+            this.secondsSinceLastInput++;
+            
+            // Check AFK Trigger
+            if (this.secondsSinceLastInput > this.AFK_TIMEOUT) {
+                this.isAFK = true;
+                this.updateStatus(false);
+                return;
+            }
+
+            // Tăng thời gian học
+            this.secondsStudied++;
+            this.totalTimeInPage++;
+            this.updateDisplay();
+            this.checkUnlockFinish();
+
+            // Check Reward (Mỗi 5 phút)
+            if (this.secondsStudied > 0 && this.secondsStudied % this.REWARD_INTERVAL === 0) {
+                this.claimReward();
+            }
+
+        }, 1000);
+    },
+
+    updateDisplay: function() {
+        const mins = Math.floor(this.secondsStudied / 60).toString().padStart(2, '0');
+        const secs = (this.secondsStudied % 60).toString().padStart(2, '0');
+        const el = document.getElementById('study-time-display');
+        if(el) el.innerText = `${mins}:${secs}`;
+    },
+
+    updateStatus: function(isActive) {
+        const badge = document.getElementById('study-timer-badge');
+        if (!badge) return;
+        
+        if (isActive) {
+            badge.style.borderColor = "#4fd1c5"; // Xanh
+            badge.style.opacity = "1";
+            badge.innerHTML = `<i class="fas fa-clock"></i> <span id="study-time-display">${badge.querySelector('span').innerText}</span>`;
+        } else {
+            badge.style.borderColor = "#e53e3e"; // Đỏ
+            badge.style.opacity = "0.7";
+            badge.innerHTML = `<i class="fas fa-bed"></i> <span>Tạm dừng (AFK)</span>`;
+        }
+    },
+
+    // --- LOGIC NHẬN THƯỞNG ---
+    claimReward: async function() {
+        try {
+            // Hiệu ứng loading nhẹ
+            const badge = document.getElementById('study-timer-badge');
+            badge.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Nhận thưởng...`;
+
+            const res = await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success) {
+                // Hiển thị thông báo đẹp
+                if (typeof Swal !== 'undefined') {
+                    const Toast = Swal.mixin({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                        timerProgressBar: true, background: '#1d4ed8', color: '#fff'
+                    });
+                    Toast.fire({ icon: 'success', title: data.msg });
+                }
+                
+                // Update UI Nước (Nếu có trên thanh header)
+                const waterUI = document.getElementById('user-water-display');
+                if (waterUI) waterUI.innerText = data.newWater;
+
+            } else {
+                console.warn(data.msg);
+            }
+        } catch (e) {
+            console.error("Lỗi nhận thưởng:", e);
+        } finally {
+            this.updateDisplay(); // Trả lại hiển thị giờ
+        }
+    },
+
+    // --- LOGIC KHÓA NÚT HOÀN THÀNH ---
+    lockFinishButton: function() {
+        // Tìm nút hoàn thành (Bạn cần đảm bảo nút này có ID hoặc Class này)
+        const btn = document.getElementById('btn-finish-lesson') || document.querySelector('.btn-finish');
+        if (!btn) return;
+
+        // Lưu trạng thái gốc và disable
+        btn.dataset.originalText = btn.innerText;
+        btn.classList.add('disabled', 'btn-secondary');
+        btn.classList.remove('btn-success', 'btn-primary');
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.6';
+        
+        this.updateFinishButtonText(btn);
+    },
+
+    checkUnlockFinish: function() {
+        const btn = document.getElementById('btn-finish-lesson') || document.querySelector('.btn-finish');
+        if (!btn) return;
+
+        // Nếu đã đủ thời gian -> Mở khóa
+        if (this.totalTimeInPage >= this.MIN_LEARN_TIME) {
+            if (btn.style.pointerEvents === 'none') {
+                btn.classList.remove('disabled', 'btn-secondary');
+                btn.classList.add('btn-success');
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+                btn.innerText = btn.dataset.originalText || 'Hoàn thành bài học';
+                
+                // Hiệu ứng rung nhẹ báo hiệu xong
+                btn.classList.add('animate__animated', 'animate__pulse');
+            }
+        } else {
+            this.updateFinishButtonText(btn);
+        }
+    },
+
+    updateFinishButtonText: function(btn) {
+        const left = this.MIN_LEARN_TIME - this.totalTimeInPage;
+        if (left > 0) {
+            btn.innerText = `Đọc bài trong ${left}s...`;
+        }
+    }
+};
+
+// Khởi chạy khi trang load
+document.addEventListener('DOMContentLoaded', () => {
+    // Chỉ chạy nếu đang ở chế độ xem bài học (không phải chế độ sửa)
+    if (!document.body.classList.contains('mode-edit')) {
+        StudyManager.init();
+    }
+});

@@ -217,3 +217,42 @@ exports.restoreRevision = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+// [NEW] Nhận thưởng học tập (Mỗi 5 phút)
+exports.claimStudyReward = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        // 1. Chống Hack Speed/Spam Request
+        // Kiểm tra lần nhận thưởng cuối cùng. Nếu < 4 phút 50 giây thì chặn.
+        const now = Date.now();
+        const lastClaim = user.lastStudyRewardAt ? new Date(user.lastStudyRewardAt).getTime() : 0;
+        const diff = now - lastClaim;
+
+        if (diff < 290000) { // 290s = 4 phút 50 giây (Cho phép sai số mạng 10s)
+            return res.status(429).json({ success: false, msg: 'Chưa đủ thời gian học!' });
+        }
+
+        // 2. Tính toán phần thưởng
+        // Cơ bản 1 nước + (Level / 10)
+        const bonus = Math.floor(user.level / 10);
+        const reward = 1 + bonus;
+
+        // 3. Cập nhật User
+        user.water += reward;
+        user.lastStudyRewardAt = now;
+        await user.save();
+
+        res.json({ 
+            success: true, 
+            reward: reward, 
+            newWater: user.water,
+            msg: `Bạn đã học chăm chỉ! Nhận +${reward} Nước 💧` 
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, msg: 'Lỗi server' });
+    }
+};

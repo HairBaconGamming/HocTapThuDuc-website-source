@@ -7,6 +7,7 @@ const { isLoggedIn, isPro, isTeacher } = require('../middlewares/auth'); // Thê
 const unitController = require('../controllers/unitController');
 const lessonController = require('../controllers/lessonController'); // Import lessonController
 const courseController = require('../controllers/courseController');
+const authMiddleware = require('../middlewares/auth');
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -153,5 +154,10 @@ router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
 
 router.get('/lesson/:id/revisions', lessonController.getRevisions);
 router.post('/lesson/restore/:revisionId', lessonController.restoreRevision);
+router.post('/lesson/claim-study-reward', authMiddleware.isLoggedIn, lessonController.claimStudyReward);
+
+router.get('/ping', (req, res) => {
+    res.status(200).send('Pong! 🏓');
+});
 
 module.exports = router;

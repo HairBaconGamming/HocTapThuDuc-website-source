@@ -5,10 +5,9 @@ module.exports = {
             type: 'plant',
             price: 50,
             maxStage: 3,
-            waterNeeded: 6,
             rewardGold: { min: 60, max: 90 },
             unlockLevel: 1,
-            rewardXP: 15,
+            rewardXP: 30,
             size: { w: 1, h: 1 },
             growthTime: '5 phút/cấp',
             totalTime: '20 phút',
@@ -23,11 +22,10 @@ module.exports = {
         'wheat': {
             name: 'Lúa Mì',
             type: 'plant',
-            price: 30,
+            price: 90,
             maxStage: 4,
-            waterNeeded: 4,
-            rewardGold: { min: 50, max: 100 },
-            unlockLevel: 3,
+            rewardGold: { min: 100, max: 140 },
+            unlockLevel: 4,
             rewardXP: 100,
             size: { w: 1, h: 1 },
             growthTime: '6 phút/cấp',
@@ -39,6 +37,25 @@ module.exports = {
                 '/api/pro-images/1767344718200-ri0b40.png',
                 '/api/pro-images/1767344776642-rd3z59.png',
                 '/api/pro-images/1767344824123-375yyj.png'
+            ]
+        },
+        'carrot': {
+            name: 'Cà Rốt',
+            type: 'plant',
+            price: 250,
+            maxStage: 3,
+            rewardGold: { min: 300, max: 500 },
+            unlockLevel: 8,
+            rewardXP: 600,
+            size: { w: 1, h: 1 },
+            growthTime: '15 phút/cấp',
+            totalTime: '60 phút',
+            witherTime: '900 phút',
+            stages: [
+                'https://i.ibb.co/M5cGgrn7/Gemini-Generated-Image-n7bna6n7bna6n7bn-removebg-preview.png',
+                'https://i.ibb.co/KzcfKq8T/Gemini-Generated-Image-h8vwrzh8vwrzh8vw-removebg-preview.png',
+                'https://i.ibb.co/whVQmRxN/Gemini-Generated-Image-vs7ybovs7ybovs7y-removebg-preview.png',
+                'https://i.ibb.co/KpCwqjWz/Gemini-Generated-Image-2vhht92vhht92vhh-removebg-preview.png'
             ]
         }
     },
@@ -61,14 +78,5 @@ module.exports = {
             move:   { name: 'Di chuyển',  icon: '/api/pro-images/1767370869321-kpc8y0.png' }
         }
     },
-    DECORS: {
-        'bench': {
-            name: 'Ghế Đá',
-            type: 'decoration',
-            price: 150,
-            image: '/api/pro-images/1767379113193-dxtnjn.png', // Thay link ảnh của bạn
-            size: { w: 1, h: 1 }, // Ghế dài 2 ô
-            unlockLevel: 2
-        },
-    }
+    DECORS: {}
 };

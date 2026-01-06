@@ -201,3 +201,15 @@ setTimeout(async () => {
         }
     } catch(e) { console.error("Slug Fixer Warn:", e.message); }
 }, 5000);
+
+if (process.env.NODE_ENV === 'production') {
+    const https = require('https');
+    
+    setInterval(() => {
+        https.get(`https://hoctapthuduc.onrender.com/api/ping`, (res) => {
+            // console.log(`Self-ping status: ${res.statusCode}`);
+        }).on('error', (e) => {
+            console.error(`Self-ping error: ${e.message}`);
+        });
+    }, 14 * 60 * 1000); // 14 phút (trước khi Render ngủ ở phút 15)
+}
