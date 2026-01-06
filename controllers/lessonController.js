@@ -3,6 +3,7 @@ const Lesson = require('../models/Lesson');
 const Unit = require('../models/Unit');
 const Course = require('../models/Course');
 const LessonRevision = require('../models/LessonRevision');
+const User = require('../models/User');
 
 exports.saveLessonAjax = async (req, res) => {
     try {
