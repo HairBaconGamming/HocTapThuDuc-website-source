@@ -11,9 +11,6 @@ router.post('/interact', isLoggedIn, gardenController.interactItem);
 router.post('/remove', isLoggedIn, gardenController.removeItem);
 router.post('/save-camera', isLoggedIn, gardenController.saveCamera);
 
-// --- [MỚI] THÊM DÒNG NÀY ĐỂ FIX LỖI 404 ---
-router.post('/tutorial/next', isLoggedIn, gardenController.finishTutorialStep);
-
 // [MỚI] Route thăm vườn
 router.get('/visit/:userId', isLoggedIn, gardenController.visitGarden);
 

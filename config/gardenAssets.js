@@ -25,7 +25,7 @@ module.exports = {
             price: 90,
             maxStage: 4,
             rewardGold: { min: 100, max: 140 },
-            unlockLevel: 4,
+            unlockLevel: 3,
             rewardXP: 100,
             size: { w: 1, h: 1 },
             growthTime: '6 phút/cấp',

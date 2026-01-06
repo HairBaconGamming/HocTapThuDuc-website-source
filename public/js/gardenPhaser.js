@@ -190,6 +190,10 @@ class MainScene extends Phaser.Scene {
         this.time.delayedCall(100, () => this.updateAllFences());
 
         this.time.addEvent({ delay: 1000, callback: this.updateRealtimeGrowth, callbackScope: this, loop: true });
+
+        setTimeout(() => {
+            if (window.finishLoading) window.finishLoading();
+        }, 500);
     }
 
     initHUD() {
@@ -535,6 +539,7 @@ class MainScene extends Phaser.Scene {
             updateHUD(res);
             this.renderItem(res.item);
             this.add.particles(gx + 32, gy + 32, 'star_particle', { speed: 100, scale: { start: 0.5, end: 0 }, lifespan: 500, quantity: 10 }).explode();
+            window.gameEvents.emit('actionSuccess', { action: 'plant' });
             if (ASSETS.DECORS[itemId]?.isFence) this.updateAllFences();
         } else showToast(res.msg, 'error');
     }
@@ -560,10 +565,17 @@ class MainScene extends Phaser.Scene {
         if (this.currentTool === 'hoe') {
             if (!plot && !plant) {
                 const res = await apiCall('/my-garden/buy', { type: 'plot', itemId: 'soil_tile', x: gx, y: gy });
-                if (res.success) { this.renderItem(res.item); updateHUD(res); this.add.particles(gx+32, gy+32, 'soil_dry', { speed: 50, scale: { start: 0.2, end: 0 }, lifespan: 300, quantity: 5 }).explode(); }
+                if (res.success) { 
+                    this.renderItem(res.item); 
+                    updateHUD(res); 
+                    this.add.particles(gx+32, gy+32, 'soil_dry', { speed: 50, scale: { start: 0.2, end: 0 }, lifespan: 300, quantity: 5 }).explode(); 
+                    
+                    // [NEW] THÊM DÒNG NÀY ĐỂ TUTORIAL BIẾT ĐÃ CUỐC XONG
+                    window.gameEvents.emit('actionSuccess', { action: 'hoe' });
+                }
                 else showToast(res.msg, 'error');
             } else showToast('Có đất rồi!', 'info');
-        } 
+        }
         else if (this.currentTool === 'water') {
             if (plant || plot) {
                 const targetId = plant ? plant.itemData._id : plot.itemData._id;

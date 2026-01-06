@@ -8,6 +8,7 @@ const unitController = require('../controllers/unitController');
 const lessonController = require('../controllers/lessonController'); // Import lessonController
 const courseController = require('../controllers/courseController');
 const authMiddleware = require('../middlewares/auth');
+const gardenController = require('../controllers/gardenController');
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -159,5 +160,7 @@ router.post('/lesson/claim-study-reward', authMiddleware.isLoggedIn, lessonContr
 router.get('/ping', (req, res) => {
     res.status(200).send('Pong! 🏓');
 });
+
+router.post('/my-garden/tutorial-step', authMiddleware.isLoggedIn, gardenController.updateTutorialStep);
 
 module.exports = router;

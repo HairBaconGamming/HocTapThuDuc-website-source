@@ -96,7 +96,7 @@ const getLevelInfo = (level, currentXP = 0) => {
     const realmIndex = Math.floor((level - 1) / 10);
     const subLevel = (level - 1) % 10 + 1;
     
-    const realmName = realmIndex < MAJOR_REALMS.length 
+    let realmName = realmIndex < MAJOR_REALMS.length 
         ? MAJOR_REALMS[realmIndex] 
         : `Vô Cực Cảnh Giới ${(realmIndex - MAJOR_REALMS.length + 1)}`;
 
@@ -106,7 +106,7 @@ const getLevelInfo = (level, currentXP = 0) => {
     if (subLevel >= 7 && subLevel <= 9) subRealmName = `Hậu Kỳ (${subLevel})`;
     if (subLevel === 10) subRealmName = "Viên Mãn";
 
-    const reqXP = getRequiredXP(level);
+    let reqXP = getRequiredXP(level);
 
     if (level == 0) {
         realmName = "Phàm Nhân";

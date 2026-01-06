@@ -10,6 +10,33 @@
     --pixel-font: 'VT323', monospace;
 }
 
+/* --- Z-INDEX LAYERING SYSTEM --- */
+
+/* 1. Game Canvas (Dưới cùng) */
+#garden-game-container { z-index: 1; }
+
+/* 2. HUD - Thanh thông tin, Toolbar (Trên Game) */
+.garden-ui-layer { z-index: 10; pointer-events: none; }
+.resource-panel, .level-panel, .toolbar-container { pointer-events: auto; } /* Để bấm được */
+
+/* 3. Shop Overlay & Window (Trên HUD) */
+.pixel-modal-overlay {
+    z-index: 100; /* [FIX] Giảm từ 1000 xuống 100 để nhường chỗ cho Chat */
+    background: rgba(0,0,0,0.7); /* Nền đen mờ */
+}
+
+.shop-window {
+    position: relative;
+    z-index: 101; /* [FIX] Luôn cao hơn cái nền đen của chính nó */
+}
+
+/* 4. Khung Chat (Trên Shop - Để vừa mua vừa chat) */
+/* [FIX] Z-Index Chat cao nhất hệ mặt trời */
+.chat-container, .chat-box, #chat-wrapper {
+    z-index: 200000 !important; 
+    position: fixed;
+}
+
 /* RESET & MOBILE FIX */
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
 body, html { 
@@ -127,7 +154,7 @@ body, html {
 .tool-slot.shop-slot { background: #ffecb3; border-color: #ffa000; }
 .key-hint { position: absolute; top: 1px; left: 3px; font-size: 0.8rem; color: #fff; text-shadow: 1px 1px 0 #000; pointer-events: none; }
 
-.pixel-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; pointer-events: auto; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.pixel-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; pointer-events: auto; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 
 #garden-game-container canvas {
     touch-action: none; /* Vô hiệu hóa hành động cuộn mặc định của trình duyệt */
@@ -368,4 +395,111 @@ body, html {
     .detail-stats { margin-bottom: 5px; padding: 5px; font-size: 0.9rem; }
     .d-row { padding: 2px 0; }
     .btn-buy-action { padding: 8px; font-size: 1.1rem; }
+}
+
+/* Thêm vào cuối file */
+.tool-slot.disabled-tool {
+    opacity: 0.3;
+    filter: grayscale(100%);
+    pointer-events: none; /* Không cho click */
+    cursor: not-allowed;
+}
+
+/* --- RUSTIC FARMER LOADING SCREEN --- */
+#rustic-loading {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #fff8e1; /* Màu kem/nắng nhẹ */
+    z-index: 9999999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    font-family: 'VT323', monospace;
+    color: #5d4037; /* Màu nâu đất */
+    transition: opacity 0.6s ease-out;
+    background-image: radial-gradient(#ffe0b2 2px, transparent 2px); /* Chấm bi nhạt */
+    background-size: 20px 20px;
+}
+
+.farm-loader-box {
+    text-align: center;
+    width: 90%; max-width: 450px;
+}
+
+/* Sửa lại class này một chút để bỏ màu chữ, giữ lại animation */
+.farm-icon-bounce {
+    margin-bottom: 10px;
+    animation: bounceFarm 1s infinite alternate;
+    /* Giữ drop-shadow để ảnh có bóng đổ đẹp mắt */
+    filter: drop-shadow(0 5px 0 rgba(0,0,0,0.2)); 
+}
+
+/* Thêm CSS riêng cho ảnh */
+.farm-icon-bounce img {
+    width: 120px; /* Điều chỉnh độ to nhỏ tùy thích */
+    height: auto;
+    transform: rotate(45deg);
+    
+    /* Quan trọng: Giữ ảnh Pixel Art sắc nét, không bị mờ */
+    image-rendering: pixelated; 
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.farm-title {
+    font-size: 3rem; font-weight: bold; margin-bottom: 20px;
+    color: #33691e; text-transform: uppercase;
+    text-shadow: 2px 2px 0 #aed581;
+}
+
+/* Thanh loading kiểu Gỗ */
+.wood-progress-container {
+    width: 100%; height: 32px;
+    background: #4e342e; /* Gỗ tối */
+    border: 4px solid #3e2723;
+    border-radius: 8px;
+    padding: 3px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.leaf-progress-bar {
+    height: 100%; width: 0%;
+    background: repeating-linear-gradient(
+        45deg,
+        #7cb342,
+        #7cb342 10px,
+        #689f38 10px,
+        #689f38 20px
+    ); /* Sọc xanh lá */
+    border-radius: 4px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-text {
+    margin-top: 10px; font-size: 1.4rem; color: #795548;
+    font-style: italic; min-height: 25px;
+}
+
+/* Mẹo vặt kiểu tờ giấy */
+.paper-tip {
+    margin-top: 40px;
+    background: #fff;
+    border: 2px solid #8d6e63;
+    padding: 15px;
+    position: relative;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+    transform: rotate(-2deg); /* Nghiêng nhẹ cho tự nhiên */
+}
+/* Cái ghim giấy */
+.paper-tip::before {
+    content: ''; position: absolute; top: -10px; left: 50%;
+    width: 15px; height: 15px; background: #e53935;
+    border-radius: 50%; box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+}
+
+.paper-title { font-weight: bold; color: #e65100; text-decoration: underline; margin-bottom: 5px; font-size: 1.3rem; }
+.paper-content { color: #5d4037; font-size: 1.2rem; line-height: 1.2; }
+
+@keyframes bounceFarm { 
+    0% { transform: translateY(0) scale(1,1); } 
+    100% { transform: translateY(-15px) scale(0.95, 1.05); } 
 }

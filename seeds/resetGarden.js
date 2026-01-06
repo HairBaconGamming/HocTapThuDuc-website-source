@@ -1,69 +1,89 @@
+// scripts/resetGarden.js
+require('dotenv').config(); // Load biến môi trường (.env)
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const User = require('../models/User');
-const Garden = require('../models/Garden');
 
-// Load biến môi trường
-dotenv.config();
+// --- IMPORT MODELS ---
+const User = require('../models/User'); 
+const Garden = require('../models/Garden'); 
 
-const resetGarden = async () => {
-    try {
-        // 1. Kết nối MongoDB
-        if (!process.env.MONGO_URI) {
-            throw new Error("❌ Không tìm thấy MONGO_URI trong file .env");
-        }
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log("🔌 Đã kết nối MongoDB.");
+// --- CẤU HÌNH MẶC ĐỊNH (Tân thủ) ---
+const DEFAULT_GARDEN_STATE = {
+    gold: 100,          // Vàng khởi đầu
+    water: 1,           // Nước khởi đầu
+    items: [],          // Xóa sạch cây cối/đất
+    
+    // [QUAN TRỌNG] Reset tiến độ Tutorial về 0 để hệ thống nhận diện là Newbie
+    tutorialStep: 0,    
 
-        // 2. Xóa sạch dữ liệu Garden cũ
-        console.log("🗑️ Đang xóa toàn bộ dữ liệu vườn cũ...");
-        await Garden.deleteMany({});
-        console.log("✅ Đã xóa sạch bảng Garden.");
-
-        // 3. Lấy danh sách User để tạo vườn mới
-        const users = await User.find({});
-        console.log(`👥 Tìm thấy ${users.length} người dùng. Đang cấp lại đất...`);
-
-        let count = 0;
-        
-        // Tính toán tâm bản đồ (64x64 ô, mỗi ô 64px)
-        const GRID_SIZE = 64;
-        const MAP_SIZE = 64;
-        const CENTER_X = (MAP_SIZE * GRID_SIZE) / 2; // 2048
-        const CENTER_Y = (MAP_SIZE * GRID_SIZE) / 2; // 2048
-
-        for (const user of users) {
-            // Tạo vườn mặc định cho từng user
-            await new Garden({
-                user: user._id,
-                gold: 100,         // Tặng 500 vàng để người chơi thoải mái test tính năng mua bán
-                water: 1,         // Tặng 50 nước
-                fertilizer: 0,     // Tặng 5 phân bón
-                backgroundId: 'default',
-                
-                // [MỚI] Reset tiến độ hướng dẫn về 0 (Bắt đầu lại tutorial)
-                tutorialStep: 0,   
-                
-                // [MỚI] Đặt camera vào giữa map ngay từ đầu để không bị lạc
-                camera: { 
-                    x: CENTER_X, 
-                    y: CENTER_Y, 
-                    zoom: 1 
-                },
-
-                items: []          // Vườn trống để user tự kéo thả
-            }).save();
-            count++;
-        }
-
-        console.log(`🌱 Đã cấp vườn mới (Full Options) thành công cho ${count} người dùng!`);
-        console.log("✨ Hoàn tất. Hệ thống Garden đã sẵn sàng.");
-
-        process.exit(0);
-    } catch (err) {
-        console.error("❌ Lỗi Reset:", err);
-        process.exit(1);
+    // [MỚI] Reset Camera về giữa map (64 * 64 / 2 = 2048)
+    camera: {
+        x: 2048,
+        y: 2048,
+        zoom: 1
     }
 };
 
-resetGarden();
+// --- HÀM KẾT NỐI & RESET ---
+async function resetUserGarden(targetUsername) {
+    try {
+        console.log('🔌 Đang kết nối Database...');
+        await mongoose.connect(process.env.MONGO_URI); 
+        console.log('✅ Kết nối thành công!');
+
+        // 1. Tìm User ID từ Username
+        const user = await User.findOne({ username: targetUsername });
+        if (!user) {
+            console.error(`❌ Không tìm thấy user: "${targetUsername}"`);
+            process.exit(1);
+        }
+        console.log(`👤 Đã tìm thấy User: ${user.username} (ID: ${user._id})`);
+
+        // 2. Reset Garden
+        const result = await Garden.findOneAndUpdate(
+            { user: user._id }, 
+            { $set: DEFAULT_GARDEN_STATE },
+            { new: true } // Trả về dữ liệu mới sau khi update
+        );
+
+        // 3. (Tùy chọn) Reset Level của User nếu cần
+        // Nếu Level lưu bên User Model thì uncomment đoạn dưới:
+        /*
+        await User.findByIdAndUpdate(user._id, {
+            $set: {
+                level: 1,
+                xp: 0
+            }
+        });
+        console.log('⬇️  Đã reset Level & XP của User về 1.');
+        */
+
+        if (result) {
+            console.log('------------------------------------------------');
+            console.log(`🎉 RESET VƯỜN THÀNH CÔNG CHO: ${targetUsername}`);
+            console.log(`💰 Vàng: ${result.gold}`);
+            console.log(`📚 Tutorial Step: ${result.tutorialStep}`);
+            console.log(`📷 Camera: [${result.camera.x}, ${result.camera.y}]`);
+            console.log(`🌱 Items: ${result.items.length} (Đã dọn sạch)`);
+            console.log('------------------------------------------------');
+        } else {
+            console.log('⚠️ User này chưa tạo vườn (Garden document not found).');
+        }
+
+    } catch (err) {
+        console.error('🔥 Lỗi:', err);
+    } finally {
+        await mongoose.disconnect();
+        console.log('👋 Đã ngắt kết nối.');
+        process.exit();
+    }
+}
+
+// --- LẤY USERNAME TỪ DÒNG LỆNH ---
+const args = process.argv.slice(2);
+if (args.length === 0) {
+    console.error('⚠️ Vui lòng nhập username! Ví dụ: node scripts/resetGarden.js admin');
+    process.exit(1);
+}
+
+const username = args[0];
+resetUserGarden(username);

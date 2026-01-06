@@ -301,14 +301,6 @@ exports.removeItem = async (req, res) => {
     }
 };
 
-exports.finishTutorialStep = async (req, res) => {
-    try {
-        const { step } = req.body;
-        await Garden.updateOne({ user: req.user._id, tutorialStep: { $lt: step } }, { $set: { tutorialStep: step } });
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ success: false }); }
-};
-
 exports.saveCamera = async (req, res) => {
     try {
         const { x, y, zoom } = req.body;
@@ -345,4 +337,20 @@ exports.visitGarden = async (req, res) => {
             assets: ASSETS
         });
     } catch (err) { res.redirect('/'); }
+};
+
+// [NEW] Cập nhật tiến độ Tutorial
+exports.updateTutorialStep = async (req, res) => {
+    try {
+        const { step } = req.body;
+        // Cập nhật bước hiện tại
+        await Garden.findOneAndUpdate(
+            { user: req.user._id }, 
+            { tutorialStep: step }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    }
 };

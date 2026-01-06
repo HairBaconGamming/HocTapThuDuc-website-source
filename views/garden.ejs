@@ -16,6 +16,29 @@
 </head>
 <body>
 
+    <div id="rustic-loading">
+        <div class="farm-loader-box">
+            <div class="farm-icon-bounce">
+                <img src="https://i.ibb.co/v66pYDv8/Gemini-Generated-Image-puwglepuwglepuwg-removebg-preview.png" alt="Loading Icon">
+            </div>
+            
+            <div class="farm-title">Nông Trại Vui Vẻ</div>
+
+            <div class="wood-progress-container">
+                <div class="leaf-progress-bar" id="load-bar"></div>
+            </div>
+            
+            <div class="loading-text" id="load-status-text">Đang mài cuốc...</div>
+
+            <div class="paper-tip">
+                <div class="paper-title">Mách nhỏ bà con:</div>
+                <div class="paper-content" id="load-tip-text">...</div>
+            </div>
+            
+            <div style="margin-top:10px; font-size:1rem; opacity:0.6;">(Đang tải: <span id="load-percent">0</span>%)</div>
+        </div>
+    </div>
+
     <div id="garden-game-container"></div>
 
     <div class="pixel-ui">
@@ -260,6 +283,96 @@
         if (!window.gardenData.nextLevelXP) window.gardenData.nextLevelXP = 100;
         if (!window.gardenData.userLevel) window.gardenData.userLevel = 1;
         if (!window.gardenData.gold) window.gardenData.gold = 0;
+        if (typeof window.gardenData.tutorialStep === 'undefined') {
+            window.gardenData.tutorialStep = 0;
+        }
+    </script>
+
+    <script>
+        // --- TU TIÊN LOADING SYSTEM (Huyền Huyễn Edition) ---
+        const LoadingSystem = {
+            // Bí kíp tu luyện (Tips)
+            tips: [
+                "Dùng 'Thủy Linh Quyết' (Tưới nước) thường xuyên để Linh Thảo hấp thụ tinh hoa nhật nguyệt.",
+                "Gặp cây khô héo, hãy dùng Xẻng để 'Đoạn Tuyệt Duyên Trần', tránh làm ô uế linh mạch.",
+                "Muốn đột phá cảnh giới nhanh chóng? Hãy ghé 'Tàng Bảo Các' (Shop) mua hạt giống Thiên Phẩm.",
+                "Thường xuyên du ngoạn Động Phủ của các đạo hữu khác để đàm đạo và học hỏi pháp trận.",
+                "Mỗi loại Linh Dược đều có thời khắc 'Độ Kiếp' (Chín) khác nhau, chớ để lỡ thời cơ thu hoạch.",
+                "Tích lũy Linh Thạch để mở rộng ranh giới Linh Điền, xây dựng cơ đồ vạn năm.",
+                "Tâm bất biến giữa dòng đời vạn biến, nhưng cây thiếu nước thì... chết chắc."
+            ],
+            
+            // Quá trình khởi tạo (Loading Steps)
+            steps: [
+                { pct: 10, text: "Đang hấp thụ Thiên Địa Linh Khí..." },
+                { pct: 25, text: "Đang ngưng tụ hình hài Vạn Vật..." },
+                { pct: 45, text: "Đang khai mở không gian Linh Điền..." },
+                { pct: 60, text: "Triệu hồi Thổ Địa cai quản..." },
+                { pct: 75, text: "Đang khắc họa Tụ Linh Trận..." },
+                { pct: 85, text: "Ổn định Tâm Ma, củng cố Đạo Tâm..." },
+                { pct: 95, text: "Sắp hoàn tất Độ Kiếp..." }
+            ],
+            
+            currentPct: 0,
+            interval: null,
+
+            init() {
+                // Chọn ngẫu nhiên một bí kíp
+                const randomTip = this.tips[Math.floor(Math.random() * this.tips.length)];
+                document.getElementById('load-tip-text').innerText = randomTip;
+
+                // Giả lập thanh tiến độ (Chạy đến 90% thì dừng chờ Game thật)
+                this.interval = setInterval(() => {
+                    if (this.currentPct < 90) {
+                        this.currentPct += Math.random() * 5; 
+                        this.updateUI();
+                    }
+                }, 200);
+            },
+
+            updateUI() {
+                const pct = Math.min(100, Math.floor(this.currentPct));
+                document.getElementById('load-bar').style.width = pct + '%';
+                document.getElementById('load-percent').innerText = pct; // Bỏ dấu % nếu muốn style số to
+
+                // Cập nhật trạng thái tu luyện
+                // Dùng reverse().find() để lấy trạng thái gần nhất với % hiện tại
+                const step = this.steps.slice().reverse().find(s => pct >= s.pct);
+                if (step) {
+                    document.getElementById('load-status-text').innerText = step.text;
+                }
+            },
+
+            // Hàm này được gọi từ gardenPhaser.js khi map vẽ xong
+            finish() {
+                clearInterval(this.interval);
+                this.currentPct = 100;
+                this.updateUI();
+                
+                document.getElementById('load-status-text').innerText = "Đại Đạo Đã Thành! Nhập Định!";
+                
+                // Hiệu ứng biến mất (Fade out)
+                setTimeout(() => {
+                    const el = document.getElementById('rustic-loading'); // Hoặc id của cái loading bạn đang dùng
+                    if(el) {
+                        el.style.opacity = '0';
+                        setTimeout(() => {
+                            el.style.display = 'none';
+                            // Gọi Tutorial nếu là tân thủ
+                            if (window.Tutorial && !window.Tutorial.active) {
+                                // window.Tutorial.init(); // Uncomment dòng này nếu muốn auto chạy
+                            }
+                        }, 600);
+                    }
+                }, 800);
+            }
+        };
+
+        // Khởi chạy hệ thống
+        LoadingSystem.init();
+
+        // Expose ra global để Phaser gọi khi load xong assets
+        window.finishLoading = () => LoadingSystem.finish();
     </script>
 
     <script src="/js/gardenPhaser.js"></script>
@@ -267,15 +380,37 @@
     <script>
         // --- UI FUNCTIONS ---
         
-        // 1. Toggle Planting Mode UI (Được gọi từ Phaser)
+        // [NEW] HỆ THỐNG KHÓA TOOL CHO TUTORIAL
+        window.allowedTutorialTool = null; // Null = Cho phép tất cả
+
+        window.setAllowedTool = function(toolName) {
+            window.allowedTutorialTool = toolName;
+            
+            // Cập nhật giao diện: Làm mờ các tool không được phép
+            document.querySelectorAll('.tool-slot').forEach(el => {
+                const tool = el.getAttribute('data-tool');
+                // Nút Shop (data-tool="shop") luôn mở nếu toolName là 'cursor' hoặc 'shop'
+                if (tool === 'shop' && (toolName === 'cursor' || toolName === null)) {
+                    el.classList.remove('disabled-tool');
+                    return;
+                }
+
+                if (toolName === null || tool === toolName) {
+                    el.classList.remove('disabled-tool');
+                } else {
+                    el.classList.add('disabled-tool');
+                }
+            });
+        };
+
+        // 1. Toggle Planting Mode UI
         window.togglePlantingUI = function(active, itemName = '') {
             const ui = document.getElementById('plantingModeUI');
             const toolbar = document.getElementById('mainToolbar');
-            
             if (active) {
                 ui.style.display = 'flex';
                 document.getElementById('plantingItemName').innerText = itemName;
-                toolbar.classList.add('disabled-toolbar'); // Làm mờ toolbar
+                toolbar.classList.add('disabled-toolbar');
                 window.hidePlantStats();
             } else {
                 ui.style.display = 'none';
@@ -377,7 +512,6 @@
         // Mở Shop (Reset về tab Plant & hiện NPC)
         function openShopHTML(tab = 'plant') {
             document.getElementById('shopOverlay').style.display = 'flex';
-            // Reset giao diện phải về NPC
             document.getElementById('shop-npc-state').style.display = 'flex';
             document.getElementById('shop-item-state').style.display = 'none';
             selectedShopItem = null;
@@ -386,6 +520,9 @@
             document.getElementById('shop-user-gold').innerText = window.gardenData.gold;
             
             renderShopItems(tab);
+
+            // [FIX QUAN TRỌNG] Báo hiệu cho Tutorial biết là Shop đã mở
+            if(window.gameEvents) window.gameEvents.emit('shopOpen'); 
         }
 
         function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }
@@ -538,35 +675,34 @@
             if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
             const key = e.key.toLowerCase();
             const isOwner = window.isOwner;
-
-            // X to cancel planting
             if (key === 'x') { window.cancelPlanting(); return; }
-            
-            // ESC to close UI
             if (key === 'escape') { closeShop(); hidePlantStats(); window.cancelPlanting(); return; }
 
-            // Tools
-            switch(key) {
-                case '1': selectTool('move'); break;
-                case '2': selectTool('cursor'); break;
-                case '3': if(isOwner) selectTool('hoe'); break;
-                case '4': if(isOwner) selectTool('water'); break;
-                case '5': if(isOwner) selectTool('basket'); break;
-                case '6': if(isOwner) selectTool('shovel'); break;
-                case 'f': if(isOwner) { 
-                    if(document.getElementById('shopOverlay').style.display === 'flex') closeShop(); 
-                    else openShopHTML('plant'); 
-                } break;
+            const tools = { '1':'move', '2':'cursor', '3':'hoe', '4':'water', '5':'basket', '6':'shovel' };
+            if (tools[key]) {
+                const toolName = tools[key];
+                // Check quyền
+                if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== toolName) return;
+                
+                if (isOwner || ['1','2'].includes(key)) selectTool(toolName);
+            }
+            if (key === 'f' && isOwner) {
+                // Check quyền mở shop (dùng tạm quyền cursor)
+                if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== 'cursor') return;
+                openShopHTML('plant');
             }
         });
 
         // Emit sự kiện chọn tool xuống Phaser
         window.selectTool = function(toolName) {
-            // Nếu toolbar bị disable (đang trồng cây), không cho bấm
             if(document.getElementById('mainToolbar').classList.contains('disabled-toolbar')) return;
             
+            // Check nếu tool này đang bị khóa bởi tutorial
+            if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== toolName) {
+                return; // Chặn luôn
+            }
+
             if(window.gameEvents) window.gameEvents.emit('toolChanged', toolName);
-            
             document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
             const activeEl = document.querySelector(`.tool-slot[data-tool="${toolName}"]`);
             if(activeEl) activeEl.classList.add('active');
