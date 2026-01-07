@@ -2002,25 +2002,35 @@ async function submitLessonAJAX(publishStatus) {
 
 /**
  * Xuất nội dung bài học hiện tại ra file .json
+ * Cập nhật: Xuất theo cấu trúc Object { title, description, blocks } chuẩn AI
  */
 function exportLessonJSON() {
-    // 1. Serialize blocks hiện tại
-    const dataStr = JSON.stringify(blocks, null, 2); // Format đẹp
+    const titleInput = document.getElementById('mainTitleInput');
+    const currentTitle = titleInput ? titleInput.value.trim() : '';
+
+    // 1. Tạo cấu trúc dữ liệu chuẩn (Format Mới)
+    const exportData = {
+        title: currentTitle || "Bài học không tên",
+        description: "Bài học được xuất từ hệ thống quản lý.", // Placeholder nếu sau này có field description
+        blocks: blocks // Mảng blocks toàn cục
+    };
+
+    // 2. Serialize
+    const dataStr = JSON.stringify(exportData, null, 2); // Format đẹp
     const blob = new Blob([dataStr], { type: "application/json" });
 
-    // 2. Tạo tên file dựa trên tiêu đề bài học
-    const titleInput = document.getElementById('mainTitleInput');
+    // 3. Tạo tên file dựa trên tiêu đề bài học
     let filename = 'lesson_data.json';
-    if (titleInput && titleInput.value.trim()) {
+    if (currentTitle) {
         // Chuyển tiếng Việt có dấu thành không dấu, thay khoảng trắng bằng _
-        const cleanTitle = titleInput.value
+        const cleanTitle = currentTitle
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             .replace(/[^a-zA-Z0-9]/g, '_')
             .toLowerCase();
         filename = `${cleanTitle}.json`;
     }
 
-    // 3. Tải xuống
+    // 4. Tải xuống
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -2036,7 +2046,7 @@ function exportLessonJSON() {
 }
 
 /**
- * Nhập nội dung từ file .json vào editor
+ * Nhập nội dung từ file .json vào editor (Hỗ trợ cả format cũ và format AI mới)
  */
 async function importLessonJSON(input) {
     const file = input.files[0];
@@ -2045,7 +2055,7 @@ async function importLessonJSON(input) {
     // Cảnh báo trước khi ghi đè
     const result = await Swal.fire({
         title: 'Nhập dữ liệu?',
-        text: "Hành động này sẽ GHI ĐÈ toàn bộ nội dung hiện tại bằng dữ liệu từ file. Bạn có chắc không?",
+        text: "Hành động này sẽ GHI ĐÈ toàn bộ nội dung hiện tại. Bạn có chắc không?",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -2055,7 +2065,7 @@ async function importLessonJSON(input) {
     });
 
     if (!result.isConfirmed) {
-        input.value = ''; // Reset input để chọn lại file cũ được
+        input.value = ''; 
         return;
     }
 
@@ -2063,24 +2073,43 @@ async function importLessonJSON(input) {
     reader.onload = function(e) {
         try {
             const json = JSON.parse(e.target.result);
+            let validBlocks = null;
+            let lessonTitle = null;
 
-            // Validate sơ bộ: Phải là mảng các blocks
+            // [FIX] CASE 1: Format cũ (Chỉ là mảng blocks)
             if (Array.isArray(json)) {
-                // Cập nhật biến global blocks
-                blocks = json;
+                validBlocks = json;
+            } 
+            // [FIX] CASE 2: Format AI mới (Object chứa title, description, blocks)
+            else if (typeof json === 'object' && json !== null && Array.isArray(json.blocks)) {
+                validBlocks = json.blocks;
+                lessonTitle = json.title; // Lấy luôn tiêu đề
+            }
 
-                // Render lại giao diện
+            if (validBlocks) {
+                // 1. Cập nhật Blocks
+                blocks = validBlocks;
                 renderBlocks();
+
+                // 2. Tự động điền tiêu đề nếu có (Format AI)
+                if (lessonTitle) {
+                    const titleInput = document.getElementById('mainTitleInput');
+                    if (titleInput) {
+                        titleInput.value = lessonTitle;
+                        // Trigger sự kiện để cập nhật bên cây thư mục nếu cần
+                        titleInput.dispatchEvent(new Event('input')); 
+                    }
+                }
 
                 Swal.fire({
                     icon: 'success',
                     title: 'Nhập thành công!',
-                    text: `Đã tải ${json.length} khối nội dung.`,
-                    timer: 1500,
+                    text: `Đã tải ${validBlocks.length} khối nội dung.${lessonTitle ? ' Đã cập nhật tiêu đề.' : ''}`,
+                    timer: 2000,
                     showConfirmButton: false
                 });
             } else {
-                Swal.fire('Lỗi định dạng', 'File JSON không đúng cấu trúc bài học (Phải là một mảng Array).', 'error');
+                Swal.fire('Lỗi định dạng', 'File JSON không chứa cấu trúc bài học hợp lệ (cần mảng "blocks").', 'error');
             }
         } catch (err) {
             console.error(err);
@@ -2092,9 +2121,6 @@ async function importLessonJSON(input) {
 
     reader.readAsText(file);
 }
-/**
- * THÊM VÀO CUỐI FILE hoặc bất kỳ chỗ nào trống
- */
 
 async function saveUnitStatus(isPublished) {
     const unitTitleInput = document.getElementById('settingUnitTitle');
