@@ -1263,11 +1263,14 @@ function renderBlocks() {
                 {val: 'json', label: 'JSON'}
             ];
 
+            const language = block.language || (block.data && block.data.language) || 'javascript';
+            const codeContent = block.code || (block.data && block.data.code) || '';
+
             languages.forEach(l => {
                 const opt = document.createElement('option');
                 opt.value = l.val;
                 opt.innerText = l.label;
-                if(b.data.language === l.val) opt.selected = true;
+                if(language === l.val) opt.selected = true;
                 langSelect.appendChild(opt);
             });
 
@@ -1277,7 +1280,7 @@ function renderBlocks() {
             const codeArea = document.createElement('textarea');
             codeArea.className = 'code-input';
             codeArea.placeholder = 'Paste code vào đây...';
-            codeArea.value = b.data.code || '';
+            codeArea.value = codeContent || '';
             codeArea.spellcheck = false;
             // Style cho giống Editor thật
             codeArea.style.cssText = "width: 100%; height: 200px; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; border: none; outline: none; resize: vertical; padding: 5px; line-height: 1.5;";
