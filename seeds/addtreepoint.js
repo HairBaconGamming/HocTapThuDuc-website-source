@@ -1,4 +1,5 @@
 // seeds/seedGrowthPoints.js
+
 const mongoose = require('mongoose');
 require('dotenv').config(); // Load environment variables
 

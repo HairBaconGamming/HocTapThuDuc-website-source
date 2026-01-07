@@ -130,21 +130,24 @@ exports.saveLessonAjax = async (req, res) => {
 
         // [NEW] LƯU LỊCH SỬ PHIÊN BẢN (REVISION)
         try {
-            // 1. Tạo bản lưu mới
-            await LessonRevision.create({
-                lessonId: lesson._id,
-                title: lesson.title,
-                content: lesson.content,
-                updatedBy: req.user._id
-            });
+            // [FIX] Kiểm tra xem có lesson doc chưa
+            if (currentLessonDoc) {
+                // 1. Tạo bản lưu mới
+                await LessonRevision.create({
+                    lessonId: currentLessonDoc._id, // Sửa lesson -> currentLessonDoc
+                    title: currentLessonDoc.title,  // Sửa lesson -> currentLessonDoc
+                    content: currentLessonDoc.content, // Sửa lesson -> currentLessonDoc
+                    updatedBy: req.user._id
+                });
 
-            // 2. Giới hạn 50 phiên bản (Xóa bản cũ nhất nếu vượt quá)
-            const count = await LessonRevision.countDocuments({ lessonId: lesson._id });
-            if (count > 50) {
-                // Tìm và xóa bản cũ nhất (sort createdAt tăng dần -> cũ nhất lên đầu)
-                const oldest = await LessonRevision.findOne({ lessonId: lesson._id }).sort({ createdAt: 1 });
-                if (oldest) {
-                    await LessonRevision.findByIdAndDelete(oldest._id);
+                // 2. Giới hạn 50 phiên bản (Xóa bản cũ nhất nếu vượt quá)
+                const count = await LessonRevision.countDocuments({ lessonId: currentLessonDoc._id });
+                if (count > 50) {
+                    // Tìm và xóa bản cũ nhất
+                    const oldest = await LessonRevision.findOne({ lessonId: currentLessonDoc._id }).sort({ createdAt: 1 });
+                    if (oldest) {
+                        await LessonRevision.findByIdAndDelete(oldest._id);
+                    }
                 }
             }
         } catch (revErr) {

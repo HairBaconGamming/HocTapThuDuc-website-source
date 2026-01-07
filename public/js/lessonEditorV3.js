@@ -538,12 +538,10 @@ function createLessonDOM(lesson, isCurrent = false) {
     return el;
 }
 
-/* --- HÀM XÓA BÀI HỌC --- */
+/* --- HÀM XÓA BÀI HỌC (Đã Fix UI Reset) --- */
 async function deleteLessonDOM(btn, lessonId, event) {
-    // Ngăn sự kiện click lan ra ngoài (để không kích hoạt selectLesson)
     event.stopPropagation(); 
 
-    // Xác nhận xóa
     const result = await Swal.fire({
         title: 'Xóa bài học này?',
         text: "Hành động này không thể hoàn tác!",
@@ -559,39 +557,39 @@ async function deleteLessonDOM(btn, lessonId, event) {
 
     const lessonEl = btn.closest('.tree-lesson');
 
-    // TRƯỜNG HỢP 1: Bài mới (Chưa lưu vào DB) -> Xóa trên giao diện thôi
+    // Helper để reset UI nếu xóa đúng bài đang chọn
+    const resetUIIfActive = () => {
+        if (lessonId === activeLessonId) {
+            // [FIX 2] Gọi hàm selectCourse() để reset toàn bộ về màn hình quản lý khóa học
+            // Hàm này sẽ: Ẩn editor giữa, Hiện empty state, Chuyển panel phải về Course, Reset activeLessonId
+            if (typeof selectCourse === 'function') {
+                selectCourse();
+            } else {
+                // Fallback thủ công nếu chưa có hàm selectCourse
+                document.getElementById('editorMainPanel').style.display = 'none';
+                document.getElementById('emptyStatePanel').style.display = 'flex';
+                document.getElementById('panel-lesson').style.display = 'none'; // Ẩn panel bài học
+                document.getElementById('panel-course').style.display = 'block'; // Hiện panel khóa học
+                activeLessonId = null;
+            }
+        }
+    };
+
+    // TRƯỜNG HỢP 1: Bài mới (Nháp)
     if (lessonId.startsWith('new_') || lessonId === 'current_new_lesson') {
         lessonEl.remove();
-        
-        // Nếu đang chọn bài này thì reset editor
-        if (lessonId === activeLessonId) {
-            document.getElementById('editorMainPanel').style.display = 'none';
-            document.getElementById('emptyStatePanel').style.display = 'block';
-            activeLessonId = null;
-        }
-        
+        resetUIIfActive(); // Gọi hàm fix
         Swal.fire('Đã xóa', 'Đã xóa bài học nháp.', 'success');
         return;
     }
 
-    // TRƯỜNG HỢP 2: Bài đã có trong DB -> Gọi API xóa thật
+    // TRƯỜNG HỢP 2: Bài đã có trong DB
     try {
-        // Gọi API xóa (Backend đã có route này trong server.js)
         const res = await fetch(`/lesson/${lessonId}/delete`, { method: 'POST' });
-        
-        // Lưu ý: Route cũ của bạn có thể redirect về dashboard, 
-        // nên check res.ok hoặc res.redirected là đủ.
-        // Tốt nhất backend nên trả về JSON {success: true}
         
         if (res.ok) {
             lessonEl.remove();
-            
-            if (lessonId === activeLessonId) {
-                document.getElementById('editorMainPanel').style.display = 'none';
-                document.getElementById('emptyStatePanel').style.display = 'block';
-                activeLessonId = null;
-            }
-            
+            resetUIIfActive(); // Gọi hàm fix
             Swal.fire('Đã xóa', 'Bài học đã được xóa vĩnh viễn.', 'success');
         } else {
             Swal.fire('Lỗi', 'Không thể xóa bài học.', 'error');
@@ -1956,6 +1954,26 @@ async function submitLessonAJAX(publishStatus) {
                     if(lessonEl) lessonEl.dataset.lessonId = realId;
                 });
             }
+
+            // [FIX 1] CẬP NHẬT TRẠNG THÁI TRÊN CÂY THƯ MỤC (TreeList)
+            // Tìm item bài học đang active
+            const treeItem = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
+            if (treeItem) {
+                const actionDiv = treeItem.querySelector('.lesson-actions');
+                const draftIcon = actionDiv.querySelector('.fa-pencil-ruler'); // Icon bút chì
+
+                if (publishStatus) {
+                    // Nếu ĐĂNG -> Xóa icon bút chì (nếu có)
+                    if (draftIcon) draftIcon.remove();
+                } else {
+                    // Nếu LƯU NHÁP -> Thêm icon bút chì (nếu chưa có)
+                    if (!draftIcon) {
+                        const iconHtml = `<i class="fas fa-pencil-ruler" style="font-size: 0.7rem; color: #f59e0b;" title="Bản nháp"></i>`;
+                        actionDiv.insertAdjacentHTML('afterbegin', iconHtml);
+                    }
+                }
+            }
+            
             const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
             
             if(publishStatus) {
