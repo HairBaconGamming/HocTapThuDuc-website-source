@@ -4,6 +4,7 @@ const Unit = require('../models/Unit');
 const Course = require('../models/Course');
 const LessonRevision = require('../models/LessonRevision');
 const User = require('../models/User');
+const Garden = require('../models/Garden');
 
 exports.saveLessonAjax = async (req, res) => {
     try {
@@ -219,36 +220,47 @@ exports.restoreRevision = async (req, res) => {
     }
 };
 
-// [NEW] Nhận thưởng học tập (Mỗi 5 phút)
+// [FIX] Nhận thưởng học tập (Mỗi 5 phút) - Đã sửa logic cộng nước vào Garden
 exports.claimStudyReward = async (req, res) => {
     try {
         const userId = req.user._id;
+        
+        // Lấy cả User (để check time) và Garden (để cộng nước)
         const user = await User.findById(userId);
+        const garden = await Garden.findOne({ user: userId }); // [2] TÌM GARDEN
+
+        if (!garden) {
+            return res.status(404).json({ success: false, msg: 'Bạn chưa kích hoạt Linh Điền!' });
+        }
 
         // 1. Chống Hack Speed/Spam Request
-        // Kiểm tra lần nhận thưởng cuối cùng. Nếu < 4 phút 50 giây thì chặn.
         const now = Date.now();
+        // Lưu ý: Đảm bảo model User của bạn đã có trường lastStudyRewardAt
+        // Nếu chưa có, bạn cần thêm vào schema User hoặc chuyển logic time này sang schema Garden
         const lastClaim = user.lastStudyRewardAt ? new Date(user.lastStudyRewardAt).getTime() : 0;
         const diff = now - lastClaim;
 
-        if (diff < 290000) { // 290s = 4 phút 50 giây (Cho phép sai số mạng 10s)
+        if (diff < 290000) { // 290s = 4 phút 50 giây
             return res.status(429).json({ success: false, msg: 'Chưa đủ thời gian học!' });
         }
 
         // 2. Tính toán phần thưởng
-        // Cơ bản 1 nước + (Level / 10)
-        const bonus = Math.floor(user.level / 10);
+        const bonus = Math.floor((user.level || 0) / 10); // Thêm fallback || 0 cho an toàn
         const reward = 1 + bonus;
 
-        // 3. Cập nhật User
-        user.water += reward;
+        // 3. Cập nhật Dữ liệu
+        // [3] CỘNG NƯỚC VÀO GARDEN (ĐÚNG)
+        garden.water = (garden.water || 0) + reward; 
+        await garden.save();
+
+        // Cập nhật thời gian nhận thưởng vào User
         user.lastStudyRewardAt = now;
         await user.save();
 
         res.json({ 
             success: true, 
             reward: reward, 
-            newWater: user.water,
+            newWater: garden.water, // Trả về số nước mới trong Garden
             msg: `Bạn đã học chăm chỉ! Nhận +${reward} Nước 💧` 
         });
 
