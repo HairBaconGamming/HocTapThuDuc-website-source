@@ -1263,8 +1263,8 @@ function renderBlocks() {
                 {val: 'json', label: 'JSON'}
             ];
 
-            const language = block.language || (block.data && block.data.language) || 'javascript';
-            const codeContent = block.code || (block.data && block.data.code) || '';
+            const language = b.language || (b.data && b.data.language) || 'javascript';
+            const codeContent = b.code || (b.data && b.data.code) || '';
 
             languages.forEach(l => {
                 const opt = document.createElement('option');
