@@ -21,6 +21,7 @@ const UserSchema = new mongoose.Schema(
     totalPoints: { type: Number, default: 0 },
     level: { type: Number, default: 0 },
     xp: { type: Number, default: 0 },
+    lastStudyRewardAt: { type: Date, default: null },
   },
   {
     timestamps: true,
