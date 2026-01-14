@@ -639,39 +639,97 @@
         }
 
         function renderChart(data) {
-            const ctx = document.getElementById('growthChart').getContext('2d');
-            if (window.myChart) window.myChart.destroy();
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        if (window.myChart) window.myChart.destroy();
 
-            window.myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        label: 'Lượt truy cập (Visits)',
+        // 1. Tạo Gradient cho Visits (Màu tím đẹp mắt)
+        let gradientVisits = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientVisits.addColorStop(0, 'rgba(79, 70, 229, 0.5)'); // Màu đậm ở trên
+        gradientVisits.addColorStop(1, 'rgba(79, 70, 229, 0.0)'); // Mờ dần xuống dưới
+
+        // 2. Tạo Gradient cho Registers (Màu xanh ngọc)
+        let gradientReg = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientReg.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+        gradientReg.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        window.myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [
+                    {
+                        label: 'Lượt truy cập',
                         data: data.visits || [],
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderColor: '#4f46e5', // Màu tím chủ đạo
+                        backgroundColor: gradientVisits,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#4f46e5',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true, // Tô màu bên dưới
+                        tension: 0.4 // Đường cong mềm mại
+                    },
+                    {
+                        label: 'Người dùng mới',
+                        data: data.registers || [],
+                        borderColor: '#10b981', // Màu xanh lá
+                        backgroundColor: gradientReg,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#10b981',
+                        borderDash: [5, 5], // Nét đứt
                         fill: true,
                         tension: 0.4
-                    }, {
-                        label: 'Đăng ký mới (Users)',
-                        data: data.registers || [],
-                        borderColor: '#10b981',
-                        backgroundColor: 'transparent',
-                        tension: 0.4,
-                        borderDash: [5, 5]
-                    }]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: { display: true, text: 'Thống Kê 7 Ngày Gần Nhất' }
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: { family: "'Quicksand', sans-serif", size: 13 },
+                            usePointStyle: true,
+                            boxWidth: 8
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                        titleFont: { family: "'Quicksand', sans-serif", size: 14 },
+                        bodyFont: { family: "'Quicksand', sans-serif", size: 13 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.dataset.label + ': ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }, // Ẩn lưới dọc cho sạch
+                        ticks: { font: { family: "'Quicksand', sans-serif" } }
+                    },
+                    y: {
+                        border: { display: false }, // Ẩn đường viền trục Y
+                        grid: { color: '#f1f5f9', borderDash: [5, 5] }, // Lưới ngang mờ nét đứt
+                        beginAtZero: true,
+                        ticks: { precision: 0 } // Chỉ hiện số nguyên
                     }
                 }
-            });
-        }
+            }
+        });
+    }
 
         function openUserModal(id, username, isAdmin, isPro, isTeacher, key) {
             document.getElementById('editUserId').value = id;

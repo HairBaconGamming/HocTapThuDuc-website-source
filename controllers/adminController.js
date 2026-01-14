@@ -8,16 +8,16 @@ const VisitStats = require('../models/VisitStats'); // Import Model thống kê 
 
 exports.getAdminPanel = async (req, res) => {
     try {
-        // 1. Thống kê tổng quan (Giữ nguyên code cũ)
+        // 1. Thống kê tổng quan
         const totalUsers = await User.countDocuments();
         const totalCourses = await Course.countDocuments();
         const totalLessons = await Lesson.countDocuments();
-        const totalNews = await News.countDocuments();
+        const totalNews = await News.countDocuments(); // Đảm bảo đã import model News
 
-        const users = await User.find().sort({ createdAt: -1 }).lean();
-        const courses = await Course.find().populate('author', 'username email').sort({ createdAt: -1 }).lean();
+        const users = await User.find().sort({ createdAt: -1 }).limit(10).lean();
+        const courses = await Course.find().populate('author', 'username email').sort({ createdAt: -1 }).limit(10).lean();
         const subjects = await Subject.find().sort({ createdAt: -1 }).lean();
-        const news = await News.find().sort({ createdAt: -1 }).lean();
+        const news = await News.find().sort({ createdAt: -1 }).limit(10).lean();
 
         // 2. --- XỬ LÝ DỮ LIỆU BIỂU ĐỒ (7 NGÀY GẦN NHẤT) ---
         const labels = [];
@@ -25,43 +25,43 @@ exports.getAdminPanel = async (req, res) => {
         const dataRegisters = [];
 
         for (let i = 6; i >= 0; i--) {
-            // Tạo ngày: Hôm nay, hôm qua, hôm kia...
             const d = new Date();
             d.setDate(d.getDate() - i);
             
-            // Set thời gian bắt đầu và kết thúc của ngày đó (00:00 -> 23:59)
-            const startOfDay = new Date(d.setHours(0, 0, 0, 0));
-            const endOfDay = new Date(d.setHours(23, 59, 59, 999));
+            // Format YYYY-MM-DD để khớp với Model VisitStats mới
+            const dateStr = d.toISOString().split('T')[0];
+            
+            // Format hiển thị trên biểu đồ (VD: 25/10)
+            const displayDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            labels.push(displayDate);
 
-            // Format nhãn ngày tháng (VD: "28/12")
-            const dateStr = startOfDay.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-            labels.push(dateStr);
-
-            // A. Đếm số User đăng ký trong khoảng thời gian này
+            // A. Đếm User đăng ký (Tính từ 00:00 đến 23:59 của ngày đó)
+            const startOfDay = new Date(d.setHours(0,0,0,0));
+            const endOfDay = new Date(d.setHours(23,59,59,999));
+            
             const regCount = await User.countDocuments({
                 createdAt: { $gte: startOfDay, $lte: endOfDay }
             });
             dataRegisters.push(regCount);
 
-            // B. Lấy số lượt truy cập từ bảng VisitStats (Nếu có)
-            // Lưu ý: Bạn cần đảm bảo middleware đếm lượt truy cập đang chạy và lưu vào DB với field 'date' là startOfDay
-            const visitRecord = await VisitStats.findOne({ date: startOfDay });
+            // B. Lấy visits theo dateStr
+            const visitRecord = await VisitStats.findOne({ dateStr: dateStr });
             dataVisits.push(visitRecord ? visitRecord.count : 0);
         }
 
-        // 3. Render và truyền chartData sang View
+        // 3. Render
         res.render('admin', {
             title: 'Admin Dashboard',
             user: req.user,
             stats: { totalUsers, totalCourses, totalLessons, totalNews },
-            users,
-            courses,
-            subjects,
-            news,
-            // Truyền dữ liệu chart riêng biệt để tránh lỗi JSON
+            users, courses, subjects, news,
+            
+            // Dữ liệu chart
             labels: labels,
             visits: dataVisits,
             registers: dataRegisters,
+            
+            chartData: { labels, visits: dataVisits, registers: dataRegisters }, // Truyền object này để script client dùng
             layout: false
         });
 

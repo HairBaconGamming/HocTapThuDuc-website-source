@@ -1,22 +1,28 @@
 // middlewares/trackVisits.js
 const VisitStats = require('../models/VisitStats');
 
-module.exports = async (req, res, next) => {
+const trackVisits = async (req, res, next) => {
     try {
-        // Chỉ đếm các request GET tới trang chính, bỏ qua file tĩnh (css, js, images)
-        if (req.method === 'GET' && !req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico)$/)) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        // Chỉ đếm các request GET tới trang chính, bỏ qua file tĩnh/api/admin để tránh rác data
+        if (req.method === 'GET' && !req.path.startsWith('/admin') && !req.path.startsWith('/api') && !req.path.startsWith('/public')) {
+            
+            const now = new Date();
+            // Tạo chuỗi ngày theo múi giờ Việt Nam hoặc Server (YYYY-MM-DD)
+            const dateStr = now.toISOString().split('T')[0]; 
 
-            // Tìm bản ghi hôm nay, nếu không có thì tạo mới, nếu có thì tăng count
             await VisitStats.findOneAndUpdate(
-                { key: `visit_date_${today.toISOString().split('T')[0]}` },
-                { $inc: { count: 1 }, date: today },
-                { upsert: true, new: true }
+                { dateStr: dateStr },
+                { 
+                    $inc: { count: 1 }, // Tăng count lên 1
+                    $setOnInsert: { date: now } // Nếu chưa có thì set ngày tạo
+                },
+                { upsert: true, new: true } // Upsert: chưa có thì tạo mới
             );
         }
     } catch (err) {
-        console.error("Track Visit Error:", err);
+        console.error("Lỗi trackVisits:", err);
     }
     next();
 };
+
+module.exports = trackVisits;
