@@ -6,68 +6,87 @@ const Subject = require('../models/Subject');
 const News = require('../models/News'); // <--- Đã sửa thành News
 const VisitStats = require('../models/VisitStats'); // Import Model thống kê truy cập
 
+// controllers/adminController.js
+
 exports.getAdminPanel = async (req, res) => {
     try {
-        // 1. Thống kê tổng quan
+        // ... (Giữ nguyên các phần thống kê User, Course, News cũ ...)
         const totalUsers = await User.countDocuments();
         const totalCourses = await Course.countDocuments();
         const totalLessons = await Lesson.countDocuments();
-        const totalNews = await News.countDocuments(); // Đảm bảo đã import model News
+        const totalNews = await News.countDocuments();
 
         const users = await User.find().sort({ createdAt: -1 }).limit(10).lean();
         const courses = await Course.find().populate('author', 'username email').sort({ createdAt: -1 }).limit(10).lean();
         const subjects = await Subject.find().sort({ createdAt: -1 }).lean();
         const news = await News.find().sort({ createdAt: -1 }).limit(10).lean();
 
-        // 2. --- XỬ LÝ DỮ LIỆU BIỂU ĐỒ (7 NGÀY GẦN NHẤT) ---
+        // --- XỬ LÝ CHART DATA ---
+
+        // 1. CHART: Growth (7 ngày) - Giữ nguyên logic cũ
         const labels = [];
         const dataVisits = [];
         const dataRegisters = [];
-
+        
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            
-            // Format YYYY-MM-DD để khớp với Model VisitStats mới
             const dateStr = d.toISOString().split('T')[0];
-            
-            // Format hiển thị trên biểu đồ (VD: 25/10)
             const displayDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            
             labels.push(displayDate);
-
-            // A. Đếm User đăng ký (Tính từ 00:00 đến 23:59 của ngày đó)
+            
             const startOfDay = new Date(d.setHours(0,0,0,0));
             const endOfDay = new Date(d.setHours(23,59,59,999));
             
-            const regCount = await User.countDocuments({
-                createdAt: { $gte: startOfDay, $lte: endOfDay }
-            });
-            dataRegisters.push(regCount);
-
-            // B. Lấy visits theo dateStr
+            dataRegisters.push(await User.countDocuments({ createdAt: { $gte: startOfDay, $lte: endOfDay } }));
+            
             const visitRecord = await VisitStats.findOne({ dateStr: dateStr });
             dataVisits.push(visitRecord ? visitRecord.count : 0);
         }
 
-        // 3. Render
+        // 2. CHART: User Structure (Phân loại User)
+        const countPro = await User.countDocuments({ isPro: true });
+        const countTeacher = await User.countDocuments({ isTeacher: true });
+        const countAdmin = await User.countDocuments({ isAdmin: true });
+        const countNormal = totalUsers - countPro - countTeacher - countAdmin; // Tương đối (nếu user không overlap quyền)
+
+        // 3. CHART: Content Distribution (Khóa học theo Môn)
+        // Lấy top 5 môn có nhiều khóa học nhất (hoặc tất cả)
+        const subjectLabels = [];
+        const subjectCounts = [];
+        
+        // Dùng Promise.all để chạy nhanh hơn thay vì await trong loop
+        await Promise.all(subjects.map(async (sub) => {
+            const count = await Course.countDocuments({ subject: sub._id });
+            if (count > 0) { // Chỉ lấy môn có khóa học để đỡ rác biểu đồ
+                subjectLabels.push(sub.name);
+                subjectCounts.push(count);
+            }
+        }));
+
+        // Gửi tất cả xuống View
         res.render('admin', {
             title: 'Admin Dashboard',
             user: req.user,
             stats: { totalUsers, totalCourses, totalLessons, totalNews },
             users, courses, subjects, news,
             
-            // Dữ liệu chart
-            labels: labels,
-            visits: dataVisits,
-            registers: dataRegisters,
-            
-            chartData: { labels, visits: dataVisits, registers: dataRegisters }, // Truyền object này để script client dùng
+            // Object chứa toàn bộ data chart
+            chartData: {
+                growth: { labels, visits: dataVisits, registers: dataRegisters },
+                userPie: { 
+                    labels: ['Thành viên thường', 'Tài khoản PRO', 'Giáo viên', 'Admin'], 
+                    data: [countNormal > 0 ? countNormal : 0, countPro, countTeacher, countAdmin] 
+                },
+                contentBar: { labels: subjectLabels, data: subjectCounts }
+            },
             layout: false
         });
 
     } catch (err) {
         console.error("Admin Panel Error:", err);
-        res.status(500).send("Server Error: " + err.message);
+        res.status(500).send("Server Error");
     }
 };
 

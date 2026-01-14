@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Học Tập Thủ Đức</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,178 +13,255 @@
 
     <style>
         :root {
-            --primary: #4f46e5;
-            --secondary: #6366f1;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1e293b;
-            --light: #f8fafc;
+            --primary: #4f46e5;      /* Indigo */
+            --primary-dark: #4338ca;
+            --secondary: #06b6d4;    /* Cyan */
+            --success: #10b981;      /* Emerald */
+            --warning: #f59e0b;      /* Amber */
+            --danger: #ef4444;       /* Red */
+            --dark: #1e293b;         /* Slate 800 */
+            --light: #f1f5f9;        /* Slate 100 */
+            --white: #ffffff;
+            --text-sub: #64748b;
             --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Quicksand', sans-serif; }
-        body { background: var(--light); display: flex; height: 100vh; overflow: hidden; }
+        body { background: var(--light); display: flex; height: 100vh; overflow: hidden; color: var(--dark); }
 
-        /* SIDEBAR */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--dark);
+            background: #0f172a; /* Slate 900 */
             color: white;
             display: flex;
             flex-direction: column;
             transition: 0.3s;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
             z-index: 100;
         }
         .brand {
             padding: 25px;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: 12px;
+            letter-spacing: -0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .menu { flex: 1; padding: 20px 10px; overflow-y: auto; }
-        .menu-label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin: 15px 15px 5px; font-weight: 700; }
+        .menu { flex: 1; padding: 20px 12px; overflow-y: auto; }
+        .menu::-webkit-scrollbar { width: 5px; }
+        .menu::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        
+        .menu-label { 
+            font-size: 0.7rem; text-transform: uppercase; color: #64748b; 
+            margin: 20px 15px 8px; font-weight: 700; letter-spacing: 1px;
+        }
         .nav-item {
             padding: 12px 20px;
-            margin-bottom: 5px;
-            border-radius: 10px;
+            margin-bottom: 6px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
-            color: #cbd5e1;
+            transition: all 0.25s ease;
+            color: #94a3b8;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             font-weight: 600;
+            font-size: 0.95rem;
         }
-        .nav-item:hover, .nav-item.active {
+        .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+        .nav-item.active {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
         }
+        .nav-item i { width: 20px; text-align: center; }
 
-        /* MAIN CONTENT */
+        /* --- MAIN CONTENT --- */
         .main {
             flex: 1;
-            padding: 30px;
+            padding: 30px 40px;
             overflow-y: auto;
             position: relative;
         }
 
-        /* HEADER */
+        /* Header Bar */
         .header-bar {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
+            align-items: flex-end;
+            margin-bottom: 35px;
         }
-        .page-title h2 { font-size: 1.8rem; color: var(--dark); font-weight: 800; }
-        .page-title p { color: #64748b; }
-        .admin-profile { display: flex; align-items: center; gap: 15px; }
-        .admin-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .page-title h2 { font-size: 2rem; color: var(--dark); font-weight: 800; letter-spacing: -1px; margin-bottom: 5px; }
+        .page-title p { color: var(--text-sub); font-size: 0.95rem; }
+        
+        .admin-profile { 
+            display: flex; align-items: center; gap: 15px; 
+            background: var(--white); padding: 8px 15px 8px 20px; 
+            border-radius: 50px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .admin-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
 
-        /* CARDS (DASHBOARD) */
+        /* --- STAT CARDS --- */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
+            gap: 25px;
             margin-bottom: 30px;
         }
         .stat-card {
-            background: white;
+            background: var(--white);
             padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: transform 0.2s;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #f8fafc;
         }
-        .stat-card:hover { transform: translateY(-5px); }
-        .stat-info h3 { font-size: 2rem; color: var(--dark); font-weight: 800; }
-        .stat-info p { color: #64748b; font-size: 0.9rem; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .stat-info h3 { font-size: 2.2rem; color: var(--dark); font-weight: 800; line-height: 1.2; }
+        .stat-info p { color: var(--text-sub); font-size: 0.9rem; font-weight: 600; }
         .stat-icon {
-            width: 50px; height: 50px;
-            border-radius: 12px;
+            width: 55px; height: 55px;
+            border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
         }
 
-        /* CHART SECTION */
-        .chart-container {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        /* --- CHARTS GRID LAYOUT --- */
+        .charts-wrapper {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* 2 phần trái, 1 phần phải */
+            grid-template-rows: auto auto;
+            gap: 25px;
             margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+            border: 1px solid #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .chart-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
+
+        /* Chart 1: Growth (Full width on mobile, top large on desktop) */
+        .chart-growth {
+            grid-column: 1 / -1; /* Chiếm hết hàng ngang */
             height: 400px;
         }
 
-        /* TABLES */
+        /* Chart 2 & 3: Half width */
+        .chart-half {
+            height: 350px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-wrapper { grid-template-columns: 1fr; }
+            .chart-growth { grid-column: 1; }
+        }
+
+        /* --- TABLES --- */
         .table-wrapper {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            background: var(--white);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
             animation: fadeIn 0.4s ease;
         }
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .table-header h3 { font-size: 1.25rem; font-weight: 700; color: var(--dark); }
+        
+        .search-box { position: relative; }
         .search-box input {
-            padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; width: 250px; outline: none; transition: 0.2s;
+            padding: 12px 20px 12px 45px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            width: 300px;
+            outline: none;
+            transition: 0.2s;
+            font-weight: 600;
+            color: var(--dark);
         }
-        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
         
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        th { color: #64748b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        tr:hover { background: #f8fafc; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th { 
+            text-align: left; padding: 15px 20px; 
+            color: #64748b; font-weight: 700; font-size: 0.8rem; 
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; color: var(--dark); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
         
-        .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-        .badge-pro { background: #fffbeb; color: #d97706; border: 1px solid #fcd34d; }
+        .badge { padding: 6px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        .badge-pro { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
         .badge-teacher { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
         .badge-admin { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .badge-user { background: #f1f5f9; color: #475569; }
 
         /* BUTTONS */
-        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; color: white; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
-        .btn-primary { background: var(--primary); box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
-        .btn-primary:hover { background: #4338ca; transform: translateY(-2px); }
-        .btn-danger { background: var(--danger); box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); }
+        .btn { 
+            padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; 
+            font-weight: 600; font-size: 0.9rem; transition: 0.2s; color: white; 
+            display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25); }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-danger { background: var(--danger); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25); }
         .btn-warning { background: var(--warning); color: white; }
-        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        .btn-sm { padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; }
         .action-group { display: flex; gap: 8px; }
 
-        /* SECTIONS (TABS) */
+        /* MODALS & FORMS */
         .section { display: none; }
-        .section.active { display: block; }
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* MODALS */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 500px; max-width: 95%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideDown 0.3s; }
-        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        input[type="text"], input[type="password"], textarea, select {
-            width: 100%; padding: 12px; margin: 8px 0 20px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; outline: none;
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { 
+            background: white; padding: 40px; border-radius: 24px; width: 500px; max-width: 95%; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
         }
-        input:focus, textarea:focus, select:focus { border-color: var(--primary); }
-
-        /* GENERATE KEY BUTTON */
+        @keyframes slideUp { from { transform: translateY(50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        
+        input, textarea, select {
+            width: 100%; padding: 14px; margin: 8px 0 20px; border: 2px solid #e2e8f0; 
+            border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.2s;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); background: #fff; }
+        label { font-weight: 700; color: #475569; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        
         .key-input-group { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
-        .key-input-group input { margin-bottom: 0; flex: 1; font-family: monospace; letter-spacing: 1px; color: var(--primary); font-weight: bold; }
+        .key-input-group input { margin-bottom: 0; flex: 1; font-family: monospace; letter-spacing: 1px; color: var(--primary); font-weight: bold; background: #f8fafc; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <div class="brand">
-            <i class="fas fa-shield-alt"></i> HTTD Admin
+            <i class="fas fa-rocket"></i> Admin Panel
         </div>
         
         <div class="menu">
@@ -209,7 +286,7 @@
 
             <div class="menu-label">Hệ Thống</div>
             <a href="/" class="nav-item" style="text-decoration: none;">
-                <i class="fas fa-home"></i> Về Trang Chủ
+                <i class="fas fa-home"></i> Trang Chủ
             </a>
             <a href="/logout" class="nav-item" style="text-decoration: none; color: #fca5a5;">
                 <i class="fas fa-sign-out-alt"></i> Đăng Xuất
@@ -221,10 +298,13 @@
         <div class="header-bar">
             <div class="page-title">
                 <h2 id="pageHeaderTitle">Dashboard</h2>
-                <p>Chào mừng trở lại, <%= user.username %>! 👋</p>
+                <p>Hôm nay là <%= new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
             </div>
             <div class="admin-profile">
-                <span style="font-weight: 600; color: var(--dark);"><%= user.username %></span>
+                <div style="text-align: right; line-height: 1.2;">
+                    <div style="font-weight: 700; color: var(--dark); font-size: 0.9rem;"><%= user.username %></div>
+                    <div style="font-size: 0.75rem; color: var(--success);">Online</div>
+                </div>
                 <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="admin-avatar">
             </div>
         </div>
@@ -245,14 +325,14 @@
                         <h3><%= stats.totalCourses %></h3>
                         <p>Khóa Học</p>
                     </div>
-                    <div class="stat-icon" style="background: #dcfce7; color: var(--success);">
+                    <div class="stat-icon" style="background: #ecfeff; color: var(--secondary);">
                         <i class="fas fa-book"></i>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
                         <h3><%= stats.totalNews %></h3>
-                        <p>Bài Viết Tin Tức</p>
+                        <p>Bài Viết</p>
                     </div>
                     <div class="stat-icon" style="background: #fef9c3; color: var(--warning);">
                         <i class="far fa-newspaper"></i>
@@ -261,7 +341,7 @@
                 <div class="stat-card">
                     <div class="stat-info">
                         <h3><%= stats.totalLessons %></h3>
-                        <p>Bài Học (Lessons)</p>
+                        <p>Bài Giảng</p>
                     </div>
                     <div class="stat-icon" style="background: #fee2e2; color: var(--danger);">
                         <i class="fas fa-play-circle"></i>
@@ -269,8 +349,38 @@
                 </div>
             </div>
 
-            <div class="chart-container">
-                <canvas id="growthChart"></canvas>
+            <div class="charts-wrapper">
+                
+                <div class="chart-card chart-growth">
+                    <div class="chart-header">
+                        <h3>📈 Tăng trưởng hệ thống (7 ngày qua)</h3>
+                        <div style="font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 5px 10px; border-radius: 8px;">
+                            <i class="fas fa-sync-alt"></i> Real-time
+                        </div>
+                    </div>
+                    <div style="flex:1; position: relative;">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card chart-half">
+                    <div class="chart-header">
+                        <h3>👥 Cơ cấu người dùng</h3>
+                    </div>
+                    <div style="flex:1; position: relative; display: flex; justify-content: center;">
+                        <canvas id="userChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card chart-half">
+                    <div class="chart-header">
+                        <h3>📚 Phân bố nội dung</h3>
+                    </div>
+                    <div style="flex:1; position: relative;">
+                        <canvas id="contentChart"></canvas>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -279,6 +389,7 @@
                 <div class="table-header">
                     <h3>Danh sách người dùng</h3>
                     <div class="search-box">
+                        <i class="fas fa-search"></i>
                         <input type="text" id="userSearch" placeholder="Tìm kiếm user..." onkeyup="filterTable('userTable', this.value)">
                     </div>
                 </div>
@@ -286,7 +397,7 @@
                     <thead>
                         <tr>
                             <th>User Info</th>
-                            <th>Role</th>
+                            <th>Vai trò</th>
                             <th>Trạng Thái</th>
                             <th>Hành Động</th>
                         </tr>
@@ -295,46 +406,35 @@
                         <% users.forEach(u => { %>
                         <tr>
                             <td>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <img src="<%= u.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" style="width: 35px; height: 35px; border-radius: 50%;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="<%= u.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #f1f5f9;">
                                     <div>
-                                        <div style="font-weight: 700; color: var(--dark);"><%= u.username %></div>
+                                        <div style="font-weight: 700; color: var(--dark); font-size: 0.95rem;"><%= u.username %></div>
                                         <div style="font-size: 0.8rem; color: #94a3b8;"><%= u.email %></div>
                                     </div>
                                 </div>
                             </td>
-
                             <td>
                                 <% if (u.username === 'truonghoangnam') { %>
                                     <span class="badge" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155;">👑 OWNER</span>
                                 <% } else if (u.isAdmin) { %>
                                     <span class="badge badge-admin">Admin</span>
                                 <% } else { %>
-                                    <span class="badge" style="background: #f1f5f9;">User</span>
+                                    <span class="badge badge-user">User</span>
                                 <% } %>
                             </td>
-
                             <td>
                                 <% if(u.isPro) { %><span class="badge badge-pro">PRO</span><% } %>
                                 <% if(u.isTeacher) { %><span class="badge badge-teacher">GV</span><% } %>
                             </td>
-
                             <td>
                                 <div class="action-group">
                                     <% if (u.username !== 'truonghoangnam' || user.username === 'truonghoangnam') { %>
                                         <button class="btn btn-warning btn-sm" 
-                                            onclick="openUserModal(
-                                                '<%= u._id %>', 
-                                                '<%= u.username %>', 
-                                                <%= u.isAdmin %>,  /* Truyền true/false chuẩn xác */
-                                                <%= u.isPro %>, 
-                                                <%= u.isTeacher %>, 
-                                                '<%= u.proSecretKey || '' %>'
-                                            )">
+                                            onclick="openUserModal('<%= u._id %>', '<%= u.username %>', <%= u.isAdmin %>, <%= u.isPro %>, <%= u.isTeacher %>, '<%= u.proSecretKey || '' %>')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     <% } %>
-                    
                                     <% if (u.username !== 'truonghoangnam') { %>
                                         <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/user/delete', 'userId', '<%= u._id %>')">
                                             <i class="fas fa-trash"></i>
@@ -354,6 +454,7 @@
                 <div class="table-header">
                     <h3>Quản lý khóa học</h3>
                     <div class="search-box">
+                        <i class="fas fa-search"></i>
                         <input type="text" id="courseSearch" placeholder="Tìm khóa học..." onkeyup="filterTable('courseTable', this.value)">
                     </div>
                 </div>
@@ -369,15 +470,15 @@
                     <tbody>
                         <% courses.forEach(c => { %>
                         <tr>
+                            <td style="font-weight: 700;"><%= c.title %></td>
                             <td>
-                                <div style="font-weight: 600;"><%= c.title %></div>
+                                <span class="badge badge-teacher"><i class="fas fa-chalkboard-teacher"></i> <%= c.author ? c.author.username : 'Ẩn danh' %></span>
                             </td>
-                            <td><%= c.author ? c.author.username : 'Ẩn danh' %></td>
                             <td>
                                 <% if(c.isPublished) { %>
-                                    <span class="badge badge-teacher"><i class="fas fa-check"></i> Public</span>
+                                    <span class="badge" style="background:#dcfce7; color:#166534;"><i class="fas fa-check-circle"></i> Public</span>
                                 <% } else { %>
-                                    <span class="badge badge-admin">Private</span>
+                                    <span class="badge" style="background:#f1f5f9; color:#64748b;"><i class="fas fa-lock"></i> Private</span>
                                 <% } %>
                             </td>
                             <td>
@@ -385,7 +486,7 @@
                                     <form action="/admin/course/approve" method="POST" style="margin:0;">
                                         <input type="hidden" name="courseId" value="<%= c._id %>">
                                         <input type="hidden" name="isPublished" value="<%= c.isPublished ? '' : 'on' %>">
-                                        <button class="btn btn-sm <%= c.isPublished ? 'btn-warning' : 'btn-primary' %>" title="<%= c.isPublished ? 'Ẩn khóa này' : 'Duyệt khóa này' %>">
+                                        <button class="btn btn-sm <%= c.isPublished ? 'btn-warning' : 'btn-primary' %>" title="<%= c.isPublished ? 'Ẩn' : 'Duyệt' %>">
                                             <i class="fas <%= c.isPublished ? 'fa-eye-slash' : 'fa-check' %>"></i>
                                         </button>
                                     </form>
@@ -407,6 +508,7 @@
                     <h3>Quản lý môn học</h3>
                     <div style="display: flex; gap: 10px;">
                         <div class="search-box" style="margin-bottom: 0;">
+                            <i class="fas fa-search"></i>
                             <input type="text" id="subjectSearch" placeholder="Tìm môn..." onkeyup="filterTable('subjectTable', this.value)">
                         </div>
                         <button class="btn btn-primary" onclick="openSubjectModal('', '', '')">
@@ -417,7 +519,7 @@
                 <table id="subjectTable">
                     <thead>
                         <tr>
-                            <th>Ảnh / Icon</th>
+                            <th>Ảnh</th>
                             <th>Tên Môn</th>
                             <th>Hành Động</th>
                         </tr>
@@ -428,16 +530,15 @@
                             <tr>
                                 <td>
                                     <img src="<%= s.image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' %>" 
-                                         style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 5px;">
+                                         style="width: 45px; height: 45px; object-fit: contain; border-radius: 12px; background: #f8fafc; padding: 6px; border: 1px solid #e2e8f0;">
                                 </td>
                                 <td>
                                     <div style="font-weight: 700; color: var(--dark); font-size: 1rem;"><%= s.name %></div>
-                                    <div style="font-size: 0.8rem; color: #94a3b8;">ID: <%= s._id %></div>
+                                    <div style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;">ID: <%= s._id %></div>
                                 </td>
                                 <td>
                                     <div class="action-group">
-                                        <button class="btn btn-warning btn-sm" 
-                                            onclick="openSubjectModal('<%= s._id %>', '<%= s.name %>', '<%= s.image %>')">
+                                        <button class="btn btn-warning btn-sm" onclick="openSubjectModal('<%= s._id %>', '<%= s.name %>', '<%= s.image %>')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/subject/delete', 'subjectId', '<%= s._id %>')">
@@ -447,8 +548,6 @@
                                 </td>
                             </tr>
                             <% }); %>
-                        <% } else { %>
-                            <tr><td colspan="3" style="text-align:center; color: #94a3b8;">Chưa có dữ liệu môn học (Cần update Controller)</td></tr>
                         <% } %>
                     </tbody>
                 </table>
@@ -458,9 +557,9 @@
         <div id="news" class="section">
             <div class="table-wrapper">
                 <div class="table-header">
-                    <h3>Bảng tin tức</h3>
+                    <h3>Quản lý tin tức</h3>
                     <button class="btn btn-primary" onclick="document.getElementById('modalNews').style.display='flex'">
-                        <i class="fas fa-plus"></i> Viết Bài Mới
+                        <i class="fas fa-pen-nib"></i> Viết Bài Mới
                     </button>
                 </div>
                 <table id="newsTable">
@@ -475,12 +574,12 @@
                     <tbody>
                         <% news.forEach(post => { %>
                         <tr>
-                            <td style="font-weight: 600;"><%= post.title %></td>
+                            <td style="font-weight: 700; color: var(--dark);"><%= post.title %></td>
                             <td><span class="badge" style="background:#f3e8ff; color:#7e22ce;"><%= post.category %></span></td>
-                            <td><%= new Date(post.createdAt).toLocaleDateString('vi-VN') %></td>
+                            <td style="color: #64748b;"><%= new Date(post.createdAt).toLocaleDateString('vi-VN') %></td>
                             <td>
                                 <button class="btn btn-danger btn-sm" onclick="confirmDelete('/admin/news/delete', 'newsId', '<%= post._id %>')">
-                                    <i class="fas fa-trash"></i> Xóa
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
@@ -489,44 +588,42 @@
                 </table>
             </div>
         </div>
-
     </div>
 
     <div id="modalUser" class="modal">
         <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0;">🛠 Chỉnh sửa: <span id="editUsername" style="color:var(--primary)"></span></h3>
-                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalUser').style.display='none'"></i>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <h3 style="margin:0; font-size: 1.5rem;">🛠 Chỉnh sửa User</h3>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.4rem; color: #94a3b8;" onclick="document.getElementById('modalUser').style.display='none'"></i>
             </div>
             
             <form action="/admin/user/update" method="POST">
                 <input type="hidden" name="userId" id="editUserId">
-                
-                <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px;">
-                    
+                <p style="margin-bottom: 20px; font-weight: 600;">Đang sửa: <span id="editUsername" style="color:var(--primary)"></span></p>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px;">
                     <% if (user && user.username === 'truonghoangnam') { %>
-                        <label style="background: #fef2f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; cursor: pointer; color: #dc2626; font-weight: bold;">
-                            <input type="checkbox" name="isAdmin" id="editIsAdmin"> 🛡️ Cấp quyền Quản Trị Viên (Admin)
+                        <label style="background: #fef2f2; padding: 15px; border-radius: 12px; border: 1px solid #fecaca; cursor: pointer; color: #dc2626; display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" name="isAdmin" id="editIsAdmin" style="width: auto; margin: 0;"> 🛡️ Cấp quyền Admin
                         </label>
                     <% } %>
-                    
-                    <label style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; cursor: pointer;">
-                        <input type="checkbox" name="isPro" id="editIsPro"> 👑 Tài khoản PRO
+                    <label style="background: #fffbeb; padding: 15px; border-radius: 12px; border: 1px solid #fcd34d; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="isPro" id="editIsPro" style="width: auto; margin: 0;"> 👑 Tài khoản PRO
                     </label>
-                    <label style="background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #bfdbfe; cursor: pointer;">
-                        <input type="checkbox" name="isTeacher" id="editIsTeacher"> 🎓 Giáo viên
+                    <label style="background: #eff6ff; padding: 15px; border-radius: 12px; border: 1px solid #bfdbfe; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="isTeacher" id="editIsTeacher" style="width: auto; margin: 0;"> 🎓 Giáo viên
                     </label>
                 </div>
 
                 <label>PRO Secret Key:</label>
                 <div class="key-input-group">
                     <input type="text" name="proSecretKey" id="editProKey" placeholder="Chưa có mã...">
-                    <button type="button" class="btn btn-warning btn-sm" onclick="generateKey()">
+                    <button type="button" class="btn btn-warning" onclick="generateKey()">
                         <i class="fas fa-magic"></i> Tạo
                     </button>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Lưu Thay Đổi</button>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding: 14px; font-size: 1rem;">Lưu Thay Đổi</button>
             </form>
         </div>
     </div>
@@ -535,45 +632,39 @@
         <div class="modal-content" style="width: 450px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h3 style="margin:0;">📚 Thông tin môn học</h3>
-                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalSubject').style.display='none'"></i>
+                <i class="fas fa-times" style="cursor:pointer;" onclick="document.getElementById('modalSubject').style.display='none'"></i>
             </div>
-
             <form action="/admin/subject/save" method="POST">
                 <input type="hidden" name="subjectId" id="editSubjectId">
-                
                 <label>Tên môn học:</label>
-                <input type="text" name="name" id="editSubjectName" required placeholder="Ví dụ: Toán Học, Ngữ Văn...">
-
-                <label>Link Icon/Ảnh (URL):</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" name="image" id="editSubjectImage" placeholder="https://..." oninput="document.getElementById('previewIcon').src = this.value || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" style="margin-bottom: 20px;">
-                    <img id="previewIcon" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 20px; border: 1px solid #eee; border-radius: 5px; padding: 2px;">
+                <input type="text" name="name" id="editSubjectName" required>
+                <label>Link Icon (URL):</label>
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <input type="text" name="image" id="editSubjectImage" placeholder="https://..." oninput="document.getElementById('previewIcon').src = this.value || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'">
+                    <img id="previewIcon" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 50px; height: 50px; object-fit: contain; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
                 </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Lưu Dữ Liệu</button>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Lưu Dữ Liệu</button>
             </form>
         </div>
     </div>
 
     <div id="modalNews" class="modal">
-        <div class="modal-content" style="width: 600px;">
+        <div class="modal-content" style="width: 650px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h3 style="margin:0;">📰 Đăng tin mới</h3>
-                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('modalNews').style.display='none'"></i>
+                <i class="fas fa-times" style="cursor:pointer;" onclick="document.getElementById('modalNews').style.display='none'"></i>
             </div>
-
             <form action="/admin/news/create" method="POST">
                 <label>Tiêu đề:</label>
-                <input type="text" name="title" required placeholder="Nhập tiêu đề hấp dẫn...">
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <input type="text" name="title" required placeholder="Nhập tiêu đề...">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div>
                         <label>Danh mục:</label>
                         <select name="category" required>
                             <option value="Thông báo">Thông báo chung</option>
                             <option value="Học tập">Góc học tập</option>
                             <option value="Tuyển sinh">Tuyển sinh</option>
-                            <option value="Tài khoản PRO">Khuyến mãi VIP</option>
+                            <option value="Tài khoản PRO">Khuyến mãi</option>
                         </select>
                     </div>
                     <div>
@@ -581,20 +672,16 @@
                         <input type="text" name="image" placeholder="https://...">
                     </div>
                 </div>
-
                 <label>Nội dung:</label>
                 <textarea name="content" rows="6" required placeholder="Nội dung bài viết..."></textarea>
-
-                <button type="submit" class="btn btn-primary" style="width:100%; padding: 12px;">Đăng Bài Ngay</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Đăng Bài</button>
             </form>
         </div>
     </div>
 
     <script>
-        // 0. FIX SYNTAX ERROR: Kiểm tra dữ liệu chartData trước khi parse
         const serverChartData = <%- (typeof chartData !== 'undefined' && chartData) ? JSON.stringify(chartData) : '{}' %>;
 
-        // 1. TAB SWITCHING
         function showTab(tabId) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -602,145 +689,167 @@
             const tabSection = document.getElementById(tabId);
             if (tabSection) tabSection.classList.add('active');
             
+            const menuMap = {'dashboard': 0, 'users': 1, 'courses': 2, 'subjects': 3, 'news': 4};
             const menus = document.querySelectorAll('.nav-item');
-            if(tabId === 'dashboard' && menus[0]) { menus[0].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Dashboard"; }
-            if(tabId === 'users' && menus[1]) { menus[1].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Người Dùng"; }
-            if(tabId === 'courses' && menus[2]) { menus[2].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Khóa Học"; }
-            if(tabId === 'subjects' && menus[3]) { menus[3].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Môn Học"; }
-            if(tabId === 'news' && menus[3]) { menus[3].classList.add('active'); document.getElementById('pageHeaderTitle').innerText = "Quản Lý Tin Tức"; }
-            
+            if (menus[menuMap[tabId]]) menus[menuMap[tabId]].classList.add('active');
+
+            const titles = {
+                'dashboard': 'Dashboard', 'users': 'Quản Lý Người Dùng', 
+                'courses': 'Quản Lý Khóa Học', 'subjects': 'Quản Lý Môn Học', 'news': 'Quản Lý Tin Tức'
+            };
+            if(titles[tabId]) document.getElementById('pageHeaderTitle').innerText = titles[tabId];
+
             const url = new URL(window.location);
             url.searchParams.set('tab', tabId);
             window.history.pushState({}, '', url);
+        }
+
+        function filterTable(tableId, query) {
+            const filter = query.toUpperCase();
+            const rows = document.getElementById(tableId).getElementsByTagName("tr");
+            for (let i = 1; i < rows.length; i++) {
+                const txt = rows[i].textContent || rows[i].innerText;
+                rows[i].style.display = txt.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+
+        // --- RENDER 3 BIỂU ĐỒ ---
+        function renderCharts(data) {
+            Chart.defaults.font.family = "'Quicksand', sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            // 1. GROWTH CHART (LINE - Dual Axis)
+            if(document.getElementById('growthChart')) {
+                const ctx1 = document.getElementById('growthChart').getContext('2d');
+                
+                const gradientVisits = ctx1.createLinearGradient(0, 0, 0, 400);
+                gradientVisits.addColorStop(0, 'rgba(79, 70, 229, 0.4)');
+                gradientVisits.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+
+                const gradientReg = ctx1.createLinearGradient(0, 0, 0, 400);
+                gradientReg.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+                gradientReg.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: data.growth.labels,
+                        datasets: [
+                            {
+                                label: 'Truy cập',
+                                data: data.growth.visits,
+                                borderColor: '#4f46e5',
+                                backgroundColor: gradientVisits,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                yAxisID: 'y',
+                                pointRadius: 4,
+                                pointHoverRadius: 8
+                            },
+                            {
+                                label: 'User mới',
+                                data: data.growth.registers,
+                                borderColor: '#10b981',
+                                backgroundColor: gradientReg,
+                                borderWidth: 2,
+                                borderDash: [5,5],
+                                fill: true,
+                                tension: 0.4,
+                                yAxisID: 'y1',
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { position: 'top', align: 'end' } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { display: true, position: 'left', grid: { borderDash: [5, 5] } },
+                            y1: { display: true, position: 'right', grid: { display: false }, min: 0 }
+                        }
+                    }
+                });
+            }
+
+            // 2. USER CHART (DOUGHNUT)
+            if(document.getElementById('userChart')) {
+                const ctx2 = document.getElementById('userChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.userPie.labels,
+                        datasets: [{
+                            data: data.userPie.data,
+                            backgroundColor: [
+                                '#cbd5e1', // Thường
+                                '#f59e0b', // PRO
+                                '#3b82f6', // Teacher
+                                '#ef4444'  // Admin
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                        }
+                    }
+                });
+            }
+
+            // 3. CONTENT CHART (BAR)
+            if(document.getElementById('contentChart')) {
+                const ctx3 = document.getElementById('contentChart').getContext('2d');
+                new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: data.contentBar.labels,
+                        datasets: [{
+                            label: 'Số khóa học',
+                            data: data.contentBar.data,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 6,
+                            barThickness: 30
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { precision: 0 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
         }
 
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
             const tab = params.get('tab') || 'dashboard';
             showTab(tab);
-            if(serverChartData && serverChartData.labels) {
-                renderChart(serverChartData);
+
+            if(serverChartData && serverChartData.growth) {
+                renderCharts(serverChartData);
             }
-        }
-
-        function filterTable(tableId, query) {
-            const filter = query.toUpperCase();
-            const table = document.getElementById(tableId);
-            const tr = table.getElementsByTagName("tr");
-
-            for (let i = 1; i < tr.length; i++) {
-                let txtValue = tr[i].textContent || tr[i].innerText;
-                if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                    tr[i].style.display = "";
-                } else {
-                    tr[i].style.display = "none";
-                }
-            }
-        }
-
-        function renderChart(data) {
-            const ctx = document.getElementById('growthChart').getContext('2d');
-            if (window.myChart) window.myChart.destroy();
-
-            // 1. Tạo Gradient cho Visits (Màu tím đẹp mắt)
-            let gradientVisits = ctx.createLinearGradient(0, 0, 0, 400);
-            gradientVisits.addColorStop(0, 'rgba(79, 70, 229, 0.5)'); // Màu đậm ở trên
-            gradientVisits.addColorStop(1, 'rgba(79, 70, 229, 0.0)'); // Mờ dần xuống dưới
-
-            // 2. Tạo Gradient cho Registers (Màu xanh ngọc)
-            let gradientReg = ctx.createLinearGradient(0, 0, 0, 400);
-            gradientReg.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
-            gradientReg.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-
-            window.myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [
-                        {
-                            label: 'Lượt truy cập',
-                            data: data.visits || [],
-                            borderColor: '#4f46e5', // Màu tím chủ đạo
-                            backgroundColor: gradientVisits,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#ffffff',
-                            pointBorderColor: '#4f46e5',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            fill: true, // Tô màu bên dưới
-                            tension: 0.4 // Đường cong mềm mại
-                        },
-                        {
-                            label: 'Người dùng mới',
-                            data: data.registers || [],
-                            borderColor: '#10b981', // Màu xanh lá
-                            backgroundColor: gradientReg,
-                            borderWidth: 2,
-                            pointBackgroundColor: '#ffffff',
-                            pointBorderColor: '#10b981',
-                            borderDash: [5, 5], // Nét đứt
-                            fill: true,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: { family: "'Quicksand', sans-serif", size: 13 },
-                                usePointStyle: true,
-                                boxWidth: 8
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                            titleFont: { family: "'Quicksand', sans-serif", size: 14 },
-                            bodyFont: { family: "'Quicksand', sans-serif", size: 13 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return ' ' + context.dataset.label + ': ' + context.parsed.y;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false }, // Ẩn lưới dọc cho sạch
-                            ticks: { font: { family: "'Quicksand', sans-serif" } }
-                        },
-                        y: {
-                            border: { display: false }, // Ẩn đường viền trục Y
-                            grid: { color: '#f1f5f9', borderDash: [5, 5] }, // Lưới ngang mờ nét đứt
-                            beginAtZero: true,
-                            ticks: { precision: 0 } // Chỉ hiện số nguyên
-                        }
-                    }
-                }
-            });
         }
 
         function openUserModal(id, username, isAdmin, isPro, isTeacher, key) {
             document.getElementById('editUserId').value = id;
             document.getElementById('editUsername').innerText = username;
             
-            // Nếu checkbox Admin tồn tại (chỉ truonghoangnam mới thấy), thì set giá trị
-            const adminCheckbox = document.getElementById('editIsAdmin');
-            if (adminCheckbox) {
-                adminCheckbox.checked = isAdmin;
-            }
-
+            const adminCheck = document.getElementById('editIsAdmin');
+            if (adminCheck) adminCheck.checked = isAdmin;
+            
             document.getElementById('editIsPro').checked = isPro;
             document.getElementById('editIsTeacher').checked = isTeacher;
             document.getElementById('editProKey').value = key;
@@ -752,10 +861,7 @@
             document.getElementById('editSubjectId').value = id;
             document.getElementById('editSubjectName').value = name;
             document.getElementById('editSubjectImage').value = image;
-            
-            // Reset ảnh preview
             document.getElementById('previewIcon').src = image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-            
             document.getElementById('modalSubject').style.display = 'flex';
         }
 
@@ -768,13 +874,13 @@
 
         function confirmDelete(actionUrl, fieldName, idValue) {
             Swal.fire({
-                title: 'Bạn chắc chắn chứ?',
-                text: "Hành động này không thể hoàn tác!",
+                title: 'Xác nhận xóa?',
+                text: "Dữ liệu sẽ bị xóa vĩnh viễn!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Vâng, xóa nó!',
+                confirmButtonText: 'Xóa ngay',
                 cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -792,10 +898,8 @@
             })
         }
 
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = "none";
-            }
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal')) e.target.style.display = "none";
         }
     </script>
 </body>
