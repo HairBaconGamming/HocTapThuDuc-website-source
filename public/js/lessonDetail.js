@@ -1,12 +1,20 @@
+/**
+ * LESSON DETAIL ENGINE - V3 POWERFUL
+ * Tính năng: Render Block, TOC tự động, Anti-AFK, Quiz Gamification
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     initLessonContent();
+    
+    // Chỉ chạy bộ đếm giờ nếu không phải chế độ xem trước (nếu cần)
+    StudyManager.init(); 
 });
 
 function initLessonContent() {
     const contentArea = document.getElementById('lessonContentArea');
     if (!contentArea) return;
 
-    // 1. Lấy dữ liệu RAW từ server
+    // 1. Lấy dữ liệu RAW từ attribute data-content
     const rawContent = contentArea.getAttribute('data-content');
     
     // 2. Parse JSON an toàn
@@ -16,12 +24,12 @@ function initLessonContent() {
             blocks = JSON.parse(rawContent);
             if (!Array.isArray(blocks)) blocks = [blocks]; 
         } else {
-            // Fallback: Markdown cũ
-            blocks = [{ type: 'text', data: { text: rawContent } }];
+            // Fallback cho bài học cũ (chỉ có text)
+            blocks = [{ type: 'text', data: { text: rawContent } }]; 
         }
     } catch (e) {
         console.error("Lỗi parse nội dung:", e);
-        contentArea.innerHTML = '<div class="alert alert-danger">Lỗi định dạng nội dung.</div>';
+        contentArea.innerHTML = '<div class="alert alert-danger">Lỗi định dạng nội dung JSON.</div>';
         return;
     }
 
@@ -32,13 +40,19 @@ function initLessonContent() {
     if (Array.isArray(blocks) && blocks.length > 0) {
         blocks.forEach((block, index) => {
             const blockHTML = renderSingleBlock(block, index);
-            contentArea.appendChild(blockHTML);
+            if(blockHTML) contentArea.appendChild(blockHTML);
         });
     } else {
-        contentArea.innerHTML = '<p class="text-muted text-center" style="padding: 40px;">Bài học chưa có nội dung.</p>';
+        contentArea.innerHTML = `
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-scroll fa-3x mb-3 text-secondary opacity-50"></i>
+                <p>Bài học này chưa có nội dung.</p>
+            </div>`;
     }
 
-    // 5. Render Math (KaTeX)
+    // 5. Các xử lý sau khi render xong (Post-Render)
+    
+    // a. Render Công thức toán (KaTeX)
     if (window.renderMathInElement) {
         renderMathInElement(contentArea, {
             delimiters: [
@@ -51,9 +65,13 @@ function initLessonContent() {
         });
     }
 
+    // b. Tô màu code (Prism)
     if (window.Prism) {
         Prism.highlightAllUnder(contentArea);
     }
+
+    // c. Tạo Mục Lục Tự Động (TOC) bên sidebar phải
+    generateTableOfContents();
 }
 
 /* --- BLOCK RENDERER ENGINE --- */
@@ -64,19 +82,41 @@ function renderSingleBlock(block, idx) {
     wrapper.dataset.id = idx;
 
     switch (block.type) {
+        case 'header': 
+            const level = block.data.level || 2;
+            const hTag = document.createElement(`h${level}`);
+            hTag.innerHTML = block.data.text;
+            hTag.id = `heading-${idx}`; // ID để TOC link tới
+            wrapper.appendChild(hTag);
+            break;
+
         case 'text':
             let htmlContent = marked.parse(block.data.text || '');
             if (window.DOMPurify) htmlContent = DOMPurify.sanitize(htmlContent);
-            wrapper.innerHTML = htmlContent;
+            
+            // Tự động thêm ID cho các thẻ H1, H2, H3 bên trong Markdown để TOC bắt được
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            tempDiv.querySelectorAll('h1, h2, h3').forEach((h, i) => {
+                if(!h.id) h.id = `md-heading-${idx}-${i}`;
+            });
+            
+            wrapper.innerHTML = tempDiv.innerHTML;
             break;
 
         case 'image':
             if (block.data.url) {
+                wrapper.className += ' text-center my-4';
                 const img = document.createElement('img');
                 img.src = block.data.url;
-                img.alt = 'Lesson Image';
+                img.alt = block.data.caption || 'Hình ảnh bài học';
                 img.loading = 'lazy';
-                img.className = 'img-fluid rounded shadow-sm';
+                img.className = 'img-fluid shadow-sm border rounded';
+                
+                // Click để xem ảnh gốc (Simple Lightbox)
+                img.style.cursor = 'zoom-in';
+                img.onclick = () => window.open(img.src, '_blank');
+
                 wrapper.appendChild(img);
                 
                 if(block.data.caption) {
@@ -91,34 +131,22 @@ function renderSingleBlock(block, idx) {
         case 'video':
             if (block.data.url) {
                 const videoWrapper = document.createElement('div');
-                videoWrapper.className = 'block-video ratio ratio-16x9 rounded overflow-hidden shadow-sm';
+                videoWrapper.className = 'ratio ratio-16x9 rounded overflow-hidden shadow-sm bg-dark my-4';
                 
                 const videoInfo = getEmbedUrl(block.data.url, block.data.autoplay);
                 
                 if (videoInfo && videoInfo.url) {
                     if (videoInfo.type === 'iframe') {
-                        // [FIX] Thêm referrerpolicy="origin" để sửa lỗi 153
                         videoWrapper.innerHTML = `<iframe src="${videoInfo.url}" title="Video bài học" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="origin"></iframe>`;
                     } else {
-                        // Render Video HTML5
-                        videoWrapper.innerHTML = `<video src="${videoInfo.url}" controls ${block.data.autoplay ? 'autoplay muted' : ''} style="width:100%; height:100%; object-fit:contain; background:#000;"></video>`;
+                        videoWrapper.innerHTML = `<video src="${videoInfo.url}" controls ${block.data.autoplay ? 'autoplay muted' : ''} style="width:100%; height:100%;"></video>`;
                     }
-                } else {
-                    videoWrapper.innerHTML = `<div class="d-flex align-items-center justify-content-center bg-light text-muted h-100">Video không khả dụng</div>`;
                 }
                 wrapper.appendChild(videoWrapper);
-
-                if (block.data.caption) {
-                    const cap = document.createElement('div');
-                    cap.className = 'video-caption text-center text-muted mt-2';
-                    cap.innerText = block.data.caption;
-                    wrapper.appendChild(cap);
-                }
             }
             break;
 
         case 'resource':
-            // Map icon đẹp
             const iconMap = {
                 drive: { icon: 'fab fa-google-drive', color: '#16a34a', bg: '#dcfce7' },
                 pdf:   { icon: 'fas fa-file-pdf', color: '#dc2626', bg: '#fee2e2' },
@@ -129,58 +157,65 @@ function renderSingleBlock(block, idx) {
             const theme = iconMap[block.data.iconType] || iconMap.link;
             
             wrapper.innerHTML = `
-                <a href="${block.data.url}" target="_blank" class="text-decoration-none resource-card-link">
-                    <div class="card border-0 shadow-sm hover-shadow transition-all" style="background:${theme.bg}; border-left: 4px solid ${theme.color} !important;">
+                <a href="${block.data.url}" target="_blank" class="text-decoration-none resource-card-link d-block my-3">
+                    <div class="card border-0 shadow-sm hover-shadow transition-all" style="background:${theme.bg}; border-left: 5px solid ${theme.color} !important; transition: transform 0.2s;">
                         <div class="card-body d-flex align-items-center p-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                 style="width:48px; height:48px; background:rgba(255,255,255,0.6); color:${theme.color}; font-size:1.5rem;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm bg-white" 
+                                 style="width:50px; height:50px; color:${theme.color}; font-size:1.5rem;">
                                 <i class="${theme.icon}"></i>
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="mb-0 fw-bold text-dark">${block.data.title || 'Tài liệu tham khảo'}</h6>
-                                <small class="text-muted text-truncate d-block" style="max-width: 250px;">
-                                    ${block.data.url}
+                                <h6 class="mb-1 fw-bold text-dark">${block.data.title || 'Tài liệu tham khảo'}</h6>
+                                <small class="text-secondary d-block text-truncate" style="max-width: 300px;">
+                                    <i class="fas fa-external-link-alt me-1"></i> Bấm để mở
                                 </small>
-                            </div>
-                            <div class="ms-3 text-secondary">
-                                <i class="fas fa-download"></i>
                             </div>
                         </div>
                     </div>
                 </a>
             `;
+            // Hover effect JS (bổ sung cho CSS)
+            wrapper.onmouseenter = () => wrapper.querySelector('.card').style.transform = 'translateY(-3px)';
+            wrapper.onmouseleave = () => wrapper.querySelector('.card').style.transform = 'translateY(0)';
             break;
 
         case 'code':
-            wrapper.className += ' block-code';
+            wrapper.className += ' block-code my-3';
             const lang = block.data.language || 'javascript';
-            const codeContent = block.data.code || '';
-            
-            // Escape HTML để tránh lỗi hiển thị khi code chứa thẻ <script> hoặc <div>
-            const escapedCode = codeContent
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            // Escape HTML để hiển thị code an toàn
+            const codeContent = (block.data.code || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
             wrapper.innerHTML = `
-                <div class="code-viewer-container" style="position: relative; background: #2d2d2d; border-radius: 6px; overflow: hidden; margin-bottom: 1rem;">
-                    <div class="code-header" style="background: #404040; color: #ccc; padding: 5px 15px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="text-transform: uppercase; font-weight: bold;">${lang}</span>
-                        <button class="btn-copy-code" onclick="copyCode(this)" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 0.8rem;">
+                <div class="code-viewer-container">
+                    <div class="code-header">
+                        <span style="font-family:monospace; font-weight:bold; color:#a3a3a3;">
+                            <i class="fas fa-code me-2"></i>${lang.toUpperCase()}
+                        </span>
+                        <button class="btn btn-sm btn-dark border-secondary text-light btn-copy-code" onclick="copyCode(this)">
                             <i class="far fa-copy"></i> Copy
                         </button>
                     </div>
-                    <pre style="margin: 0; padding: 15px; overflow-x: auto;"><code class="language-${lang}">${escapedCode}</code></pre>
+                    <pre class="line-numbers"><code class="language-${lang}">${codeContent}</code></pre>
                 </div>
             `;
             break;
 
         case 'callout':
-            wrapper.className += ' block-callout alert alert-info border-0 shadow-sm';
-            const calloutText = marked.parse(block.data.text || '');
-            wrapper.innerHTML = `<div class="d-flex"><i class="fas fa-info-circle me-3 mt-1 fa-lg text-primary"></i> <div>${calloutText}</div></div>`;
+            const typeMap = {
+                info: { class: 'alert-info', icon: 'fa-info-circle' },
+                warning: { class: 'alert-warning', icon: 'fa-exclamation-triangle' },
+                danger: { class: 'alert-danger', icon: 'fa-bomb' },
+                success: { class: 'alert-success', icon: 'fa-check-circle' },
+                note: { class: 'alert-secondary', icon: 'fa-sticky-note' }
+            };
+            const cType = typeMap[block.data.style] || typeMap.info;
+            const cText = marked.parse(block.data.text || '');
+            
+            wrapper.className += ` alert ${cType.class} border-0 shadow-sm d-flex align-items-start my-3`;
+            wrapper.innerHTML = `
+                <div class="me-3 mt-1"><i class="fas ${cType.icon} fa-lg"></i></div>
+                <div class="flex-grow-1">${cText}</div>
+            `;
             break;
 
         case 'quiz':
@@ -189,639 +224,473 @@ function renderSingleBlock(block, idx) {
                 wrapper.appendChild(renderQuizBlock(block.data, idx));
             }
             break;
-
-        default:
-            console.warn('Unknown block type:', block.type);
-            break;
     }
-
     return wrapper;
 }
 
-function copyCode(btn) {
-    // Tìm thẻ code trong cùng container
-    const codeBlock = btn.closest('.code-viewer-container').querySelector('code');
-    const text = codeBlock.innerText;
+// --- TOC GENERATOR (Mục lục tự động) ---
+function generateTableOfContents() {
+    const tocList = document.getElementById('toc-list');
+    const tocListMobile = document.getElementById('toc-list-mobile');
+    const contentArea = document.getElementById('lessonContentArea');
+    
+    if(!tocList || !contentArea) return;
 
-    navigator.clipboard.writeText(text).then(() => {
+    // Tìm tất cả H1, H2, H3 trong content
+    const headers = contentArea.querySelectorAll('h1, h2, h3');
+    
+    if(headers.length === 0) {
+        tocList.innerHTML = '<li class="text-muted small ps-2">Bài học không có mục lớn.</li>';
+        return;
+    }
+
+    let html = '';
+    headers.forEach((header, index) => {
+        // Nếu thẻ chưa có ID thì gán ID ngẫu nhiên
+        if(!header.id) header.id = `toc-auto-${index}`;
+        
+        const text = header.innerText;
+        const tagName = header.tagName.toLowerCase();
+        
+        // Thụt đầu dòng cho H3
+        const indentClass = tagName === 'h3' ? 'sub' : '';
+        
+        html += `<li><a href="#${header.id}" class="toc-link ${indentClass}" onclick="scrollToHeader(event, '${header.id}')">${text}</a></li>`;
+    });
+
+    tocList.innerHTML = html;
+    if(tocListMobile) tocListMobile.innerHTML = html;
+
+    // Scroll Spy: Highlight mục lục khi cuộn trang
+    window.addEventListener('scroll', () => {
+        let current = '';
+        const scrollY = window.scrollY;
+        
+        headers.forEach(header => {
+            const top = header.offsetTop;
+            // Nếu cuộn qua header đó (-150px offset cho header sticky)
+            if (scrollY >= (top - 150)) {
+                current = header.getAttribute('id');
+            }
+        });
+
+        // Xóa active cũ, thêm active mới
+        document.querySelectorAll('.toc-link').forEach(a => {
+            a.classList.remove('active');
+            if(a.getAttribute('href') === '#' + current) {
+                a.classList.add('active');
+            }
+        });
+    });
+}
+
+function scrollToHeader(e, id) {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if(el) {
+        // Cuộn mượt và trừ hao chiều cao header sticky
+        const headerOffset = 100;
+        const elementPosition = el.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+        
+        // Đóng mobile TOC nếu đang mở
+        const offcanvasEl = document.getElementById('tocOffcanvas');
+        if (offcanvasEl) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if (bsOffcanvas) bsOffcanvas.hide();
+        }
+    }
+}
+
+// --- HELPERS ---
+
+function copyCode(btn) {
+    const code = btn.closest('.code-viewer-container').querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-        btn.style.color = '#4ade80';
+        btn.innerHTML = '<i class="fas fa-check"></i> Đã chép';
+        btn.classList.remove('btn-dark');
+        btn.classList.add('btn-success');
         
         setTimeout(() => {
             btn.innerHTML = originalHTML;
-            btn.style.color = '#fff';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-dark');
         }, 2000);
-    }).catch(err => {
-        console.error('Không copy được: ', err);
     });
 }
 
-// --- VIDEO HELPERS (Fix Bug 153 & Hỗ trợ Google Drive) ---
 function getEmbedUrl(url, autoplay) {
     if (!url) return null;
-    let embedUrl = null;
-
-    // 1. YouTube (Hỗ trợ cả Shorts, Live, và các dạng link dị)
+    
+    // Youtube
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/);
     if (ytMatch && ytMatch[1]) {
-        embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
-        if (autoplay) embedUrl += "&autoplay=1&mute=1";
-        return { type: 'iframe', url: embedUrl };
+        return { type: 'iframe', url: `https://www.youtube.com/embed/${ytMatch[1]}${autoplay ? '?autoplay=1&mute=1' : ''}` };
     }
-
-    // 2. Vimeo
-    const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
-    if (vimeoMatch && vimeoMatch[1]) {
-        embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-        if (autoplay) embedUrl += "?autoplay=1&muted=1";
-        return { type: 'iframe', url: embedUrl };
-    }
-
-    // 3. Google Drive (Fix lỗi 153: Tự chuyển link /view -> /preview)
+    
+    // Google Drive Preview fix
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^\/]+)\//);
     if (driveMatch && driveMatch[1]) {
-        embedUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-        return { type: 'iframe', url: embedUrl };
+        return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
     }
 
-    // 4. File Video Trực tiếp (.mp4, .webm...)
+    // Direct Video Link
     return { type: 'video', url: url };
 }
 
-/* --- QUIZ RENDERER --- */
-
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
+/* --- QUIZ RENDERER (GAMIFIED) --- */
 function renderQuizBlock(data, blockIdx) {
-    const settings = data.settings || { randomizeQuestions: false, randomizeOptions: false, passingScore: 50, showFeedback: 'submit' };
-
+    const settings = data.settings || { passingScore: 50, showFeedback: 'submit' };
     const container = document.createElement('div');
-    container.className = 'quiz-wrapper card border-0 shadow-sm mb-4';
+    container.className = 'quiz-wrapper bg-white mb-4';
     
+    // Header Quiz
     container.innerHTML = `
-        <div class="card-header bg-white border-bottom-0 pt-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-primary"><i class="fas fa-tasks me-2"></i> Bài tập thực hành</span>
-                <span class="badge bg-light text-dark border">Đạt: ${settings.passingScore}%</span>
-            </div>
+        <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+            <strong class="text-primary"><i class="fas fa-puzzle-piece me-2"></i>Bài tập thực hành</strong>
+            <span class="badge bg-secondary">Điểm đạt: ${settings.passingScore}%</span>
         </div>
-        <div class="card-body"></div>
+        <div class="quiz-body p-4"></div>
+        <div class="quiz-footer p-3 border-top bg-light text-end">
+            <button class="btn btn-primary btn-submit-quiz shadow-sm fw-bold px-4">
+                <i class="fas fa-paper-plane me-2"></i> Nộp bài
+            </button>
+        </div>
     `;
-    const body = container.querySelector('.card-body');
+    
+    const body = container.querySelector('.quiz-body');
+    const btnSubmit = container.querySelector('.btn-submit-quiz');
 
-    let questionsToRender = JSON.parse(JSON.stringify(data.questions || []));
-    if (settings.randomizeQuestions) shuffleArray(questionsToRender);
-
-    questionsToRender.forEach((q, qIdx) => {
-        const qDiv = document.createElement('div');
-        qDiv.className = 'question-item mb-4 pb-3 border-bottom';
-        if(qIdx === questionsToRender.length - 1) qDiv.classList.remove('border-bottom');
+    // Render questions
+    const questions = data.questions || [];
+    questions.forEach((q, idx) => {
+        const qEl = document.createElement('div');
+        qEl.className = 'quiz-question mb-4 pb-3 border-bottom';
+        if(idx === questions.length -1) qEl.classList.remove('border-bottom');
+        qEl.dataset.type = q.type;
         
-        qDiv.dataset.type = q.type;
-
-        // Content
-        let qContent = '';
-        if (q.type === 'fill') {
-            const parts = (q.content || '').split(/(\[.*?\])/);
-            qContent = parts.map(part => {
-                if (part.startsWith('[') && part.endsWith(']')) {
-                    const answer = part.slice(1, -1);
-                    return `<input type="text" class="form-control d-inline-block w-auto mx-1 text-center fw-bold text-primary fill-input" data-answer="${answer}" style="min-width: 80px;" autocomplete="off">`;
-                }
-                return `<span>${part}</span>`;
-            }).join('');
-            qContent = `<div class="mb-3 lh-lg">${qIdx + 1}. ${qContent}</div>`;
-        } else {
-            qContent = `<div class="fw-bold mb-3">Câu ${qIdx + 1}: ${q.question}</div>`;
-        }
-
-        // Options
-        let optionsHTML = '';
+        let qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
+        
+        // Render Options dựa trên loại câu hỏi
         if (q.type === 'choice') {
-            const inputType = q.isMulti ? 'checkbox' : 'radio';
-            const name = `quiz_${blockIdx}_${qIdx}`;
-            
-            let optionsWithIndex = (q.options || []).map((opt, idx) => ({ text: opt, originalIndex: idx }));
-            if (settings.randomizeOptions) optionsWithIndex = shuffleArray(optionsWithIndex);
-
-            optionsHTML = `<div class="d-flex flex-column gap-2">`;
-            optionsWithIndex.forEach(optObj => {
-                const isCorrect = (q.correct || []).includes(optObj.originalIndex);
-                optionsHTML += `
-                    <label class="quiz-option p-2 border rounded cursor-pointer hover-bg-light" data-correct="${isCorrect}">
-                        <div class="form-check">
-                            <input class="form-check-input" type="${inputType}" name="${name}" value="${optObj.originalIndex}">
-                            <span class="form-check-label w-100">${optObj.text}</span>
-                        </div>
+            const type = q.isMulti ? 'checkbox' : 'radio';
+            const name = `q_${blockIdx}_${idx}`;
+            let opts = '';
+            (q.options || []).forEach((opt, optIdx) => {
+                opts += `
+                    <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative">
+                        <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${(q.correct || []).includes(optIdx)}">
+                        <span>${opt}</span>
+                        <i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
+                        <i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
                     </label>
                 `;
             });
-            optionsHTML += `</div>`;
-        } else if (q.type === 'essay') {
-            // [FIX] Thêm div chứa đáp án mẫu (ẩn mặc định)
-            optionsHTML = `
-                <textarea class="form-control" rows="3" placeholder="Nhập câu trả lời..."></textarea>
-                <div class="model-answer alert alert-success mt-2" style="display:none;">
-                    <i class="fas fa-check-circle me-1"></i> <strong>Đáp án mẫu:</strong><br>
-                    ${q.modelAnswer || '(Không có đáp án mẫu)'}
-                </div>
-            `;
+            qContent += `<div class="options-list">${opts}</div>`;
+        } else if (q.type === 'fill') {
+             qContent += `<input type="text" class="form-control fill-input" data-answer="${q.content || ''}" placeholder="Nhập đáp án của bạn..." autocomplete="off">`;
         }
 
-        const explainHTML = q.explanation ? `<div class="explanation-box alert alert-warning mt-2" style="display:none;"><i class="fas fa-lightbulb me-2"></i> ${q.explanation}</div>` : '';
+        // Explanation Box (Ẩn mặc định)
+        qContent += `
+            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:none; border-left: 4px solid #0ea5e9;">
+                <i class="fas fa-lightbulb me-2"></i> <strong>Giải thích:</strong> ${q.explanation || 'Không có giải thích chi tiết.'}
+            </div>
+        `;
 
-        qDiv.innerHTML = `${qContent} ${optionsHTML} ${explainHTML}`;
-
-        // Instant Check Logic (Chỉ cho trắc nghiệm)
-        if (settings.showFeedback === 'instant' && q.type === 'choice') {
-            const inputs = qDiv.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('change', () => {
-                    if (!q.isMulti) inputs.forEach(i => i.disabled = true);
-                    const label = input.closest('label');
-                    const isCorrect = label.dataset.correct === 'true';
-                    if (isCorrect) {
-                        label.classList.add('bg-success-subtle', 'border-success');
-                        label.querySelector('.form-check-input').classList.add('is-valid');
-                    } else {
-                        label.classList.add('bg-danger-subtle', 'border-danger');
-                        label.querySelector('.form-check-input').classList.add('is-invalid');
-                        qDiv.querySelectorAll('label[data-correct="true"]').forEach(l => l.classList.add('bg-success-subtle', 'border-success'));
-                    }
-                    const expBox = qDiv.querySelector('.explanation-box');
-                    if (expBox) expBox.style.display = 'block';
-                });
-            });
-        }
-
-        body.appendChild(qDiv);
+        qEl.innerHTML = qContent;
+        body.appendChild(qEl);
     });
 
-    if (settings.showFeedback !== 'instant') {
-        const checkBtn = document.createElement('button');
-        checkBtn.className = 'btn btn-primary w-100 mt-3';
-        checkBtn.innerHTML = '<i class="fas fa-check"></i> Nộp bài & Chấm điểm';
-        checkBtn.onclick = () => checkQuizResult(container, settings);
-        body.appendChild(checkBtn);
-    }
+    // Handle Submit Logic
+    btnSubmit.onclick = () => {
+        let correctCount = 0;
+        const qEls = body.querySelectorAll('.quiz-question');
+        
+        qEls.forEach(qEl => {
+            const type = qEl.dataset.type;
+            let isCorrect = false;
+
+            if (type === 'choice') {
+                const inputs = qEl.querySelectorAll('input');
+                let userCorrect = true;
+                let hasChecked = false;
+
+                inputs.forEach(inp => {
+                    const label = inp.closest('label');
+                    const isRight = inp.dataset.correct === 'true';
+                    const iconCheck = label.querySelector('.fa-check');
+                    const iconTimes = label.querySelector('.fa-times');
+
+                    // Reset style cũ
+                    label.classList.remove('bg-success-subtle', 'bg-danger-subtle');
+                    iconCheck.style.display = 'none';
+                    iconTimes.style.display = 'none';
+
+                    if (inp.checked) {
+                        hasChecked = true;
+                        if (isRight) {
+                            label.classList.add('bg-success-subtle');
+                            iconCheck.style.display = 'block';
+                        } else {
+                            label.classList.add('bg-danger-subtle');
+                            iconTimes.style.display = 'block';
+                            userCorrect = false;
+                        }
+                    } else if (isRight) {
+                        // Highlight đáp án đúng bị bỏ sót (viền xanh đứt đoạn)
+                        label.style.border = "2px dashed #198754";
+                        userCorrect = false;
+                    }
+                    // Disable inputs
+                    inp.disabled = true;
+                });
+                if (hasChecked && userCorrect) isCorrect = true;
+
+            } else if (type === 'fill') {
+                const input = qEl.querySelector('.fill-input');
+                const userVal = input.value.trim().toLowerCase();
+                const correctVal = input.dataset.answer.trim().toLowerCase();
+                
+                if (userVal === correctVal) {
+                    input.classList.add('is-valid');
+                    isCorrect = true;
+                } else {
+                    input.classList.add('is-invalid');
+                    // Hiện đáp án đúng
+                    const ansDiv = document.createElement('div');
+                    ansDiv.className = 'text-success fw-bold mt-1 small';
+                    ansDiv.innerText = `Đáp án đúng: ${input.dataset.answer}`;
+                    input.after(ansDiv);
+                }
+                input.disabled = true;
+            }
+
+            if(isCorrect) correctCount++;
+            
+            // Hiện giải thích
+            const exp = qEl.querySelector('.explanation');
+            if(exp) {
+                exp.style.display = 'block';
+                exp.classList.add('animate__animated', 'animate__fadeIn');
+            }
+        });
+
+        // Tính điểm
+        const percent = Math.round((correctCount / questions.length) * 100);
+        const passed = percent >= settings.passingScore;
+
+        Swal.fire({
+            title: passed ? 'Làm tốt lắm! 🌟' : 'Cần cố gắng hơn! 😅',
+            html: `Kết quả: <b>${correctCount}/${questions.length}</b> câu đúng (${percent}%)`,
+            icon: passed ? 'success' : 'warning',
+            confirmButtonText: 'Đóng'
+        });
+
+        if(passed) triggerConfetti();
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<i class="fas fa-check"></i> Đã chấm điểm`;
+        btnSubmit.classList.replace('btn-primary', 'btn-secondary');
+    };
 
     return container;
 }
 
-function checkQuizResult(container, settings) {
-    const questions = container.querySelectorAll('.question-item');
-    let correctCount = 0;
-    let total = 0;
-
-    questions.forEach(qDiv => {
-        const type = qDiv.dataset.type;
-        let isCorrect = false;
-
-        // 1. TRẮC NGHIỆM
-        if (type === 'choice') {
-            total++;
-            const inputs = qDiv.querySelectorAll('input');
-            const labels = qDiv.querySelectorAll('label');
-            
-            labels.forEach(l => {
-                l.classList.remove('bg-success-subtle', 'border-success', 'bg-danger-subtle', 'border-danger');
-                l.querySelector('input').classList.remove('is-valid', 'is-invalid');
-            });
-
-            let userCorrect = true;
-            let hasSelection = false;
-
-            inputs.forEach(inp => {
-                const parent = inp.closest('label');
-                const shouldBeChecked = parent.dataset.correct === 'true';
-
-                if (inp.checked) {
-                    hasSelection = true;
-                    if (shouldBeChecked) {
-                        parent.classList.add('bg-success-subtle', 'border-success');
-                    } else {
-                        parent.classList.add('bg-danger-subtle', 'border-danger');
-                        userCorrect = false;
-                    }
-                } else {
-                    if (shouldBeChecked) {
-                        parent.style.border = "1px dashed #198754"; // Gợi ý đáp án đúng
-                        userCorrect = false;
-                    }
-                }
-            });
-
-            if (hasSelection && userCorrect) isCorrect = true;
-
-        // 2. ĐIỀN TỪ (Cập nhật hiển thị đáp án)
-        } else if (type === 'fill') {
-            total++;
-            const inputs = qDiv.querySelectorAll('.fill-input');
-            let allFilledCorrect = true;
-
-            inputs.forEach(inp => {
-                const userVal = inp.value.trim().toLowerCase();
-                const correctVal = inp.dataset.answer.trim().toLowerCase();
-
-                // Xóa đáp án cũ nếu có (để tránh bị duplicate khi bấm Nộp nhiều lần)
-                const nextEl = inp.nextElementSibling;
-                if(nextEl && nextEl.classList.contains('correct-ans-display')) {
-                    nextEl.remove();
-                }
-
-                if (userVal === correctVal) {
-                    inp.classList.add('is-valid');
-                    inp.classList.remove('is-invalid');
-                } else {
-                    inp.classList.add('is-invalid');
-                    inp.classList.remove('is-valid');
-                    allFilledCorrect = false;
-                    
-                    // [FIX] Hiển thị đáp án đúng ngay bên cạnh
-                    const ansSpan = document.createElement('span');
-                    ansSpan.className = 'correct-ans-display ms-1 fw-bold text-success';
-                    ansSpan.innerText = `(${inp.dataset.answer})`;
-                    inp.after(ansSpan);
-                }
-            });
-            if (allFilledCorrect) isCorrect = true;
-            
-        // 3. TỰ LUẬN (Cập nhật hiển thị đáp án mẫu)
-        } else if (type === 'essay') {
-            // Tự luận không tính điểm tự động, nhưng hiện đáp án mẫu để đối chiếu
-            const modelAnsBox = qDiv.querySelector('.model-answer');
-            if (modelAnsBox) {
-                modelAnsBox.style.display = 'block';
-                modelAnsBox.classList.add('animate__animated', 'animate__fadeIn');
-            }
-        }
-
-        if (isCorrect) correctCount++;
-
-        // Hiển thị giải thích (chung cho mọi loại)
-        const exp = qDiv.querySelector('.explanation-box');
-        if (settings.showFeedback === 'submit') {
-            if (exp) exp.style.display = 'block';
-        }
-    });
-
-    const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-    const isPassed = percentage >= (settings.passingScore || 50);
-
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: isPassed ? 'Đạt Yêu Cầu! 🎉' : 'Cần cố gắng hơn 😞',
-            html: `Kết quả: <b>${correctCount}/${total}</b> câu đúng (${percentage}%).<br>Điểm đạt: ${settings.passingScore}%`,
-            icon: isPassed ? 'success' : 'error'
-        });
-    } else {
-        alert(`Kết quả: ${correctCount}/${total} (${percentage}%)`);
-    }
-}
-
-// [GEN Z UPDATE] Danh sách câu khen "mặn mòi"
-const genZPraises = [
-    "Đỉnh nóc, kịch trần! 🏠",
-    "Slay quá fen ơi! 💅",
-    "10 điểm về chỗ! 💯",
-    "Kiến thức này đã được tiếp thu! 🧠",
-    "Out trình server! 🚀",
-    "Gét gô! Quá dữ luôn! 🔥",
-    "Nghệ cả củ! 🎨"
-];
-
-function getRandomPraise() {
-    return genZPraises[Math.floor(Math.random() * genZPraises.length)];
-}
-
-function triggerConfetti() {
-    if (typeof confetti === 'function') {
-        var duration = 3 * 1000;
-        var animationEnd = Date.now() + duration;
-        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-        var randomInRange = function(min, max) {
-            return Math.random() * (max - min) + min;
-        };
-
-        var interval = setInterval(function() {
-            var timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
-            }
-
-            var particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-        }, 250);
-    }
-}
-
-// [FIXED] Hoàn thành bài học
-async function completeLesson(lessonId) {
-    // 1. [FIX] Tìm nút bằng cả 2 ID (ID cũ hoặc ID của bộ chống AFK)
-    // Hoặc tìm theo class nếu không có ID
-    const btn = document.getElementById('btnComplete') 
-             || document.getElementById('btn-finish-lesson')
-             || document.querySelector('.btn-finish'); 
-
-    // 2. [Safety Check] Nếu vẫn không tìm thấy nút thì dừng ngay, không chạy tiếp để tránh lỗi crash
-    if (!btn) {
-        console.error("LỖI: Không tìm thấy nút hoàn thành trong HTML!");
-        Swal.fire('Lỗi Code', 'Không tìm thấy nút bấm (ID mismatch). Hãy F12 kiểm tra console.', 'error');
-        return;
-    }
-
-    const originalText = btn.innerHTML;
-    
-    // UI Loading
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    btn.disabled = true;
-    btn.style.opacity = '0.8';
-
-    try {
-        const res = await fetch(`/lesson/${lessonId}/complete`, { method: 'POST' });
-        const data = await res.json();
-
-        if (res.ok) {
-            // Hiệu ứng pháo hoa (nếu có thư viện)
-            if (typeof triggerConfetti === 'function') triggerConfetti();
-
-            const praise = (typeof getRandomPraise === 'function') ? getRandomPraise() : "Xuất sắc!";
-            
-            let levelUpHtml = '';
-            if (data.isLevelUp) {
-                levelUpHtml = `
-                    <div class="level-up-badge animate-bounce" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 15px; border-radius: 15px; margin: 10px auto; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.4);">
-                        <span style="font-size: 3rem;">🆙</span>
-                        <div style="font-weight: 900; font-size: 1.5rem; color: #fff; text-shadow: 2px 2px 0 #d97706;">
-                            LÊN CẤP ${data.level || 'MỚI'}!
-                        </div>
-                        <div style="font-size: 0.9rem; color: #fff;">${data.levelName || 'Đẳng cấp mới'}</div>
-                    </div>
-                `;
-            }
-
-            Swal.fire({
-                title: `<div style="font-weight: 800; font-size: 2rem; background: linear-gradient(to right, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${praise}</div>`,
-                html: `
-                    <div style="margin-bottom: 20px;">
-                        ${levelUpHtml}
-                        <div style="font-size: 1.1rem; color: #4b5563; margin-top: 10px;">Thu hoạch được nè:</div>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                        <div style="background: #ecfdf5; border: 2px solid #10b981; color: #047857; width: 80px; padding: 10px 5px; border-radius: 16px;">
-                            <div style="font-size: 1.8rem;">🪙</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.points || 0}</div>
-                            <div style="font-size: 0.7rem; text-transform: uppercase;">Điểm</div>
-                        </div>
-                        <div style="background: #fff7ed; border: 2px solid #f97316; color: #c2410c; width: 80px; padding: 10px 5px; border-radius: 16px;">
-                            <div style="font-size: 1.8rem;">✨</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.xp || 0}</div>
-                            <div style="font-size: 0.7rem; text-transform: uppercase;">XP</div>
-                        </div>
-                        <div style="background: #eff6ff; border: 2px solid #3b82f6; color: #1d4ed8; width: 80px; padding: 10px 5px; border-radius: 16px;">
-                            <div style="font-size: 1.8rem;">💧</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.water || 0}</div> 
-                            <div style="font-size: 0.7rem; text-transform: uppercase;">Nước</div>
-                        </div>
-                        <div style="background: #fefce8; border: 2px solid #eab308; color: #854d0e; width: 80px; padding: 10px 5px; border-radius: 16px;">
-                            <div style="font-size: 1.8rem;">💰</div>
-                            <div style="font-weight: 900; font-size: 1.1rem;">+${data.gold || 0}</div> 
-                            <div style="font-size: 0.7rem; text-transform: uppercase;">Vàng</div>
-                        </div>
-                    </div>
-                `,
-                showConfirmButton: true,
-                confirmButtonText: 'Tiếp tục cày! 🚀',
-                confirmButtonColor: '#10b981',
-                width: '450px'
-            }).then(() => {
-                // Đổi trạng thái nút sau khi xong
-                btn.innerHTML = '<i class="fas fa-check-double"></i> Đã học xong';
-                btn.className = "btn btn-success w-100 disabled"; // Thêm disabled class
-                
-                // Cập nhật điểm trên Header (nếu có)
-                const headerPoints = document.querySelector('.user-points-display');
-                if(headerPoints && data.points) {
-                    let current = parseInt(headerPoints.innerText) || 0;
-                    headerPoints.innerText = current + data.points;
-                }
-            });
-        } else {
-            // Xử lý lỗi trả về từ server
-            Swal.fire('Hả?', data.error || data.message || 'Lỗi gì đó rồi...', 'warning');
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            btn.style.opacity = '1';
-        }
-    } catch (e) {
-        console.error("Fetch Error:", e);
-        Swal.fire('Toang', 'Mạng lag hoặc lỗi server rồi fen ơi!', 'error');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-    }
-}
-
 /**
- * HỆ THỐNG QUẢN LÝ THỜI GIAN HỌC TẬP & CHỐNG AFK
+ * STUDY MANAGER (AFK Timer & Rewards System)
  */
 const StudyManager = {
-    // Config
-    REWARD_INTERVAL: 300, // 5 phút (300 giây)
-    AFK_TIMEOUT: 60,      // 60 giây không làm gì là AFK
-    MIN_LEARN_TIME: 60,   // Phải học ít nhất 60s mới được bấm Hoàn thành
+    REWARD_INTERVAL: 300, // 5 phút nhận thưởng 1 lần
+    AFK_TIMEOUT: 60,      // 60 giây không thao tác => AFK
+    MIN_LEARN_TIME: 10,   // Thời gian học tối thiểu để hoàn thành bài
     
-    // State
     secondsStudied: 0,
     secondsSinceLastInput: 0,
     isAFK: false,
-    timerInterval: null,
-    totalTimeInPage: 0,
+    interval: null,
 
     init: function() {
-        this.setupUI();
-        this.setupAntiAFK();
-        this.startTimer();
-        this.lockFinishButton();
+        this.createUI();
+        this.bindEvents();
+        this.start();
+        this.lockButton();
     },
 
-    setupUI: function() {
-        // Thêm thanh hiển thị thời gian học
-        const container = document.querySelector('.lesson-header-actions') || document.body;
-        const timerBadge = document.createElement('div');
-        timerBadge.id = 'study-timer-badge';
-        timerBadge.style.cssText = "position:fixed; bottom:20px; right:20px; background:#2d3748; color:#fff; padding:10px 15px; border-radius:30px; font-family:monospace; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999; display:flex; align-items:center; gap:10px; border:2px solid #4fd1c5;";
-        timerBadge.innerHTML = `<i class="fas fa-clock"></i> <span id="study-time-display">00:00</span>`;
-        document.body.appendChild(timerBadge);
+    // Tạo Widget Đồng hồ
+    createUI: function() {
+        const div = document.createElement('div');
+        div.id = 'study-floater';
+        div.className = 'study-floater active animate__animated animate__fadeInUp';
+        div.innerHTML = `
+            <div class="timer-ring"></div>
+            <div class="fw-bold" id="timer-text">00:00</div>
+        `;
+        document.body.appendChild(div);
     },
 
-    setupAntiAFK: function() {
-        // Reset bộ đếm AFK khi có tương tác
-        const resetAFK = () => {
+    // Bắt sự kiện người dùng
+    bindEvents: function() {
+        const reset = () => {
             this.secondsSinceLastInput = 0;
-            if (this.isAFK) {
+            if(this.isAFK) {
                 this.isAFK = false;
-                this.updateStatus(true);
+                const widget = document.getElementById('study-floater');
+                if(widget) {
+                    widget.classList.remove('afk');
+                    widget.classList.add('active');
+                    // Thay đổi màu ring lại thành xanh
+                    widget.querySelector('.timer-ring').style.borderTopColor = '#10b981';
+                }
             }
         };
-
-        ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
-            window.addEventListener(evt, resetAFK);
-        });
+        ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(e => window.addEventListener(e, reset));
         
-        // Dừng khi tab bị ẩn (người dùng chuyển tab khác)
+        // Khi chuyển tab => Auto AFK
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.isAFK = true;
-                this.updateStatus(false);
-            }
+            if(document.hidden) this.isAFK = true;
         });
     },
 
-    startTimer: function() {
-        this.timerInterval = setInterval(() => {
-            // Nếu tab ẩn hoặc đang AFK thì không đếm
-            if (document.hidden || this.isAFK) return;
-
-            this.secondsSinceLastInput++;
-            
-            // Check AFK Trigger
-            if (this.secondsSinceLastInput > this.AFK_TIMEOUT) {
-                this.isAFK = true;
-                this.updateStatus(false);
+    start: function() {
+        this.interval = setInterval(() => {
+            // Nếu tab ẩn hoặc AFK
+            if(document.hidden || this.isAFK) {
+                const widget = document.getElementById('study-floater');
+                if(widget && !widget.classList.contains('afk')) {
+                    widget.classList.add('afk');
+                    widget.classList.remove('active');
+                    document.getElementById('timer-text').innerText = "Tạm dừng";
+                    widget.querySelector('.timer-ring').style.borderTopColor = '#ef4444';
+                }
                 return;
             }
 
-            // Tăng thời gian học
-            this.secondsStudied++;
-            this.totalTimeInPage++;
-            this.updateDisplay();
-            this.checkUnlockFinish();
-
-            // Check Reward (Mỗi 5 phút)
-            if (this.secondsStudied > 0 && this.secondsStudied % this.REWARD_INTERVAL === 0) {
-                this.claimReward();
+            this.secondsSinceLastInput++;
+            if(this.secondsSinceLastInput > this.AFK_TIMEOUT) {
+                this.isAFK = true;
+                return;
             }
 
+            this.secondsStudied++;
+            
+            // Cập nhật UI Đồng hồ
+            const m = Math.floor(this.secondsStudied / 60).toString().padStart(2, '0');
+            const s = (this.secondsStudied % 60).toString().padStart(2, '0');
+            const timerText = document.getElementById('timer-text');
+            if(timerText) timerText.innerText = `${m}:${s}`;
+            
+            // Cập nhật thanh tiến độ bên phải
+            const percent = Math.min((this.secondsStudied / this.MIN_LEARN_TIME) * 100, 100);
+            const bar = document.getElementById('ss-progress');
+            if(bar) bar.style.width = `${percent}%`;
+            
+            const timerSidebar = document.getElementById('ss-timer');
+            if(timerSidebar) timerSidebar.innerText = `${m}:${s}`;
+
+            this.checkUnlock();
+
+            // Cơ chế nhận thưởng (Mỗi 5 phút)
+            if(this.secondsStudied > 0 && this.secondsStudied % this.REWARD_INTERVAL === 0) {
+                this.claimReward();
+            }
         }, 1000);
     },
 
-    updateDisplay: function() {
-        const mins = Math.floor(this.secondsStudied / 60).toString().padStart(2, '0');
-        const secs = (this.secondsStudied % 60).toString().padStart(2, '0');
-        const el = document.getElementById('study-time-display');
-        if(el) el.innerText = `${mins}:${secs}`;
-    },
-
-    updateStatus: function(isActive) {
-        const badge = document.getElementById('study-timer-badge');
-        if (!badge) return;
-        
-        if (isActive) {
-            badge.style.borderColor = "#4fd1c5"; // Xanh
-            badge.style.opacity = "1";
-            badge.innerHTML = `<i class="fas fa-clock"></i> <span id="study-time-display">${badge.querySelector('span').innerText}</span>`;
-        } else {
-            badge.style.borderColor = "#e53e3e"; // Đỏ
-            badge.style.opacity = "0.7";
-            badge.innerHTML = `<i class="fas fa-bed"></i> <span>Tạm dừng (AFK)</span>`;
-        }
-    },
-
-    // --- LOGIC NHẬN THƯỞNG ---
     claimReward: async function() {
         try {
-            // Hiệu ứng loading nhẹ
-            const badge = document.getElementById('study-timer-badge');
-            badge.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Nhận thưởng...`;
-
-            const res = await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
-            const data = await res.json();
-
-            if (data.success) {
-                // Hiển thị thông báo đẹp
-                if (typeof Swal !== 'undefined') {
-                    const Toast = Swal.mixin({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-                        timerProgressBar: true, background: '#1d4ed8', color: '#fff'
-                    });
-                    Toast.fire({ icon: 'success', title: data.msg });
-                }
-                
-                // Update UI Nước (Nếu có trên thanh header)
-                const waterUI = document.getElementById('user-water-display');
-                if (waterUI) waterUI.innerText = data.newWater;
-
-            } else {
-                console.warn(data.msg);
-            }
-        } catch (e) {
-            console.error("Lỗi nhận thưởng:", e);
-        } finally {
-            this.updateDisplay(); // Trả lại hiển thị giờ
+            await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
+            
+            const Toast = Swal.mixin({
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                background: '#10b981', color: '#fff'
+            });
+            Toast.fire({ icon: 'success', title: '🎁 +XP chăm học!' });
+        } catch(e) {
+            console.error("Reward error", e);
         }
     },
 
-    // --- LOGIC KHÓA NÚT HOÀN THÀNH ---
-    lockFinishButton: function() {
-        // Tìm nút hoàn thành (Bạn cần đảm bảo nút này có ID hoặc Class này)
-        const btn = document.getElementById('btn-finish-lesson') || document.querySelector('.btn-finish');
-        if (!btn) return;
-
-        // Lưu trạng thái gốc và disable
-        btn.dataset.originalText = btn.innerText;
-        btn.classList.add('disabled', 'btn-secondary');
-        btn.classList.remove('btn-success', 'btn-primary');
-        btn.style.pointerEvents = 'none';
-        btn.style.opacity = '0.6';
+    lockButton: function() {
+        const btn = document.getElementById('btn-finish-lesson');
+        if(!btn) return;
         
-        this.updateFinishButtonText(btn);
+        // Chỉ khóa nếu chưa hoàn thành (kiểm tra text nút hoặc trạng thái server nếu cần)
+        // Ở đây giả định load trang là chưa hoàn thành
+        btn.disabled = true;
+        btn.classList.add('disabled', 'opacity-50');
+        btn.style.cursor = 'not-allowed';
+        
+        const hint = document.getElementById('finish-hint');
+        if(hint) hint.innerText = `Cần học tối thiểu ${this.MIN_LEARN_TIME} giây để hoàn thành.`;
     },
 
-    checkUnlockFinish: function() {
-        const btn = document.getElementById('btn-finish-lesson') || document.querySelector('.btn-finish');
-        if (!btn) return;
-
-        // Nếu đã đủ thời gian -> Mở khóa
-        if (this.totalTimeInPage >= this.MIN_LEARN_TIME) {
-            if (btn.style.pointerEvents === 'none') {
-                btn.classList.remove('disabled', 'btn-secondary');
-                btn.classList.add('btn-success');
-                btn.style.pointerEvents = 'auto';
-                btn.style.opacity = '1';
-                btn.innerText = btn.dataset.originalText || 'Hoàn thành bài học';
+    checkUnlock: function() {
+        if(this.secondsStudied >= this.MIN_LEARN_TIME) {
+            const btn = document.getElementById('btn-finish-lesson');
+            if(btn && btn.disabled) {
+                btn.disabled = false;
+                btn.classList.remove('disabled', 'opacity-50');
+                btn.style.cursor = 'pointer';
+                btn.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
                 
-                // Hiệu ứng rung nhẹ báo hiệu xong
-                btn.classList.add('animate__animated', 'animate__pulse');
+                const hint = document.getElementById('finish-hint');
+                if(hint) {
+                    hint.innerText = "Bạn đã đủ điều kiện hoàn thành!";
+                    hint.className = "text-success mb-3 small fw-bold";
+                }
             }
-        } else {
-            this.updateFinishButtonText(btn);
-        }
-    },
-
-    updateFinishButtonText: function(btn) {
-        const left = this.MIN_LEARN_TIME - this.totalTimeInPage;
-        if (left > 0) {
-            btn.innerText = `Đọc bài trong ${left}s...`;
         }
     }
 };
 
-// Khởi chạy khi trang load
-document.addEventListener('DOMContentLoaded', () => {
-    // Chỉ chạy nếu đang ở chế độ xem bài học (không phải chế độ sửa)
-    if (!document.body.classList.contains('mode-edit')) {
-        StudyManager.init();
+function triggerConfetti() {
+    if(window.confetti) {
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
     }
-});
+}
+
+// Global function cho nút Hoàn thành
+window.completeLesson = async function(id) {
+    const btn = document.getElementById('btn-finish-lesson');
+    if(btn.disabled) return;
+
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+    btn.classList.remove('animate__animated'); // Tắt hiệu ứng rung
+    
+    try {
+        const res = await fetch(`/lesson/${id}/complete`, { method: 'POST' });
+        const data = await res.json();
+        
+        if(res.ok) {
+            triggerConfetti();
+            Swal.fire({
+                title: 'TUYỆT VỜI! 🎉',
+                html: `
+                    <div class="py-2">
+                        <div class="fw-bold text-success fs-3 mb-2">+${data.points || 10} Điểm</div>
+                        <div class="text-muted">Bạn đã hoàn thành bài học này xuất sắc!</div>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'Học tiếp bài sau 🚀',
+                confirmButtonColor: '#4f46e5'
+            }).then(() => {
+                // Reload hoặc chuyển trang tiếp theo tùy logic
+                window.location.reload();
+            });
+            
+            btn.innerHTML = '<i class="fas fa-check-double"></i> Đã hoàn thành';
+            btn.className = 'btn btn-secondary btn-lg px-5 py-3 rounded-pill shadow-sm disabled';
+        } else {
+            Swal.fire('Lỗi', data.message || 'Không thể hoàn thành', 'error');
+            btn.innerHTML = 'Thử lại';
+        }
+    } catch(e) {
+        console.error(e);
+        Swal.fire('Lỗi mạng', 'Kiểm tra kết nối internet', 'error');
+        btn.innerHTML = 'Thử lại';
+    }
+};
