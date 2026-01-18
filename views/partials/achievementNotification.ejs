@@ -1,0 +1,148 @@
+<!-- partials/achievementNotification.ejs -->
+<div id="achievement-toast" class="achievement-toast" style="display: none;">
+    <div class="toast-content">
+        <div class="toast-icon">🏆</div>
+        <div class="toast-text">
+            <div class="toast-title">Bạn đã mở khóa thành tích!</div>
+            <div class="toast-achievement" id="toast-achievement"></div>
+        </div>
+        <button class="toast-close" onclick="closeAchievementToast()">×</button>
+    </div>
+</div>
+
+<style>
+.achievement-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    animation: slideInUp 0.4s ease;
+    max-width: 350px;
+}
+
+.toast-content {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.toast-icon {
+    font-size: 2rem;
+    min-width: 40px;
+}
+
+.toast-text {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.toast-achievement {
+    font-size: 0.9rem;
+    opacity: 0.95;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+}
+
+.achievement-toast.hide {
+    animation: slideOutDown 0.4s ease forwards;
+}
+
+@media (max-width: 480px) {
+    .achievement-toast {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}
+</style>
+
+<script>
+function showAchievementNotification(achievement) {
+    const toast = document.getElementById('achievement-toast');
+    const achievementEl = document.getElementById('toast-achievement');
+    
+    // Handle both data structures
+    const name = achievement.achievement?.name || achievement.name || 'Thành tích';
+    const points = achievement.achievement?.points || achievement.points || 0;
+    const icon = achievement.icon || '🏆';
+    
+    achievementEl.innerHTML = `
+        <strong>${icon} ${name}</strong>
+        <br/>+${points} ⭐ điểm
+    `;
+    
+    toast.classList.remove('hide');
+    toast.style.display = 'flex';
+    
+    // Auto close after 5 seconds
+    setTimeout(() => closeAchievementToast(), 5000);
+}
+
+function closeAchievementToast() {
+    const toast = document.getElementById('achievement-toast');
+    toast.classList.add('hide');
+    setTimeout(() => {
+        toast.style.display = 'none';
+        toast.classList.remove('hide');
+    }, 400);
+}
+
+// Check for new achievements periodically
+async function checkForNewAchievements() {
+    try {
+        const response = await fetch('/api/achievements/my-achievements');
+        const data = await response.json();
+        // You can store last check time and compare to find new ones
+    } catch (err) {
+        console.error('Check achievements error:', err);
+    }
+}
+
+// Optional: Check every 10 seconds
+// setInterval(checkForNewAchievements, 10000);
+</script>

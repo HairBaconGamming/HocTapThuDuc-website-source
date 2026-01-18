@@ -4,7 +4,7 @@ const User = require('../models/User');
 exports.getLeaderboard = async (req, res) => {
     try {
         // 1. Lấy danh sách User, sắp xếp theo points giảm dần
-        // Chỉ lấy những người có điểm > 0 để bảng đẹp hơn (tuỳ chọn)
+        // Chỉ lấy những người có điểm > 0 để b��ng đẹp hơn (tuỳ chọn)
         const users = await User.find({ points: { $gt: 0 } })
             .sort({ points: -1 }) // Điểm cao nhất lên đầu
             .limit(50)                 // Lấy Top 50
@@ -18,7 +18,7 @@ exports.getLeaderboard = async (req, res) => {
         let myRank = 0;
         if (req.user) {
             // Đếm số người có điểm cao hơn mình
-            const countBetter = await User.countDocuments({ totalPoints: { $gt: req.user.totalPoints || 0 } });
+            const countBetter = await User.countDocuments({ points: { $gt: req.user.points || 0 } });
             myRank = countBetter + 1;
         }
 

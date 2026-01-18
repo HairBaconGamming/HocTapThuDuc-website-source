@@ -130,8 +130,8 @@ app.use((req, res, next) => { // Bỏ async để không chặn request chính
         const today = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
         // Chạy ngầm trong background
         Promise.all([
-            VisitStats.findOneAndUpdate({ key: "totalVisits" }, { $inc: { count: 1 } }, { upsert: true }).exec(),
-            VisitStats.findOneAndUpdate({ key: `dailyVisits_${today}` }, { $inc: { count: 1 } }, { upsert: true }).exec()
+            VisitStats.findOneAndUpdate({ dateStr: "totalVisits" }, { $inc: { count: 1 } }, { upsert: true }).exec(),
+            VisitStats.findOneAndUpdate({ dateStr: `dailyVisits_${today}` }, { $inc: { count: 1 } }, { upsert: true }).exec()
         ]).catch(err => console.error("Stats Error:", err.message));
     }
     next();
@@ -157,6 +157,7 @@ app.use('/search', searchRouter);
 app.use("/api/pro-images", require("./routes/proImages"));
 app.use("/api/quiz-generator", require("./routes/quizGenerator"));
 app.use('/api/flashcards', require('./routes/flashcard'));
+app.use('/api/achievements', require('./routes/achievements'));
 
 // 404 Handler
 app.use((req, res) => res.status(404).render("404", { 

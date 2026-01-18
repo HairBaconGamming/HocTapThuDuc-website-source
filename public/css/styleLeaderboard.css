@@ -12,6 +12,61 @@
     --shadow-hard: 6px 6px 0px var(--ink);
 }
 
+/* ===== INTRO ANIMATIONS ===== */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes rotateIn {
+    from {
+        opacity: 0;
+        transform: rotate(-10deg) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+    }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+}
+
 .leaderboard-wrapper {
     max-width: 900px;
     margin: 40px auto 100px;
@@ -24,6 +79,7 @@
     text-align: center;
     margin-bottom: 60px;
     position: relative;
+    animation: slideInDown 0.6s ease-out;
 }
 
 .lb-title {
@@ -34,6 +90,7 @@
     letter-spacing: -2px;
     text-shadow: 3px 3px 0px #eee;
     margin-bottom: 10px;
+    animation: slideInDown 0.7s ease-out 0.1s both;
 }
 
 .lb-desc {
@@ -45,6 +102,7 @@
     font-weight: 700;
     transform: rotate(-2deg);
     box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
 }
 
 /* --- PODIUM (TOP 3) - CARD STYLE --- */
@@ -57,8 +115,27 @@
     padding-bottom: 20px; /* Chừa chỗ cho shadow */
 }
 
-.podium-link { text-decoration: none; color: inherit; display: block; transition: 0.3s; }
+.podium-link { 
+    text-decoration: none; 
+    color: inherit; 
+    display: block; 
+    transition: 0.3s;
+}
+
 .podium-link:hover { transform: translateY(-10px); }
+
+/* Staggered entrance for top 3 */
+.podium-link.rank-1 {
+    animation: scaleIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+}
+
+.podium-link.rank-2 {
+    animation: slideInUp 0.7s ease-out 0.2s both;
+}
+
+.podium-link.rank-3 {
+    animation: slideInUp 0.7s ease-out 0.3s both;
+}
 
 .podium-card {
     background: var(--card-bg);
@@ -93,7 +170,8 @@
 
 .crown {
     position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-    font-size: 2.5rem; animation: float 2s infinite ease-in-out; display: none;
+    font-size: 2.5rem; animation: bounce 1.5s infinite ease-in-out, rotateIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both; 
+    display: none;
     filter: drop-shadow(0 2px 0 #000);
 }
 
@@ -129,7 +207,17 @@
     transition: 0.2s;
     position: relative;
     overflow: hidden;
+    animation: slideInUp 0.5s ease-out forwards;
+    opacity: 0;
 }
+
+/* Staggered animation for each rank card */
+.rank-card:nth-child(1) { animation-delay: 0.8s; }
+.rank-card:nth-child(2) { animation-delay: 0.9s; }
+.rank-card:nth-child(3) { animation-delay: 1s; }
+.rank-card:nth-child(4) { animation-delay: 1.1s; }
+.rank-card:nth-child(5) { animation-delay: 1.2s; }
+.rank-card:nth-child(n+6) { animation-delay: calc(0.8s + (n - 5) * 0.1s); }
 
 .rank-card:hover {
     border-color: var(--ink);

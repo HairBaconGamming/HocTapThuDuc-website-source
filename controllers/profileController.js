@@ -1,8 +1,9 @@
 const User = require('../models/User');
 const Garden = require('../models/Garden');
 const LessonCompletion = require('../models/LessonCompletion');
+const { UserAchievement } = require('../models/Achievement');
 const LevelUtils = require('../utils/level');
-const moment = require('moment-timezone'); // [FIX 1] Import thư viện moment
+const moment = require('moment-timezone');
 
 exports.getProfile = async (req, res) => {
     try {
@@ -34,7 +35,23 @@ exports.getProfile = async (req, res) => {
             lessonId: act.lesson
         }));
 
-        // 5. Render View
+        // 5. Lấy thông tin achievements
+        const achievements = await UserAchievement.find({ user: userId })
+            .sort({ unlockedAt: -1 })
+            .limit(6)
+            .lean();
+
+        const totalAchievements = await UserAchievement.countDocuments({ user: userId });
+
+        // 6. Lấy rank trên leaderboard (sắp xếp theo points)
+        const userRank = await User.countDocuments({ 
+            points: { $gt: user.points || 0 } 
+        }).then(count => count + 1);
+
+        // 7. Tính streak (nếu có)
+        const streak = user.currentStreak || 0;
+
+        // 8. Render View
         res.render('profile', {
             title: `Hồ sơ ${user.username}`,
             profileUser: user,
@@ -45,11 +62,16 @@ exports.getProfile = async (req, res) => {
             stats: {
                 gold: gold,
                 lessons: completedCount,
-                points: user.points || 0
+                points: user.points || 0,
+                totalPoints: user.totalPoints || 0
             },
             activities: activities,
+            achievements: achievements,
+            totalAchievements: totalAchievements,
+            userRank: userRank,
+            streak: streak,
             
-            moment: moment // [FIX 2] Truyền biến moment sang view để EJS sử dụng
+            moment: moment
         });
 
     } catch (err) {

@@ -14,6 +14,7 @@ const LessonCompletion = require("../models/LessonCompletion");
 const User = require("../models/User");
 const Garden = require('../models/Garden');
 const LevelUtils = require("../utils/level");
+const { achievementChecker } = require("../utils/achievementUtils");
 
 // Rate Limiters
 const rateLimit = require("express-rate-limit");
@@ -207,6 +208,7 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
         const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
         
         user.points += POINTS_REWARD;
+        user.totalPoints = (user.totalPoints || 0) + POINTS_REWARD;
         user.level = levelResult.newLevel;
         user.xp = levelResult.newXP;
         
@@ -222,6 +224,9 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
             { upsert: true, new: true }
         );
 
+        // --- 4. TRIGGER ACHIEVEMENTS ---
+        const unlockedAchievements = await achievementChecker.onLessonCompleted(req.user._id);
+        
         res.json({ 
             success: true, 
             message: `Hoàn thành!`,
@@ -234,7 +239,10 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
             // Thông tin Level
             level: user.level,
             levelName: levelInfo.fullName,
-            isLevelUp: levelResult.hasLeveledUp
+            isLevelUp: levelResult.hasLeveledUp,
+            
+            // Achievements
+            achievements: unlockedAchievements
         });
 
     } catch (e) { 

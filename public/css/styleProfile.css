@@ -263,6 +263,305 @@ body {
 .act-time { font-size: 0.8rem; color: #94a3b8; }
 
 
+/* --- ACHIEVEMENT CARD --- */
+.achievement-card {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+    border-color: #e879f9;
+}
+
+.achievement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+    color: #7c3aed;
+}
+
+.achievement-count {
+    background: #e879f9;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+.achievement-item {
+    background: #fff;
+    border: 2px solid #e879f9;
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: slideInUp 0.5s ease-out forwards;
+}
+
+.achievement-item:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(232, 121, 249, 0.3);
+    background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    animation: bounce 2s infinite;
+}
+
+.achievement-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #7c3aed;
+    line-height: 1.2;
+}
+
+/* --- STATS BOTTOM --- */
+.stats-container-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+}
+
+.mini-stat-bottom {
+    background: #fff;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: slideInUp 0.6s ease-out forwards;
+}
+
+.mini-stat-bottom:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.mini-stat-bottom.rank {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #fcd34d;
+}
+
+.mini-stat-bottom.rank:hover {
+    box-shadow: 0 12px 24px rgba(252, 211, 77, 0.3);
+}
+
+.mini-stat-bottom.streak {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border-color: #fca5a5;
+}
+
+.mini-stat-bottom.streak:hover {
+    box-shadow: 0 12px 24px rgba(252, 165, 165, 0.3);
+}
+
+.mini-stat-bottom.total-points {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-color: #93c5fd;
+}
+
+.mini-stat-bottom.total-points:hover {
+    box-shadow: 0 12px 24px rgba(147, 197, 253, 0.3);
+}
+
+/* --- REALM CARD VARIATIONS BY LEVEL --- */
+/* Phàm Nhân (1-10) */
+.realm-card[data-realm="0"] {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #fcd34d;
+}
+
+.realm-card[data-realm="0"] .realm-name {
+    color: #b45309;
+}
+
+.realm-card[data-realm="0"] .realm-label {
+    color: #b45309;
+}
+
+/* Tiên Đạo (11-20) */
+.realm-card[data-realm="1"] {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-color: #60a5fa;
+}
+
+.realm-card[data-realm="1"] .realm-name {
+    color: #1e40af;
+}
+
+.realm-card[data-realm="1"] .realm-label {
+    color: #1e40af;
+}
+
+/* Thần Đạo (21-30) */
+.realm-card[data-realm="2"] {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    border-color: #d8b4fe;
+}
+
+.realm-card[data-realm="2"] .realm-name {
+    color: #6b21a8;
+}
+
+.realm-card[data-realm="2"] .realm-label {
+    color: #6b21a8;
+}
+
+/* Thánh Đạo (31-40) */
+.realm-card[data-realm="3"] {
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    border-color: #f472b6;
+}
+
+.realm-card[data-realm="3"] .realm-name {
+    color: #be185d;
+}
+
+.realm-card[data-realm="3"] .realm-label {
+    color: #be185d;
+}
+
+/* Đạo Cảnh (41-50) */
+.realm-card[data-realm="4"] {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    border-color: #86efac;
+}
+
+.realm-card[data-realm="4"] .realm-name {
+    color: #166534;
+}
+
+.realm-card[data-realm="4"] .realm-label {
+    color: #166534;
+}
+
+/* Hỗn Độn (51-60) */
+.realm-card[data-realm="5"] {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-color: #38bdf8;
+}
+
+.realm-card[data-realm="5"] .realm-name {
+    color: #0c4a6e;
+}
+
+.realm-card[data-realm="5"] .realm-label {
+    color: #0c4a6e;
+}
+
+/* Hư Không (61-70) */
+.realm-card[data-realm="6"] {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-color: #fca5a5;
+}
+
+.realm-card[data-realm="6"] .realm-name {
+    color: #7f1d1d;
+}
+
+.realm-card[data-realm="6"] .realm-label {
+    color: #7f1d1d;
+}
+
+/* Khởi Nguyên (71-80) */
+.realm-card[data-realm="7"] {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-color: #c4b5fd;
+}
+
+.realm-card[data-realm="7"] .realm-name {
+    color: #4c1d95;
+}
+
+.realm-card[data-realm="7"] .realm-label {
+    color: #4c1d95;
+}
+
+/* Chí Cao (81-90) */
+.realm-card[data-realm="8"] {
+    background: linear-gradient(135deg, #fef08a, #fde047);
+    border-color: #facc15;
+}
+
+.realm-card[data-realm="8"] .realm-name {
+    color: #713f12;
+}
+
+.realm-card[data-realm="8"] .realm-label {
+    color: #713f12;
+}
+
+/* Vượt Ngưỡng (91-100) */
+.realm-card[data-realm="9"] {
+    background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+    border-color: #2dd4bf;
+}
+
+.realm-card[data-realm="9"] .realm-name {
+    color: #134e4a;
+}
+
+.realm-card[data-realm="9"] .realm-label {
+    color: #134e4a;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes floatBubble {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes glow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+}
+
 /* --- RESPONSIVE MOBILE --- */
 @media (max-width: 768px) {
     .bento-grid {
@@ -270,6 +569,8 @@ body {
     }
     .identity-card { grid-row: auto; } /* Bỏ span row */
     .activity-card { grid-column: span 1; }
-    .stats-container { grid-template-columns: 1fr; } /* Stats xếp dọc cho dễ nhìn hoặc 1fr 1fr 1fr thì hơi bé */
-    .stats-container { grid-template-columns: 1fr 1fr 1fr; } /* Vẫn giữ 3 cột nhưng bé hơn */
+    .achievement-card { grid-column: span 1; }
+    .stats-container { grid-template-columns: 1fr 1fr 1fr; }
+    .stats-container-bottom { grid-template-columns: 1fr 1fr 1fr; }
+    .achievement-grid { grid-template-columns: repeat(3, 1fr); }
 }

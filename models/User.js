@@ -22,6 +22,8 @@ const UserSchema = new mongoose.Schema(
     level: { type: Number, default: 0 },
     xp: { type: Number, default: 0 },
     lastStudyRewardAt: { type: Date, default: null },
+    currentStreak: { type: Number, default: 0 }, // Chuỗi học liên tiếp (ngày)
+    lastStudyDate: { type: Date, default: null }, // Ngày học cuối cùng
   },
   {
     timestamps: true,

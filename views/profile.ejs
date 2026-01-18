@@ -33,7 +33,7 @@
             <% } %>
         </div>
 
-        <div class="bento-card realm-card">
+        <div class="bento-card realm-card" data-realm="<%= Math.floor((levelInfo.level - 1) / 10) %>">
             <div class="realm-header">
                 <div>
                     <div class="realm-label">Cảnh giới hiện tại</div>
@@ -80,6 +80,46 @@
             <div class="garden-arrow">➔</div>
         </a>
 
+        <div class="bento-card achievement-card">
+            <div class="achievement-header">
+                <span>🏆 Thành tích</span>
+                <span class="achievement-count"><%= totalAchievements %> thành tích</span>
+            </div>
+            
+            <div class="achievement-grid">
+                <% if (achievements && achievements.length > 0) { %>
+                    <% achievements.forEach(achievement => { %>
+                        <div class="achievement-item" title="<%= achievement.achievementData?.name || 'Thành tích' %>">
+                            <div class="achievement-icon"><%= achievement.achievementData?.icon || '🎖️' %></div>
+                            <div class="achievement-name"><%= (achievement.achievementData?.name || 'Thành tích').substring(0, 15) %></div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div style="text-align:center; padding:20px; color:#94a3b8; font-style:italic; grid-column: 1/-1;">
+                        "Chưa có thành tích nào. Hãy bắt đầu học tập!" 🌟
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="stats-container-bottom">
+            <div class="mini-stat-bottom rank">
+                <div class="stat-emoji">🥇</div>
+                <div class="stat-num">#<%= userRank %></div>
+                <div class="stat-title">Xếp hạng</div>
+            </div>
+            <div class="mini-stat-bottom streak">
+                <div class="stat-emoji">🔥</div>
+                <div class="stat-num"><%= streak %></div>
+                <div class="stat-title">Chuỗi học</div>
+            </div>
+            <div class="mini-stat-bottom total-points">
+                <div class="stat-emoji">⭐</div>
+                <div class="stat-num"><%= stats.points.toLocaleString() %></div>
+                <div class="stat-title">Điểm</div>
+            </div>
+        </div>
+
         <div class="bento-card activity-card">
             <div class="activity-header">
                 <span>🔥 Hoạt động gần đây</span>
@@ -109,16 +149,6 @@
     </div>
 </div>
 
-<script>
-    // Animation nhẹ cho thanh XP khi load
-    document.addEventListener("DOMContentLoaded", () => {
-        const bar = document.querySelector('.xp-pill-fill');
-        if(bar) {
-            const w = bar.style.width;
-            bar.style.width = '0%';
-            setTimeout(() => bar.style.width = w, 300);
-        }
-    });
-</script>
+<script src="/js/profileAnimations.js"></script>
 
 <%- include('partials/footer') %>

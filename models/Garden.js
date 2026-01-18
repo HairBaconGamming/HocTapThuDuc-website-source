@@ -31,7 +31,13 @@ const GardenSchema = new mongoose.Schema({
             lastUpdated: { type: Date, default: Date.now },
             plantedAt: { type: Date, default: Date.now }
         }
-    ]
+    ],
+    
+    // [ACHIEVEMENTS] Tracking for achievements
+    harvestCount: { type: Number, default: 0 },      // Số lần thu hoạch
+    waterCount: { type: Number, default: 0 },        // Số lần tưới cây
+    totalGoldCollected: { type: Number, default: 0 }, // Tổng vàng thu hoạch được
+    plantSurvivalStreak: { type: Number, default: 0 } // Chuỗi ngày cây sống (liên tiếp)
 }, { timestamps: true });
 
 module.exports = mongoose.model('Garden', GardenSchema);

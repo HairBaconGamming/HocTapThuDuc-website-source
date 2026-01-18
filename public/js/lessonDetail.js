@@ -414,23 +414,47 @@ function renderQuizBlock(data, blockIdx) {
              qContent += `<input type="text" class="form-control fill-input" data-answer="${q.content || ''}" placeholder="Nhập đáp án của bạn..." autocomplete="off">`;
         }
 
-        // Explanation Box (Ẩn mặc định hoặc hiện tuỳ theo chế độ)
+        // Explanation Box (Ẩn mặc định - chỉ hiện sau khi nộp bài)
         qContent += `
-            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:${feedbackMode === 'instant' ? 'block' : 'none'}; border-left: 4px solid #0ea5e9;">
+            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:none; border-left: 4px solid #0ea5e9;">
                 <i class="fas fa-lightbulb me-2"></i> <strong>Giải thích:</strong> ${q.explanation || 'Không có giải thích chi tiết.'}
             </div>
         `;
 
         qEl.innerHTML = qContent;
         
-        // [NEW v11.0] Xử lý click option để hiện đáp án ngay nếu chế độ 'instant'
+        // [NEW v11.0] Xử lý click option để hiện visual feedback (đúng/sai) khi chế độ 'instant'
+        // Chỉ hiển thị giải thích khi chọn ĐÚNG đáp án
         if (feedbackMode === 'instant' && q.type === 'choice') {
             qEl.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
                 input.addEventListener('change', function() {
-                    const explanation = qEl.querySelector('.explanation');
-                    if (explanation) {
-                        explanation.style.display = 'block';
-                        explanation.classList.add('animate__animated', 'animate__fadeIn');
+                    const label = input.closest('label');
+                    const isCorrect = input.dataset.correct === 'true';
+                    const iconCheck = label.querySelector('.fa-check');
+                    const iconTimes = label.querySelector('.fa-times');
+                    
+                    // Hiển thị visual feedback (background color + icon)
+                    label.classList.remove('bg-success-subtle', 'bg-danger-subtle');
+                    iconCheck.style.display = 'none';
+                    iconTimes.style.display = 'none';
+                    
+                    if (isCorrect) {
+                        label.classList.add('bg-success-subtle');
+                        if (iconCheck) iconCheck.style.display = 'block';
+                        // Hiển thị giải thích chỉ khi chọn đúng
+                        const explanation = qEl.querySelector('.explanation');
+                        if (explanation) {
+                            explanation.style.display = 'block';
+                            explanation.classList.add('animate__animated', 'animate__fadeIn');
+                        }
+                    } else {
+                        label.classList.add('bg-danger-subtle');
+                        if (iconTimes) iconTimes.style.display = 'block';
+                        // Ẩn giải thích nếu chọn sai
+                        const explanation = qEl.querySelector('.explanation');
+                        if (explanation) {
+                            explanation.style.display = 'none';
+                        }
                     }
                 });
             });

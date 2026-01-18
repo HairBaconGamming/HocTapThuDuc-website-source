@@ -99,6 +99,9 @@
                         <a href="/my-garden" class="tool-dropdown-link" style="color: #10b981;">
                             <i class="fas fa-seedling"></i> <span>Vườn Tri Thức (Garden)</span>
                         </a>
+                        <a href="/achievements" class="tool-dropdown-link" style="color: #f59e0b;">
+                            <i class="fas fa-trophy"></i> <span>Thành Tích 🏆</span>
+                        </a>
                         <div style="border-top: 1px solid #eee; margin: 5px 0;"></div>
                         <a href="/logout" class="tool-dropdown-link" style="color: #ff6b6b;"><i class="fas fa-running"></i> <span>Sủi thôi (Out)</span></a>
                     </div>
@@ -235,5 +238,11 @@
         });
     });
 </script>
+
+<!-- Achievement System -->
+<script src="/js/achievementSystem.js"></script>
+
+<!-- Achievement Notification -->
+<%- include('achievementNotification') %>
 
 <main class="main-content" style="padding-top: 100px;">

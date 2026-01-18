@@ -1,0 +1,505 @@
+<%- include('partials/header') %>
+
+<div class="achievements-container">
+    <div class="achievements-header">
+        <h1>🏆 Thành Tích Của Bạn</h1>
+        <p class="subtitle">Thu thập thành tích và trở thành huyền thoại</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="achievements-stats">
+        <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+                <div class="stat-value" id="total-achievements">0</div>
+                <div class="stat-label">Tổng thành tích</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <div class="stat-value" id="unlocked-count">0</div>
+                <div class="stat-label">Đã mở khóa</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💎</div>
+            <div class="stat-content">
+                <div class="stat-value" id="completion-percent">0%</div>
+                <div class="stat-label">Hoàn thành</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-content">
+                <div class="stat-value" id="total-points">0</div>
+                <div class="stat-label">Điểm thành tích (0)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Sort -->
+    <div class="achievements-controls">
+        <div class="filter-group">
+            <button class="filter-btn active" data-category="all">Tất cả</button>
+            <button class="filter-btn" data-category="learning">📚 Học tập</button>
+            <button class="filter-btn" data-category="engagement">⚡ Tương tác</button>
+            <button class="filter-btn" data-category="challenge">🎯 Thử thách</button>
+            <button class="filter-btn" data-category="social">👥 Xã hội</button>
+            <button class="filter-btn" data-category="milestone">🎉 Cột mốc</button>
+        </div>
+        <div class="rarity-filter">
+            <span>Độ hiếm:</span>
+            <button class="rarity-btn" data-rarity="all">Tất cả</button>
+            <button class="rarity-btn common" data-rarity="common">Thường</button>
+            <button class="rarity-btn rare" data-rarity="rare">Hiếm</button>
+            <button class="rarity-btn epic" data-rarity="epic">Tuyệt vời</button>
+            <button class="rarity-btn legendary" data-rarity="legendary">Huyền thoại</button>
+        </div>
+    </div>
+
+    <!-- Achievements Grid -->
+    <div class="achievements-grid" id="achievements-grid">
+        <!-- Loaded via JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <h3>Chưa có thành tích</h3>
+        <p>Hãy bắt đầu học tập để mở khóa thành tích đầu tiên!</p>
+    </div>
+</div>
+
+<style>
+.achievements-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.achievements-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.achievements-header h1 {
+    font-size: 2.5rem;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.achievements-header .subtitle {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Stats */
+.achievements-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 2rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #0f172a;
+}
+
+.stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Controls */
+.achievements-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.filter-group, .rarity-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.rarity-filter {
+    gap: 6px;
+}
+
+.rarity-filter span {
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.filter-btn, .rarity-btn {
+    padding: 8px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: white;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover, .rarity-btn:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.filter-btn.active, .rarity-btn.active {
+    background: #4f46e5;
+    color: white;
+    border-color: #4f46e5;
+}
+
+.rarity-btn.common { color: #10b981; border-color: #10b981; }
+.rarity-btn.common.active { background: #10b981; color: white; }
+
+.rarity-btn.rare { color: #0ea5e9; border-color: #0ea5e9; }
+.rarity-btn.rare.active { background: #0ea5e9; color: white; }
+
+.rarity-btn.epic { color: #a855f7; border-color: #a855f7; }
+.rarity-btn.epic.active { background: #a855f7; color: white; }
+
+.rarity-btn.legendary { color: #f59e0b; border-color: #f59e0b; }
+.rarity-btn.legendary.active { background: #f59e0b; color: white; }
+
+/* Grid */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.achievement-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.achievement-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.achievement-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+}
+
+.achievement-card:hover::before {
+    opacity: 1;
+}
+
+.achievement-card.locked {
+    opacity: 0.7;
+    background: #f8fafc;
+}
+
+.achievement-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    transition: transform 0.3s ease;
+}
+
+.achievement-card:hover .achievement-icon {
+    transform: scale(1.1);
+}
+
+.achievement-card.locked .achievement-icon {
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.achievement-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.achievement-card.locked .achievement-name {
+    color: #94a3b8;
+}
+
+.achievement-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.achievement-meta {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.rarity-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.rarity-badge.common {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.rarity-badge.rare {
+    background: #cffafe;
+    color: #164e63;
+}
+
+.rarity-badge.epic {
+    background: #e9d5ff;
+    color: #581c87;
+}
+
+.rarity-badge.legendary {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.points-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    background: #f3e8ff;
+    color: #5b21b6;
+}
+
+.achievement-progress {
+    margin-bottom: 12px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5, #0ea5e9);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.unlock-date {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.unlock-badge {
+    display: inline-block;
+    background: #10b981;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .achievements-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .achievements-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .achievements-header h1 {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<script>
+let allAchievements = [];
+let currentFilters = { category: 'all', rarity: 'all' };
+
+async function loadAchievements() {
+    try {
+        const response = await fetch('/api/achievements/all');
+        const data = await response.json();
+        
+        if (data.success) {
+            allAchievements = data.achievements;
+            loadStats();
+            renderAchievements();
+        }
+    } catch (err) {
+        console.error('Load achievements error:', err);
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/achievements/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const { total, unlocked, completion, points } = data.stats;
+            document.getElementById('total-achievements').textContent = total;
+            document.getElementById('unlocked-count').textContent = unlocked;
+            document.getElementById('completion-percent').textContent = completion + '%';
+            document.getElementById('total-points').textContent = points;
+        }
+    } catch (err) {
+        console.error('Load stats error:', err);
+    }
+}
+
+function renderAchievements() {
+    const filtered = allAchievements.filter(a => {
+        const categoryMatch = currentFilters.category === 'all' || a.category === currentFilters.category;
+        const rarityMatch = currentFilters.rarity === 'all' || a.rarity === currentFilters.rarity;
+        return categoryMatch && rarityMatch;
+    });
+
+    const grid = document.getElementById('achievements-grid');
+    const emptyState = document.getElementById('empty-state');
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    grid.innerHTML = filtered.map(a => `
+        <div class="achievement-card ${a.unlocked ? '' : 'locked'}">
+            <div class="achievement-icon">${a.icon}</div>
+            <div class="achievement-name">${a.name}</div>
+            <div class="achievement-description">${a.description}</div>
+            <div class="achievement-meta">
+                <span class="rarity-badge ${a.rarity}">${a.rarity}</span>
+                <span class="points-badge">${a.points} ⭐</span>
+            </div>
+            ${!a.unlocked ? `
+                <div class="achievement-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text">Đang tiến hành...</div>
+                </div>
+            ` : `
+                <div class="unlock-badge">✓ Đã mở khóa</div>
+            `}
+            ${a.unlockedAt ? `
+                <div class="unlock-date">Mở khóa: ${new Date(a.unlockedAt).toLocaleDateString('vi-VN')}</div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFilters.category = this.dataset.category;
+        renderAchievements();
+    });
+});
+
+document.querySelectorAll('.rarity-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.rarity-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFilters.rarity = this.dataset.rarity;
+        renderAchievements();
+    });
+});
+
+// Load on init
+loadAchievements();
+</script>

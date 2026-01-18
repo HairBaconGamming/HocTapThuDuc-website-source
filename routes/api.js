@@ -9,6 +9,7 @@ const lessonController = require('../controllers/lessonController'); // Import l
 const courseController = require('../controllers/courseController');
 const authMiddleware = require('../middlewares/auth');
 const gardenController = require('../controllers/gardenController');
+const { achievementChecker } = require('../utils/achievementUtils');
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -26,7 +27,18 @@ router.post('/auth/login', (req, res, next) => {
              User.findByIdAndUpdate(user._id, {
                   lastLoginIP: req.ip,
                   lastloginUA: req.get('User-Agent') || 'Unknown'
-             }).exec();
+             }).exec().then(async () => {
+                  // Trigger achievements on login
+                  try {
+                       await achievementChecker.checkAndUnlockAchievements(
+                            user._id,
+                            'custom',
+                            { triggerType: 'login' }
+                       );
+                  } catch (e) {
+                       console.error('Error checking achievements on API login:', e);
+                  }
+             });
         } catch(saveErr) {
              console.error(saveErr);
         }

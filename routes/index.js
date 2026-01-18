@@ -13,7 +13,9 @@ const Subject = require('../models/Subject');
 const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const VisitStats = require('../models/VisitStats');
-const Achievement = require('../models/Achievement');
+const { AchievementType, UserAchievement } = require('../models/Achievement');
+const Garden = require('../models/Garden');
+const LessonRevision = require('../models/LessonRevision');
 
 // --- IMPORT CONTROLLERS ---
 const courseController = require('../controllers/courseController');
@@ -29,8 +31,8 @@ router.get("/", async (req, res) => {
         const today = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
         const [totalUsers, totalVisitsDoc, dailyVisitsDoc, latestLessons] = await Promise.all([
             User.countDocuments(),
-            VisitStats.findOne({ key: "totalVisits" }),
-            VisitStats.findOne({ key: `dailyVisits_${today}` }),
+            VisitStats.findOne({ dateStr: "totalVisits" }),
+            VisitStats.findOne({ dateStr: `dailyVisits_${today}` }),
             Lesson.find({ isPublished: true }).sort({ createdAt: -1 }).limit(5).lean()
         ]);
 
@@ -72,21 +74,132 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
         }
 
         // Fetch Data
-        const [subjects, userNews, lessons] = await Promise.all([
+        const [subjects, userNews, lessons, completions] = await Promise.all([
             Subject.find({}).select("_id name").lean(),
             News.find(newsFilter).sort({ createdAt: req.query.newsSort === "asc" ? 1 : -1 }).lean(),
             Lesson.find(lessonFilter)
                 .populate('subject')
                 .populate('createdBy', 'username avatar isTeacher')
                 .sort(sortObj)
+                .lean(),
+            LessonCompletion.find({ user: req.user._id })
+                .populate({ path: 'lesson', select: 'title subject' })
+                .sort({ completedAt: -1 })
                 .lean()
         ]);
+
+        // --- ENROLLED COURSES (từ lessons đã hoàn thành) ---
+        const courseMap = new Map();
+        // Filter out null lessons (deleted lessons) trước khi map
+        const completedLessonIds = new Set(completions.filter(c => c.lesson).map(c => c.lesson._id.toString()));
+        
+        // Lấy tất cả lessons từ các courses
+        const allLessonsInCourse = await Lesson.find()
+            .select('_id subject')
+            .lean();
+        
+        // Tính course progress
+        const courses = await Course.find({ isPublished: true })
+            .select('_id title thumbnail')
+            .lean();
+        
+        const enrolledCourses = [];
+        for (const course of courses) {
+            const courseLessons = allLessonsInCourse.filter(l => l.subject?.toString() === course.subject?.toString() || l.course?.toString() === course._id.toString());
+            const completedInCourse = courseLessons.filter(l => completedLessonIds.has(l._id.toString())).length;
+            
+            // Only show courses where user completed at least 1 lesson
+            if (courseLessons.length > 0 && completedInCourse > 0) {
+                enrolledCourses.push({
+                    _id: course._id,
+                    title: course.title,
+                    image: course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png',
+                    totalLessons: courseLessons.length,
+                    completedLessons: completedInCourse,
+                    progress: Math.round((completedInCourse / courseLessons.length) * 100)
+                });
+            }
+        }
+        
+        // Sắp xếp theo progress giảm dần (khóa gần hoàn thành lên trên)
+        enrolledCourses.sort((a, b) => b.progress - a.progress);
+
+        // --- RECENT COURSE (khóa học vừa học gần nhất) ---
+        let recentCourse = null;
+        // Tìm completion đầu tiên có lesson không null
+        const recentCompletion = completions.find(c => c.lesson);
+        if (recentCompletion && recentCompletion.lesson) {
+            const recentLesson = recentCompletion.lesson;
+            const recentCourseLessons = allLessonsInCourse.filter(l => l.subject?.toString() === recentLesson.subject?.toString());
+            const recentCompleted = recentCourseLessons.length > 0 
+                ? recentCourseLessons.filter(l => completedLessonIds.has(l._id.toString())).length 
+                : 0;
+            
+            const foundCourse = courses.find(c => c._id.toString() === recentCompletion.lesson?.course?.toString());
+            if ((foundCourse || recentCourseLessons.length > 0) && recentCourseLessons.length > 0) {
+                const totalLessons = recentCourseLessons.length;
+                const progressPercent = totalLessons > 0 ? Math.round((recentCompleted / totalLessons) * 100) : 0;
+                
+                recentCourse = {
+                    _id: foundCourse?._id || recentCourseLessons[0].course,
+                    title: foundCourse?.title || 'Khóa học gần đây',
+                    image: foundCourse?.thumbnail,
+                    progress: progressPercent
+                };
+            }
+        }
+
+        // --- WEEKLY ACTIVITY (7 ngày, tính theo LessonCompletion) ---
+        const weeklyActivity = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dayStart = new Date(d.setHours(0, 0, 0, 0));
+            const dayEnd = new Date(d.setHours(23, 59, 59, 999));
+            
+            // Đếm lessons hoàn thành trong ngày
+            const dayCompletions = completions.filter(c => {
+                const completedDate = new Date(c.completedAt);
+                return completedDate >= dayStart && completedDate <= dayEnd;
+            });
+            
+            // Tính giờ học (giả sử mỗi lesson = 0.5 giờ, có thể tùy chỉnh)
+            const learningHours = (dayCompletions.length * 0.5).toFixed(1);
+            weeklyActivity.push(parseFloat(learningHours));
+        }
+
+        // --- Count completed lessons ---
+        const completedLessonsCount = completions.length;
+
+        // --- GARDEN DATA ---
+        const gardenData = await Garden.findOne({ user: req.user._id }).lean();
+
+        // --- USER ACHIEVEMENTS (Recent 4) ---
+        const userAchievements = await UserAchievement.find({ user: req.user._id })
+            .populate('achievementId')
+            .sort({ unlockedAt: -1 })
+            .limit(4)
+            .lean();
+
+        // --- TOP 3 USERS (By Points) ---
+        const topUsers = await User.find()
+            .select('_id username avatar points')
+            .sort({ points: -1 })
+            .limit(3)
+            .lean();
 
         res.render("dashboard", {
             user: req.user, 
             lessons, 
             userNews, 
             subjects,
+            enrolledCourses,
+            recentCourse,
+            weeklyActivity: JSON.stringify(weeklyActivity),
+            completedLessonsCount,
+            gardenData,
+            userAchievements,
+            topUsers,
             currentSubject: req.query.subject || "", 
             currentCategory: req.query.category || "",
             currentSort: sortOption, 
@@ -174,6 +287,11 @@ router.get("/profile", isLoggedIn, profileController.getProfile);
 
 // Xem Profile người khác
 router.get("/profile/view/:id", profileController.getProfile);
+
+// Achievements page
+router.get("/achievements", isLoggedIn, (req, res) => {
+    res.render("achievements", { user: req.user, activePage: "achievements", title: "Thành Tích" });
+});
 
 // Edit Profile UI (Giữ nguyên logic cũ vì chưa chuyển sang controller)
 router.get("/profile/edit", isLoggedIn, (req, res) => {

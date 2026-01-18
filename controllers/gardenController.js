@@ -2,6 +2,7 @@ const Garden = require('../models/Garden');
 const User = require('../models/User'); // [QUAN TRỌNG] Import User để cộng XP
 const ASSETS = require('../config/gardenAssets');
 const LevelUtils = require('../utils/level');
+const { achievementChecker } = require('../utils/achievementUtils');
 
 // Giá đất cơ bản
 const PLOT_BASE_PRICE = 50;
@@ -179,7 +180,21 @@ exports.buyItem = async (req, res) => {
         garden.items.push(newItem);
         await garden.save();
 
-        res.json({ success: true, msg: `Đã mua ${itemConfig.name}`, newGold: garden.gold, item: garden.items[garden.items.length - 1] });
+        // --- TRIGGER ACHIEVEMENTS ---
+        let achievements = [];
+        if (type === 'plant') {
+            achievements = await achievementChecker.onPlantPlanted(req.user._id);
+        } else if (type === 'decoration') {
+            achievements = await achievementChecker.onDecorationPlaced(req.user._id);
+        }
+
+        res.json({ 
+            success: true, 
+            msg: `Đã mua ${itemConfig.name}`, 
+            newGold: garden.gold, 
+            item: garden.items[garden.items.length - 1],
+            achievements: achievements 
+        });
 
     } catch (err) {
         console.error(err);
@@ -239,8 +254,19 @@ exports.interactItem = async (req, res) => {
                 plot.lastWatered = new Date();
                 if (item.type === 'plant') item.witherProgress = 0;
                 
+                garden.waterCount = (garden.waterCount || 0) + 1;
                 await garden.save();
-                return res.json({ success: true, msg: 'Đã tưới nước (Ẩm 24h)', item: item, newWater: garden.water });
+
+                // --- TRIGGER ACHIEVEMENTS ---
+                const achievements = await achievementChecker.onPlantWatered(req.user._id);
+
+                return res.json({ 
+                    success: true, 
+                    msg: 'Đã tưới nước (Ẩm 24h)', 
+                    item: item, 
+                    newWater: garden.water,
+                    achievements: achievements 
+                });
             }
         }
 
@@ -251,6 +277,8 @@ exports.interactItem = async (req, res) => {
 
             const rewardGold = Math.floor(Math.random() * (config.rewardGold.max - config.rewardGold.min)) + config.rewardGold.min;
             garden.gold += rewardGold;
+            garden.harvestCount = (garden.harvestCount || 0) + 1;
+            garden.totalGoldCollected = (garden.totalGoldCollected || 0) + rewardGold;
 
             const user = await User.findById(req.user._id);
             const rewardXP = config.rewardXP || 10;
@@ -267,10 +295,15 @@ exports.interactItem = async (req, res) => {
             garden.items.pull(uniqueId);
             await garden.save();
 
+            // --- TRIGGER ACHIEVEMENTS ---
+            const achievements = await achievementChecker.onPlantHarvested(req.user._id, rewardGold);
+
             return res.json({ 
                 success: true, 
                 newGold: garden.gold, 
-                goldReward: rewardGold, xpReward: rewardXP,
+                goldReward: rewardGold, 
+                xpReward: rewardXP,
+                achievements: achievements,
                 // Data chuẩn form cho hàm updateHUD bên Phaser
                 levelData: {
                     level: user.level,
