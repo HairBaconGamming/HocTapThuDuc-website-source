@@ -30,11 +30,14 @@
     z-index: 101; /* [FIX] Luôn cao hơn cái nền đen của chính nó */
 }
 
-/* 4. Khung Chat (Trên Shop - Để vừa mua vừa chat) */
-/* [FIX] Z-Index Chat cao nhất hệ mặt trời */
+/* 4. Khung Chat (Điều chỉnh để không che shop) */
+/* [FIX v11.0] Chat nằm trên game nhưng dưới shop overlay khi shop mở */
 .chat-container, .chat-box, #chat-wrapper {
-    z-index: 200000 !important; 
+    z-index: 99 !important; 
     position: fixed;
+    /* Đảm bảo chat không che phủ shop khi shop mở */
+    transition: z-index 0.3s;
+    max-height: 70vh; /* Giới hạn chiều cao để không che phủ toàn bộ màn hình */
 }
 
 /* RESET & MOBILE FIX */
@@ -134,6 +137,9 @@ body, html {
 .fill-danger { background: #ef5350; }
 .stat-val { font-size: 0.9rem; text-align: right; color: #795548; }
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 4px; }
+.info-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.info-cell small { font-size: 0.75rem; color: #795548; font-weight: bold; }
+.info-cell strong { font-size: 1rem; color: #2e7d32; word-break: break-word; text-align: center; }
 .text-gold { color: #f57f17; }
 
 /* 4. BOTTOM TOOLBAR */

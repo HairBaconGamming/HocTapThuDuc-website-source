@@ -138,12 +138,20 @@
 
                 <div class="info-grid">
                     <div class="info-cell">
-                        <small>⏳ Còn lại</small>
+                        <small>⏳ Lớn lên</small>
                         <strong id="statTotalTime">--</strong>
                     </div>
                     <div class="info-cell">
                         <small>💰 Giá trị</small>
                         <strong id="statPrice" class="text-gold">--</strong>
+                    </div>
+                    <div class="info-cell">
+                        <small>💧 Độ ẩm</small>
+                        <strong id="statWateringTime" style="color: #29b6f6;">--</strong>
+                    </div>
+                    <div class="info-cell">
+                        <small>⭐ Lớn lên</small>
+                        <strong id="statStageTime" style="color: #66bb6a;">--</strong>
                     </div>
                 </div>
                 
@@ -478,6 +486,7 @@
                         document.getElementById('statStageBadge').innerText = "ĐÃ CHÍN";
                         document.getElementById('statStageBadge').className = "pixel-badge green";
                         document.getElementById('statTotalTime').innerText = "Thu hoạch!";
+                        document.getElementById('statStageTime').innerText = "---";
                     } else {
                         document.getElementById('statGrowthBar').style.width = pct + "%";
                         document.getElementById('statTimeProgress').innerText = Math.floor(pct) + "%";
@@ -485,15 +494,31 @@
                         document.getElementById('statStageBadge').className = "pixel-badge yellow";
                         const remaining = timePerStage - (currentProgress % timePerStage);
                         document.getElementById('statTotalTime').innerText = formatTime(remaining);
+                        document.getElementById('statStageTime').innerText = formatTime(remaining);
                     }
                     
-                    // Wither Bar update...
+                    // Wither Bar update... [FIX v10.4] Tính độ ẩm chính xác
                     const witherTime = parseDuration(config.witherTime || '30 phút');
-                    let realWither = itemData.witherProgress || 0;
-                    if (!isWet) realWither += elapsed; else realWither = Math.max(0, realWither - elapsed);
-                    const healthPct = Math.max(0, 100 - (realWither / witherTime * 100));
+                    const lastWaterTime = plot?.lastWatered ? new Date(plot.lastWatered).getTime() : new Date(itemData.plantedAt).getTime();
+                    const timeSinceWater = now - lastWaterTime;
+                    const witherProgress = Math.max(0, timeSinceWater - (24 * 3600000)); // Bắt đầu tính sau 24h
+                    const healthPct = Math.max(0, 100 - ((witherProgress / witherTime) * 100));
                     document.getElementById('statWitherBar').style.width = healthPct + "%";
                     document.getElementById('statWitherVal').innerText = Math.floor(healthPct) + "%";
+                    
+                    // [UPGRADE v10.4] Hiển thị thời gian còn lại cho độ ẩm
+                    const remainingWaterTime = witherTime - witherProgress;
+                    document.getElementById('statWateringTime').innerText = formatTime(Math.max(0, remainingWaterTime));
+                    document.getElementById('statWateringTime').style.color = healthPct > 50 ? "#29b6f6" : (healthPct > 20 ? "#ffa726" : "#ef5350");
+                    
+                    if (healthPct > 0 && !isWet && remainingWaterTime > 0) {
+                        const wateringText = formatTime(remainingWaterTime);
+                        document.getElementById('statSoilStatus').innerText = `🌵 Đất khô - Tưới trong ${wateringText}`;
+                    } else if (isWet) {
+                        document.getElementById('statSoilStatus').innerText = `💧 Đất ẩm - Còn ${formatTime(24*3600000 - timeSinceWater)}`;
+                    } else {
+                        document.getElementById('statSoilStatus').innerText = "☠️ Đất quá khô - Cây sắp chết!";
+                    }
                 }
             };
             
@@ -722,8 +747,25 @@
             if (!show) btn.classList.remove('active'); // Reset state
         }
 
-        // Helpers
-        function formatTime(ms) { return ms <= 0 ? "00:00" : new Date(ms).toISOString().substr(14, 5); }
+        // Helpers [UPGRADE v10.4] Hiển thị thời gian chi tiết hơn
+        function formatTime(ms) {
+            if (ms <= 0) return "00:00";
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            // Nếu lớn hơn 1 giờ -> hiển thị giờ
+            if (hours > 0) {
+                return `${hours}g ${minutes}p`;
+            }
+            // Nếu lớn hơn 1 phút -> hiển thị phút:giây
+            if (minutes > 0) {
+                return `${minutes}p ${seconds}s`;
+            }
+            // Nếu ít hơn 1 phút -> hiển thị giây
+            return `${seconds}s`;
+        }
         function parseDuration(str) { const num = parseInt(str); return num * (str.includes('giờ') ? 3600000 : 60000); }
 
         const PING_INTERVAL = 10 * 60 * 1000; // 10 phút

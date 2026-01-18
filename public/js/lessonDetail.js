@@ -341,28 +341,46 @@ function getEmbedUrl(url, autoplay) {
     return { type: 'video', url: url };
 }
 
-/* --- QUIZ RENDERER (GAMIFIED) --- */
+/* --- QUIZ RENDERER (GAMIFIED v11.0 - With Answer Visibility Modes) --- */
 function renderQuizBlock(data, blockIdx) {
     const settings = data.settings || { passingScore: 50, showFeedback: 'submit' };
     const container = document.createElement('div');
     container.className = 'quiz-wrapper bg-white mb-4';
     
+    // Chế độ hiển thị đáp án: 'instant' (sau khi chọn), 'submit' (sau khi nộp), 'never' (không hiện)
+    // Sử dụng 'showFeedback' từ settings
+    const feedbackMode = settings.showFeedback || 'submit';
+    
     // Header Quiz
     container.innerHTML = `
-        <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-            <strong class="text-primary"><i class="fas fa-puzzle-piece me-2"></i>Bài tập thực hành</strong>
-            <span class="badge bg-secondary">Điểm đạt: ${settings.passingScore}%</span>
+        <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <strong class="text-primary"><i class="fas fa-puzzle-piece me-2"></i>Bài tập thực hành</strong>
+                <span class="badge bg-secondary ms-2">Điểm đạt: ${settings.passingScore}%</span>
+            </div>
+            <small class="text-muted mt-2 mt-md-0">
+                <i class="fas fa-lightbulb me-1"></i>
+                ${
+                    feedbackMode === 'instant' ? 'Hiện đáp án khi chọn' :
+                    feedbackMode === 'submit' ? 'Hiện đáp án sau khi nộp' :
+                    'Không hiện đáp án'
+                }
+            </small>
         </div>
         <div class="quiz-body p-4"></div>
-        <div class="quiz-footer p-3 border-top bg-light text-end">
-            <button class="btn btn-primary btn-submit-quiz shadow-sm fw-bold px-4">
-                <i class="fas fa-paper-plane me-2"></i> Nộp bài
-            </button>
+        <div class="quiz-footer p-3 border-top bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="quiz-controls-left"></div>
+            <div class="text-end">
+                <button class="btn btn-primary btn-submit-quiz shadow-sm fw-bold px-4">
+                    <i class="fas fa-paper-plane me-2"></i> Nộp bài
+                </button>
+            </div>
         </div>
     `;
     
     const body = container.querySelector('.quiz-body');
     const btnSubmit = container.querySelector('.btn-submit-quiz');
+    const controlsLeft = container.querySelector('.quiz-controls-left');
 
     // Render questions
     const questions = data.questions || [];
@@ -371,6 +389,7 @@ function renderQuizBlock(data, blockIdx) {
         qEl.className = 'quiz-question mb-4 pb-3 border-bottom';
         if(idx === questions.length -1) qEl.classList.remove('border-bottom');
         qEl.dataset.type = q.type;
+        qEl.dataset.index = idx;
         
         let qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
         
@@ -380,9 +399,10 @@ function renderQuizBlock(data, blockIdx) {
             const name = `q_${blockIdx}_${idx}`;
             let opts = '';
             (q.options || []).forEach((opt, optIdx) => {
+                const isCorrect = (q.correct || []).includes(optIdx);
                 opts += `
-                    <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative">
-                        <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${(q.correct || []).includes(optIdx)}">
+                    <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative" data-option-idx="${optIdx}" data-is-correct="${isCorrect}">
+                        <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}">
                         <span>${opt}</span>
                         <i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
                         <i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
@@ -394,14 +414,28 @@ function renderQuizBlock(data, blockIdx) {
              qContent += `<input type="text" class="form-control fill-input" data-answer="${q.content || ''}" placeholder="Nhập đáp án của bạn..." autocomplete="off">`;
         }
 
-        // Explanation Box (Ẩn mặc định)
+        // Explanation Box (Ẩn mặc định hoặc hiện tuỳ theo chế độ)
         qContent += `
-            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:none; border-left: 4px solid #0ea5e9;">
+            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:${feedbackMode === 'instant' ? 'block' : 'none'}; border-left: 4px solid #0ea5e9;">
                 <i class="fas fa-lightbulb me-2"></i> <strong>Giải thích:</strong> ${q.explanation || 'Không có giải thích chi tiết.'}
             </div>
         `;
 
         qEl.innerHTML = qContent;
+        
+        // [NEW v11.0] Xử lý click option để hiện đáp án ngay nếu chế độ 'instant'
+        if (feedbackMode === 'instant' && q.type === 'choice') {
+            qEl.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', function() {
+                    const explanation = qEl.querySelector('.explanation');
+                    if (explanation) {
+                        explanation.style.display = 'block';
+                        explanation.classList.add('animate__animated', 'animate__fadeIn');
+                    }
+                });
+            });
+        }
+        
         body.appendChild(qEl);
     });
 
@@ -440,8 +474,8 @@ function renderQuizBlock(data, blockIdx) {
                             iconTimes.style.display = 'block';
                             userCorrect = false;
                         }
-                    } else if (isRight) {
-                        // Highlight đáp án đúng bị bỏ sót (viền xanh đứt đoạn)
+                    } else if (isRight && feedbackMode !== 'never') {
+                        // Highlight đáp án đúng bị bỏ sót (viền xanh đứt đoạn) - chỉ nếu không phải chế độ 'never'
                         label.style.border = "2px dashed #198754";
                         userCorrect = false;
                     }
@@ -460,20 +494,22 @@ function renderQuizBlock(data, blockIdx) {
                     isCorrect = true;
                 } else {
                     input.classList.add('is-invalid');
-                    // Hiện đáp án đúng
-                    const ansDiv = document.createElement('div');
-                    ansDiv.className = 'text-success fw-bold mt-1 small';
-                    ansDiv.innerText = `Đáp án đúng: ${input.dataset.answer}`;
-                    input.after(ansDiv);
+                    // Hiện đáp án đúng chỉ nếu không phải chế độ 'never'
+                    if (feedbackMode !== 'never') {
+                        const ansDiv = document.createElement('div');
+                        ansDiv.className = 'text-success fw-bold mt-1 small';
+                        ansDiv.innerText = `Đáp án đúng: ${input.dataset.answer}`;
+                        input.after(ansDiv);
+                    }
                 }
                 input.disabled = true;
             }
 
             if(isCorrect) correctCount++;
             
-            // Hiện giải thích
+            // Hiện giải thích chỉ nếu không phải chế độ 'never'
             const exp = qEl.querySelector('.explanation');
-            if(exp) {
+            if(exp && feedbackMode !== 'never') {
                 exp.style.display = 'block';
                 exp.classList.add('animate__animated', 'animate__fadeIn');
             }
