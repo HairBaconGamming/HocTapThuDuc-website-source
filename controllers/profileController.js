@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Garden = require('../models/Garden');
 const LessonCompletion = require('../models/LessonCompletion');
@@ -8,8 +9,9 @@ const moment = require('moment-timezone');
 exports.getProfile = async (req, res) => {
     try {
         const userId = req.params.id || req.user._id;
-        
+
         const user = await User.findById(userId);
+        const userObjectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
         if (!user) return res.render('error', { message: 'Không tìm thấy đạo hữu này!' });
 
         // 1. Lấy thông tin Cảnh Giới
@@ -45,7 +47,7 @@ exports.getProfile = async (req, res) => {
 
         // Calculate achievement points from unlocked achievements
         const pointsData = await UserAchievement.aggregate([
-            { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+            { $match: { user: new mongoose.Types.ObjectId(userId.toString()) } },
             { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
             { $unwind: '$achievement' },
             { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
