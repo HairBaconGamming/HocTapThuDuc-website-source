@@ -178,9 +178,9 @@ async function getAchievementStats(userId) {
     try {
         const totalAchievements = await AchievementType.countDocuments({ isActive: true });
         const unlockedAchievements = await UserAchievement.countDocuments({ user: userId });
-        const totalPoints = await UserAchievement.aggregate([
+        const achievementPointsData = await UserAchievement.aggregate([
             { $match: { user: mongoose.Types.ObjectId(userId) } },
-            { $group: { _id: null, totalPoints: { $sum: '$achievementData.points' } } }
+            { $group: { _id: null, achievementPoints: { $sum: '$achievementData.points' } } }
         ]);
 
         return {
@@ -188,11 +188,11 @@ async function getAchievementStats(userId) {
             unlocked: unlockedAchievements,
             locked: totalAchievements - unlockedAchievements,
             completionPercent: Math.round((unlockedAchievements / totalAchievements) * 100),
-            totalPoints: totalPoints[0]?.totalPoints || 0
+            achievementPoints: achievementPointsData[0]?.achievementPoints || 0
         };
     } catch (err) {
         console.error('Error getting achievement stats:', err);
-        return { total: 0, unlocked: 0, locked: 0, completionPercent: 0, totalPoints: 0 };
+        return { total: 0, unlocked: 0, locked: 0, completionPercent: 0, achievementPoints: 0 };
     }
 }
 

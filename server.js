@@ -30,11 +30,40 @@ const server = http.createServer(app);
 const io = socketio(server);
 app.locals.io = io;
 
-// DB Connection
+// DB Connection with Enhanced Configuration
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/studypro';
-mongoose.connect(uri.replace(/^"(.*)"$/, '$1'))
+const mongooseOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 15000,     // Tăng lên 15s
+  socketTimeoutMS: 25000,              // Socket timeout 25s
+  maxPoolSize: 10,                     // Tối đa 10 connection
+  minPoolSize: 2,                      // Tối thiểu 2 connection
+  retryWrites: true,
+  retryReads: true,
+  connectTimeoutMS: 15000,
+};
+
+mongoose.connect(uri.replace(/^"(.*)"$/, '$1'), mongooseOptions)
   .then(() => console.log('✅ MongoDB connected.'))
-  .catch(err => { console.error(err); process.exit(1); });
+  .catch(err => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+    console.log('⚠️  TROUBLESHOOTING:');
+    console.log('   1. Check if IP is whitelisted in MongoDB Atlas');
+    console.log('   2. Verify MONGO_URI in .env file');
+    console.log('   3. Check if MongoDB cluster is running');
+    console.log('   4. Try adding 0.0.0.0/0 temporarily for testing (not for production!)');
+    // Don't exit on first error - allow graceful degradation
+  });
+
+// Handle connection events
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('🔴 MongoDB Error:', err.message);
+});
 
 // Helpers
 const marked = require("marked");
@@ -128,11 +157,13 @@ app.use(banCheck);
 app.use((req, res, next) => { // Bỏ async để không chặn request chính
     if(req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/static')) {
         const today = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
-        // Chạy ngầm trong background
-        Promise.all([
-            VisitStats.findOneAndUpdate({ dateStr: "totalVisits" }, { $inc: { count: 1 } }, { upsert: true }).exec(),
-            VisitStats.findOneAndUpdate({ dateStr: `dailyVisits_${today}` }, { $inc: { count: 1 } }, { upsert: true }).exec()
-        ]).catch(err => console.error("Stats Error:", err.message));
+        // Chạy ngầm trong background với error handling
+        if(mongoose.connection.readyState === 1) { // 1 = connected
+            Promise.all([
+                VisitStats.findOneAndUpdate({ dateStr: "totalVisits" }, { $inc: { count: 1 } }, { upsert: true }).exec().catch(e => console.warn('VisitStats error:', e.message)),
+                VisitStats.findOneAndUpdate({ dateStr: `dailyVisits_${today}` }, { $inc: { count: 1 } }, { upsert: true }).exec().catch(e => console.warn('VisitStats error:', e.message))
+            ]).catch(err => console.warn("Stats Error:", err.message));
+        }
     }
     next();
 });
@@ -158,6 +189,7 @@ app.use("/api/pro-images", require("./routes/proImages"));
 app.use("/api/quiz-generator", require("./routes/quizGenerator"));
 app.use('/api/flashcards', require('./routes/flashcard'));
 app.use('/api/achievements', require('./routes/achievements'));
+app.use('/api/comments', require('./routes/comments'));
 
 // 404 Handler
 app.use((req, res) => res.status(404).render("404", { 
@@ -193,6 +225,10 @@ server.listen(port, () => console.log(`🚀 Server on port ${port}`));
 // [OPTIMIZE] Slug Fixer - Chạy sau 5s để server khởi động nhanh hơn
 setTimeout(async () => {
     try {
+        if(mongoose.connection.readyState !== 1) {
+            console.warn("⏭️  Slug Fixer: Skipped (DB not ready)");
+            return;
+        }
         const Lesson = require('./models/Lesson');
         const count = await Lesson.countDocuments({ slug: { $exists: false } });
         if(count > 0) {
@@ -200,7 +236,9 @@ setTimeout(async () => {
             const missing = await Lesson.find({ slug: { $exists: false } }).limit(50);
             for(const l of missing) { l.slug = undefined; await l.save(); }
         }
-    } catch(e) { console.error("Slug Fixer Warn:", e.message); }
+    } catch(e) { 
+        console.warn("⚠️  Slug Fixer Warn:", e.message); 
+    }
 }, 5000);
 
 if (process.env.NODE_ENV === 'production') {

@@ -13,6 +13,9 @@ router.get('/stats', isLoggedIn, achievementController.getAchievementStats);
 // Get all achievements (with filter)
 router.get('/all', isLoggedIn, achievementController.getAllAchievements);
 
+// Get all achievements with progress and unlock status
+router.get('/gallery', isLoggedIn, achievementController.getAchievementsWithProgress);
+
 // Get achievement progress for locked achievements
 router.get('/progress', isLoggedIn, achievementController.getProgress);
 

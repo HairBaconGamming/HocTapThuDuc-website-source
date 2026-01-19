@@ -88,9 +88,7 @@ async function checkAndUnlockAchievements(userId, triggerType, data = {}) {
           unlockedAt: new Date()
         });
 
-        // Cộng điểm cho user
-        user.totalPoints = (user.totalPoints || 0) + achievement.points;
-        await user.save();
+        // Note: Achievement points are calculated from unlocked achievements, not stored on user
 
         unlockedAchievements.push({
           _id: achievement._id,
@@ -126,9 +124,16 @@ async function onLessonCompleted(userId) {
 // Trigger khi nhận điểm
 async function onPointsGained(userId) {
   try {
-    const user = await User.findById(userId);
-    if (!user) return [];
-    return await checkAndUnlockAchievements(userId, 'points_reached', { currentValue: user.totalPoints || 0 });
+    // Calculate current achievement points from unlocked achievements
+    const pointsData = await UserAchievement.aggregate([
+      { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+      { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
+      { $unwind: '$achievement' },
+      { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
+    ]);
+
+    const currentAchievementPoints = pointsData[0]?.achievementPoints || 0;
+    return await checkAndUnlockAchievements(userId, 'points_reached', { currentValue: currentAchievementPoints });
   } catch (err) {
     console.error('Error in onPointsGained:', err);
     return [];
@@ -166,6 +171,9 @@ async function getAchievementProgress(userId) {
     const user = await User.findById(userId);
     if (!user) return {};
 
+    const Garden = require('../models/Garden');
+    const garden = await Garden.findOne({ user: userId });
+
     // Lấy tất cả achievements đã unlock
     const unlockedIds = new Set(
       (await UserAchievement.find({ user: userId }).select('achievementId').lean())
@@ -181,14 +189,62 @@ async function getAchievementProgress(userId) {
     const progress = {};
     for (const achievement of lockedAchievements) {
       let percent = 0;
+      const target = achievement.condition?.value || 1;
 
-      if (achievement.condition?.type === 'lessons_completed') {
-        const completedCount = await LessonCompletion.countDocuments({ user: userId });
-        percent = Math.min((completedCount / achievement.condition.value) * 100, 99);
-      } else if (achievement.condition?.type === 'points_reached') {
-        percent = Math.min(((user.totalPoints || 0) / achievement.condition.value) * 100, 99);
-      } else if (achievement.condition?.type === 'streak_days') {
-        percent = Math.min(((user.currentStreak || 0) / achievement.condition.value) * 100, 99);
+      switch(achievement.condition?.type) {
+        case 'lessons_completed': {
+          const completedCount = await LessonCompletion.countDocuments({ user: userId });
+          percent = Math.min((completedCount / target) * 100, 99);
+          break;
+        }
+        case 'points_reached': {
+          // Calculate achievement points from unlocked achievements
+          const pointsData = await UserAchievement.aggregate([
+            { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+            { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
+            { $unwind: '$achievement' },
+            { $group: { _id: null, totalPoints: { $sum: '$achievement.points' } } }
+          ]);
+          const currentPoints = pointsData[0]?.totalPoints || 0;
+          percent = Math.min((currentPoints / target) * 100, 99);
+          break;
+        }
+        case 'streak_days': {
+          percent = Math.min(((user.currentStreak || 0) / target) * 100, 99);
+          break;
+        }
+        case 'plants_planted': {
+          const plantCount = (garden?.items || []).filter(item => item.type === 'plant' && !item.isDead).length;
+          percent = Math.min((plantCount / target) * 100, 99);
+          break;
+        }
+        case 'plants_harvested': {
+          const harvestCount = garden?.harvestCount || 0;
+          percent = Math.min((harvestCount / target) * 100, 99);
+          break;
+        }
+        case 'plants_watered': {
+          const waterCount = garden?.waterCount || 0;
+          percent = Math.min((waterCount / target) * 100, 99);
+          break;
+        }
+        case 'decorations_placed': {
+          const decorCount = (garden?.items || []).filter(item => item.type === 'decoration').length;
+          percent = Math.min((decorCount / target) * 100, 99);
+          break;
+        }
+        case 'gold_collected': {
+          const goldCollected = garden?.totalGoldCollected || 0;
+          percent = Math.min((goldCollected / target) * 100, 99);
+          break;
+        }
+        case 'plant_survival_streak': {
+          const survivalStreak = garden?.plantSurvivalStreak || 0;
+          percent = Math.min((survivalStreak / target) * 100, 99);
+          break;
+        }
+        default:
+          percent = 0;
       }
 
       progress[achievement._id.toString()] = Math.round(percent);
@@ -213,21 +269,21 @@ async function getAchievementStats(userId) {
       { $match: { user: require('mongoose').Types.ObjectId(userId) } },
       { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
       { $unwind: '$achievement' },
-      { $group: { _id: null, totalPoints: { $sum: '$achievement.points' } } }
+      { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
     ]);
 
-    const totalPoints = pointsData[0]?.totalPoints || 0;
+    const achievementPoints = pointsData[0]?.achievementPoints || 0;
 
     return {
       total: totalAchievements,
       unlocked: unlockedCount,
       locked: lockedCount,
       completion: totalAchievements > 0 ? Math.round((unlockedCount / totalAchievements) * 100) : 0,
-      points: totalPoints
+      achievementPoints: achievementPoints
     };
   } catch (err) {
     console.error('Error in getAchievementStats:', err);
-    return { total: 0, unlocked: 0, locked: 0, completion: 0, points: 0 };
+    return { total: 0, unlocked: 0, locked: 0, completion: 0, achievementPoints: 0 };
   }
 }
 

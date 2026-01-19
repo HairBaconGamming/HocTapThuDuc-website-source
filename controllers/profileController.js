@@ -43,6 +43,15 @@ exports.getProfile = async (req, res) => {
 
         const totalAchievements = await UserAchievement.countDocuments({ user: userId });
 
+        // Calculate achievement points from unlocked achievements
+        const pointsData = await UserAchievement.aggregate([
+            { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+            { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
+            { $unwind: '$achievement' },
+            { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
+        ]);
+        const achievementPoints = pointsData[0]?.achievementPoints || 0;
+
         // 6. Lấy rank trên leaderboard (sắp xếp theo points)
         const userRank = await User.countDocuments({ 
             points: { $gt: user.points || 0 } 
@@ -63,7 +72,7 @@ exports.getProfile = async (req, res) => {
                 gold: gold,
                 lessons: completedCount,
                 points: user.points || 0,
-                totalPoints: user.totalPoints || 0
+                achievementPoints: achievementPoints
             },
             activities: activities,
             achievements: achievements,

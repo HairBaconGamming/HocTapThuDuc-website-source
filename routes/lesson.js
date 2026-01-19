@@ -144,6 +144,34 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     } catch (e) { res.redirect("/subjects"); }
 });
 
+// View Lesson Discussion Page
+router.get("/:id/discussion", isLoggedIn, async (req, res) => {
+    try {
+        const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar isTeacher").lean();
+        if (!lesson) return res.redirect("/subjects");
+
+        // Try to resolve subject
+        let subject = null;
+        try {
+            if (lesson.subject) subject = await Subject.findById(lesson.subject).select("name").lean();
+            else if (lesson.subjectId) subject = await Subject.findById(lesson.subjectId).select("name").lean();
+        } catch (e) { subject = null; }
+
+        // Build breadcrumbs
+        const breadcrumbs = [
+            { label: 'Trang chủ', url: '/' },
+            { label: subject ? subject.name : 'Bài học', url: subject ? `/subjects/${subject._id}` : '/subjects' },
+            { label: lesson.title, url: `/lesson/${lesson._id}` },
+            { label: 'Thảo luận', url: null }
+        ];
+
+        res.render("lessonDiscussion", { user: req.user, lesson, subject, breadcrumbs, activePage: "subjects" });
+    } catch (e) { 
+        console.error(e);
+        res.redirect("/subjects"); 
+    }
+});
+
 // Edit Lesson UI
 router.get("/:id/edit", isLoggedIn, async (req, res) => {
     try {
@@ -208,7 +236,6 @@ router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
         const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
         
         user.points += POINTS_REWARD;
-        user.totalPoints = (user.totalPoints || 0) + POINTS_REWARD;
         user.level = levelResult.newLevel;
         user.xp = levelResult.newXP;
         

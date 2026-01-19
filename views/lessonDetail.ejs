@@ -5,45 +5,122 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
 <link rel="stylesheet" href="/css/styleLessonDetail.css">
+
+<style>
+    /* ===== RUSTIC STYLE ===== */
+    
+    /* Offcanvas Customization */
+    .offcanvas {
+        background: #fafaf8;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .offcanvas-header {
+        background: #8b7f7f;
+        color: #fafaf8;
+        padding: 1.25rem;
+        border-bottom: 1px solid #e8e6e1;
+    }
+
+    .offcanvas-header .offcanvas-title {
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .offcanvas-body {
+        padding: 1.25rem;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        background: white;
+    }
+
+    .toc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .toc-list li {
+        margin-bottom: 0.3rem;
+    }
+
+    .toc-list a {
+        display: flex;
+        align-items: center;
+        padding: 0.6rem 0.8rem;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #4a4a4a;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .toc-list a:hover {
+        background: #f5f1ed;
+        border-left-color: #8b7f7f;
+        color: #2c2c2c;
+    }
+
+    .toc-list a.active {
+        background: #f0ebe5;
+        border-left-color: #8b7f7f;
+        color: #2c2c2c;
+        font-weight: 600;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(20px); }
+    }
+
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+        .offcanvas-body {
+            padding: 1rem;
+        }
+    }
+</style>
 
 <div class="container-fluid bg-white border-bottom shadow-sm sticky-top" style="top: 0; z-index: 99;">
     <div class="container py-2 d-flex align-items-center justify-content-between">
         <%- include('partials/breadcrumb') %>
-        
-        <button class="btn btn-light d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas">
-            <i class="fas fa-list-ul"></i>
-        </button>
     </div>
 </div>
 
 <div class="lesson-wrapper">
-    
     <aside class="lesson-sidebar-left">
-        <div class="d-flex align-items-center gap-2 mb-4 text-muted">
-            <a href="<%= course ? ('/course/' + course._id) : '/subjects' %>" class="text-decoration-none fw-bold text-secondary">
-                <i class="fas fa-arrow-left"></i> Trở về khóa học
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <a href="<%= course ? ('/course/' + course._id) : '/subjects' %>" class="text-decoration-none fw-bold text-secondary small">
+                <i class="fas fa-arrow-left"></i> Trở về
             </a>
         </div>
-        
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-bold py-3 border-bottom-0">
-                <i class="fas fa-layer-group me-2 text-primary"></i> Bài học trong khóa
+            <div class="card-header bg-white fw-bold py-2 border-bottom-0 small">
+                <i class="fas fa-layer-group me-2 text-primary"></i> Bài học
             </div>
-            <div class="list-group list-group-flush" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+            <div class="list-group list-group-flush" style="max-height: calc(100vh - 250px); overflow-y: auto; font-size: 0.9rem;">
                 <% if(course && course.lessons) { %>
                     <% course.lessons.forEach((l, idx) => { %>
-                        <a href="/lesson/<%= l._id %>" class="list-group-item list-group-item-action <%= l._id.toString() === lesson._id.toString() ? 'active fw-bold' : '' %> d-flex justify-content-between align-items-center">
+                        <a href="/lesson/<%= l._id %>" class="list-group-item list-group-item-action <%= l._id.toString() === lesson._id.toString() ? 'active fw-bold' : '' %> d-flex justify-content-between align-items-center py-2">
                             <div class="text-truncate" style="max-width: 180px;">
-                                <span class="me-2 badge bg-light text-dark border"><%= idx + 1 %></span> 
+                                <span class="me-2 badge bg-light text-dark border" style="font-size: 0.75rem;"><%= idx + 1 %></span> 
                                 <%= l.title %>
                             </div>
                             <% if(l.completed) { %><i class="fas fa-check-circle text-success small"></i><% } %>
                         </a>
                     <% }); %>
                 <% } else { %>
-                    <div class="p-3 text-muted small text-center">Đang cập nhật danh sách...</div>
+                    <div class="p-2 text-muted small text-center">Đang cập nhật...</div>
                 <% } %>
             </div>
         </div>
@@ -54,8 +131,8 @@
             <div class="lesson-header-content">
                 <div class="lesson-meta">
                     <span class="badge-cat"><%= lesson.category || 'Bài học' %></span>
-                    <span><i class="far fa-calendar-alt"></i> <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                    <span><i class="far fa-user"></i> <%= lesson.createdBy ? lesson.createdBy.username : 'Admin' %></span>
+                    <span style="font-size: 0.85rem;"><i class="far fa-calendar-alt"></i> <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
+                    <span style="font-size: 0.85rem;"><i class="far fa-user"></i> <%= lesson.createdBy ? lesson.createdBy.username : 'Admin' %></span>
                 </div>
                 <h1 class="lesson-title"><%= lesson.title %></h1>
                 <div class="title-divider"></div>
@@ -64,42 +141,36 @@
             <div id="lessonContentArea" class="lesson-body" data-content='<%= lesson.content %>'>
                 <div class="loading-state">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3 text-muted">Đang tải nội dung...</p>
+                    <p class="mt-2 text-muted" style="font-size: 0.9rem;">Đang tải nội dung...</p>
                 </div>
             </div>
 
             <div class="lesson-footer">
-                <p class="text-muted mb-3 small" id="finish-hint">Hãy đọc kỹ nội dung trước khi hoàn thành</p>
-                <button id="btn-finish-lesson" class="btn btn-success btn-lg px-5 py-3 rounded-pill shadow-sm" onclick="completeLesson('<%= lesson._id %>')">
-                    <span class="d-flex align-items-center gap-2">
+                <button id="btn-finish-lesson" class="btn btn-success btn-lg px-4 py-2 rounded-pill shadow-sm" onclick="completeLesson('<%= lesson._id %>')">
+                    <span class="d-flex align-items-center gap-2" style="font-size: 1rem;">
                         <i class="fas fa-check-circle"></i>
-                        <span id="btn-finish-text">Hoàn thành bài học</span>
+                        <span id="btn-finish-text">Hoàn thành</span>
                     </span>
                 </button>
             </div>
         </div>
 
-        <div class="lesson-card p-4">
-            <h5 class="fw-bold mb-3"><i class="far fa-comments me-2"></i>Thảo luận</h5>
-            <div class="text-muted text-center py-4 bg-light rounded border border-dashed">
-                Tính năng bình luận đang được nâng cấp...
-            </div>
-        </div>
+
     </main>
 
     <aside class="lesson-sidebar-right">
         <div class="toc-container sticky-top" style="top: 100px;">
             <div class="toc-title"><i class="fas fa-list-alt me-2"></i> Mục lục bài viết</div>
             <ul id="toc-list" class="toc-list">
-                <li class="text-muted small fst-italic ps-2">Đang tạo mục lục...</li>
+                <li class="text-muted small fst-italic ps-2" style="font-size: 0.85rem;">Đang tạo...</li>
             </ul>
 
-            <div class="mt-4 pt-3 border-top">
-                <div class="toc-title mb-2">Tiến độ phiên học</div>
-                <div class="progress" style="height: 8px; border-radius: 4px;">
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                <div class="toc-title mb-2">Tiến độ phiên</div>
+                <div class="progress" style="height: 6px; border-radius: 3px;">
                     <div id="ss-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
                 </div>
-                <div class="d-flex justify-content-between mt-2 small text-muted font-monospace">
+                <div class="d-flex justify-content-between mt-2 small text-muted font-monospace" style="font-size: 0.8rem;">
                     <span>Thời gian</span>
                     <span id="ss-timer">00:00</span>
                 </div>
@@ -108,13 +179,23 @@
     </aside>
 </div>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="tocOffcanvas">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title fw-bold">Mục lục</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+<!-- Floating Comments Button -->
+<button class="btn-floating-comments" id="btn-toggle-comments" title="Thảo luận">
+    <i class="fas fa-comments"></i>
+    <span class="comment-badge" id="comment-badge" style="display:none;">0</span>
+</button>
+
+<!-- Comments Modal -->
+<div class="comments-modal hidden" id="comments-modal">
+    <div class="comments-modal-header">
+        <span>💬 Thảo luận</span>
+        <button class="comments-modal-close" id="btn-close-comments">&times;</button>
     </div>
-    <div class="offcanvas-body">
-        <ul id="toc-list-mobile" class="toc-list"></ul>
+    <div class="comments-modal-body" id="comments-modal-body">
+        <!-- Comments will be loaded here -->
+    </div>
+    <div class="comments-modal-footer" id="comments-modal-footer">
+        <!-- Comment form will be here for new comments -->
     </div>
 </div>
 
@@ -128,6 +209,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
+<script>
+    // Set lesson ID for comments system
+    window.LESSON_ID = '<%= lesson._id %>';
+    window.USER = <% if(user) { %><%- JSON.stringify({id: user._id, username: user.username}) %><% } else { %>null<% } %>;
+</script>
+
 <script src="/js/lessonDetail.js"></script>
+<script src="/js/lessonDetailComments.js"></script>
+<script src="/js/comments.js"></script>
 
 <%- include('partials/footer') %>

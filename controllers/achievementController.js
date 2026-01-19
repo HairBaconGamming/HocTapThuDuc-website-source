@@ -43,15 +43,15 @@ exports.getAchievementStats = async (req, res) => {
         const unlockedCount = await UserAchievement.countDocuments({ user: userId });
         const lockedCount = totalAchievements - unlockedCount;
 
-        // Get total points earned
+        // Get achievement points earned from unlocked achievements only
         const pointsData = await UserAchievement.aggregate([
             { $match: { user: new mongoose.Types.ObjectId(userId) } },
             { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
             { $unwind: '$achievement' },
-            { $group: { _id: null, totalPoints: { $sum: '$achievement.points' } } }
+            { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
         ]);
 
-        const totalPoints = pointsData[0]?.totalPoints || 0;
+        const achievementPoints = pointsData[0]?.achievementPoints || 0;
 
         res.json({
             success: true,
@@ -60,7 +60,7 @@ exports.getAchievementStats = async (req, res) => {
                 unlocked: unlockedCount,
                 locked: lockedCount,
                 completion: totalAchievements > 0 ? Math.round((unlockedCount / totalAchievements) * 100) : 0,
-                points: totalPoints
+                achievementPoints: achievementPoints
             }
         });
     } catch (err) {
@@ -87,10 +87,20 @@ exports.getAllAchievements = async (req, res) => {
                 .map(a => a.achievementId.toString())
         );
 
+        // Get progress for locked achievements
+        const progress = await achievementChecker.getAchievementProgress(userId);
+
         const enriched = achievements.map(a => ({
-            ...a,
+            _id: a._id,
+            name: a.name,
+            description: a.description,
+            icon: a.icon,
+            points: a.points,
+            rarity: a.rarity,
+            category: a.category,
+            condition: a.condition,
             unlocked: unlockedIds.has(a._id.toString()),
-            unlockedAt: null
+            progress: unlockedIds.has(a._id.toString()) ? 100 : (progress[a._id.toString()] || 0)
         }));
 
         res.json({ success: true, achievements: enriched });
@@ -104,33 +114,32 @@ exports.getAllAchievements = async (req, res) => {
 exports.getProgress = async (req, res) => {
     try {
         const userId = req.user._id;
+        
+        // Lấy progress từ achievementChecker
+        const progress = await achievementChecker.getAchievementProgress(userId);
+        
+        // Lấy all locked achievements
+        const lockedAchievementIds = (await UserAchievement.find({ user: userId }).select('achievementId').lean())
+            .map(a => a.achievementId.toString());
+        
         const lockedAchievements = await AchievementType.find({
             isActive: true,
-            _id: { $nin: (await UserAchievement.find({ user: userId }).select('achievementId').lean()).map(a => a.achievementId) }
+            _id: { $nin: lockedAchievementIds }
         }).lean();
 
-        // Get user stats for progress calculation
-        const User = require('../models/User');
-        const user = await User.findById(userId);
+        const enriched = lockedAchievements.map(a => ({
+            _id: a._id,
+            name: a.name,
+            description: a.description,
+            icon: a.icon,
+            points: a.points,
+            rarity: a.rarity,
+            category: a.category,
+            condition: a.condition,
+            progress: progress[a._id.toString()] || 0
+        }));
 
-        const progress = lockedAchievements.map(a => {
-            let percent = 0;
-
-            if (a.condition.type === 'lessons_completed') {
-                percent = Math.min((user.lessonsCompleted || 0) / a.condition.value * 100, 99);
-            } else if (a.condition.type === 'points_reached') {
-                percent = Math.min((user.totalPoints || 0) / a.condition.value * 100, 99);
-            } else if (a.condition.type === 'streak_days') {
-                percent = Math.min((user.currentStreak || 0) / a.condition.value * 100, 99);
-            }
-
-            return {
-                ...a,
-                progress: Math.round(percent)
-            };
-        });
-
-        res.json({ success: true, progress });
+        res.json({ success: true, progress: enriched });
     } catch (err) {
         console.error('Get progress error:', err);
         res.status(500).json({ success: false, message: err.message });
@@ -161,6 +170,60 @@ exports.checkAchievements = async (req, res) => {
         });
     } catch (err) {
         console.error('Check achievements error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Get all achievements with progress and unlock status
+exports.getAchievementsWithProgress = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Get unlocked achievement IDs
+        const unlockedAchievements = await UserAchievement.find({ user: userId })
+            .select('achievementId')
+            .lean();
+        const unlockedIds = new Set(
+            unlockedAchievements.map(a => a.achievementId.toString())
+        );
+
+        // Get all active achievements
+        const allAchievements = await AchievementType.find({ isActive: true }).lean();
+
+        // Get progress for each achievement
+        const progress = await achievementChecker.getAchievementProgress(userId);
+
+        // Build response with all data
+        const achievements = allAchievements.map(a => {
+            const isUnlocked = unlockedIds.has(a._id.toString());
+            return {
+                _id: a._id,
+                id: a.id,
+                name: a.name,
+                description: a.description,
+                icon: a.icon,
+                color: a.color,
+                points: a.points,
+                rarity: a.rarity,
+                category: a.category,
+                condition: a.condition,
+                unlockMessage: a.unlockMessage,
+                isHidden: a.isHidden,
+                unlocked: isUnlocked,
+                progress: isUnlocked ? 100 : (progress[a._id.toString()] || 0),
+                unlockedAt: unlockedAchievements.find(ua => ua.achievementId.toString() === a._id.toString())?.unlockedAt || null
+            };
+        });
+
+        // Sort: unlocked first, then by progress
+        achievements.sort((a, b) => {
+            if (a.unlocked !== b.unlocked) return b.unlocked ? 1 : -1;
+            return b.progress - a.progress;
+        });
+
+        res.json({ success: true, achievements });
+    } catch (err) {
+        console.error('Get achievements with progress error:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };

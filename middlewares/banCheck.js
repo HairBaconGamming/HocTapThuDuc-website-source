@@ -1,22 +1,27 @@
 // middlewares/banCheck.js
 const BanEntry = require("../models/BanEntry");
+const mongoose = require("mongoose");
 
 async function banCheck(req, res, next) {
   try {
+    // Check DB connection before attempting query
+    if(mongoose.connection.readyState !== 1) {
+      console.warn("⚠️  BanCheck: Skipped (DB not ready)");
+      return next(); // Allow request if DB is down
+    }
+
     // Retrieve identifying info:
     const ip = req.ip;
     const userAgent = req.get("User-Agent") || "";
-    const banToken = req.cookies && req.cookies.banToken; // requires cookie-parser middleware
+    const banToken = req.cookies && req.cookies.banToken;
 
-    // Find any active ban entry for this IP, user agent, or token.
-    // Adjust the logic as needed (e.g., using an OR condition).
+    // Find any active ban entry with timeout protection
     const ban = await BanEntry.findOne({
       $or: [
         { ip: ip },
         { userAgent: userAgent },
         { banToken: banToken }
       ],
-      // If you use temporary bans, you can add:
       expiresAt: { $gt: new Date() }
     });
 
@@ -25,8 +30,13 @@ async function banCheck(req, res, next) {
     }
     next();
   } catch (err) {
-    console.error("Error checking ban:", err);
-    next(err);
+    // Log error but don't block request if DB fails
+    if(err.name === 'MongooseError' || err.name === 'MongoNetworkError') {
+      console.warn("⚠️  BanCheck timeout/error - allowing request:", err.message);
+    } else {
+      console.error("❌ Error checking ban:", err.message);
+    }
+    next(); // Continue anyway to avoid blocking users when DB is slow
   }
 }
 
