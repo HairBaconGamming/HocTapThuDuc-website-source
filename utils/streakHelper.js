@@ -68,22 +68,35 @@ async function resetStreak(userId) {
 }
 
 /**
- * Get streak info
+ * Get streak info with next reset time
  * @param {ObjectId} userId - ID của user
- * @returns {Object} - { streak: number, lastStudyDate: Date }
+ * @returns {Object} - { streak: number, lastStudyDate: Date, nextResetTime: Date }
  */
 async function getStreakInfo(userId) {
     try {
         const user = await User.findById(userId);
-        if (!user) return { streak: 0, lastStudyDate: null };
+        if (!user) return { streak: 0, lastStudyDate: null, nextResetTime: null };
+
+        let nextResetTime = null;
+        
+        if (user.lastStudyDate) {
+            const lastStudyDate = new Date(user.lastStudyDate);
+            lastStudyDate.setHours(0, 0, 0, 0);
+            
+            const tomorrow = new Date(lastStudyDate);
+            tomorrow.setDate(tomorrow.getDate() + 2); // Hai ngày sau ngày học cuối cùng
+            
+            nextResetTime = tomorrow;
+        }
 
         return {
             streak: user.currentStreak || 0,
-            lastStudyDate: user.lastStudyDate
+            lastStudyDate: user.lastStudyDate,
+            nextResetTime: nextResetTime
         };
     } catch (err) {
         console.error('Error getting streak info:', err);
-        return { streak: 0, lastStudyDate: null };
+        return { streak: 0, lastStudyDate: null, nextResetTime: null };
     }
 }
 

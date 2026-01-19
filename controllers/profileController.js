@@ -5,6 +5,7 @@ const LessonCompletion = require('../models/LessonCompletion');
 const { UserAchievement } = require('../models/Achievement');
 const LevelUtils = require('../utils/level');
 const moment = require('moment-timezone');
+const streakHelper = require('../utils/streakHelper');
 
 exports.getProfile = async (req, res) => {
     try {
@@ -59,8 +60,8 @@ exports.getProfile = async (req, res) => {
             points: { $gt: user.points || 0 } 
         }).then(count => count + 1);
 
-        // 7. Tính streak (nếu có)
-        const streak = user.currentStreak || 0;
+        // 7. Tính streak với thời gian reset tiếp theo
+        const streakInfo = await streakHelper.getStreakInfo(userId);
 
         // 8. Render View
         res.render('profile', {
@@ -80,7 +81,9 @@ exports.getProfile = async (req, res) => {
             achievements: achievements,
             totalAchievements: totalAchievements,
             userRank: userRank,
-            streak: streak,
+            streak: streakInfo.streak,
+            lastStudyDate: streakInfo.lastStudyDate,
+            nextResetTime: streakInfo.nextResetTime,
             
             moment: moment
         });

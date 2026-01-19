@@ -467,9 +467,9 @@ function renderAchievements() {
             ${!a.unlocked ? `
                 <div class="achievement-progress">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%"></div>
+                        <div class="progress-fill" style="width: ${Math.min(a.progress || 0, 100)}%"></div>
                     </div>
-                    <div class="progress-text">Đang tiến hành...</div>
+                    <div class="progress-text">${Math.round(a.progress || 0)}% - ${a.condition ? formatCondition(a.condition) : 'Đang tiến hành...'}</div>
                 </div>
             ` : `
                 <div class="unlock-badge">✓ Đã mở khóa</div>
@@ -479,6 +479,27 @@ function renderAchievements() {
             ` : ''}
         </div>
     `).join('');
+}
+
+// Helper để format điều kiện achievement
+function formatCondition(condition) {
+    if (!condition) return 'Đang tiến hành...';
+    const { type, value, operator } = condition;
+    
+    const conditionMap = {
+        'lessons_completed': `${value} bài học`,
+        'points_reached': `${value} điểm`,
+        'streak_days': `${value} ngày liên tiếp`,
+        'plants_planted': `${value} cây trồng`,
+        'plants_harvested': `${value} lần thu hoạch`,
+        'plants_watered': `${value} lần tưới`,
+        'gold_collected': `${value} vàng`,
+        'decorations_placed': `${value} vật trang trí`,
+        'courses_enrolled': `${value} khóa học`,
+        'plant_survival_streak': `${value} ngày sống liên tiếp`
+    };
+    
+    return conditionMap[type] || 'Đang tiến hành...';
 }
 
 // Filter buttons

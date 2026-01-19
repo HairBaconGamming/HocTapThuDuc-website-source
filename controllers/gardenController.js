@@ -292,7 +292,17 @@ exports.interactItem = async (req, res) => {
             // Lấy info mới nhất để trả về cho Frontend update thanh bar
             const nextLevelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
 
-            garden.items.pull(uniqueId);
+            // [MỚI] Kiểm tra nếu cây có thể thu hoạch nhiều lần (multi-harvest)
+            if (config.isMultiHarvest) {
+                // Reset stage về 1 để có thể ở lại trên đất và phát triển lại
+                item.stage = item.afterharvestStage;
+                item.growthProgress = 0;
+                item.witherProgress = 0;
+            } else {
+                // Thu hoạch thường: Xóa cây khỏi vườn
+                garden.items.pull(uniqueId);
+            }
+            
             await garden.save();
 
             // --- TRIGGER ACHIEVEMENTS ---
@@ -312,7 +322,7 @@ exports.interactItem = async (req, res) => {
                     levelName: nextLevelInfo.fullName,
                     hasLeveledUp: levelResult.hasLeveledUp
                 },
-                msg: `Thu hoạch: +${rewardGold}G, +${rewardXP}XP`
+                msg: config.isMultiHarvest ? `Thu hoạch quả: +${rewardGold}G, +${rewardXP}XP (Cây sẽ phát triển lại!)` : `Thu hoạch: +${rewardGold}G, +${rewardXP}XP`
             });
         }
 

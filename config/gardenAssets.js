@@ -57,6 +57,31 @@ module.exports = {
                 'https://i.ibb.co/whVQmRxN/Gemini-Generated-Image-vs7ybovs7ybovs7y-removebg-preview.png',
                 'https://i.ibb.co/KpCwqjWz/Gemini-Generated-Image-2vhht92vhht92vhh-removebg-preview.png'
             ]
+        },
+        'tomato': {
+            name: 'Cà Chua',
+            type: 'plant',
+            price: 120,
+            maxStage: 7,
+            afterharvestStage: 4,
+            rewardGold: { min: 150, max: 250 },
+            unlockLevel: 5,
+            rewardXP: 200,
+            size: { w: 1, h: 1 },
+            growthTime: '6 phút/cấp',
+            totalTime: '45 phút',
+            witherTime: '120 phút',
+            isMultiHarvest: true,
+            stages: [
+                'https://i.ibb.co/3N4Zv5x/tomato-stage1.png',
+                'https://i.ibb.co/7jXz2K9/tomato-stage2.png',
+                'https://i.ibb.co/R8vQ4pK/tomato-stage3.png',
+                'https://i.ibb.co/gvFr7Yj/tomato-stage4.png',
+                'https://i.ibb.co/Qn2Xk8M/tomato-flowering.png',
+                'https://i.ibb.co/HhYnKj2/tomato-fruit-early.png',
+                'https://i.ibb.co/BzKp9mL/tomato-fruit-middle.png',
+                'https://i.ibb.co/Tz5Wnvj/tomato-fruit-ripe.png'
+            ]
         }
     },
     PLOT: { 

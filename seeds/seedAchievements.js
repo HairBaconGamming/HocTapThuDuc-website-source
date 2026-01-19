@@ -142,6 +142,142 @@ const ACHIEVEMENTS = [
         unlockMessage: 'OMG! 100 ngày liên tiếp! Bạn không thể ngừng được! 👨‍🚀'
     },
 
+    // Garden & Farming
+    {
+        id: 'first_plant',
+        name: '🌱 Nông Dân Tập Sự',
+        description: 'Trồng cây đầu tiên',
+        icon: '🌱',
+        color: '#22c55e',
+        category: 'engagement',
+        points: 10,
+        rarity: 'common',
+        condition: { type: 'plants_planted', value: 1, operator: '>=' },
+        unlockMessage: 'Bạn đã trồng cây đầu tiên! Đó là khởi đầu của một nông trại vĩ đại! 🌱'
+    },
+    {
+        id: 'plants_10',
+        name: '🌾 Nông Dân Giàu Kinh Nghiệm',
+        description: 'Trồng 10 cây',
+        icon: '🌾',
+        color: '#16a34a',
+        category: 'engagement',
+        points: 30,
+        rarity: 'rare',
+        condition: { type: 'plants_planted', value: 10, operator: '>=' },
+        unlockMessage: 'Bạn đã trồng 10 cây! Nông trại của bạn sắp thành phố rồi! 🌾'
+    },
+    {
+        id: 'plants_50',
+        name: '🌳 Tỷ Phú Xanh',
+        description: 'Trồng 50 cây',
+        icon: '🌳',
+        color: '#15803d',
+        category: 'engagement',
+        points: 80,
+        rarity: 'epic',
+        condition: { type: 'plants_planted', value: 50, operator: '>=' },
+        unlockMessage: 'Wow! Bạn đã trồng 50 cây! Nông trại của bạn giờ là một rừng đêm thực sự! 🌳'
+    },
+    {
+        id: 'first_harvest',
+        name: '🍎 Vào Mùa Thu Hoạch',
+        description: 'Thu hoạch cây đầu tiên',
+        icon: '🍎',
+        color: '#dc2626',
+        category: 'engagement',
+        points: 15,
+        rarity: 'common',
+        condition: { type: 'plants_harvested', value: 1, operator: '>=' },
+        unlockMessage: 'Bạn đã thu hoạch cây đầu tiên! Công lao của bạn đã được ghi nhận! 🍎'
+    },
+    {
+        id: 'harvest_100',
+        name: '🌽 Nông Dân Vàng',
+        description: 'Thu hoạch 100 lần',
+        icon: '🌽',
+        color: '#d97706',
+        category: 'engagement',
+        points: 75,
+        rarity: 'epic',
+        condition: { type: 'plants_harvested', value: 100, operator: '>=' },
+        unlockMessage: 'Bạn đã thu hoạch 100 lần! Bạn là một nông dân chuyên nghiệp! 🌽'
+    },
+    {
+        id: 'gold_1000',
+        name: '💰 Nhà Giàu Nông Trại',
+        description: 'Thu thập 1000 vàng từ nông trại',
+        icon: '💰',
+        color: '#fbbf24',
+        category: 'engagement',
+        points: 60,
+        rarity: 'epic',
+        condition: { type: 'gold_collected', value: 1000, operator: '>=' },
+        unlockMessage: 'Bạn đã thu thập 1000 vàng! Bạn giàu có rồi! 💰'
+    },
+    {
+        id: 'watered_100',
+        name: '💧 Tưới Cây Siêu Nhân',
+        description: 'Tưới nước 100 lần',
+        icon: '💧',
+        color: '#06b6d4',
+        category: 'engagement',
+        points: 40,
+        rarity: 'rare',
+        condition: { type: 'plants_watered', value: 100, operator: '>=' },
+        unlockMessage: 'Bạn đã tưới nước 100 lần! Cây cối của bạn thực sự may mắn! 💧'
+    },
+
+    // Milestone
+    {
+        id: 'community_join',
+        name: '👥 Gia Nhập Cộng Đồng',
+        description: 'Gia nhập cộng đồng học tập',
+        icon: '👥',
+        color: '#3b82f6',
+        category: 'social',
+        points: 20,
+        rarity: 'common',
+        condition: { type: 'custom', value: 1, operator: '>=' },
+        unlockMessage: 'Chào mừng bạn gia nhập cộng đồng! Hãy cùng nhau học tập! 👥'
+    },
+    {
+        id: 'first_login',
+        name: '✨ Lần Đầu Bước Vào',
+        description: 'Đăng nhập lần đầu tiên',
+        icon: '✨',
+        color: '#a855f7',
+        category: 'milestone',
+        points: 5,
+        rarity: 'common',
+        condition: { type: 'custom', value: 1, operator: '>=' },
+        unlockMessage: 'Bạn đã bắt đầu hành trình của mình! Vui vẻ lên! ✨'
+    },
+    {
+        id: 'level_10',
+        name: '🎖️ Cảnh Giới Cao Thượng',
+        description: 'Đạt level 10',
+        icon: '🎖️',
+        color: '#f59e0b',
+        category: 'milestone',
+        points: 150,
+        rarity: 'epic',
+        condition: { type: 'custom', value: 10, operator: '>=' },
+        unlockMessage: 'Bạn đã đạt level 10! Bạn đang tiến bộ đáng kể! 🎖️'
+    },
+    {
+        id: 'decoration_master',
+        name: '🎨 Nghệ Sĩ Trang Trí',
+        description: 'Đặt 20 vật trang trí',
+        icon: '🎨',
+        color: '#ec4899',
+        category: 'engagement',
+        points: 50,
+        rarity: 'rare',
+        condition: { type: 'decorations_placed', value: 20, operator: '>=' },
+        unlockMessage: 'Bạn là một nghệ sĩ trang trí! Nông trại của bạn thật tuyệt vời! 🎨'
+    }
+
     ];
 
 async function seedAchievements() {
@@ -162,6 +298,7 @@ async function seedAchievements() {
         console.log('  Engagement:', ACHIEVEMENTS.filter(a => a.category === 'engagement').length);
         console.log('  Challenge:', ACHIEVEMENTS.filter(a => a.category === 'challenge').length);
         console.log('  Social:', ACHIEVEMENTS.filter(a => a.category === 'social').length);
+        console.log('  Milestone:', ACHIEVEMENTS.filter(a => a.category === 'milestone').length);
 
         process.exit(0);
     } catch (err) {
