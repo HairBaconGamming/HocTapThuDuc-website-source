@@ -1,384 +1,21 @@
 <%- include('partials/header') %>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        background: #fafaf8;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #4a4a4a;
-        line-height: 1.6;
-    }
-
-    .discussion-wrapper {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    /* Header */
-    .discussion-header {
-        border-bottom: 2px solid #e8e6e1;
-        padding-bottom: 25px;
-        margin-bottom: 35px;
-    }
-
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #888;
-        text-decoration: none;
-        font-size: 0.95rem;
-        margin-bottom: 20px;
-        transition: color 0.2s;
-    }
-
-    .back-btn:hover {
-        color: #4a4a4a;
-    }
-
-    .discussion-header h1 {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #2c2c2c;
-        margin-bottom: 12px;
-        line-height: 1.3;
-    }
-
-    .header-meta {
-        display: flex;
-        gap: 20px;
-        font-size: 0.85rem;
-        color: #888;
-    }
-
-    .meta-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    /* Comment Form */
-    .comment-form {
-        background: white;
-        border: 1px solid #e8e6e1;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 30px;
-    }
-
-    .form-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #2c2c2c;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .form-group {
-        margin-bottom: 12px;
-    }
-
-    textarea {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #e8e6e1;
-        border-radius: 6px;
-        font-family: inherit;
-        font-size: 0.95rem;
-        color: #4a4a4a;
-        resize: vertical;
-        min-height: 100px;
-        transition: border-color 0.2s;
-    }
-
-    textarea:focus {
-        outline: none;
-        border-color: #8b7f7f;
-    }
-
-    textarea::placeholder {
-        color: #aaa;
-    }
-
-    .form-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 15px;
-        margin-top: 12px;
-    }
-
-    .char-info {
-        font-size: 0.8rem;
-        color: #999;
-    }
-
-    .submit-btn {
-        background: #4a4a4a;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .submit-btn:hover {
-        background: #2c2c2c;
-    }
-
-    .submit-btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-    }
-
-    /* Comments Section */
-    .comments-container {
-        margin-top: 35px;
-    }
-
-    .comments-header {
-        margin-bottom: 25px;
-        border-bottom: 1px solid #e8e6e1;
-        padding-bottom: 15px;
-    }
-
-    .comments-title {
-        font-size: 1.15rem;
-        font-weight: 600;
-        color: #2c2c2c;
-    }
-
-    .comment-count {
-        color: #999;
-        font-size: 0.9rem;
-        margin-left: 8px;
-    }
-
-    /* Single Comment */
-    .comment {
-        display: flex;
-        gap: 15px;
-        padding: 20px 0;
-        border-bottom: 1px solid #e8e6e1;
-    }
-
-    .comment:last-child {
-        border-bottom: none;
-    }
-
-    .comment-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        object-fit: cover;
-        flex-shrink: 0;
-        background: #e8e6e1;
-    }
-
-    .comment-content {
-        flex: 1;
-    }
-
-    .comment-header {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .comment-author {
-        font-weight: 600;
-        color: #2c2c2c;
-    }
-
-    .comment-badge {
-        background: #f0ebe5;
-        color: #8b7f7f;
-        font-size: 0.7rem;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .comment-time {
-        font-size: 0.85rem;
-        color: #999;
-    }
-
-    .comment-text {
-        color: #4a4a4a;
-        margin-bottom: 10px;
-        line-height: 1.6;
-        text-align: left;
-    }
-
-    .comment-actions {
-        display: flex;
-        gap: 20px;
-        font-size: 0.85rem;
-    }
-
-    .action-btn {
-        background: none;
-        border: none;
-        color: #999;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        transition: color 0.2s;
-        font-weight: 500;
-    }
-
-    .action-btn:hover {
-        color: #2c2c2c;
-    }
-
-    /* Replies */
-    .replies-section {
-        margin-top: 15px;
-        padding-left: 15px;
-        border-left: 2px solid #e8e6e1;
-    }
-
-    .reply {
-        display: flex;
-        gap: 12px;
-        padding: 12px 0;
-    }
-
-    .reply-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        object-fit: cover;
-        flex-shrink: 0;
-        background: #e8e6e1;
-    }
-
-    .reply-content {
-        flex: 1;
-    }
-
-    .reply-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-        font-size: 0.85rem;
-    }
-
-    .reply-author {
-        font-weight: 600;
-        color: #2c2c2c;
-    }
-
-    .reply-time {
-        color: #999;
-    }
-
-    .reply-text {
-        color: #4a4a4a;
-        font-size: 0.95rem;
-        line-height: 1.5;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #999;
-    }
-
-    .empty-icon {
-        font-size: 2.5rem;
-        margin-bottom: 12px;
-        opacity: 0.5;
-    }
-
-    /* Loading */
-    .loading-state {
-        text-align: center;
-        padding: 40px 20px;
-    }
-
-    .spinner {
-        display: inline-block;
-        width: 24px;
-        height: 24px;
-        border: 2px solid #e8e6e1;
-        border-top: 2px solid #4a4a4a;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-        color: #999;
-        font-size: 0.9rem;
-        margin-top: 12px;
-    }
-
-    /* Responsive */
-    @media (max-width: 640px) {
-        .discussion-wrapper {
-            padding: 15px;
-        }
-
-        .discussion-header h1 {
-            font-size: 1.5rem;
-        }
-
-        .header-meta {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-footer {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .submit-btn {
-            width: 100%;
-        }
-
-        .comment {
-            gap: 12px;
-        }
-    }
-</style>
+<link rel="stylesheet" href="/css/styleDiscussion.css">
 
 <div class="discussion-wrapper">
-    <!-- Header -->
     <div class="discussion-header">
         <a href="/lesson/<%= lesson._id %>" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Quay lại
+            <i class="fas fa-arrow-left"></i> Quay lại bài học
         </a>
         <h1>💬 <%= lesson.title %></h1>
         <div class="header-meta">
             <div class="meta-item">
                 <i class="fas fa-user"></i>
-                <span><strong><%= lesson.createdBy ? lesson.createdBy.username : 'Admin' %></strong></span>
+                <span>Tác giả: <strong><%= lesson.createdBy ? lesson.createdBy.username : 'Admin' %></strong></span>
             </div>
             <div class="meta-item">
                 <i class="fas fa-calendar"></i>
@@ -387,178 +24,47 @@
         </div>
     </div>
 
-    <!-- Comment Form -->
     <div class="comment-form">
         <div class="form-title">
-            <i class="fas fa-pen"></i> Bình luận
+            <i class="fas fa-pen"></i> Để lại bình luận
         </div>
         <div class="form-group">
             <textarea 
                 id="comment-text" 
-                placeholder="Chia sẻ ý kiến hoặc câu hỏi của bạn..." 
+                placeholder="Chia sẻ ý kiến, đặt câu hỏi hoặc thảo luận về bài học này..." 
                 maxlength="5000"></textarea>
         </div>
         <div class="form-footer">
             <span class="char-info"><span id="char-count">0</span>/5000</span>
-            <button type="button" class="submit-btn" id="btn-submit" onclick="submitComment()">Gửi</button>
+            <button type="button" class="submit-btn" id="btn-submit" onclick="discussion.submitComment()">Gửi bình luận</button>
         </div>
     </div>
 
-    <!-- Comments List -->
     <div class="comments-container">
         <div class="comments-header">
             <div class="comments-title">
-                Thảo luận
+                Thảo luận cộng đồng
                 <span class="comment-count">(<span id="total-count">0</span>)</span>
             </div>
         </div>
-        <div id="comments-list" class="loading-state">
-            <div class="spinner"></div>
-            <div class="loading-text">Đang tải...</div>
+        
+        <div id="comments-list">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <div class="loading-text">Đang tải...</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     window.LESSON_ID = '<%= lesson._id %>';
-    
-    // Character counter
-    document.getElementById('comment-text').addEventListener('input', (e) => {
-        document.getElementById('char-count').textContent = e.target.value.length;
-    });
-
-    function getTimeAgo(date) {
-        const now = new Date();
-        const diffMs = now - new Date(date);
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Vừa xong';
-        if (diffMins < 60) return `${diffMins}m trước`;
-        if (diffHours < 24) return `${diffHours}h trước`;
-        if (diffDays < 7) return `${diffDays}d trước`;
-        return new Date(date).toLocaleDateString('vi-VN');
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    async function loadComments() {
-        try {
-            const response = await fetch(`/api/comments/lesson/${window.LESSON_ID}`);
-            if (!response.ok) throw new Error('Failed');
-
-            const data = await response.json();
-            const comments = data.comments || [];
-
-            document.getElementById('total-count').textContent = comments.length;
-
-            if (comments.length === 0) {
-                document.getElementById('comments-list').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">💭</div>
-                        <p>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            comments.forEach(comment => {
-                const timeAgo = getTimeAgo(comment.createdAt);
-                const authorBadge = comment.user?.username === '<%= lesson.createdBy?.username %>' 
-                    ? '<span class="comment-badge">Tác giả</span>' 
-                    : '';
-                
-                let repliesHtml = '';
-                if (comment.replies && comment.replies.length > 0) {
-                    repliesHtml = '<div class="replies-section">';
-                    comment.replies.forEach(reply => {
-                        repliesHtml += `
-                            <div class="reply">
-                                <img src="${reply.user?.avatar || '/uploads/default-avatar.png'}" alt="" class="reply-avatar">
-                                <div class="reply-content">
-                                    <div class="reply-header">
-                                        <span class="reply-author">${reply.user?.username || 'Ẩn danh'}</span>
-                                        <span class="reply-time">${getTimeAgo(reply.createdAt)}</span>
-                                    </div>
-                                    <div class="reply-text">${escapeHtml(reply.content)}</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    repliesHtml += '</div>';
-                }
-
-                html += `
-                    <div class="comment">
-                        <img src="${comment.user?.avatar || '/uploads/default-avatar.png'}" alt="" class="comment-avatar">
-                        <div class="comment-content">
-                            <div class="comment-header">
-                                <span class="comment-author">${comment.user?.username || 'Ẩn danh'}</span>
-                                ${authorBadge}
-                                <span class="comment-time">${timeAgo}</span>
-                            </div>
-                            <div class="comment-text">${escapeHtml(comment.content)}</div>
-                            <div class="comment-actions">
-                                <button class="action-btn">
-                                    <i class="fas fa-heart"></i> <span>${comment.likes || 0}</span>
-                                </button>
-                                <button class="action-btn">
-                                    <i class="fas fa-reply"></i> Trả lời
-                                </button>
-                            </div>
-                            ${repliesHtml}
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('comments-list').innerHTML = html;
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('comments-list').innerHTML = `
-                <div class="empty-state">
-                    <p>Lỗi tải bình luận</p>
-                </div>
-            `;
-        }
-    }
-
-    async function submitComment() {
-        const text = document.getElementById('comment-text').value;
-        if (!text.trim()) return alert('Vui lòng nhập nội dung');
-
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = true;
-
-        try {
-            const response = await fetch(`/api/comments/lesson/${window.LESSON_ID}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: text })
-            });
-
-            if (!response.ok) throw new Error('Failed');
-
-            document.getElementById('comment-text').value = '';
-            document.getElementById('char-count').textContent = '0';
-            loadComments();
-        } catch (error) {
-            alert('Lỗi đăng bình luận');
-        } finally {
-            btn.disabled = false;
-        }
-    }
-
-    // Load on page load
-    loadComments();
-    // Refresh every 10 seconds
-    setInterval(loadComments, 10000);
+    window.AUTHOR_USERNAME = '<%= lesson.createdBy ? lesson.createdBy.username : "" %>';
+    window.USER = <% if(user) { %>
+        <%- JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar }) %>
+    <% } else { %> null <% } %>;
 </script>
+
+<script src="/js/discussion.js"></script>
 
 <%- include('partials/footer') %>
