@@ -112,17 +112,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
 <script>
-    // --- TRUYỀN DỮ LIỆU TỪ SERVER SANG CLIENT AN TOÀN ---
     window.LESSON_ID = '<%= lesson._id %>';
     window.AUTHOR_USERNAME = '<%= lesson.createdBy ? lesson.createdBy.username : "" %>';
-    
-    // User info
-    window.USER = <% if(user) { %>
-        <%- JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar }) %>
-    <% } else { %> null <% } %>;
+    window.USER = <%- user ? JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar }) : 'null' %>;
 
-    // Content Data (Dùng JSON.stringify để tránh lỗi ký tự đặc biệt)
-    window.LESSON_CONTENT = <%- JSON.stringify(lesson.content) %>;
+    // [FIX TRIỆT ĐỂ] CHUYỂN DATA SANG BASE64 ĐỂ TRÁNH LỖI KÝ TỰ ĐẶC BIỆT
+    <% 
+        let rawContent = lesson.content || [];
+        // Nếu là Object/Array thì chuyển thành chuỗi JSON trước
+        if (typeof rawContent === 'object') {
+            rawContent = JSON.stringify(rawContent);
+        }
+        // Chuyển toàn bộ chuỗi sang Base64
+        // Buffer là có sẵn trong môi trường NodeJS (EJS chạy trên server)
+        let contentBase64 = Buffer.from(rawContent).toString('base64');
+    %>
+    
+    // Gán chuỗi Base64 an toàn vào biến window
+    window.LESSON_CONTENT_B64 = "<%= contentBase64 %>";
 </script>
 
 <script src="/js/lessonDetail.js"></script>

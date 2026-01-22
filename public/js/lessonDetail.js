@@ -1,92 +1,84 @@
 /**
- * LESSON DETAIL ENGINE - ULTIMATE EDITION (PATCHED)
- * Features: Full Page Scroll, Advanced TOC, Markdown Quiz, HTML Preview (Fixed), Gamification
+ * LESSON DETAIL ENGINE - ULTIMATE FIX
+ * Tính năng: Xử lý triệt để lỗi render HTML/SVG, Full Page Scroll, TOC, Quiz
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     initLessonContent();
-    
-    // Khởi động trình quản lý học tập (Anti-AFK & Rewards)
     if(typeof StudyManager !== 'undefined') StudyManager.init(); 
 });
 
-let tocObserver = null; // Biến toàn cục cho Observer mục lục
-
+let tocObserver = null;
 function initLessonContent() {
     const contentArea = document.getElementById('lessonContentArea');
     if (!contentArea) return;
 
-    // --- 1. CẤU HÌNH MARKDOWN ---
+    // 1. Cấu hình Markdown
     if (typeof marked !== 'undefined') {
-        marked.use({
-            breaks: true, // Enter là xuống dòng
-            gfm: true     // GitHub Flavored Markdown
-        });
+        marked.use({ breaks: true, gfm: true });
     }
 
-    // --- 2. LẤY DỮ LIỆU TỪ BIẾN WINDOW ---
+    // 2. GIẢI MÃ DỮ LIỆU TỪ BASE64 (An toàn tuyệt đối)
     let blocks = [];
-    let rawData = window.LESSON_CONTENT; 
-
     try {
-        if (typeof rawData === 'object' && rawData !== null) {
-            blocks = Array.isArray(rawData) ? rawData : [rawData];
-        } else if (typeof rawData === 'string') {
-            rawData = rawData.trim();
-            if (rawData.startsWith('[') || rawData.startsWith('{')) {
-                blocks = JSON.parse(rawData);
-                if (!Array.isArray(blocks)) blocks = [blocks];
-            } else {
-                // Fallback cho dữ liệu cũ
-                blocks = [{ type: 'text', data: { text: rawData } }]; 
+        if (window.LESSON_CONTENT_B64) {
+            // Bước A: Decode Base64 sang chuỗi UTF-8
+            const decodedString = decodeBase64(window.LESSON_CONTENT_B64);
+            
+            // Bước B: Parse JSON lần 1
+            let parsedData = JSON.parse(decodedString);
+
+            // Bước C: Kiểm tra Double Stringify (Quan trọng)
+            // Nếu dữ liệu trong DB bị lưu dưới dạng chuỗi JSON trong chuỗi JSON, ta cần parse thêm 1 lần nữa.
+            if (typeof parsedData === 'string') {
+                try {
+                    // Thử parse lần 2 để lấy Object thật
+                    let deepParse = JSON.parse(parsedData);
+                    parsedData = deepParse;
+                } catch (e) {
+                    // Nếu không phải JSON, giữ nguyên là string
+                    console.log("Data is a raw string, not double JSON.");
+                }
             }
+
+            blocks = Array.isArray(parsedData) ? parsedData : [parsedData];
         }
     } catch (e) {
-        console.error("JSON Parse Error:", e);
-        contentArea.innerHTML = '<div class="alert alert-danger">Lỗi định dạng nội dung bài học.</div>';
+        console.error("Critical Data Error:", e);
+        contentArea.innerHTML = '<div class="alert alert-danger">Lỗi tải dữ liệu bài học.</div>';
         return;
     }
 
-    // Xóa loading spinner
     contentArea.innerHTML = '';
 
-    // --- 3. RENDER BLOCKS ---
+    // 3. RENDER BLOCKS
     if (Array.isArray(blocks) && blocks.length > 0) {
         blocks.forEach((block, index) => {
             const blockHTML = renderSingleBlock(block, index);
             if(blockHTML) contentArea.appendChild(blockHTML);
         });
     } else {
-        contentArea.innerHTML = `
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-scroll fa-3x mb-3 text-secondary opacity-50"></i>
-                <p>Bài học này chưa có nội dung.</p>
-            </div>`;
+        contentArea.innerHTML = '<div class="text-center py-5 text-muted">Bài học này chưa có nội dung.</div>';
     }
 
-    // --- 4. POST-RENDER PROCESSING ---
-    
-    // a. Render Math (KaTeX)
+    // 4. Post-Render
     if (window.renderMathInElement) {
         renderMathInElement(contentArea, {
-            delimiters: [
-                {left: '$$', right: '$$', display: true},
-                {left: '$', right: '$', display: false},
-                {left: '\\(', right: '\\)', display: false},
-                {left: '\\[', right: '\\]', display: true}
-            ],
+            delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
             throwOnError: false
         });
     }
-
-    // b. Highlight Code (Prism)
-    if (window.Prism) {
-        Prism.highlightAllUnder(contentArea);
-    }
-
-    // c. Tạo Mục Lục & Thanh tiến trình (Logic Full Page)
+    if (window.Prism) Prism.highlightAllUnder(contentArea);
+    
     generateTableOfContents();
     initReadingProgress();
+}
+
+// --- HELPER: DECODE BASE64 UTF-8 SAFE ---
+function decodeBase64(str) {
+    return decodeURIComponent(atob(str).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
 }
 
 /* =========================================
@@ -103,15 +95,13 @@ function renderSingleBlock(block, idx) {
             const level = block.data.level || 2;
             const hTag = document.createElement(`h${level}`);
             hTag.innerHTML = block.data.text;
-            hTag.id = `heading-${idx}`; // ID quan trọng cho TOC
+            hTag.id = `heading-${idx}`;
             wrapper.appendChild(hTag);
             break;
 
         case 'text':
             let htmlContent = marked.parse(block.data.text || '');
             if (window.DOMPurify) htmlContent = DOMPurify.sanitize(htmlContent);
-            
-            // Thêm ID cho heading trong markdown để TOC bắt được
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             tempDiv.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
@@ -125,13 +115,11 @@ function renderSingleBlock(block, idx) {
                 wrapper.className += ' text-center my-4';
                 const img = document.createElement('img');
                 img.src = block.data.url;
-                img.alt = block.data.caption || 'Hình ảnh minh họa';
+                img.alt = block.data.caption || 'Hình ảnh';
                 img.loading = 'lazy';
-                img.className = 'img-fluid shadow-sm border rounded';
-                img.style.cursor = 'zoom-in';
                 img.onclick = () => window.open(img.src, '_blank');
+                img.style.cursor = 'zoom-in';
                 wrapper.appendChild(img);
-                
                 if(block.data.caption) {
                     const cap = document.createElement('div');
                     cap.className = 'text-center text-muted small fst-italic mt-2';
@@ -149,12 +137,11 @@ function renderSingleBlock(block, idx) {
                 
                 if (videoInfo && videoInfo.url) {
                     if (videoInfo.type === 'iframe') {
-                        // FIX: Thêm đầy đủ thuộc tính để tránh lỗi phát video
                         videoWrapper.innerHTML = `
                             <iframe 
                                 src="${videoInfo.url}" 
                                 frameborder="0" 
-                                allow="autoplay; encrypted-media; picture-in-picture; clipboard-write; gyroscope; accelerometer" 
+                                allow="autoplay; encrypted-media; picture-in-picture; clipboard-write" 
                                 allowfullscreen 
                                 referrerpolicy="origin"
                                 title="Video bài học"
@@ -175,8 +162,6 @@ function renderSingleBlock(block, idx) {
             const docUrl = block.data.url || '#';
             const docTitle = block.data.title || 'Tài liệu đính kèm';
             const docExt = docUrl.split('.').pop().toLowerCase();
-            
-            // Icon mapping
             let iconClass = 'fas fa-file-alt';
             if(['pdf'].includes(docExt)) iconClass = 'fas fa-file-pdf text-danger';
             else if(['doc','docx'].includes(docExt)) iconClass = 'fas fa-file-word text-primary';
@@ -195,24 +180,19 @@ function renderSingleBlock(block, idx) {
                 </a>`;
             break;
 
+        // [FIXED] HTML PREVIEW - ÁP DỤNG CLEAN DEEPLY
         case 'html_preview':
             wrapper.className += ' mb-4';
             const uniqueId = `html-preview-${idx}`;
             
-            // [FIX BUG] Làm sạch chuỗi HTML bị escape lỗi (vd: r=\"56\")
-            let htmlCode = block.data.html || '';
-            if (typeof htmlCode === 'string') {
-                htmlCode = htmlCode
-                    .replace(/\\"/g, '"')  // Thay thế \" thành "
-                    .replace(/\\n/g, '\n') // Thay thế \n thành xuống dòng thật
-                    .replace(/\\\\/g, '\\'); // Thay thế \\ thành \
-            }
-
+            // [FIXED] LẤY TRỰC TIẾP HTML GỐC, KHÔNG DÙNG REGEX REPLACE
+            // Vì đã qua Base64 và JSON.parse, các ký tự \n, \", <script> đã được khôi phục chính xác.
+            const htmlCode = block.data.html || '';
+            
             const settings = block.data.settings || { 
-                showSource: true, defaultTab: 'result', height: 400, viewport: 'responsive', includeBootstrap: false 
+                showSource: true, defaultTab: 'result', height: 400, viewport: 'responsive' 
             };
             
-            // Viewport Styling
             let containerStyle = `height: ${settings.height}px; display:block;`;
             if (settings.viewport === 'mobile') {
                 containerStyle += 'width: 375px; margin: 0 auto; border: 4px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2);';
@@ -225,33 +205,17 @@ function renderSingleBlock(block, idx) {
             const isCodeActive = settings.defaultTab === 'code' && settings.showSource;
             const isResultActive = !isCodeActive;
 
-            // Render UI Tabs
-            let headerHTML = '';
-            if (settings.showSource) {
-                headerHTML = `
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
-                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-orange text-white" style="background:#f97316"><i class="fab fa-html5 me-1"></i> Demo</span>
-                            ${settings.viewport !== 'responsive' ? `<span class="badge bg-secondary opacity-75"><i class="fas fa-mobile-alt"></i> ${settings.viewport}</span>` : ''}
-                        </div>
-                        <ul class="nav nav-pills nav-sm card-header-pills" role="tablist" style="font-size: 0.85rem;">
-                            <li class="nav-item">
-                                <button class="nav-link ${isResultActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#preview-${uniqueId}">
-                                    <i class="fas fa-play me-1"></i> Kết quả
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link ${isCodeActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#code-${uniqueId}">
-                                    <i class="fas fa-code me-1"></i> Mã nguồn
-                                </button>
-                            </li>
-                        </ul>
-                    </div>`;
-            } else {
-                headerHTML = `<div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center gap-2"><span class="fw-bold text-secondary"><i class="fas fa-play-circle text-success"></i> Demo kết quả</span></div>`;
-            }
+            const headerHTML = settings.showSource ? `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                     <span class="badge bg-orange text-white" style="background:#f97316"><i class="fab fa-html5 me-1"></i> Demo</span>
+                    <ul class="nav nav-pills nav-sm card-header-pills" role="tablist">
+                        <li class="nav-item"><button class="nav-link ${isResultActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#preview-${uniqueId}">Kết quả</button></li>
+                        <li class="nav-item"><button class="nav-link ${isCodeActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#code-${uniqueId}">Mã nguồn</button></li>
+                    </ul>
+                </div>` : '';
 
-            const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            // Escape để hiển thị source code an toàn
+            const sourceCodeDisplay = htmlCode.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
             wrapper.innerHTML = `
                 <div class="card shadow-sm border rounded overflow-hidden bg-white">
@@ -268,70 +232,58 @@ function renderSingleBlock(block, idx) {
                             ${settings.showSource ? `
                             <div class="tab-pane fade ${isCodeActive ? 'show active' : ''}" id="code-${uniqueId}">
                                 <div class="position-relative">
-                                    <button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 opacity-75" onclick="navigator.clipboard.writeText(this.parentElement.querySelector('code').innerText)">Copy</button>
-                                    <pre class="line-numbers m-0 rounded-0" style="max-height: ${settings.height}px;"><code class="language-html">${escapeHtml(htmlCode)}</code></pre>
+                                    <button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 opacity-75" onclick="copyCode(this)">Copy</button>
+                                    <pre class="line-numbers m-0 rounded-0" style="max-height: ${settings.height}px;"><code class="language-html">${sourceCodeDisplay}</code></pre>
                                 </div>
                             </div>` : ''}
                         </div>
                     </div>
                 </div>`;
 
-            // Inject Iframe Content
             setTimeout(() => {
                 const iframe = wrapper.querySelector(`#iframe-${uniqueId}`);
                 if (iframe) {
                     const doc = iframe.contentWindow.document;
                     doc.open();
-                    let headInject = '<style>body{margin:0; padding:10px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
-                    if (settings.includeBootstrap) headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
                     
-                    doc.write(headInject + htmlCode); // [FIX] Viết code đã được clean
+                    // Inject CSS Bootstrap nếu được bật
+                    let headInject = '<style>body{margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
+                    if (settings.includeBootstrap) {
+                        headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+                    }
+                    
+                    // [IMPORTANT] Ghi nội dung HTML gốc vào Iframe.
+                    // Vì đã qua Base64 -> JSON.parse, htmlCode bây giờ là chuỗi gốc chuẩn xác.
+                    // Không cần replace hay clean gì nữa.
+                    doc.write(htmlCode);
                     doc.close();
                 }
             }, 50);
             break;
 
         case 'code':
-            wrapper.className += ' block-code my-3';
             const lang = block.data.language || 'javascript';
             const codeText = (block.data.code || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             wrapper.innerHTML = `
                 <div class="code-viewer-container">
-                    <div class="code-header">
-                        <span><i class="fas fa-code me-2"></i>${lang.toUpperCase()}</span>
-                        <button class="btn btn-sm btn-dark border-secondary text-light btn-copy-code" onclick="copyCode(this)"><i class="far fa-copy"></i> Copy</button>
-                    </div>
+                    <div class="code-header"><span>${lang.toUpperCase()}</span><button class="btn btn-sm btn-dark border-secondary text-light btn-copy-code" onclick="copyCode(this)">Copy</button></div>
                     <pre class="line-numbers"><code class="language-${lang}">${codeText}</code></pre>
                 </div>`;
             break;
 
         case 'callout':
-            const typeMap = {
-                info: { class: 'alert-info', icon: 'fa-info-circle' },
-                warning: { class: 'alert-warning', icon: 'fa-exclamation-triangle' },
-                danger: { class: 'alert-danger', icon: 'fa-bomb' },
-                success: { class: 'alert-success', icon: 'fa-check-circle' },
-                note: { class: 'alert-secondary', icon: 'fa-sticky-note' }
-            };
-            const cType = typeMap[block.data.style] || typeMap.info;
-            const cText = marked.parse(block.data.text || '');
-            wrapper.className += ` alert ${cType.class} border-0 shadow-sm d-flex align-items-start my-3`;
-            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas ${cType.icon} fa-lg"></i></div><div class="flex-grow-1">${cText}</div>`;
+            const cType = {info:'alert-info', warning:'alert-warning', danger:'alert-danger', success:'alert-success'}[block.data.style] || 'alert-info';
+            wrapper.className += ` alert ${cType} border-0 shadow-sm d-flex align-items-start my-3`;
+            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas fa-info-circle fa-lg"></i></div><div class="flex-grow-1">${marked.parse(block.data.text || '')}</div>`;
             break;
 
         case 'quiz':
         case 'question':
-            if (block.data.questions && block.data.questions.length > 0) {
-                wrapper.appendChild(renderQuizBlock(block.data, idx));
-            }
+            if (block.data.questions && block.data.questions.length > 0) wrapper.appendChild(renderQuizBlock(block.data, idx));
             break;
     }
     return wrapper;
 }
-
-/* =========================================
-   QUIZ RENDERER (v11.6 - ULTIMATE)
-   ========================================= */
 
 function renderQuizBlock(data, blockIdx) {
     const settings = data.settings || { passingScore: 50, showFeedback: 'submit' };
@@ -339,7 +291,6 @@ function renderQuizBlock(data, blockIdx) {
     container.className = 'quiz-wrapper bg-white mb-4 shadow-sm rounded border';
     const feedbackMode = settings.showFeedback || 'submit';
     
-    // Header
     container.innerHTML = `
         <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap">
             <div>
@@ -359,7 +310,6 @@ function renderQuizBlock(data, blockIdx) {
     const body = container.querySelector('.quiz-body');
     const btnSubmit = container.querySelector('.btn-submit-quiz');
 
-    // Helper: Parse Markdown safely + keep Input tags
     const parseMD = (text) => {
         if (typeof marked === 'undefined') return text;
         let html = marked.parse(text);
@@ -382,62 +332,38 @@ function renderQuizBlock(data, blockIdx) {
         
         let qContent = '';
 
-        // --- DẠNG ĐIỀN TỪ (FILL) ---
         if (q.type === 'fill') {
             let rawText = q.content || q.question || '';
-            
             if (rawText.includes('[') && rawText.includes(']')) {
                 rawText = rawText.replace(/\[(.*?)\]/g, (match, answer) => {
                     const width = Math.max(100, answer.length * 15);
                     const safeAns = answer.replace(/"/g, '&quot;');
-                    return `<input type="text" class="form-control d-inline-block text-center fw-bold fill-input mx-1" 
-                                   style="width: ${width}px; min-width: 80px; padding: 0.25rem 0.5rem; color: #4f46e5;" 
-                                   data-answer="${safeAns}" placeholder="..." autocomplete="off">`;
+                    return `<input type="text" class="form-control d-inline-block text-center fw-bold fill-input mx-1" style="width: ${width}px; min-width: 80px; padding: 0.25rem 0.5rem; color: #4f46e5;" data-answer="${safeAns}" placeholder="..." autocomplete="off">`;
                 });
             } else {
                 rawText += ` <input type="text" class="form-control fill-input" data-answer="" placeholder="..." autocomplete="off">`;
             }
-            const fullTextMD = `**Câu ${idx + 1}:** ${rawText}`;
-            qContent = `<div class="question-content lh-lg">${parseMD(fullTextMD)}</div>`;
-        } 
-        
-        // --- DẠNG TRẮC NGHIỆM / TỰ LUẬN ---
-        else {
-            const questionMD = `**Câu ${idx + 1}:** ${q.question}`;
-            qContent = `<div class="question-content mb-3">${parseMD(questionMD)}</div>`;
-
+            qContent = `<div class="question-content lh-lg">${parseMD(`**Câu ${idx + 1}:** ${rawText}`)}</div>`;
+        } else {
+            qContent = `<div class="question-content mb-3">${parseMD(`**Câu ${idx + 1}:** ${q.question}`)}</div>`;
             if (q.type === 'essay') {
                 qContent += `<textarea class="form-control essay-input bg-light" rows="4" placeholder="Nhập câu trả lời..." style="resize:vertical;"></textarea><div class="mt-2 text-muted small"><i class="fas fa-pen-fancy"></i> Gợi ý: Trả lời ngắn gọn.</div>`;
-            }
-            else if (q.type === 'choice') {
+            } else if (q.type === 'choice') {
                 const type = q.isMulti ? 'checkbox' : 'radio';
                 const name = `q_${blockIdx}_${idx}`;
                 let opts = '';
                 (q.options || []).forEach((opt, optIdx) => {
                     const isCorrect = (q.correct || []).includes(optIdx);
-                    opts += `
-                        <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative border transition-all" data-option-idx="${optIdx}" data-is-correct="${isCorrect}">
-                            <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}">
-                            <span>${opt}</span>
-                            <i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i>
-                            <i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i>
-                        </label>`;
+                    opts += `<label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative border transition-all" data-option-idx="${optIdx}" data-is-correct="${isCorrect}"><input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}"><span>${opt}</span><i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i><i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i></label>`;
                 });
                 qContent += `<div class="options-list">${opts}</div>`;
             }
         }
 
-        // --- GIẢI THÍCH ---
         const explainText = parseMD(q.explanation || 'Không có giải thích chi tiết.');
-        qContent += `
-            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis animate__animated animate__fadeIn" style="display:none; border-left: 4px solid #0ea5e9;">
-                <div class="fw-bold mb-1"><i class="fas fa-lightbulb me-2"></i>Giải thích / Đáp án:</div>
-                <div class="markdown-body">${explainText}</div>
-            </div>`;
-
+        qContent += `<div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis animate__animated animate__fadeIn" style="display:none; border-left: 4px solid #0ea5e9;"><div class="fw-bold mb-1"><i class="fas fa-lightbulb me-2"></i>Giải thích / Đáp án:</div><div class="markdown-body">${explainText}</div></div>`;
         qEl.innerHTML = qContent;
         
-        // --- INSTANT MODE LOGIC ---
         if (feedbackMode === 'instant') {
             if (q.type === 'choice') {
                 qEl.querySelectorAll('input').forEach(input => {
@@ -465,7 +391,6 @@ function renderQuizBlock(data, blockIdx) {
                         const val = input.value.trim().toLowerCase();
                         const correct = input.dataset.answer.trim().toLowerCase();
                         input.classList.remove('is-valid', 'is-invalid', 'bg-success-subtle', 'text-success');
-                        
                         if(val && val === correct) {
                             input.classList.add('is-valid', 'bg-success-subtle', 'text-success'); 
                             input.disabled = true;
@@ -483,14 +408,12 @@ function renderQuizBlock(data, blockIdx) {
         body.appendChild(qEl);
     });
 
-    // --- SUBMIT LOGIC ---
     btnSubmit.onclick = () => {
         let correctCount = 0;
         const qEls = body.querySelectorAll('.quiz-question');
         qEls.forEach(qEl => {
             const type = qEl.dataset.type;
             let isQCorrect = false;
-
             if (type === 'choice') {
                 const inputs = qEl.querySelectorAll('input');
                 let userCorrect = true, hasChecked = false;
@@ -499,7 +422,6 @@ function renderQuizBlock(data, blockIdx) {
                     const isRight = inp.dataset.correct === 'true';
                     label.classList.remove('bg-success-subtle', 'bg-danger-subtle', 'border-success', 'border-danger');
                     label.querySelectorAll('.result-icon').forEach(i => i.style.display = 'none');
-
                     if (inp.checked) {
                         hasChecked = true;
                         if (isRight) {
@@ -549,7 +471,6 @@ function renderQuizBlock(data, blockIdx) {
                 }
                 txt.disabled = true;
             }
-
             if(isQCorrect) correctCount++;
             if(qEl.querySelector('.explanation') && feedbackMode !== 'never') qEl.querySelector('.explanation').style.display = 'block';
         });
@@ -570,99 +491,43 @@ function renderQuizBlock(data, blockIdx) {
     return container;
 }
 
-/* =========================================
-   UTILITIES & TOC
-   ========================================= */
-
 function generateTableOfContents() {
     const tocList = document.getElementById('toc-list');
     const contentArea = document.getElementById('lessonContentArea');
     if(!tocList || !contentArea) return;
-
     const headers = Array.from(contentArea.querySelectorAll('h1, h2, h3, h4'));
-    
-    if(headers.length === 0) { 
-        tocList.innerHTML = '<li class="text-muted small ps-4 py-3">Bài học chưa có mục lục.</li>'; 
-        return; 
-    }
-
-    let html = '';
-    let counters = [0, 0, 0, 0]; 
-    let lastLevel = 0;
-
-    headers.forEach((header, index) => {
-        if(!header.id) header.id = `toc-auto-${index}`;
-        
-        const currentLevel = parseInt(header.tagName.substring(1)) - 1;
-        if (currentLevel < lastLevel) {
-            for (let i = currentLevel + 1; i < counters.length; i++) counters[i] = 0;
-        }
-        counters[currentLevel]++;
-        lastLevel = currentLevel;
-
-        const numberString = counters.slice(0, currentLevel + 1).join('.');
-        const hierarchyClass = `toc-item-${header.tagName.toLowerCase()}`;
-        
-        html += `
-            <li>
-                <a href="#${header.id}" 
-                   class="toc-link ${hierarchyClass}" 
-                   data-target="${header.id}"
-                   onclick="scrollToHeader(event, '${header.id}')">
-                   <span class="toc-number">${numberString}</span> ${header.innerText}
-                </a>
-            </li>`;
+    if(headers.length === 0) { tocList.innerHTML = '<li class="text-muted small ps-4 py-3">Bài học chưa có mục lục.</li>'; return; }
+    let html = '', counters = [0,0,0,0], lastLevel = 0;
+    headers.forEach((h, i) => {
+        if(!h.id) h.id = `toc-${i}`;
+        const lvl = parseInt(h.tagName.substring(1)) - 1;
+        if(lvl < lastLevel) for(let j=lvl+1; j<4; j++) counters[j]=0;
+        counters[lvl]++; lastLevel=lvl;
+        html += `<li><a href="#${h.id}" class="toc-link toc-item-h${lvl+1}" onclick="scrollToHeader(event,'${h.id}')"><span class="toc-number">${counters.slice(0,lvl+1).join('.')}</span> ${h.innerText}</a></li>`;
     });
-    
     tocList.innerHTML = html;
     initScrollSpy(headers);
 }
 
 function initScrollSpy(headers) {
-    if (tocObserver) tocObserver.disconnect();
-    
-    // Lắng nghe scroll trên Wrapper
+    if(tocObserver) tocObserver.disconnect();
     const scrollContainer = document.querySelector('.lesson-content-wrapper');
-
-    const observerOptions = {
-        root: scrollContainer, 
-        rootMargin: '0px 0px -80% 0px', 
-        threshold: 0
-    };
-
     tocObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                document.querySelectorAll('.toc-link').forEach(a => {
-                    a.classList.remove('active');
-                    a.classList.remove('semi-active');
-                });
-                
-                const activeId = entry.target.id;
-                const activeLink = document.querySelector(`.toc-link[data-target="${activeId}"]`);
-                
-                if (activeLink) {
-                    activeLink.classList.add('active');
-                    activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                }
+            if(entry.isIntersecting) {
+                document.querySelectorAll('.toc-link').forEach(a=>a.classList.remove('active'));
+                const link = document.querySelector(`.toc-link[href="#${entry.target.id}"]`);
+                if(link) { link.classList.add('active'); link.scrollIntoView({block:'nearest'}); }
             }
         });
-    }, observerOptions);
-
-    headers.forEach(header => tocObserver.observe(header));
+    }, {root: scrollContainer, rootMargin: '0px 0px -80% 0px'});
+    headers.forEach(h => tocObserver.observe(h));
 }
 
 function scrollToHeader(e, id) {
     e.preventDefault();
     const el = document.getElementById(id);
-    if(el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.pushState(null, null, `#${id}`);
-        
-        document.querySelectorAll('.toc-link').forEach(a => a.classList.remove('active'));
-        const link = document.querySelector(`.toc-link[data-target="${id}"]`);
-        if(link) link.classList.add('active');
-    }
+    if(el) { el.scrollIntoView({behavior:'smooth', block:'start'}); history.pushState(null,null,`#${id}`); }
 }
 
 function initReadingProgress() {
@@ -673,16 +538,10 @@ function initReadingProgress() {
         document.body.appendChild(bar);
     }
     const bar = document.getElementById('reading-progress');
-    const scrollContainer = document.querySelector('.lesson-content-wrapper'); 
-    
-    if(scrollContainer) {
-        scrollContainer.addEventListener('scroll', () => {
-            const scrollTop = scrollContainer.scrollTop;
-            const scrollHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-            const scrolled = (scrollTop / scrollHeight) * 100;
-            bar.style.width = scrolled + "%";
-        });
-    }
+    const con = document.querySelector('.lesson-content-wrapper');
+    if(con) con.addEventListener('scroll', () => {
+        bar.style.width = ((con.scrollTop / (con.scrollHeight - con.clientHeight)) * 100) + "%";
+    });
 }
 
 function copyCode(btn) {
@@ -691,31 +550,19 @@ function copyCode(btn) {
         const original = btn.innerHTML; 
         btn.innerHTML = '<i class="fas fa-check"></i> Đã chép'; 
         btn.classList.replace('btn-dark', 'btn-success');
-        setTimeout(() => { 
-            btn.innerHTML = original; 
-            btn.classList.replace('btn-success', 'btn-dark'); 
-        }, 2000);
+        setTimeout(() => { btn.innerHTML = original; btn.classList.replace('btn-success', 'btn-dark'); }, 2000);
     });
 }
 
-// [UPDATED] HÀM LẤY URL EMBED (Fix 153 & Drive)
 function getEmbedUrl(url, autoplay) {
     if (!url) return null;
-    
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/);
     if (ytMatch && ytMatch[1]) {
         const origin = window.location.origin;
-        return { 
-            type: 'iframe', 
-            url: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}` 
-        };
+        return { type: 'iframe', url: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}` };
     }
-    
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^\/]+)\//);
-    if (driveMatch && driveMatch[1]) {
-        return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
-    }
-    
+    if (driveMatch && driveMatch[1]) return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
     return { type: 'video', url: url };
 }
 
