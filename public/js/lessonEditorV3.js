@@ -88,6 +88,13 @@ function setSaveStatus(text) {
     if (el) el.innerText = text;
 }
 
+// Toggle menu cấu hình cho HTML Block
+function toggleHtmlSettings(idx) {
+    if (!blocks[idx]) return;
+    blocks[idx]._settingsOpen = !blocks[idx]._settingsOpen;
+    renderBlocks();
+}
+
 // --- HÀM CHUYỂN NGỮ CẢNH RIGHT PANEL ---
 function switchPanelMode(mode) {
     activeContext = mode;
@@ -1359,6 +1366,159 @@ function renderBlocks() {
              // Nhưng nếu dùng textarea thuần thì không render lại cả block nên oninput vẫn ok, chỉ cần không gọi renderBlocks() trong đó
              ta.addEventListener('input', (e) => { blocks[idx].data.text = e.target.value; });
              body.appendChild(ta);
+        // --- RENDER TYPE: HTML PREVIEW (FULL FEATURES) ---
+        } else if (b.type === 'html_preview') {
+            body.innerHTML = `<div class="block-label"><i class="fab fa-html5"></i> HTML Live Preview</div>`;
+            
+            // 1. Lấy Settings (hoặc dùng mặc định)
+            const settings = b.data.settings || { 
+                showSource: true, 
+                defaultTab: 'result', 
+                height: 400, 
+                viewport: 'responsive', 
+                includeBootstrap: false 
+            };
+            const isSettingsOpen = b._settingsOpen === true;
+            
+            // 2. Render Settings Panel (Ẩn/Hiện dựa vào biến _settingsOpen)
+            const settingsPanel = `
+                <div class="html-settings-panel" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:12px; ${isSettingsOpen ? 'display:block' : 'display:none'}">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="small text-muted mb-1">Chế độ xem mặc định</label>
+                            <select class="studio-select" onchange="updateBlockData(${idx}, 'settings.defaultTab', this.value)">
+                                <option value="result" ${settings.defaultTab === 'result' ? 'selected' : ''}>Kết quả (Result)</option>
+                                <option value="code" ${settings.defaultTab === 'code' ? 'selected' : ''}>Mã nguồn (Code)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted mb-1">Kích thước Viewport</label>
+                            <select class="studio-select" onchange="updateBlockData(${idx}, 'settings.viewport', this.value)">
+                                <option value="responsive" ${settings.viewport === 'responsive' ? 'selected' : ''}>Tự động (Responsive)</option>
+                                <option value="mobile" ${settings.viewport === 'mobile' ? 'selected' : ''}>Điện thoại (375px)</option>
+                                <option value="tablet" ${settings.viewport === 'tablet' ? 'selected' : ''}>Máy tính bảng (768px)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted mb-1">Chiều cao khung (px)</label>
+                            <input type="number" class="studio-select" value="${settings.height || 400}" min="100" step="50" onchange="updateBlockData(${idx}, 'settings.height', Number(this.value))">
+                        </div>
+                        <div class="col-12 mt-2 d-flex gap-3 pt-2 border-top">
+                            <label class="d-flex align-items-center cursor-pointer">
+                                <input type="checkbox" class="me-2" onchange="updateBlockData(${idx}, 'settings.showSource', this.checked)" ${settings.showSource !== false ? 'checked' : ''}>
+                                <span class="small">Cho phép học viên xem Code</span>
+                            </label>
+                            <label class="d-flex align-items-center cursor-pointer">
+                                <input type="checkbox" class="me-2" onchange="updateBlockData(${idx}, 'settings.includeBootstrap', this.checked)" ${settings.includeBootstrap ? 'checked' : ''}>
+                                <span class="small text-primary fw-bold"><i class="fab fa-bootstrap me-1"></i> Tự động nhúng Bootstrap 5</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 3. Render Wrapper Chính
+            const wrapper = document.createElement('div');
+            wrapper.className = 'html-preview-wrapper';
+            wrapper.style.cssText = "display: flex; flex-direction: column; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff;";
+
+            // Header con của Block (Nút bật tắt cấu hình)
+            const configHeader = `
+                <div style="padding: 8px 12px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                    <div class="small fw-bold text-secondary">SOURCE & PREVIEW</div>
+                    <button type="button" class="btn btn-sm btn-light border" onclick="toggleHtmlSettings(${idx})" style="font-size:0.75rem; color:#475569;">
+                        <i class="fas fa-cog"></i> Cấu hình hiển thị
+                    </button>
+                </div>
+            `;
+            
+            // Container 2 cột (Code | Preview)
+            const columnsContainer = document.createElement('div');
+            columnsContainer.style.cssText = "display: flex; flex-wrap: wrap; min-height: 300px;";
+
+            // --- CỘT TRÁI: CODE EDITOR ---
+            const leftCol = document.createElement('div');
+            leftCol.style.cssText = "flex: 1; min-width: 300px; display: flex; flex-direction: column; border-right: 1px solid #cbd5e1; background: #1e293b;";
+            
+            const textarea = document.createElement('textarea');
+            textarea.className = 'studio-select'; 
+            // Style đè lên class mặc định để ra giao diện Code Editor tối màu
+            textarea.style.cssText = "flex: 1; border: none; resize: vertical; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; padding: 15px; background: #1e293b; color: #e2e8f0; line-height: 1.6; outline: none; min-height: 300px;";
+            textarea.placeholder = "<h1>Nhập mã HTML/CSS/JS...</h1>";
+            textarea.value = b.data?.html || '';
+            textarea.spellcheck = false;
+
+            // --- CỘT PHẢI: LIVE PREVIEW ---
+            const rightCol = document.createElement('div');
+            rightCol.style.cssText = "flex: 1; min-width: 300px; display: flex; flex-direction: column; background: #fff; position: relative;";
+            
+            // Thanh tiêu đề nhỏ cho Preview
+            const previewHeader = document.createElement('div');
+            previewHeader.style.cssText = "padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;";
+            previewHeader.innerHTML = 'Kết quả thực thi';
+
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = "flex: 1; width: 100%; border: none; background: #fff;";
+            
+            // Hàm cập nhật nội dung Iframe (Inject Bootstrap nếu cần)
+            const updatePreview = (val) => {
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                
+                let headInject = '<style>body{margin:0; padding:15px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
+                
+                if (settings.includeBootstrap) {
+                    headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+                    // Thêm script bootstrap (optional, để dropdown/modal hoạt động)
+                    headInject += '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>';
+                }
+                
+                doc.write(headInject + val);
+                doc.close();
+            };
+
+            // Event Listeners: Input -> Update Data & Preview
+            let timer;
+            textarea.addEventListener('input', (e) => {
+                const val = e.target.value;
+                blocks[idx].data.html = val; // Lưu data ngay lập tức
+                
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    updatePreview(val);
+                }, 800); // Debounce 800ms
+            });
+            
+            // Hỗ trợ phím TAB trong textarea
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key == 'Tab') {
+                    e.preventDefault();
+                    var start = this.selectionStart;
+                    var end = this.selectionEnd;
+                    // Chèn 2 spaces
+                    this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 2;
+                    blocks[idx].data.html = this.value;
+                }
+            });
+
+            // Chạy preview lần đầu
+            setTimeout(() => updatePreview(textarea.value), 100);
+
+            // Ráp các phần lại với nhau
+            leftCol.appendChild(textarea);
+            rightCol.appendChild(previewHeader);
+            rightCol.appendChild(iframe);
+            
+            columnsContainer.appendChild(leftCol);
+            columnsContainer.appendChild(rightCol);
+
+            wrapper.innerHTML = configHeader; // Header cấu hình
+            wrapper.appendChild(columnsContainer);
+
+            // Chèn Panel Settings lên đầu, sau đó đến Wrapper
+            body.innerHTML += settingsPanel; 
+            body.appendChild(wrapper);
         }
 
         el.appendChild(body);
@@ -1568,6 +1728,19 @@ function addBlock(type) {
         text: { type: 'text', data: { text: '' } },
         image: { type: 'image', data: { url: '' } },
         video: { type: 'video', data: { url: '' } },
+        html_preview: { 
+            type: 'html_preview', 
+            data: { 
+                html: '\n<h1>Hello World</h1>',
+                settings: {
+                    showSource: true,      // Cho phép xem code
+                    defaultTab: 'result',  // Tab mặc định: result | code
+                    height: 400,           // Chiều cao mặc định
+                    viewport: 'responsive',// responsive | mobile | tablet
+                    includeBootstrap: false// Tự động thêm Bootstrap
+                }
+            } 
+        },
         resource: { type: 'resource', data: { title: '', url: '', iconType: 'drive' } },
         code: { type: 'code', data: { language: 'javascript', code: '' } },
         callout: { type: 'callout', data: { text: '' } },

@@ -799,6 +799,53 @@ pre[class*="language-"] {
     background: #2c2c2c;
 }
 
+/* =========================================
+   BLOCK HTML PREVIEW (Lesson Detail)
+   ========================================= */
+
+/* Tùy chỉnh Tabs */
+.content-block-render .nav-pills .nav-link {
+    color: #64748b; /* Slate-500 */
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.content-block-render .nav-pills .nav-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.content-block-render .nav-pills .nav-link.active {
+    background-color: #ea580c; /* Màu cam HTML5 */
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);
+}
+
+/* Nền Caro (Checkerboard) cho tab Preview 
+   Giúp dễ phân biệt background trong suốt của iframe */
+.checkerboard-bg {
+    background-color: #ffffff;
+    background-image: 
+        linear-gradient(45deg, #f1f5f9 25%, transparent 25%),
+        linear-gradient(-45deg, #f1f5f9 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f1f5f9 75%),
+        linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    border-radius: 0 0 8px 8px; /* Bo góc dưới */
+}
+
+/* Nút copy code */
+.btn-copy-code {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.btn-copy-code:hover {
+    opacity: 1;
+}
+
 /* Mobile Responsive Tweaks */
 @media (max-width: 768px) {
     .lesson-card { padding: 25px; }

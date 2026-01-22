@@ -224,6 +224,120 @@ function renderSingleBlock(block, idx) {
                 wrapper.appendChild(renderQuizBlock(block.data, idx));
             }
             break;
+
+        case 'html_preview':
+            wrapper.className += ' mb-4';
+            const uniqueId = `html-preview-${idx}`;
+            const htmlCode = block.data.html || '';
+            
+            // Lấy Settings (có fallback)
+            const settings = block.data.settings || { 
+                showSource: true, 
+                defaultTab: 'result', 
+                height: 400, 
+                viewport: 'responsive', 
+                includeBootstrap: false 
+            };
+            
+            // 1. Xử lý Logic Viewport (Width)
+            let wrapperStyle = 'width: 100%; height: 100%; border:none;';
+            let containerStyle = `height: ${settings.height}px; display:block;`; // Container chứa iframe
+            
+            if (settings.viewport === 'mobile') {
+                containerStyle += 'width: 375px; margin: 0 auto; border: 2px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2);';
+            } else if (settings.viewport === 'tablet') {
+                containerStyle += 'width: 768px; margin: 0 auto; border: 1px solid #ccc; box-shadow: 0 5px 15px rgba(0,0,0,0.1);';
+            } else {
+                containerStyle += 'width: 100%;';
+            }
+
+            // 2. Xử lý Tab mặc định
+            const isCodeActive = settings.defaultTab === 'code' && settings.showSource;
+            const isResultActive = !isCodeActive;
+
+            // 3. Render HTML
+            // Nếu showSource = false, chỉ hiện Result Header đơn giản
+            let headerHTML = '';
+            if (settings.showSource) {
+                headerHTML = `
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                         <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-orange text-white" style="background:#f97316"><i class="fab fa-html5 me-1"></i> Demo</span>
+                            ${settings.viewport !== 'responsive' ? `<span class="badge bg-secondary opacity-75"><i class="fas fa-mobile-alt"></i> ${settings.viewport}</span>` : ''}
+                        </div>
+                        <ul class="nav nav-pills nav-sm card-header-pills" role="tablist" style="font-size: 0.85rem;">
+                            <li class="nav-item">
+                                <button class="nav-link ${isResultActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#preview-${uniqueId}" type="button">
+                                    <i class="fas fa-play me-1"></i> Kết quả
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link ${isCodeActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#code-${uniqueId}" type="button">
+                                    <i class="fas fa-code me-1"></i> Mã nguồn
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                // Header tối giản khi ẩn code
+                headerHTML = `
+                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center gap-2">
+                        <span class="fw-bold text-secondary"><i class="fas fa-play-circle text-success"></i> Demo kết quả</span>
+                    </div>
+                `;
+            }
+
+            // Escape HTML cho tab Code
+            const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+            wrapper.innerHTML = `
+                <div class="card shadow-sm border rounded overflow-hidden bg-white">
+                    ${headerHTML}
+                    <div class="card-body p-0">
+                        <div class="tab-content">
+                            <div class="tab-pane fade ${isResultActive ? 'show active' : ''}" id="preview-${uniqueId}">
+                                <div class="bg-light checkerboard-bg py-3 px-0 text-center" style="overflow-x: auto;"> 
+                                    <div class="iframe-container" style="${containerStyle}">
+                                        <iframe id="iframe-${uniqueId}" style="${wrapperStyle}" title="HTML Preview"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${settings.showSource ? `
+                            <div class="tab-pane fade ${isCodeActive ? 'show active' : ''}" id="code-${uniqueId}">
+                                <div class="position-relative">
+                                    <button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 opacity-75" 
+                                            onclick="navigator.clipboard.writeText(this.parentElement.querySelector('code').innerText)">
+                                        Copy
+                                    </button>
+                                    <pre class="line-numbers m-0 rounded-0" style="max-height: ${settings.height}px;"><code class="language-html">${escapeHtml(htmlCode)}</code></pre>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 4. Inject Code vào Iframe
+            setTimeout(() => {
+                const iframe = wrapper.querySelector(`#iframe-${uniqueId}`);
+                if (iframe) {
+                    const doc = iframe.contentWindow.document;
+                    doc.open();
+                    
+                    // Inject Bootstrap
+                    let headInject = '<style>body{margin:0; padding:10px;}</style>';
+                    if (settings.includeBootstrap) {
+                        headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+                    }
+                    
+                    doc.write(headInject + htmlCode);
+                    doc.close();
+                }
+            }, 50);
+            break;
     }
     return wrapper;
 }
@@ -341,17 +455,17 @@ function getEmbedUrl(url, autoplay) {
     return { type: 'video', url: url };
 }
 
-/* --- QUIZ RENDERER (GAMIFIED v11.0 - With Answer Visibility Modes) --- */
+/* --- QUIZ RENDERER (GAMIFIED v11.3 - FULL: CHOICE + FILL + ESSAY) --- */
 function renderQuizBlock(data, blockIdx) {
+    // 1. Cấu hình mặc định
     const settings = data.settings || { passingScore: 50, showFeedback: 'submit' };
     const container = document.createElement('div');
-    container.className = 'quiz-wrapper bg-white mb-4';
+    container.className = 'quiz-wrapper bg-white mb-4 shadow-sm rounded border';
     
-    // Chế độ hiển thị đáp án: 'instant' (sau khi chọn), 'submit' (sau khi nộp), 'never' (không hiện)
-    // Sử dụng 'showFeedback' từ settings
+    // showFeedback: 'instant' (Chấm ngay khi làm), 'submit' (Chấm sau khi nộp), 'never' (Không hiện KQ)
     const feedbackMode = settings.showFeedback || 'submit';
     
-    // Header Quiz
+    // 2. Render Header Quiz
     container.innerHTML = `
         <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap">
             <div>
@@ -361,9 +475,9 @@ function renderQuizBlock(data, blockIdx) {
             <small class="text-muted mt-2 mt-md-0">
                 <i class="fas fa-lightbulb me-1"></i>
                 ${
-                    feedbackMode === 'instant' ? 'Hiện đáp án khi chọn' :
-                    feedbackMode === 'submit' ? 'Hiện đáp án sau khi nộp' :
-                    'Không hiện đáp án'
+                    feedbackMode === 'instant' ? 'Chấm điểm từng câu' :
+                    feedbackMode === 'submit' ? 'Xem kết quả sau khi nộp' :
+                    'Chế độ kiểm tra'
                 }
             </small>
         </div>
@@ -380,180 +494,284 @@ function renderQuizBlock(data, blockIdx) {
     
     const body = container.querySelector('.quiz-body');
     const btnSubmit = container.querySelector('.btn-submit-quiz');
-    const controlsLeft = container.querySelector('.quiz-controls-left');
 
-    // Render questions
+    // 3. Render từng câu hỏi
     const questions = data.questions || [];
     questions.forEach((q, idx) => {
         const qEl = document.createElement('div');
         qEl.className = 'quiz-question mb-4 pb-3 border-bottom';
-        if(idx === questions.length -1) qEl.classList.remove('border-bottom');
+        if(idx === questions.length -1) qEl.classList.remove('border-bottom'); // Bỏ border câu cuối
+        
         qEl.dataset.type = q.type;
         qEl.dataset.index = idx;
         
-        let qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
+        let qContent = '';
+
+        // === DẠNG 1: ĐIỀN TỪ (FILL / CLOZE) ===
+        if (q.type === 'fill') {
+            // Kiểm tra cú pháp Cloze Test: "Việt Nam là [đất nước] đẹp"
+            if (q.question && q.question.includes('[') && q.question.includes(']')) {
+                const parsedQuestion = q.question.replace(/\[(.*?)\]/g, (match, answer) => {
+                    // Tính độ rộng ô input dựa trên độ dài đáp án
+                    const width = Math.max(100, answer.length * 15);
+                    return `<input type="text" class="form-control d-inline-block text-center fw-bold text-primary fill-input mx-1" 
+                                   style="width: ${width}px; min-width: 80px; padding: 0.25rem 0.5rem;" 
+                                   data-answer="${answer}" 
+                                   placeholder="..." autocomplete="off">`;
+                });
+                qContent = `<div class="fw-bold mb-3 lh-lg">Câu ${idx + 1}: ${parsedQuestion}</div>`;
+            } else {
+                // Fallback cho dữ liệu cũ (chỉ có 1 ô input cuối câu)
+                qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
+                qContent += `<input type="text" class="form-control fill-input" data-answer="${q.content || ''}" placeholder="Nhập đáp án..." autocomplete="off">`;
+            }
+        } 
         
-        // Render Options dựa trên loại câu hỏi
-        if (q.type === 'choice') {
-            const type = q.isMulti ? 'checkbox' : 'radio';
-            const name = `q_${blockIdx}_${idx}`;
-            let opts = '';
-            (q.options || []).forEach((opt, optIdx) => {
-                const isCorrect = (q.correct || []).includes(optIdx);
-                opts += `
-                    <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative" data-option-idx="${optIdx}" data-is-correct="${isCorrect}">
-                        <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}">
-                        <span>${opt}</span>
-                        <i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
-                        <i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 12px;"></i>
-                    </label>
-                `;
-            });
-            qContent += `<div class="options-list">${opts}</div>`;
-        } else if (q.type === 'fill') {
-             qContent += `<input type="text" class="form-control fill-input" data-answer="${q.content || ''}" placeholder="Nhập đáp án của bạn..." autocomplete="off">`;
+        // === DẠNG 2: TỰ LUẬN (ESSAY) ===
+        else if (q.type === 'essay') {
+            qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
+            qContent += `
+                <textarea class="form-control essay-input bg-light" rows="4" 
+                          placeholder="Nhập câu trả lời của bạn vào đây..." style="resize: vertical;"></textarea>
+                <div class="mt-2 text-muted small"><i class="fas fa-pen-fancy"></i> Gợi ý: Trả lời ngắn gọn, đúng trọng tâm.</div>
+            `;
         }
 
-        // Explanation Box (Ẩn mặc định - chỉ hiện sau khi nộp bài)
+        // === DẠNG 3: TRẮC NGHIỆM (CHOICE) ===
+        else {
+            qContent = `<div class="fw-bold mb-3">Câu ${idx + 1}: ${q.question}</div>`;
+            if (q.type === 'choice') {
+                const type = q.isMulti ? 'checkbox' : 'radio';
+                const name = `q_${blockIdx}_${idx}`;
+                let opts = '';
+                (q.options || []).forEach((opt, optIdx) => {
+                    const isCorrect = (q.correct || []).includes(optIdx);
+                    opts += `
+                        <label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative border transition-all" 
+                               data-option-idx="${optIdx}" data-is-correct="${isCorrect}">
+                            <input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}">
+                            <span>${opt}</span>
+                            <i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i>
+                            <i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i>
+                        </label>
+                    `;
+                });
+                qContent += `<div class="options-list">${opts}</div>`;
+            }
+        }
+
+        // === PHẦN GIẢI THÍCH (CHUNG CHO MỌI DẠNG) ===
+        // Mặc định ẩn, sẽ hiện khi chấm điểm
         qContent += `
-            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis" style="display:none; border-left: 4px solid #0ea5e9;">
-                <i class="fas fa-lightbulb me-2"></i> <strong>Giải thích:</strong> ${q.explanation || 'Không có giải thích chi tiết.'}
+            <div class="explanation mt-3 p-3 rounded bg-info-subtle text-info-emphasis animate__animated animate__fadeIn" 
+                 style="display:none; border-left: 4px solid #0ea5e9;">
+                <div class="fw-bold mb-1"><i class="fas fa-lightbulb me-2"></i>Giải thích / Đáp án:</div>
+                <div>${q.explanation || 'Không có giải thích chi tiết cho câu hỏi này.'}</div>
             </div>
         `;
 
         qEl.innerHTML = qContent;
         
-        // [NEW v11.0] Xử lý click option để hiện visual feedback (đúng/sai) khi chế độ 'instant'
-        // Chỉ hiển thị giải thích khi chọn ĐÚNG đáp án
-        if (feedbackMode === 'instant' && q.type === 'choice') {
-            qEl.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
-                input.addEventListener('change', function() {
-                    const label = input.closest('label');
-                    const isCorrect = input.dataset.correct === 'true';
-                    const iconCheck = label.querySelector('.fa-check');
-                    const iconTimes = label.querySelector('.fa-times');
-                    
-                    // Hiển thị visual feedback (background color + icon)
-                    label.classList.remove('bg-success-subtle', 'bg-danger-subtle');
-                    iconCheck.style.display = 'none';
-                    iconTimes.style.display = 'none';
-                    
-                    if (isCorrect) {
-                        label.classList.add('bg-success-subtle');
-                        if (iconCheck) iconCheck.style.display = 'block';
-                        // Hiển thị giải thích chỉ khi chọn đúng
-                        const explanation = qEl.querySelector('.explanation');
-                        if (explanation) {
-                            explanation.style.display = 'block';
-                            explanation.classList.add('animate__animated', 'animate__fadeIn');
+        // --- XỬ LÝ SỰ KIỆN CHO CHẾ ĐỘ "INSTANT" (CHẤM TỨC THÌ) ---
+        if (feedbackMode === 'instant') {
+            // A. Trắc nghiệm
+            if (q.type === 'choice') {
+                qEl.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const label = input.closest('label');
+                        const isCorrect = input.dataset.correct === 'true';
+                        
+                        // Reset style các option
+                        qEl.querySelectorAll('label').forEach(l => {
+                            l.classList.remove('bg-success-subtle', 'bg-danger-subtle', 'border-success', 'border-danger');
+                            l.querySelectorAll('.result-icon').forEach(i => i.style.display = 'none');
+                        });
+
+                        if (isCorrect) {
+                            label.classList.add('bg-success-subtle', 'border-success');
+                            label.querySelector('.fa-check').style.display = 'block';
+                            // Hiện giải thích nếu đúng
+                            const exp = qEl.querySelector('.explanation');
+                            if(exp) exp.style.display = 'block';
+                        } else {
+                            label.classList.add('bg-danger-subtle', 'border-danger');
+                            label.querySelector('.fa-times').style.display = 'block';
+                            // Ẩn giải thích nếu sai (để user chọn lại)
+                            const exp = qEl.querySelector('.explanation');
+                            if(exp) exp.style.display = 'none';
                         }
-                    } else {
-                        label.classList.add('bg-danger-subtle');
-                        if (iconTimes) iconTimes.style.display = 'block';
-                        // Ẩn giải thích nếu chọn sai
-                        const explanation = qEl.querySelector('.explanation');
-                        if (explanation) {
-                            explanation.style.display = 'none';
-                        }
-                    }
+                    });
                 });
-            });
+            }
+            // B. Điền từ (Smart Check)
+            else if (q.type === 'fill') {
+                qEl.querySelectorAll('.fill-input').forEach(input => {
+                    const checkVal = () => {
+                        const val = input.value.trim().toLowerCase();
+                        if(!val) return;
+                        const correct = input.dataset.answer.trim().toLowerCase();
+                        
+                        input.classList.remove('is-valid', 'is-invalid');
+                        if(val === correct) {
+                            input.classList.add('is-valid');
+                            input.disabled = true; // Khóa nếu đúng
+                            
+                            // Check xem xong hết chưa để hiện giải thích
+                            const allDone = Array.from(qEl.querySelectorAll('.fill-input')).every(i => i.classList.contains('is-valid'));
+                            if(allDone) {
+                                const exp = qEl.querySelector('.explanation');
+                                if(exp) exp.style.display = 'block';
+                            }
+                        } else {
+                            input.classList.add('is-invalid'); // Sai thì đỏ, không hiện đáp án, cho sửa
+                        }
+                    };
+                    input.addEventListener('change', checkVal);
+                    input.addEventListener('keydown', e => { if(e.key === 'Enter') checkVal(); });
+                });
+            }
+            // C. Tự luận (Không chấm tức thì vì cần viết dài)
+            // Tự luận thường đợi nút Nộp bài.
         }
         
         body.appendChild(qEl);
     });
 
-    // Handle Submit Logic
+    // 4. Xử lý Logic Nộp Bài (Submit)
     btnSubmit.onclick = () => {
         let correctCount = 0;
+        // Tự luận được tính là "Đúng" nếu người dùng có viết gì đó (tính điểm chuyên cần/nỗ lực)
+        // Hoặc bạn có thể loại tự luận ra khỏi phần tính % điểm số.
+        // Ở đây tôi sẽ tính là đúng nếu đã làm.
+
         const qEls = body.querySelectorAll('.quiz-question');
         
         qEls.forEach(qEl => {
             const type = qEl.dataset.type;
-            let isCorrect = false;
+            let isQuestionCorrect = false;
 
+            // --- CHẤM TRẮC NGHIỆM ---
             if (type === 'choice') {
                 const inputs = qEl.querySelectorAll('input');
-                let userCorrect = true;
-                let hasChecked = false;
+                let userCorrect = true;     // Giả định đúng
+                let hasChecked = false;     // Đã chọn gì chưa
 
                 inputs.forEach(inp => {
                     const label = inp.closest('label');
                     const isRight = inp.dataset.correct === 'true';
-                    const iconCheck = label.querySelector('.fa-check');
-                    const iconTimes = label.querySelector('.fa-times');
-
+                    
                     // Reset style cũ
-                    label.classList.remove('bg-success-subtle', 'bg-danger-subtle');
-                    iconCheck.style.display = 'none';
-                    iconTimes.style.display = 'none';
+                    label.classList.remove('bg-success-subtle', 'bg-danger-subtle', 'border-success', 'border-danger');
+                    label.querySelectorAll('.result-icon').forEach(i => i.style.display = 'none');
 
                     if (inp.checked) {
                         hasChecked = true;
                         if (isRight) {
-                            label.classList.add('bg-success-subtle');
-                            iconCheck.style.display = 'block';
+                            label.classList.add('bg-success-subtle', 'border-success');
+                            label.querySelector('.fa-check').style.display = 'block';
                         } else {
-                            label.classList.add('bg-danger-subtle');
-                            iconTimes.style.display = 'block';
                             userCorrect = false;
+                            label.classList.add('bg-danger-subtle', 'border-danger');
+                            label.querySelector('.fa-times').style.display = 'block';
                         }
                     } else if (isRight && feedbackMode !== 'never') {
-                        // Highlight đáp án đúng bị bỏ sót (viền xanh đứt đoạn) - chỉ nếu không phải chế độ 'never'
+                        // Highlight đáp án đúng mà user không chọn
                         label.style.border = "2px dashed #198754";
-                        userCorrect = false;
+                        if(q.isMulti) userCorrect = false; // Câu nhiều lựa chọn, thiếu đáp án đúng là sai
                     }
-                    // Disable inputs
+                    inp.disabled = true; // Khóa
+                });
+                
+                // Trắc nghiệm đơn: Phải chọn và chọn đúng. Trắc nghiệm đa: Phải chọn đủ và đúng.
+                if (hasChecked && userCorrect) isQuestionCorrect = true;
+            } 
+            
+            // --- CHẤM ĐIỀN TỪ ---
+            else if (type === 'fill') {
+                const inputs = qEl.querySelectorAll('.fill-input');
+                let allCorrect = true;
+                
+                inputs.forEach(inp => {
+                    const val = inp.value.trim().toLowerCase();
+                    const ans = inp.dataset.answer.trim().toLowerCase();
+                    inp.classList.remove('is-valid', 'is-invalid');
+                    
+                    if (val === ans) {
+                        inp.classList.add('is-valid');
+                    } else {
+                        allCorrect = false;
+                        inp.classList.add('is-invalid');
+                        
+                        // Hiện đáp án đúng bên cạnh (nếu mode != never)
+                        if (feedbackMode !== 'never') {
+                            if(inp.nextElementSibling && inp.nextElementSibling.classList.contains('correct-ans-hint')) {
+                                inp.nextElementSibling.remove();
+                            }
+                            const hint = document.createElement('span');
+                            hint.className = 'correct-ans-hint text-success fw-bold ms-2 small';
+                            hint.innerHTML = `<i class="fas fa-check"></i> ${inp.dataset.answer}`;
+                            inp.after(hint);
+                        }
+                    }
                     inp.disabled = true;
                 });
-                if (hasChecked && userCorrect) isCorrect = true;
-
-            } else if (type === 'fill') {
-                const input = qEl.querySelector('.fill-input');
-                const userVal = input.value.trim().toLowerCase();
-                const correctVal = input.dataset.answer.trim().toLowerCase();
                 
-                if (userVal === correctVal) {
-                    input.classList.add('is-valid');
-                    isCorrect = true;
-                } else {
-                    input.classList.add('is-invalid');
-                    // Hiện đáp án đúng chỉ nếu không phải chế độ 'never'
-                    if (feedbackMode !== 'never') {
-                        const ansDiv = document.createElement('div');
-                        ansDiv.className = 'text-success fw-bold mt-1 small';
-                        ansDiv.innerText = `Đáp án đúng: ${input.dataset.answer}`;
-                        input.after(ansDiv);
-                    }
-                }
-                input.disabled = true;
+                if(inputs.length > 0 && allCorrect) isQuestionCorrect = true;
             }
 
-            if(isCorrect) correctCount++;
-            
-            // Hiện giải thích chỉ nếu không phải chế độ 'never'
-            const exp = qEl.querySelector('.explanation');
-            if(exp && feedbackMode !== 'never') {
-                exp.style.display = 'block';
-                exp.classList.add('animate__animated', 'animate__fadeIn');
+            // --- CHẤM TỰ LUẬN ---
+            else if (type === 'essay') {
+                const txt = qEl.querySelector('textarea');
+                const val = txt.value.trim();
+                
+                if (val.length > 0) {
+                    // Có làm bài => Tính là hoàn thành (xanh)
+                    txt.classList.add('is-valid');
+                    isQuestionCorrect = true;
+                } else {
+                    // Bỏ trống => Sai (đỏ)
+                    txt.classList.add('is-invalid');
+                }
+                txt.disabled = true;
             }
+
+            // Cộng điểm
+            if(isQuestionCorrect) correctCount++;
+            
+            // Hiện giải thích (cho tất cả các dạng)
+            const exp = qEl.querySelector('.explanation');
+            if(exp && feedbackMode !== 'never') exp.style.display = 'block';
         });
 
-        // Tính điểm
+        // 5. Tổng kết & Thông báo
         const percent = Math.round((correctCount / questions.length) * 100);
         const passed = percent >= settings.passingScore;
 
         Swal.fire({
-            title: passed ? 'Làm tốt lắm! 🌟' : 'Cần cố gắng hơn! 😅',
-            html: `Kết quả: <b>${correctCount}/${questions.length}</b> câu đúng (${percent}%)`,
-            icon: passed ? 'success' : 'warning',
-            confirmButtonText: 'Đóng'
+            title: passed ? 'Tuyệt vời! 🎉' : 'Hoàn thành!',
+            html: `
+                <div class="my-2">
+                    <div class="fs-1 mb-2">${passed ? '😎' : '🙂'}</div>
+                    <p>Kết quả: <b>${correctCount}/${questions.length}</b> câu.</p>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-${passed ? 'success' : 'primary'}" role="progressbar" style="width: ${percent}%"></div>
+                    </div>
+                    <p class="text-muted small mt-2">Xem chi tiết giải thích ở bên dưới nhé!</p>
+                </div>
+            `,
+            icon: null,
+            confirmButtonText: 'Xem lại bài làm',
+            customClass: {
+                confirmButton: 'btn btn-primary px-4 py-2 rounded-pill'
+            }
         });
 
         if(passed) triggerConfetti();
+        
+        // Update UI nút nộp
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = `<i class="fas fa-check"></i> Đã chấm điểm`;
-        btnSubmit.classList.replace('btn-primary', 'btn-secondary');
+        btnSubmit.innerHTML = `<i class="fas fa-check-double"></i> Đã chấm (${percent}%)`;
+        btnSubmit.className = `btn btn-${passed ? 'success' : 'secondary'} shadow-sm fw-bold px-4`;
     };
 
     return container;
