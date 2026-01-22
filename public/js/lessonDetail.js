@@ -1,6 +1,6 @@
 /**
- * LESSON DETAIL ENGINE - ULTIMATE EDITION
- * Features: Full Page Scroll, Advanced TOC, Markdown Quiz, HTML Preview, Gamification
+ * LESSON DETAIL ENGINE - ULTIMATE EDITION (PATCHED)
+ * Features: Full Page Scroll, Advanced TOC, Markdown Quiz, HTML Preview (Fixed), Gamification
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,40 +18,39 @@ function initLessonContent() {
 
     // --- 1. CẤU HÌNH MARKDOWN ---
     if (typeof marked !== 'undefined') {
-        marked.use({ breaks: true, gfm: true });
+        marked.use({
+            breaks: true, // Enter là xuống dòng
+            gfm: true     // GitHub Flavored Markdown
+        });
     }
 
-    // --- 2. LẤY DỮ LIỆU TỪ BIẾN WINDOW (FIX BUG) ---
+    // --- 2. LẤY DỮ LIỆU TỪ BIẾN WINDOW ---
     let blocks = [];
-    let rawData = window.LESSON_CONTENT; // Lấy từ biến global đã khai báo ở EJS
+    let rawData = window.LESSON_CONTENT; 
 
     try {
-        // Trường hợp 1: Data là Object/Array (đã được parse sẵn từ server)
         if (typeof rawData === 'object' && rawData !== null) {
             blocks = Array.isArray(rawData) ? rawData : [rawData];
-        } 
-        // Trường hợp 2: Data là chuỗi JSON (String)
-        else if (typeof rawData === 'string') {
+        } else if (typeof rawData === 'string') {
             rawData = rawData.trim();
             if (rawData.startsWith('[') || rawData.startsWith('{')) {
                 blocks = JSON.parse(rawData);
                 if (!Array.isArray(blocks)) blocks = [blocks];
             } else {
-                // Nếu không phải JSON, coi là text thường
-                blocks = [{ type: 'text', data: { text: rawData } }];
+                // Fallback cho dữ liệu cũ
+                blocks = [{ type: 'text', data: { text: rawData } }]; 
             }
         }
     } catch (e) {
-        console.error("Lỗi parse nội dung:", e);
-        // Fallback: Hiển thị thông báo lỗi thay vì render chuỗi JSON xấu xí
-        contentArea.innerHTML = '<div class="alert alert-danger">Không thể hiển thị nội dung bài học. Lỗi định dạng dữ liệu.</div>';
+        console.error("JSON Parse Error:", e);
+        contentArea.innerHTML = '<div class="alert alert-danger">Lỗi định dạng nội dung bài học.</div>';
         return;
     }
 
-    // 3. Xóa loading spinner
+    // Xóa loading spinner
     contentArea.innerHTML = '';
 
-    // 4. Render từng Block
+    // --- 3. RENDER BLOCKS ---
     if (Array.isArray(blocks) && blocks.length > 0) {
         blocks.forEach((block, index) => {
             const blockHTML = renderSingleBlock(block, index);
@@ -65,7 +64,9 @@ function initLessonContent() {
             </div>`;
     }
 
-    // 5. Post-Render (Math, Code, TOC...)
+    // --- 4. POST-RENDER PROCESSING ---
+    
+    // a. Render Math (KaTeX)
     if (window.renderMathInElement) {
         renderMathInElement(contentArea, {
             delimiters: [
@@ -77,8 +78,13 @@ function initLessonContent() {
             throwOnError: false
         });
     }
-    if (window.Prism) Prism.highlightAllUnder(contentArea);
-    
+
+    // b. Highlight Code (Prism)
+    if (window.Prism) {
+        Prism.highlightAllUnder(contentArea);
+    }
+
+    // c. Tạo Mục Lục & Thanh tiến trình (Logic Full Page)
     generateTableOfContents();
     initReadingProgress();
 }
@@ -97,13 +103,15 @@ function renderSingleBlock(block, idx) {
             const level = block.data.level || 2;
             const hTag = document.createElement(`h${level}`);
             hTag.innerHTML = block.data.text;
-            hTag.id = `heading-${idx}`;
+            hTag.id = `heading-${idx}`; // ID quan trọng cho TOC
             wrapper.appendChild(hTag);
             break;
 
         case 'text':
             let htmlContent = marked.parse(block.data.text || '');
             if (window.DOMPurify) htmlContent = DOMPurify.sanitize(htmlContent);
+            
+            // Thêm ID cho heading trong markdown để TOC bắt được
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             tempDiv.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
@@ -117,11 +125,13 @@ function renderSingleBlock(block, idx) {
                 wrapper.className += ' text-center my-4';
                 const img = document.createElement('img');
                 img.src = block.data.url;
-                img.alt = block.data.caption || 'Hình ảnh';
+                img.alt = block.data.caption || 'Hình ảnh minh họa';
                 img.loading = 'lazy';
-                img.onclick = () => window.open(img.src, '_blank');
+                img.className = 'img-fluid shadow-sm border rounded';
                 img.style.cursor = 'zoom-in';
+                img.onclick = () => window.open(img.src, '_blank');
                 wrapper.appendChild(img);
+                
                 if(block.data.caption) {
                     const cap = document.createElement('div');
                     cap.className = 'text-center text-muted small fst-italic mt-2';
@@ -131,17 +141,15 @@ function renderSingleBlock(block, idx) {
             }
             break;
 
-        // [FIX] YOUTUBE ERROR 153 & STYLE
         case 'video':
             if (block.data.url) {
                 const videoWrapper = document.createElement('div');
                 videoWrapper.className = 'video-block-wrapper';
-                
                 const videoInfo = getEmbedUrl(block.data.url, block.data.autoplay);
                 
                 if (videoInfo && videoInfo.url) {
                     if (videoInfo.type === 'iframe') {
-                        // FIX: Thêm frameborder, allow, referrerpolicy theo yêu cầu
+                        // FIX: Thêm đầy đủ thuộc tính để tránh lỗi phát video
                         videoWrapper.innerHTML = `
                             <iframe 
                                 src="${videoInfo.url}" 
@@ -152,10 +160,9 @@ function renderSingleBlock(block, idx) {
                                 title="Video bài học"
                             ></iframe>`;
                     } else {
-                        videoWrapper.innerHTML = `<video src="${videoInfo.url}" controls ${block.data.autoplay ? 'autoplay muted' : ''}></video>`;
+                        videoWrapper.innerHTML = `<video src="${videoInfo.url}" controls ${block.data.autoplay ? 'autoplay muted' : ''} style="width:100%; height:100%;"></video>`;
                     }
                 } else {
-                    // Fallback nếu link hỏng
                     videoWrapper.className = 'alert alert-warning my-3';
                     videoWrapper.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Video không khả dụng: <a href="${block.data.url}" target="_blank">Mở link gốc</a>`;
                 }
@@ -163,9 +170,8 @@ function renderSingleBlock(block, idx) {
             }
             break;
 
-        // [NEW] DOCUMENT BLOCK SUPPORT
         case 'document':
-        case 'resource': // Alias cho resource
+        case 'resource':
             const docUrl = block.data.url || '#';
             const docTitle = block.data.title || 'Tài liệu đính kèm';
             const docExt = docUrl.split('.').pop().toLowerCase();
@@ -192,27 +198,60 @@ function renderSingleBlock(block, idx) {
         case 'html_preview':
             wrapper.className += ' mb-4';
             const uniqueId = `html-preview-${idx}`;
-            const htmlCode = block.data.html || '';
-            const settings = block.data.settings || { showSource: true, defaultTab: 'result', height: 400, viewport: 'responsive' };
             
+            // [FIX BUG] Làm sạch chuỗi HTML bị escape lỗi (vd: r=\"56\")
+            let htmlCode = block.data.html || '';
+            if (typeof htmlCode === 'string') {
+                htmlCode = htmlCode
+                    .replace(/\\"/g, '"')  // Thay thế \" thành "
+                    .replace(/\\n/g, '\n') // Thay thế \n thành xuống dòng thật
+                    .replace(/\\\\/g, '\\'); // Thay thế \\ thành \
+            }
+
+            const settings = block.data.settings || { 
+                showSource: true, defaultTab: 'result', height: 400, viewport: 'responsive', includeBootstrap: false 
+            };
+            
+            // Viewport Styling
             let containerStyle = `height: ${settings.height}px; display:block;`;
-            if (settings.viewport === 'mobile') containerStyle += 'width: 375px; margin: 0 auto; border: 4px solid #333; border-radius: 20px; overflow: hidden;';
-            else if (settings.viewport === 'tablet') containerStyle += 'width: 768px; margin: 0 auto; border: 4px solid #333; border-radius: 12px;';
-            else containerStyle += 'width: 100%;';
+            if (settings.viewport === 'mobile') {
+                containerStyle += 'width: 375px; margin: 0 auto; border: 4px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2);';
+            } else if (settings.viewport === 'tablet') {
+                containerStyle += 'width: 768px; margin: 0 auto; border: 4px solid #333; border-radius: 12px;';
+            } else {
+                containerStyle += 'width: 100%;';
+            }
 
             const isCodeActive = settings.defaultTab === 'code' && settings.showSource;
             const isResultActive = !isCodeActive;
 
-            const headerHTML = settings.showSource ? `
-                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
-                     <span class="badge bg-orange text-white" style="background:#f97316"><i class="fab fa-html5 me-1"></i> Demo</span>
-                    <ul class="nav nav-pills nav-sm card-header-pills" role="tablist">
-                        <li class="nav-item"><button class="nav-link ${isResultActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#preview-${uniqueId}">Kết quả</button></li>
-                        <li class="nav-item"><button class="nav-link ${isCodeActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#code-${uniqueId}">Mã nguồn</button></li>
-                    </ul>
-                </div>` : '';
+            // Render UI Tabs
+            let headerHTML = '';
+            if (settings.showSource) {
+                headerHTML = `
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                         <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-orange text-white" style="background:#f97316"><i class="fab fa-html5 me-1"></i> Demo</span>
+                            ${settings.viewport !== 'responsive' ? `<span class="badge bg-secondary opacity-75"><i class="fas fa-mobile-alt"></i> ${settings.viewport}</span>` : ''}
+                        </div>
+                        <ul class="nav nav-pills nav-sm card-header-pills" role="tablist" style="font-size: 0.85rem;">
+                            <li class="nav-item">
+                                <button class="nav-link ${isResultActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#preview-${uniqueId}">
+                                    <i class="fas fa-play me-1"></i> Kết quả
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link ${isCodeActive ? 'active' : ''} py-1 px-3 fw-bold" data-bs-toggle="tab" data-bs-target="#code-${uniqueId}">
+                                    <i class="fas fa-code me-1"></i> Mã nguồn
+                                </button>
+                            </li>
+                        </ul>
+                    </div>`;
+            } else {
+                headerHTML = `<div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center gap-2"><span class="fw-bold text-secondary"><i class="fas fa-play-circle text-success"></i> Demo kết quả</span></div>`;
+            }
 
-            const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
             wrapper.innerHTML = `
                 <div class="card shadow-sm border rounded overflow-hidden bg-white">
@@ -226,41 +265,65 @@ function renderSingleBlock(block, idx) {
                                     </div>
                                 </div>
                             </div>
-                            ${settings.showSource ? `<div class="tab-pane fade ${isCodeActive ? 'show active' : ''}" id="code-${uniqueId}"><div class="position-relative"><button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 opacity-75" onclick="copyCode(this)">Copy</button><pre class="line-numbers m-0 rounded-0" style="max-height: ${settings.height}px;"><code class="language-html">${escapeHtml(htmlCode)}</code></pre></div></div>` : ''}
+                            ${settings.showSource ? `
+                            <div class="tab-pane fade ${isCodeActive ? 'show active' : ''}" id="code-${uniqueId}">
+                                <div class="position-relative">
+                                    <button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 opacity-75" onclick="navigator.clipboard.writeText(this.parentElement.querySelector('code').innerText)">Copy</button>
+                                    <pre class="line-numbers m-0 rounded-0" style="max-height: ${settings.height}px;"><code class="language-html">${escapeHtml(htmlCode)}</code></pre>
+                                </div>
+                            </div>` : ''}
                         </div>
                     </div>
                 </div>`;
 
+            // Inject Iframe Content
             setTimeout(() => {
                 const iframe = wrapper.querySelector(`#iframe-${uniqueId}`);
                 if (iframe) {
                     const doc = iframe.contentWindow.document;
                     doc.open();
-                    doc.write(htmlCode);
+                    let headInject = '<style>body{margin:0; padding:10px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
+                    if (settings.includeBootstrap) headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+                    
+                    doc.write(headInject + htmlCode); // [FIX] Viết code đã được clean
                     doc.close();
                 }
             }, 50);
             break;
 
         case 'code':
+            wrapper.className += ' block-code my-3';
             const lang = block.data.language || 'javascript';
             const codeText = (block.data.code || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             wrapper.innerHTML = `
                 <div class="code-viewer-container">
-                    <div class="code-header"><span>${lang.toUpperCase()}</span><button class="btn btn-sm btn-dark border-secondary text-light btn-copy-code" onclick="copyCode(this)">Copy</button></div>
+                    <div class="code-header">
+                        <span><i class="fas fa-code me-2"></i>${lang.toUpperCase()}</span>
+                        <button class="btn btn-sm btn-dark border-secondary text-light btn-copy-code" onclick="copyCode(this)"><i class="far fa-copy"></i> Copy</button>
+                    </div>
                     <pre class="line-numbers"><code class="language-${lang}">${codeText}</code></pre>
                 </div>`;
             break;
 
         case 'callout':
-            const cType = {info:'alert-info', warning:'alert-warning', danger:'alert-danger', success:'alert-success'}[block.data.style] || 'alert-info';
-            wrapper.className += ` alert ${cType} border-0 shadow-sm d-flex align-items-start my-3`;
-            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas fa-info-circle fa-lg"></i></div><div class="flex-grow-1">${marked.parse(block.data.text || '')}</div>`;
+            const typeMap = {
+                info: { class: 'alert-info', icon: 'fa-info-circle' },
+                warning: { class: 'alert-warning', icon: 'fa-exclamation-triangle' },
+                danger: { class: 'alert-danger', icon: 'fa-bomb' },
+                success: { class: 'alert-success', icon: 'fa-check-circle' },
+                note: { class: 'alert-secondary', icon: 'fa-sticky-note' }
+            };
+            const cType = typeMap[block.data.style] || typeMap.info;
+            const cText = marked.parse(block.data.text || '');
+            wrapper.className += ` alert ${cType.class} border-0 shadow-sm d-flex align-items-start my-3`;
+            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas ${cType.icon} fa-lg"></i></div><div class="flex-grow-1">${cText}</div>`;
             break;
 
         case 'quiz':
         case 'question':
-            if (block.data.questions && block.data.questions.length > 0) wrapper.appendChild(renderQuizBlock(block.data, idx));
+            if (block.data.questions && block.data.questions.length > 0) {
+                wrapper.appendChild(renderQuizBlock(block.data, idx));
+            }
             break;
     }
     return wrapper;
@@ -268,7 +331,6 @@ function renderSingleBlock(block, idx) {
 
 /* =========================================
    QUIZ RENDERER (v11.6 - ULTIMATE)
-   Supports: Markdown, Fill-in-the-blank, Highlights
    ========================================= */
 
 function renderQuizBlock(data, blockIdx) {
@@ -509,7 +571,7 @@ function renderQuizBlock(data, blockIdx) {
 }
 
 /* =========================================
-   TOC ENGINE (TABLE OF CONTENTS)
+   UTILITIES & TOC
    ========================================= */
 
 function generateTableOfContents() {
@@ -517,7 +579,6 @@ function generateTableOfContents() {
     const contentArea = document.getElementById('lessonContentArea');
     if(!tocList || !contentArea) return;
 
-    // 1. Get Headers H1-H4
     const headers = Array.from(contentArea.querySelectorAll('h1, h2, h3, h4'));
     
     if(headers.length === 0) { 
@@ -525,7 +586,6 @@ function generateTableOfContents() {
         return; 
     }
 
-    // 2. Build TOC HTML
     let html = '';
     let counters = [0, 0, 0, 0]; 
     let lastLevel = 0;
@@ -555,15 +615,13 @@ function generateTableOfContents() {
     });
     
     tocList.innerHTML = html;
-
-    // 3. Init Scroll Spy
     initScrollSpy(headers);
 }
 
 function initScrollSpy(headers) {
     if (tocObserver) tocObserver.disconnect();
     
-    // QUAN TRỌNG: Lắng nghe scroll trên Wrapper thay vì window
+    // Lắng nghe scroll trên Wrapper
     const scrollContainer = document.querySelector('.lesson-content-wrapper');
 
     const observerOptions = {
@@ -598,7 +656,6 @@ function scrollToHeader(e, id) {
     e.preventDefault();
     const el = document.getElementById(id);
     if(el) {
-        // Scroll inside wrapper
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         history.pushState(null, null, `#${id}`);
         
@@ -607,10 +664,6 @@ function scrollToHeader(e, id) {
         if(link) link.classList.add('active');
     }
 }
-
-/* =========================================
-   UTILITIES
-   ========================================= */
 
 function initReadingProgress() {
     if(!document.getElementById('reading-progress')) {
@@ -645,27 +698,23 @@ function copyCode(btn) {
     });
 }
 
+// [UPDATED] HÀM LẤY URL EMBED (Fix 153 & Drive)
 function getEmbedUrl(url, autoplay) {
     if (!url) return null;
     
-    // Regex bắt ID Youtube chuẩn xác hơn
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/);
-    
     if (ytMatch && ytMatch[1]) {
-        const videoId = ytMatch[1];
-        // Thêm tham số origin để fix lỗi 153/bảo mật
-        // Thêm modestbranding=1 để giao diện sạch hơn
-        const origin = window.location.origin; 
-        const params = `?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}`;
-        
+        const origin = window.location.origin;
         return { 
             type: 'iframe', 
-            url: `https://www.youtube.com/embed/${videoId}${params}` 
+            url: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}` 
         };
     }
     
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^\/]+)\//);
-    if (driveMatch && driveMatch[1]) return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+    if (driveMatch && driveMatch[1]) {
+        return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+    }
     
     return { type: 'video', url: url };
 }
