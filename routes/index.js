@@ -235,7 +235,11 @@ router.get("/subjects/:id", async (req, res) => {
         const subject = await Subject.findById(subjectId).lean();
         if (!subject) return res.redirect('/subjects');
 
-        const courses = await Course.find({ subjectId: subject._id, isPublished: true }).sort({ createdAt: -1 }).lean();
+        // [FIX] Thêm .populate() để lấy thông tin tác giả (username, avatar)
+        const courses = await Course.find({ subjectId: subject._id, isPublished: true })
+            .populate('author', 'username avatar') // <--- DÒNG QUAN TRỌNG CẦN THÊM
+            .sort({ createdAt: -1 })
+            .lean();
         
         let selectedCourse = null;
         if (req.query.courseId) selectedCourse = courses.find(c => c._id.toString() === req.query.courseId);
