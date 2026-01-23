@@ -28,24 +28,41 @@ const { isLoggedIn } = require('../middlewares/auth');
 // --- 1. HOME PAGE ---
 router.get("/", async (req, res) => {
     try {
-        const today = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
-        const [totalUsers, totalVisitsDoc, dailyVisitsDoc, latestLessons] = await Promise.all([
-            User.countDocuments(),
-            VisitStats.findOne({ dateStr: "totalVisits" }),
-            VisitStats.findOne({ dateStr: `dailyVisits_${today}` }),
-            Lesson.find({ isPublished: true }).sort({ createdAt: -1 }).limit(5).lean()
-        ]);
+        // 1. Lấy môn học & khóa học
+        const subjects = await Subject.find().limit(6).lean();
+        const courses = await Course.find({ isPublished: true })
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .populate('author', 'username avatar')
+            .populate('subjectId', 'name')
+            .lean();
 
+        // 2. Lấy thống kê (Thêm dòng tính totalLessons)
+        const totalCourses = await Course.countDocuments({ isPublished: true });
+        const totalStudents = await User.countDocuments({ role: 'student' });
+        
+        // [FIX LỖI] Tính tổng số bài học (Hoặc để số cứng nếu chưa muốn query nặng)
+        // Đảm bảo bạn đã import model Lesson ở đầu file
+        const totalLessons = await Lesson.countDocuments({}); 
+
+        // 3. Render và truyền đủ biến
         res.render("index", {
             user: req.user,
-            latestLessons,
-            totalUsers,
-            totalVisits: totalVisitsDoc ? totalVisitsDoc.count : 0,
-            dailyVisits: dailyVisitsDoc ? dailyVisitsDoc.count : 0
+            subjects,
+            courses,
+            totalCourses,
+            totalStudents,
+            totalLessons, // <--- QUAN TRỌNG: Phải có biến này ở đây
+            activePage: 'home' 
         });
-    } catch (error) {
-        console.error("Home Error:", error);
-        res.render("index", { user: req.user, latestLessons: [], totalUsers: 0, totalVisits: 0, dailyVisits: 0 });
+    } catch (e) {
+        console.error("Home Error:", e);
+        // Khi lỗi cũng phải truyền giá trị mặc định để không crash view
+        res.render("index", { 
+            user: req.user, subjects: [], courses: [], 
+            totalCourses: 0, totalStudents: 0, totalLessons: 0, // <--- Thêm vào đây nữa
+            activePage: 'home' 
+        });
     }
 });
 
@@ -336,5 +353,27 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
 
 // --- 8. COURSE DETAIL ---
 router.get('/course/:id', courseController.getCourseDetail);
+
+// --- COURSES PAGE ---
+router.get("/courses", async (req, res) => {
+    try {
+        // Lấy tất cả khóa học đã xuất bản, sắp xếp mới nhất
+        const courses = await Course.find({ isPublished: true })
+            .populate('author', 'username avatar') // Lấy thông tin tác giả
+            .populate('subjectId', 'name icon')    // Lấy thông tin môn học
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.render("courses", {
+            user: req.user,
+            courses: courses,
+            activePage: "courses",
+            title: "Thư viện khóa học"
+        });
+    } catch (e) {
+        console.error("Courses Page Error:", e);
+        res.redirect('/');
+    }
+});
 
 module.exports = router;

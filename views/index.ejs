@@ -1,303 +1,287 @@
 <%- include('partials/header') %>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
+<link rel="stylesheet" href="/css/styleIndex.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-<style>
-    /* --- CSS BIẾN --- */
-    :root {
-        --hero-bg: #fffbf0;
-        --card-bg: #ffffff;
-        --border-color: #1e1e1e;
-        --accent-yellow: #ffeb3b;
-        --accent-pink: #ff80ab;
-        --accent-blue: #82b1ff;
-    }
+<section class="hero-section">
+    <div class="hero-bg-shape shape-1"></div>
+    <div class="hero-bg-shape shape-2"></div>
 
-    body { background-color: var(--hero-bg); }
+    <div class="hero-container">
+        
+        <% if (!user) { %>
+            <div class="hero-content reveal-holder creative-reveal-up" style="transition-delay: 0.2s">
+                <div class="hero-badge animate__animated animate__bounceIn">
+                    <i class="fas fa-seedling text-accent-green"></i> Giai đoạn khởi tạo - Beta
+                </div>
+                
+                <h1 class="hero-title">
+                    Kết nối tri thức,<br>
+                    <span class="text-gradient">Xây dựng cộng đồng</span>
+                </h1>
+                
+                <p class="hero-desc">
+                    Chào mừng bạn đến với ngôi nhà chung của học sinh Thủ Đức! Nơi chia sẻ tài liệu, bài giảng và cùng nhau chinh phục những điểm 10 rực rỡ.
+                </p>
+                
+                <div class="hero-actions animate__animated animate__fadeInUp animate__delay-1s">
+                    <a href="/register" class="btn-main">
+                        <i class="fas fa-user-plus"></i> Đăng ký thành viên
+                    </a>
+                    <a href="/courses" class="btn-outline">
+                        Dạo một vòng
+                    </a>
+                </div>
+            </div>
 
-    /* --- HERO SECTION --- */
-    .hero-wrapper {
-        position: relative;
-        padding: 60px 20px;
-        overflow: hidden;
-        text-align: center;
-        min-height: 80vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
+            <div class="hero-visual reveal-holder creative-reveal-right" style="transition-delay: 0.5s">
+                <img src="https://i.ibb.co/tMVgJBqG/z7399789838688-0ce675f8fa3d50416bfe1501102711d3.jpg" alt="Xây dựng cộng đồng">
+                <div class="floating-card fc-1">
+                    <i class="fas fa-heart text-danger"></i> Dành cho TĐers
+                </div>
+            </div>
 
-    .mascot-float {
-        width: 150px;
-        animation: float 3s ease-in-out infinite;
-        margin-bottom: 20px;
-        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
-    }
+        <% } else { %>
+            <div class="hero-content reveal-holder creative-reveal-up" style="transition-delay: 0.2s">
+                <div class="hero-badge" style="background: #e0f2fe; color: var(--primary); border-color: #bae6fd;">
+                    <i class="fas fa-hand-sparkles"></i> Hế lô, <b><%= user.username %></b>! ✌️
+                </div>
+                
+                <h1 class="hero-title">
+                    Hôm nay chúng ta<br>
+                    <span class="text-gradient">Cày môn gì đây?</span>
+                </h1>
+                
+                <p class="hero-desc">
+                    Đừng để ngày hôm nay trôi qua lãng phí. Một chút nỗ lực mỗi ngày sẽ tạo nên kỳ tích. Vào bàn học thôi nào!
+                </p>
+                
+                <div class="hero-actions animate__animated animate__fadeInUp animate__delay-1s">
+                    <a href="/dashboard" class="btn-main">
+                        <i class="fas fa-laptop-house"></i> Vào Dashboard cá nhân
+                    </a>
+                    <a href="/courses" class="btn-outline">
+                        <i class="fas fa-search"></i> Tìm bài mới
+                    </a>
+                </div>
+            </div>
 
-    .hero-badge-pill {
-        background: #000;
-        color: #fff;
-        padding: 8px 20px;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        display: inline-block;
-        margin-bottom: 20px;
-        transform: rotate(-2deg);
-        box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
-    }
+            <div class="hero-visual reveal-holder creative-reveal-right" style="transition-delay: 0.5s">
+                <div class="member-card-3d">
+                    <div class="member-card-header">
+                        <div class="member-avatar-wrapper">
+                            <img src="<%= user.avatar || 'https://ui-avatars.com/api/?name=' + user.username + '&background=random' %>" alt="User Avatar">
+                            <div class="status-dot"></div>
+                        </div>
+                        <div class="member-info">
+                            <h3><%= user.username %></h3>
+                            <span class="member-role"><%= user.role === 'admin' ? 'Quản trị viên' : 'Học sinh chăm chỉ' %></span>
+                        </div>
+                    </div>
+                    
+                    <div class="member-stats-mini">
+                        <div class="ms-item">
+                            <span class="ms-label">Trạng thái</span>
+                            <span class="ms-value text-success">Sẵn sàng</span>
+                        </div>
+                        <div class="ms-item">
+                            <span class="ms-label">Mục tiêu</span>
+                            <span class="ms-value text-primary">Đại học</span>
+                        </div>
+                    </div>
 
-    .hero-title-genz {
-        font-family: 'Quicksand', sans-serif;
-        font-size: 3.5rem;
-        line-height: 1.1;
-        font-weight: 900;
-        color: #1e1e1e;
-        margin-bottom: 20px;
-    }
-    .hero-title-genz span {
-        background: linear-gradient(120deg, #ffeb3b 0%, #ffeb3b 100%);
-        background-repeat: no-repeat;
-        background-size: 100% 40%;
-        background-position: 0 90%;
-    }
+                    <div class="member-card-footer">
+                        <p>Tip: "Không có áp lực, không có kim cương!" 💎</p>
+                    </div>
+                </div>
 
-    .hero-desc {
-        font-size: 1.2rem;
-        color: #555;
-        max-width: 600px;
-        margin: 0 auto 30px;
-        line-height: 1.6;
-    }
+                <div class="floating-card fc-1" style="top: -20px; right: 0;">
+                    <i class="fas fa-fire text-accent-orange"></i> Giữ lửa nhé!
+                </div>
+            </div>
+        <% } %>
 
-    .cta-group {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+    </div>
+</section>
 
-    .btn-brutal {
-        padding: 15px 35px;
-        font-size: 1.1rem;
-        font-weight: 800;
-        border: 3px solid #000;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: 0.2s;
-        text-decoration: none;
-        box-shadow: 4px 4px 0px #000;
-    }
-    .btn-brutal.primary { background: var(--accent-yellow); color: #000; }
-    .btn-brutal.secondary { background: #fff; color: #000; }
-    
-    .btn-brutal:hover {
-        transform: translate(-2px, -2px);
-        box-shadow: 6px 6px 0px #000;
-    }
-    .btn-brutal:active {
-        transform: translate(2px, 2px);
-        box-shadow: 0px 0px 0px #000;
-    }
-
-    /* --- BENTO GRID FEATURES --- */
-    .bento-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        max-width: 1100px;
-        margin: 0 auto 60px;
-        padding: 0 20px;
-    }
-
-    .bento-card {
-        background: var(--card-bg);
-        border: 3px solid #000;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
-        position: relative;
-        overflow: hidden;
-    }
-    .bento-card:hover { transform: translateY(-5px); }
-    
-    .bento-icon { font-size: 2.5rem; margin-bottom: 15px; display: block; }
-    .bento-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 10px; }
-    .bento-desc { color: #666; line-height: 1.5; }
-
-    /* Card đặc biệt */
-    .card-wide { grid-column: span 2; background: #e3f2fd; }
-    .card-pink { background: #fce4ec; }
-    .card-green { background: #e8f5e9; }
-
-    /* --- MARQUEE (CHỮ CHẠY) --- */
-    .marquee-container {
-        background: #000;
-        color: #fff;
-        padding: 10px 0;
-        overflow: hidden;
-        white-space: nowrap;
-        margin-bottom: 40px;
-        transform: rotate(-1deg);
-        border-top: 2px solid #fff;
-        border-bottom: 2px solid #fff;
-    }
-    .marquee-content {
-        display: inline-block;
-        animation: marquee 20s linear infinite;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-    @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-        .hero-title-genz { font-size: 2.5rem; }
-        .card-wide { grid-column: span 1; }
-        .marquee-container { transform: rotate(0deg); }
-    }
-</style>
-
-<div class="marquee-container">
-    <div class="marquee-content">
-        📢 CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG HỌC TẬP THPT THỦ ĐỨC ✨ HỌC HẾT SỨC - CHƠI HẾT MÌNH ✨ LÀM CHỦ KIẾN THỨC ✨ CHINH PHỤC TƯƠNG LAI 🚀
+<div class="stats-container reveal-holder creative-reveal-scale" style="transition-delay: 0.8s">
+    <div class="stats-box">
+        <div class="stat-item">
+            <div class="stat-icon"><i class="fas fa-infinity"></i></div>
+            <span class="stat-number" style="font-size: 1.8rem;">Miễn phí</span>
+            <span class="stat-label">Trọn đời</span>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+            <span class="stat-number" style="font-size: 1.8rem;">Chất lượng</span>
+            <span class="stat-label">Kiểm duyệt kỹ</span>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon"><i class="fas fa-hand-holding-heart"></i></div>
+            <span class="stat-number" style="font-size: 1.8rem;">Phi lợi nhuận</span>
+            <span class="stat-label">Vì cộng đồng</span>
+        </div>
     </div>
 </div>
 
-<div class="hero-wrapper">
-    <div style="position: absolute; top: 10%; left: 5%; font-size: 3rem; opacity: 0.2; transform: rotate(-15deg);">✏️</div>
-    <div style="position: absolute; bottom: 15%; right: 5%; font-size: 3rem; opacity: 0.2; transform: rotate(15deg);">📐</div>
+<section class="section">
+    <div class="section-head reveal-holder creative-reveal-up">
+        <span class="section-tag">Định hướng</span>
+        <h2 class="section-title">Các môn học trọng tâm</h2>
+    </div>
 
-    <img src="/api/pro-images/1752242181665-mcpehv.png" class="mascot-float" alt="Mascot">
-
-    <% if (!user) { %>
-        <div class="hero-badge-pill">🚀 Cổng Thông Tin Số 1</div>
-        <h1 class="hero-title-genz">Học Tập <span id="typewriter"></span></h1>
-        
-        <p class="hero-desc">
-            Không còn nỗi lo bài khó. Kho tài liệu "siêu to khổng lồ", cộng đồng hỗ trợ 24/7 và hệ thống nuôi cây ảo cực cuốn đang chờ bạn!
-        </p>
-
-        <div class="cta-group">
-            <a href="/register" class="btn-brutal primary">✨ Đăng Ký Ngay</a>
-            <a href="/login" class="btn-brutal secondary">👋 Đăng Nhập</a>
+    <% if (subjects && subjects.length > 0) { %>
+        <div class="subject-grid" style="justify-content: center;">
+            <% subjects.forEach((sub, index) => { %>
+                <a href="/subjects/<%= sub._id %>" class="subject-card reveal-holder creative-reveal-up" style="transition-delay: <%= index * 100 %>ms">
+                    <i class="<%= sub.icon || 'fas fa-book' %>"></i>
+                    <div class="subject-name"><%= sub.name %></div>
+                </a>
+            <% }) %>
+            
+            <% if (subjects.length < 4) { %>
+                <div class="subject-card reveal-holder creative-reveal-up" style="opacity: 0.7; border-style: dashed;">
+                    <i class="fas fa-plus-circle text-gray-300"></i>
+                    <div class="subject-name text-gray-400">Sắp cập nhật</div>
+                </div>
+            <% } %>
         </div>
     <% } else { %>
-        <div class="hero-badge-pill">👋 Hello, <%= user.username %>!</div>
-        <h1 class="hero-title-genz">Hôm nay <br> <span>"Diệt Gọn"</span> môn nào?</h1>
-        
-        <div class="cta-group">
-            <div class="bento-card card-green" style="padding: 15px 25px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-bolt" style="color: #2e7d32; font-size: 1.5rem;"></i>
-                <div>
-                    <div style="font-weight: 800; font-size: 1.2rem;"><%= typeof totalVisits !== 'undefined' ? totalVisits : 0 %></div>
-                    <div style="font-size: 0.8rem; text-transform: uppercase;">Lượt truy cập</div>
-                </div>
-            </div>
-            <div class="bento-card card-pink" style="padding: 15px 25px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-users" style="color: #c2185b; font-size: 1.5rem;"></i>
-                <div>
-                    <div style="font-weight: 800; font-size: 1.2rem;"><%= typeof totalUsers !== 'undefined' ? totalUsers : 0 %></div>
-                    <div style="font-size: 0.8rem; text-transform: uppercase;">Thành viên</div>
-                </div>
-            </div>
-        </div>
-        
-        <div style="margin-top: 30px;">
-            <a href="/dashboard" class="btn-brutal primary">🚀 Vào Bảng Điều Khiển</a>
+        <div class="text-center p-8 bg-white rounded-3xl shadow-sm border border-gray-100 reveal-holder creative-reveal-scale">
+            <img src="https://cdni.iconscout.com/illustration/premium/thumb/folder-is-empty-4064360-3363921.png" width="120" alt="Empty" class="mx-auto mb-4 opacity-80">
+            <p class="text-gray-500 font-medium">Chúng mình đang biên soạn danh mục môn học...</p>
         </div>
     <% } %>
-</div>
+</section>
 
-<div class="container">
-    <h2 style="text-align: center; font-weight: 900; font-size: 2rem; margin-bottom: 40px;">✨ TÍNH NĂNG "ĐỈNH NÓC" ✨</h2>
-    
-    <div class="bento-grid">
-        <div class="bento-card card-wide">
-            <span class="bento-icon">📚</span>
-            <div class="bento-title">Kho Tài Liệu Chất</div>
-            <div class="bento-desc">Tổng hợp đề thi, bài giảng xịn sò từ các trường top. Không lo thiếu bài ôn tập.</div>
-        </div>
-        
-        <div class="bento-card card-green">
-            <span class="bento-icon">🌵</span>
-            <div class="bento-title">My Garden</div>
-            <div class="bento-desc">Học chăm chỉ tích điểm nuôi cây ảo. Vườn càng xịn, trình càng cao!</div>
-        </div>
-        
-        <div class="bento-card card-pink">
-            <span class="bento-icon">💬</span>
-            <div class="bento-title">Cộng Đồng</div>
-            <div class="bento-desc">Bí bài thì hỏi, 500 anh em vào cứu net ngay lập tức.</div>
-        </div>
-
-        <div class="bento-card">
-            <span class="bento-icon">🏆</span>
-            <div class="bento-title">Đua Top</div>
-            <div class="bento-desc">Bảng xếp hạng vinh danh những "học bá" chăm chỉ nhất tuần.</div>
-        </div>
-        
-        <div class="bento-card" style="background: #fff3e0;">
-            <span class="bento-icon">🎮</span>
-            <div class="bento-title">Minigame</div>
-            <div class="bento-desc">Giải trí nhẹ nhàng sau giờ học căng thẳng.</div>
-        </div>
+<section class="section">
+    <div class="section-head reveal-holder creative-reveal-up">
+        <span class="section-tag">Vừa ra lò</span>
+        <h2 class="section-title">Khóa học tiên phong</h2>
     </div>
 
-    <% if (latestNews && latestNews.length > 0) { %>
-        <section style="margin-bottom: 60px;">
-            <div style="background: #1e1e1e; color: #fff; padding: 15px 30px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 1.2rem;">📰 Bảng Tin Mới</h3>
-                <a href="/news" style="color: #ffeb3b; text-decoration: none; font-weight: bold;">Xem tất cả &rarr;</a>
-            </div>
-            <div style="border: 3px solid #1e1e1e; border-top: none; padding: 20px; border-radius: 0 0 15px 15px; background: #fff;">
-                <% latestNews.forEach(news => { %>
-                    <div style="border-bottom: 1px dashed #ccc; padding: 10px 0; display: flex; align-items: center; gap: 15px;">
-                        <span style="background: #eee; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"><%= news.category %></span>
-                        <a href="/news/<%= news._id %>" style="color: #333; text-decoration: none; font-weight: 600; flex: 1;"><%= news.title %></a>
-                        <span style="color: #999; font-size: 0.9rem;"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
+    <% if (courses && courses.length > 0) { %>
+        <div class="course-grid" style="<%= courses.length < 3 ? 'display: flex; justify-content: center; flex-wrap: wrap;' : '' %>">
+            
+            <% courses.forEach((course, index) => { %>
+                <div class="course-card reveal-holder <%= index % 2 === 0 ? 'creative-reveal-left' : 'creative-reveal-right' %>" 
+                     style="transition-delay: <%= index * 150 %>ms; <%= courses.length < 3 ? 'width: 100%; max-width: 380px;' : '' %>">
+                    
+                    <a href="/course/<%= course._id %>" class="course-img-wrapper">
+                        <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-img" alt="<%= course.title %>" onerror="this.onerror=null;this.src='https://i.ibb.co/BVnNtLhp/default-course.png';">
+                        
+                        <div class="course-overlay"></div>
+                        <span class="course-category-badge">
+                            <%= course.subjectId ? course.subjectId.name : 'Mới' %>
+                        </span>
+                        
+                        <div class="course-icon-float">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </a>
+
+                    <div class="course-content">
+                        <div class="course-meta">
+                            <span><i class="far fa-calendar-alt"></i> <%= new Date(course.createdAt).toLocaleDateString('vi-VN') %></span>
+                            <span class="text-accent-orange font-bold"><i class="fas fa-star me-1"></i> Mới</span>
+                        </div>
+                        
+                        <a href="/course/<%= course._id %>" class="course-title">
+                            <%= course.title %>
+                        </a>
+
+                        <div class="course-footer">
+                            <% 
+                                const author = course.author || {}; 
+                                const authorName = author.username || 'Ban Biên Tập';
+                                const authorAvatar = author.avatar || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
+                            %>
+                            <div class="author-info">
+                                <img src="<%= authorAvatar %>" class="author-avatar" alt="Author">
+                                <span class="author-name"><%= authorName %></span>
+                            </div>
+                            
+                            <a href="/course/<%= course._id %>" class="btn-arrow-go">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
                     </div>
-                <% }) %>
-            </div>
-        </section>
+                </div>
+            <% }) %>
+        </div>
+        
+        <div class="text-center mt-12 reveal-holder creative-reveal-up">
+            <a href="/courses" class="btn-outline px-10 py-4 rounded-full transition font-bold shadow-sm">
+                Xem thư viện khóa học <i class="fas fa-angle-right ms-2"></i>
+            </a>
+        </div>
+
+    <% } else { %>
+        <div class="text-center py-16 px-4 bg-white rounded-[40px] border border-gray-100 shadow-sm reveal-holder creative-reveal-scale mx-auto max-w-2xl">
+            <img src="https://cdni.iconscout.com/illustration/premium/thumb/writer-writing-notes-2974917-2477348.png" alt="Be the first" style="width: 250px;" class="mx-auto mb-6">
+            <h3 class="text-2xl font-bold text-dark mb-2">Chưa có bài học nào</h3>
+            <p class="text-gray-500 mb-6">Hãy trở thành người đầu tiên đóng góp bài giảng cho cộng đồng!</p>
+            <a href="/create-course" class="btn-main">
+                <i class="fas fa-plus-circle"></i> Tạo bài học ngay
+            </a>
+        </div>
     <% } %>
-</div>
+</section>
+
+<section class="features-section">
+    <div class="reveal-holder creative-reveal-up">
+        <h2 class="text-4xl font-black mb-4">Bạn muốn đóng góp?</h2>
+        <p class="text-gray-300 text-lg font-medium max-w-2xl mx-auto">
+            Dù bạn là học sinh giỏi hay chỉ đơn giản muốn chia sẻ ghi chú, 
+            chúng mình luôn chào đón mọi sự đóng góp để xây dựng kho tài liệu chung.
+        </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 0ms">
+            <div class="feature-icon-box">
+                <i class="fas fa-upload"></i>
+            </div>
+            <h3>Chia sẻ tài liệu</h3>
+            <p>Upload đề thi, tóm tắt bài học hoặc ghi chú cá nhân.</p>
+        </div>
+        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 200ms">
+            <div class="feature-icon-box">
+                <i class="fas fa-pen-nib"></i>
+            </div>
+            <h3>Viết bài giảng</h3>
+            <p>Biên soạn các bài học trực quan, dễ hiểu cho các bạn khóa dưới.</p>
+        </div>
+        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 400ms">
+            <div class="feature-icon-box">
+                <i class="fas fa-heart"></i>
+            </div>
+            <h3>Lan tỏa</h3>
+            <p>Giới thiệu web đến bạn bè để cộng đồng ngày càng lớn mạnh.</p>
+        </div>
+    </div>
+</section>
 
 <script>
-    // Typewriter Effect
-    var app = document.getElementById('typewriter');
-    if(app) {
-        var typewriter = new Typewriter(app, {
-            loop: true,
-            delay: 75,
+    document.addEventListener('DOMContentLoaded', () => {
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15 
+        };
+
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target); 
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-holder').forEach(el => {
+            revealObserver.observe(el);
         });
-
-        typewriter
-            .typeString('Chill Chill')
-            .pauseFor(1000)
-            .deleteAll()
-            .typeString('Hiệu Quả')
-            .pauseFor(1000)
-            .deleteAll()
-            .typeString('Đột Phá')
-            .pauseFor(1000)
-            .start();
-    }
-
-    // GSAP Animation
-    gsap.from(".hero-title-genz", { duration: 1, y: 50, opacity: 0, ease: "back.out(1.7)" });
-    gsap.from(".bento-card", { 
-        duration: 0.8, 
-        y: 50, 
-        opacity: 0, 
-        stagger: 0.1, 
-        scrollTrigger: ".bento-grid" 
     });
 </script>
 

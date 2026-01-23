@@ -1,0 +1,108 @@
+<%- include('partials/header') %>
+
+<link rel="stylesheet" href="/css/styleIndex.css">
+<link rel="stylesheet" href="/css/courses.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<div class="courses-page-header">
+    <div class="hero-bg-shape shape-1" style="top: -50%; right: -20%;"></div>
+    <div class="hero-bg-shape shape-2" style="bottom: -50%; left: -20%;"></div>
+
+    <div class="reveal-holder creative-reveal-up relative z-10">
+        <span class="section-tag">Kho tàng tri thức</span>
+        <h1 class="hero-title text-4xl md:text-5xl">Thư Viện Khóa Học</h1>
+        <p class="hero-desc mt-4 max-w-2xl mx-auto">
+            Tổng hợp các bài giảng, tài liệu ôn thi chất lượng dành cho học sinh THPT Thủ Đức.
+        </p>
+    </div>
+</div>
+
+<div class="courses-wrapper">
+    
+    <div class="search-bar-wrapper reveal-holder creative-reveal-scale" style="transition-delay: 0.2s">
+        <div class="search-input-group">
+            <input type="text" class="search-input" placeholder="Bạn muốn tìm môn gì, thầy cô nào?..." id="searchInput">
+            <button class="btn-search"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+
+    <div class="filter-tags reveal-holder creative-reveal-up" style="transition-delay: 0.3s">
+        <span class="filter-tag active">Tất cả</span>
+        <span class="filter-tag">Toán</span>
+        <span class="filter-tag">Văn</span>
+        <span class="filter-tag">Tiếng Anh</span>
+        <span class="filter-tag">Lý</span>
+        <span class="filter-tag">Hóa</span>
+    </div>
+
+    <div class="max-w-[1200px] mx-auto">
+        <% if (courses && courses.length > 0) { %>
+            <div class="course-grid">
+                <% courses.forEach((course, index) => { %>
+                    <div class="course-card reveal-holder creative-reveal-up" style="transition-delay: <%= index * 100 %>ms">
+                        <a href="/course/<%= course._id %>" class="course-img-wrapper">
+                            <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" 
+                                 class="course-img" 
+                                 alt="<%= course.title %>"
+                                 onerror="this.onerror=null;this.src='https://i.ibb.co/BVnNtLhp/default-course.png';">
+                            
+                            <div class="course-overlay"></div>
+                            
+                            <span class="course-category-badge">
+                                <%= course.subjectId ? course.subjectId.name : 'Tổng hợp' %>
+                            </span>
+                            
+                            <div class="course-icon-float">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </a>
+
+                        <div class="course-content">
+                            <div class="course-meta">
+                                <span><i class="far fa-calendar-alt"></i> <%= new Date(course.createdAt).toLocaleDateString('vi-VN') %></span>
+                                <% if(course.lessons) { %>
+                                    <span><i class="far fa-file-alt ms-2"></i> <%= course.lessons.length %> bài</span>
+                                <% } %>
+                            </div>
+                            
+                            <a href="/course/<%= course._id %>" class="course-title">
+                                <%= course.title %>
+                            </a>
+
+                            <div class="course-footer">
+                                <% 
+                                    const author = course.author || {}; 
+                                    const authorName = author.username || 'Ban Biên Tập';
+                                    const authorAvatar = author.avatar || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
+                                %>
+                                <div class="author-info">
+                                    <img src="<%= authorAvatar %>" class="author-avatar" alt="Author">
+                                    <span class="author-name"><%= authorName %></span>
+                                </div>
+                                
+                                <a href="/course/<%= course._id %>" class="btn-arrow-go">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <div class="empty-state-box reveal-holder creative-reveal-scale">
+                <div class="empty-state-inner">
+                    <img src="https://cdni.iconscout.com/illustration/premium/thumb/searching-data-4048324-3353495.png" alt="Empty" style="width: 250px; opacity: 0.8;">
+                    <h3 class="text-xl font-bold mt-6 text-dark">Chưa có bài học nào</h3>
+                    <p class="text-gray-500 mt-2 mb-6">Hãy quay lại sau hoặc đóng góp bài giảng nhé!</p>
+                    <a href="/" class="btn-main">
+                        <i class="fas fa-home me-2"></i> Về trang chủ
+                    </a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script src="/js/courses.js"></script>
+
+<%- include('partials/footer') %>
