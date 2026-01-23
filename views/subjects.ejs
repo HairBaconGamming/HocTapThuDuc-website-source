@@ -1,87 +1,98 @@
 <%- include('partials/header') %>
+
+<link rel="stylesheet" href="/css/styleIndex.css">
 <link rel="stylesheet" href="/css/styleSubjects.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-<section class="subjects-section">
-    <div class="subjects-bg-decor blob-1"></div>
-    <div class="subjects-bg-decor blob-2"></div>
+<div class="subjects-page-header">
+    <div class="hero-bg-shape shape-1" style="top: -60%; right: -20%; background: var(--primary-light);"></div>
+    <div class="hero-bg-shape shape-2" style="bottom: -40%; left: -20%; background: var(--accent-red); opacity: 0.15;"></div>
 
-    <div class="container">
-        <div class="subjects-header">
-            <div class="subjects-title">Kho Tàng Kiến Thức</div>
-            <p class="subjects-subtitle">Chọn một "món ăn tinh thần" để thưởng thức hôm nay nào! 😋</p>
-        </div>
+    <div class="reveal-holder creative-reveal-up relative z-10">
+        <span class="section-tag">Hành trang tri thức</span>
+        <h1 class="hero-title text-4xl md:text-5xl">Danh Mục Môn Học</h1>
+        <p class="hero-desc mt-4 max-w-2xl mx-auto">
+            Hệ thống kiến thức được phân loại khoa học, giúp bạn dễ dàng tiếp cận và chinh phục từng môn học.
+        </p>
+    </div>
+</div>
 
-        <div class="subjects-grid" id="subjectsGrid">
-            <% if (subjects && subjects.length > 0) { %>
-                <% 
-                   const themes = ['theme-blue', 'theme-pink', 'theme-green', 'theme-yellow', 'theme-purple'];
-                %>
-                <% subjects.forEach((subject, index) => { 
-                    const themeClass = themes[index % themes.length];
-                %>
-                    <div class="subject-card-pop <%= themeClass %> subject-card-anim">
-                        <div class="card-visual">
-                            <% if(subject.image) { %>
-                                <img src="<%= subject.image %>" alt="<%= subject.name %>" class="card-img" loading="lazy">
-                            <% } else { %>
-                                <i class="fas fa-book-open" style="font-size: 4rem; color: var(--card-color); opacity: 0.5;"></i>
-                            <% } %>
-                            <div class="card-sticker">Môn học</div>
-                        </div>
-
-                        <div class="card-body">
-                            <h3 class="card-title"><%= subject.name %></h3>
-                            <p class="card-desc">
-                                <%= subject.description ? subject.description : 'Khám phá ngay các bài học thú vị của môn này.' %>
-                            </p>
-                            <a href="/subjects/<%= subject._id %>" class="card-btn">
-                                Vào học ngay <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 60px;">
-                    <div style="font-size: 4rem;">🌱</div>
-                    <h3 style="color: #888;">Chưa có môn nào được gieo trồng...</h3>
-                </div>
-            <% } %>
+<div class="subjects-wrapper">
+    
+    <div class="subject-controls reveal-holder creative-reveal-scale" style="transition-delay: 0.2s">
+        <div class="search-box-modern">
+            <div class="search-icon-box"><i class="fas fa-search"></i></div>
+            <input type="text" id="subjectSearch" class="search-input-field" placeholder="Nhập tên môn học bạn muốn tìm...">
+            <button class="btn-filter-toggle"><i class="fas fa-arrow-right"></i></button>
         </div>
     </div>
-</section>
+
+    <div class="subjects-grid" id="subjectsGrid">
+        
+        <% if (subjects && subjects.length > 0) { %>
+            <% subjects.forEach((sub, index) => { %>
+                <a href="/subjects/<%= sub._id %>" class="subject-item-card reveal-holder creative-reveal-up" style="transition-delay: <%= index * 100 %>ms">
+                    
+                    <div class="sub-thumb-wrapper">
+                        <img src="<%= sub.image || 'https://i.ibb.co/K236w2f/default-subject.png' %>" 
+                             alt="<%= sub.name %>" 
+                             class="sub-thumb-img"
+                             onerror="this.onerror=null;this.src='https://i.ibb.co/K236w2f/default-subject.png';">
+                    </div>
+                    
+                    <h3 class="sub-title"><%= sub.name %></h3>
+                    
+                    <p class="sub-desc">
+                        <%= sub.description || 'Khám phá kho tàng kiến thức và tài liệu ôn tập chất lượng cho môn ' + sub.name + '.' %>
+                    </p>
+                    
+                    <div class="sub-footer">
+                        <span class="course-count-badge">
+                            <i class="fas fa-layer-group me-1"></i> <%= sub.courseCount || 0 %> khóa học
+                        </span>
+                        <div class="btn-sub-go">
+                            <i class="fas fa-angle-right"></i>
+                        </div>
+                    </div>
+                </a>
+            <% }) %>
+        <% } else { %>
+            <div class="empty-state-subject">
+                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-folder-4064360-3363921.png" class="empty-img" alt="Empty">
+                <h3 class="text-xl font-bold text-dark">Chưa có môn học nào</h3>
+                <p class="text-gray-500 mt-2">Dữ liệu đang được cập nhật. Vui lòng quay lại sau!</p>
+            </div>
+        <% } %>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if(e.isIntersecting) { e.target.classList.add('active'); observer.unobserve(e.target); }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal-holder').forEach(el => observer.observe(el));
+
+        const searchInput = document.getElementById('subjectSearch');
+        if(searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const val = this.value.toLowerCase().trim();
+                const cards = document.querySelectorAll('.subject-item-card');
+                let hasVisible = false;
+                cards.forEach(card => {
+                    const name = card.querySelector('.sub-title').innerText.toLowerCase();
+                    if(name.includes(val)) {
+                        card.style.display = 'flex';
+                        card.classList.remove('active'); setTimeout(() => card.classList.add('active'), 50);
+                        hasVisible = true;
+                    } else { card.style.display = 'none'; }
+                });
+            });
+        }
+    });
+</script>
 
 <%- include('partials/footer') %>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Kiểm tra xem thư viện GSAP có load được không
-    if (typeof gsap !== 'undefined') {
-        // Animation Header
-        gsap.from('.subjects-header', {
-            duration: 1,
-            y: -30,
-            opacity: 0,
-            ease: 'power2.out'
-        });
-
-        // Animation Cards (Stagger)
-        // Sử dụng autoAlpha thay vì opacity để GSAP tự xử lý visibility
-        gsap.from('.subject-card-anim', {
-            duration: 0.6,
-            y: 50,
-            autoAlpha: 0, // Tự động set opacity:0 và visibility:hidden lúc đầu
-            stagger: 0.1, 
-            ease: 'back.out(1.2)',
-            delay: 0.2,
-            clearProps: 'all' // Quan trọng: Xóa sạch style sau khi diễn xong để tránh lỗi CSS hover
-        });
-    } else {
-        // Fallback nếu GSAP lỗi: Hiện tất cả ngay lập tức
-        document.querySelectorAll('.subject-card-anim').forEach(el => {
-            el.style.opacity = 1;
-            el.style.transform = 'none';
-        });
-    }
-});
-</script>

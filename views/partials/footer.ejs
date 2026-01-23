@@ -10,6 +10,29 @@
     </div>
 </footer>
 
+<% if (typeof user !== 'undefined' && user) { %>
+<script>
+    (function() {
+        // Hàm gửi nhịp tim
+        function sendHeartbeat() {
+            // Chỉ gửi khi tab đang mở (tránh tính giờ treo máy)
+            if (document.visibilityState === 'visible') {
+                fetch('/api/activity/heartbeat', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(err => { /* Silent fail to not disturb user */ });
+            }
+        }
+
+        // Gửi mỗi 60 giây (1 phút)
+        setInterval(sendHeartbeat, 60000);
+        
+        // Gửi ngay 1 lần sau 5s vào trang để tính phút đầu tiên
+        setTimeout(sendHeartbeat, 5000);
+    })();
+</script>
+<% } %>
+
 <script src="/js/alerts.js"></script>
 <script>
     // --- KEEP ALIVE SYSTEM ---

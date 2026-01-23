@@ -1,0 +1,41 @@
+<% if (typeof realmInfo !== 'undefined') { %>
+    <div class="realm-card-container" style="--realm-color: <%= realmInfo.color %>;">
+        
+        <div class="realm-bg-effect"></div>
+
+        <div class="realm-visual-wrapper">
+            <div class="realm-ring-outer"></div>
+            <div class="realm-ring-inner"></div>
+            <div class="realm-core-icon">
+                <i class="<%= realmInfo.icon %>"></i>
+            </div>
+            <div class="realm-level-tag">Cấp <%= realmInfo.level %></div>
+        </div>
+
+        <% if (realmInfo.sagaName) { %>
+            <div class="realm-saga-name"><%= realmInfo.sagaName %></div>
+        <% } %>
+
+        <h2 class="realm-name"><%= realmInfo.name %></h2>
+        
+        <% if (realmInfo.id !== 'pham-nhan') { %>
+            <div class="realm-layer">Tầng thứ <%= realmInfo.currentLayer %>/10</div>
+        <% } else { %>
+            <div class="realm-layer">Chưa nhập đạo</div>
+        <% } %>
+
+        <p class="realm-desc">"<%= realmInfo.desc %>"</p>
+
+        <div class="cultivation-progress-box">
+            <div class="cultivation-bar-bg">
+                <div class="cultivation-bar-fill" style="width: <%= realmInfo.progressPercent %>%"></div>
+            </div>
+            <div class="cultivation-text">
+                <span>Độ kiếp</span>
+                <span><%= realmInfo.progressPercent %>%</span>
+            </div>
+        </div>
+    </div>
+<% } else { %>
+    <div class="alert alert-dark text-center">Đang tải dữ liệu tiên giới...</div>
+<% } %>

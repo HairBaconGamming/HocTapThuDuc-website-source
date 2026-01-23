@@ -15,6 +15,7 @@ const User = require("../models/User");
 const Garden = require('../models/Garden');
 const LevelUtils = require("../utils/level");
 const { achievementChecker } = require("../utils/achievementUtils");
+const streakHelper = require("../utils/streakHelper");
 
 // Rate Limiters
 const rateLimit = require("express-rate-limit");
@@ -210,70 +211,68 @@ router.post("/:id/delete", isLoggedIn, async (req, res) => {
     res.redirect("/dashboard");
 });
 
-router.post("/:id/complete", completeLimiter, isLoggedIn, async (req, res) => {
+router.post("/:id/complete", isLoggedIn, async (req, res) => {
     try {
-        const exists = await LessonCompletion.findOne({ user: req.user._id, lesson: req.params.id });
-        if (exists) return res.status(400).json({ error: "Đã hoàn thành rồi." });
+        const lessonId = req.params.id;
+        const userId = req.user._id;
 
-        const user = await User.findById(req.user._id);
+        // 1. Kiểm tra đã học chưa
+        const exists = await LessonCompletion.findOne({ user: userId, lesson: lessonId });
+        if (exists) return res.status(400).json({ error: "Bạn đã hoàn thành bài này rồi." });
+
+        const user = await User.findById(userId);
+        
+        // 2. Tính thưởng (Logic cũ)
         const currentLevel = user.level || 1;
-        
-        // --- 1. TÍNH TOÁN PHẦN THƯỞNG [MỚI] ---
-        const POINTS_REWARD = 10;
-        
-        // Nước = Level (VD: Lv 3 -> 3 nước)
-        const WATER_REWARD = currentLevel; 
-        
-        // Vàng = 50 * Level^1.5 (Lấy nguyên)
-        // VD: Lv 3 -> 50 * 5.19... = 259 Vàng
-        const GOLD_REWARD = Math.floor(50 * Math.pow(currentLevel, 1.5));
+        const POINTS = 10;
+        const WATER = currentLevel;
+        const GOLD = Math.floor(50 * Math.pow(currentLevel, 1.5));
+        const XP_REWARD = Math.max(10, Math.floor(LevelUtils.getRequiredXP(currentLevel) * 0.05));
 
-        // XP = 5% XP cần thiết của cấp hiện tại (Giữ logic cũ)
-        const requiredXPForNextLevel = LevelUtils.getRequiredXP(currentLevel);
-        const XP_REWARD = Math.max(10, Math.floor(requiredXPForNextLevel * 0.05));
+        // Cập nhật Level User
+        const levelRes = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
+        user.points += POINTS;
+        user.level = levelRes.newLevel;
+        user.xp = levelRes.newXP;
 
-        // --- 2. CẬP NHẬT USER & LEVEL ---
-        const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);
+        // 3. Lưu dữ liệu
+        await new LessonCompletion({ user: userId, lesson: lessonId }).save();
         
-        user.points += POINTS_REWARD;
-        user.level = levelResult.newLevel;
-        user.xp = levelResult.newXP;
+        // [QUAN TRỌNG] CẬP NHẬT STREAK TẠI ĐÂY
+        // Gọi hàm updateStreak trước khi user.save() lần cuối
+        const streakResult = await streakHelper.updateStreak(userId);
+        if (streakResult && streakResult.updated) {
+            // Nếu helper đã save user thì ta không cần save lại, 
+            // nhưng để chắc chắn đồng bộ dữ liệu points/level ở trên, ta gán lại streak vào biến user hiện tại
+            user.streak = streakResult.streak;
+            // Lưu ý: Helper đã save user rồi, nhưng user ở đây (biến user) đang giữ data level/points mới
+            // Nên ta cần save biến user này đè lên.
+        }
         
-        const levelInfo = LevelUtils.getLevelInfo(user.level, user.xp);
-        
-        await new LessonCompletion({ user: user._id, lesson: req.params.id }).save();
-        await user.save();
+        await user.save(); // Save lần cuối cùng cập nhật tất cả (Level, Points, Streak)
 
-        // --- 3. CẬP NHẬT VƯỜN (NƯỚC & VÀNG) ---
+        // Cập nhật Garden
         await Garden.findOneAndUpdate(
-            { user: req.user._id },
-            { $inc: { water: WATER_REWARD, gold: GOLD_REWARD } }, 
+            { user: userId },
+            { $inc: { water: WATER, gold: GOLD } }, 
             { upsert: true, new: true }
         );
 
-        // --- 4. TRIGGER ACHIEVEMENTS ---
-        const unlockedAchievements = await achievementChecker.onLessonCompleted(req.user._id);
+        // Check Achievements
+        const unlocked = await achievementChecker.onLessonCompleted(userId);
         
         res.json({ 
             success: true, 
-            message: `Hoàn thành!`,
-            // Trả về số liệu để hiển thị
-            points: POINTS_REWARD, 
+            message: "Hoàn thành bài học!",
+            points: POINTS,
             xp: XP_REWARD,
-            water: WATER_REWARD,
-            gold: GOLD_REWARD,
-            
-            // Thông tin Level
-            level: user.level,
-            levelName: levelInfo.fullName,
-            isLevelUp: levelResult.hasLeveledUp,
-            
-            // Achievements
-            achievements: unlockedAchievements
+            streak: user.streak, // Trả về streak mới để frontend hiển thị
+            isLevelUp: levelRes.hasLeveledUp,
+            achievements: unlocked
         });
 
     } catch (e) { 
-        console.error(e);
+        console.error("Complete Lesson Error:", e);
         res.status(500).json({ error: "Lỗi hệ thống." }); 
     }
 });

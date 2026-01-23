@@ -1,107 +1,87 @@
-// utils/streakHelper.js
-// Helper functions để quản lý chuỗi học (streak)
-
 const User = require('../models/User');
+const moment = require('moment-timezone');
+
+// Hàm chuẩn hóa ngày theo giờ Việt Nam
+const getVNDate = (date) => moment(date).tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
 
 /**
- * Update streak khi user hoàn thành bài học
- * @param {ObjectId} userId - ID của user
- * @returns {Object} - { streak: number, isNewDay: boolean }
+ * Cập nhật Streak khi hoàn thành bài học
  */
-async function updateStreak(userId) {
+exports.updateStreak = async (userId) => {
     try {
         const user = await User.findById(userId);
-        if (!user) return { streak: 0, isNewDay: false };
+        if (!user) return { updated: false };
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const lastStudyDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
-        lastStudyDate?.setHours(0, 0, 0, 0);
-
-        let newStreak = user.currentStreak || 0;
-        let isNewDay = false;
-
-        if (!lastStudyDate) {
-            // Lần đầu tiên học
-            newStreak = 1;
-            isNewDay = true;
-        } else if (lastStudyDate.getTime() === today.getTime()) {
-            // Cùng ngày, không tăng streak
-            isNewDay = false;
-        } else if (lastStudyDate.getTime() === today.getTime() - 24 * 60 * 60 * 1000) {
-            // Hôm qua, tăng streak
-            newStreak += 1;
-            isNewDay = true;
-        } else {
-            // Quá 1 ngày không học, reset streak
-            newStreak = 1;
-            isNewDay = true;
+        const now = moment().tz("Asia/Ho_Chi_Minh");
+        const todayStr = now.format("YYYY-MM-DD");
+        
+        // Lấy ngày học cuối (nếu có)
+        // [FIX] Dùng đúng tên biến: lastStudyDate
+        let lastDateStr = null;
+        if (user.lastStudyDate) {
+            lastDateStr = moment(user.lastStudyDate).tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
         }
 
-        // Update user
-        user.currentStreak = newStreak;
+        // Case 1: Đã học hôm nay -> Không làm gì
+        if (lastDateStr === todayStr) {
+            return { updated: false, streak: user.currentStreak };
+        }
+
+        // Case 2: Kiểm tra liên tiếp (Hôm qua)
+        const yesterdayStr = now.clone().subtract(1, 'days').format("YYYY-MM-DD");
+
+        if (lastDateStr === yesterdayStr) {
+            // Liên tiếp -> Tăng streak
+            user.currentStreak = (user.currentStreak || 0) + 1;
+        } else {
+            // Đứt quãng hoặc mới tinh -> Reset về 1
+            user.currentStreak = 1;
+        }
+
+        // Lưu ngày học mới
         user.lastStudyDate = new Date();
         await user.save();
 
-        return { streak: newStreak, isNewDay };
+        console.log(`🔥 Streak Updated: User ${user.username} | Streak: ${user.currentStreak}`);
+        return { updated: true, streak: user.currentStreak };
+
     } catch (err) {
-        console.error('Error updating streak:', err);
-        return { streak: 0, isNewDay: false };
+        console.error("Streak Helper Error:", err);
+        return { updated: false };
     }
-}
+};
 
 /**
- * Reset streak (khi user không học trong 1 ngày)
- * @param {ObjectId} userId - ID của user
+ * [MỚI] Hàm lấy thông tin Streak cho Profile (Fix lỗi profileController)
  */
-async function resetStreak(userId) {
-    try {
-        const user = await User.findById(userId);
-        if (!user) return;
-
-        user.currentStreak = 0;
-        await user.save();
-    } catch (err) {
-        console.error('Error resetting streak:', err);
-    }
-}
-
-/**
- * Get streak info with next reset time
- * @param {ObjectId} userId - ID của user
- * @returns {Object} - { streak: number, lastStudyDate: Date, nextResetTime: Date }
- */
-async function getStreakInfo(userId) {
+exports.getStreakInfo = async (userId) => {
     try {
         const user = await User.findById(userId);
         if (!user) return { streak: 0, lastStudyDate: null, nextResetTime: null };
 
-        let nextResetTime = null;
-        
-        if (user.lastStudyDate) {
-            const lastStudyDate = new Date(user.lastStudyDate);
-            lastStudyDate.setHours(0, 0, 0, 0);
-            
-            const tomorrow = new Date(lastStudyDate);
-            tomorrow.setDate(tomorrow.getDate() + 2); // Hai ngày sau ngày học cuối cùng
-            
-            nextResetTime = tomorrow;
-        }
+        // Logic tính thời gian reset (Ví dụ: Hết ngày hôm nay hoặc 24h sau)
+        // Ở đây ta tính: Cuối ngày hôm nay theo giờ VN
+        const now = moment().tz("Asia/Ho_Chi_Minh");
+        const nextReset = now.clone().endOf('day').toDate(); // 23:59:59 hôm nay
 
         return {
             streak: user.currentStreak || 0,
             lastStudyDate: user.lastStudyDate,
-            nextResetTime: nextResetTime
+            nextResetTime: nextReset // Trả về Date object để EJS hiển thị
         };
     } catch (err) {
-        console.error('Error getting streak info:', err);
+        console.error("Get Streak Info Error:", err);
         return { streak: 0, lastStudyDate: null, nextResetTime: null };
     }
-}
+};
 
-module.exports = {
-    updateStreak,
-    resetStreak,
-    getStreakInfo
+/**
+ * Hàm Reset Streak (nếu cần gọi thủ công)
+ */
+exports.resetStreak = async (userId) => {
+    try {
+        await User.findByIdAndUpdate(userId, { currentStreak: 0 });
+    } catch (err) {
+        console.error(err);
+    }
 };

@@ -6,7 +6,6 @@
         <p class="subtitle">Thu thập thành tích và trở thành huyền thoại</p>
     </div>
 
-    <!-- Stats Cards -->
     <div class="achievements-stats">
         <div class="stat-card">
             <div class="stat-icon">🎯</div>
@@ -33,12 +32,11 @@
             <div class="stat-icon">⭐</div>
             <div class="stat-content">
                 <div class="stat-value" id="total-points">0</div>
-                <div class="stat-label">Điểm thành tích (0)</div>
+                <div class="stat-label">Điểm thành tích</div>
             </div>
         </div>
     </div>
 
-    <!-- Filter & Sort -->
     <div class="achievements-controls">
         <div class="filter-group">
             <button class="filter-btn active" data-category="all">Tất cả</button>
@@ -58,12 +56,9 @@
         </div>
     </div>
 
-    <!-- Achievements Grid -->
     <div class="achievements-grid" id="achievements-grid">
-        <!-- Loaded via JavaScript -->
-    </div>
+        </div>
 
-    <!-- Empty State -->
     <div class="empty-state" id="empty-state" style="display: none;">
         <div class="empty-icon">📭</div>
         <h3>Chưa có thành tích</h3>
@@ -427,11 +422,12 @@ async function loadStats() {
         const data = await response.json();
         
         if (data.success) {
-            const { total, unlocked, completion, points } = data.stats;
+            // [FIX] Sửa 'points' thành 'achievementPoints' để khớp với server trả về
+            const { total, unlocked, completion, achievementPoints } = data.stats;
             document.getElementById('total-achievements').textContent = total;
             document.getElementById('unlocked-count').textContent = unlocked;
             document.getElementById('completion-percent').textContent = completion + '%';
-            document.getElementById('total-points').textContent = points;
+            document.getElementById('total-points').textContent = achievementPoints || 0;
         }
     } catch (err) {
         console.error('Load stats error:', err);
@@ -524,3 +520,5 @@ document.querySelectorAll('.rarity-btn').forEach(btn => {
 // Load on init
 loadAchievements();
 </script>
+
+<%- include('partials/footer') %>

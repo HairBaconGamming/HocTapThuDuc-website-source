@@ -1,259 +1,192 @@
 <%- include('partials/header') %>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
 <link rel="stylesheet" href="/css/styleDashboard.css">
 
 <script>
-    // Inject weekly activity data từ server
-    const weeklyActivity = <%= weeklyActivity %>;
+    // Dữ liệu biểu đồ từ Server (Mảng 7 số thực)
+    // Nếu mảng rỗng hoặc toàn 0, UI sẽ hiển thị biểu đồ phẳng (đúng thực tế)
+    window.WEEKLY_ACTIVITY = <%- weeklyActivity || '[0,0,0,0,0,0,0]' %>;
 </script>
 
-<div class="dashboard-container">
-    <div class="dashboard-hero animate__animated animate__fadeInDown">
-        <div class="hero-content">
-            <h1>Chào buổi sáng, <%= user.username %>! 👋</h1>
-            <p>Hôm nay là một ngày tuyệt vời để học thêm điều mới.</p>
-            
-            <div class="level-bar-wrapper">
-                <div class="d-flex justify-content-between text-white mb-1 small fw-bold">
-                    <span>Cấp độ <%= user.level || 1 %></span>
-                    <span><%= user.xp || 0 %> / <%= (user.level || 1) * 1000 %> XP</span>
+<div class="dashboard-wrapper">
+    <div class="dashboard-container">
+        
+        <div class="dash-header animate__animated animate__fadeInDown">
+            <div class="user-welcome">
+                <div class="avatar-container">
+                    <img src="<%= user.avatar || 'https://ui-avatars.com/api/?name=' + user.username + '&background=random' %>" alt="Avatar">
+                    <span class="level-badge">LV.<%= user.level || 1 %></span>
                 </div>
-                <div class="progress" style="height: 8px; background: rgba(255,255,255,0.2);">
+                <div class="welcome-text">
+                    <h1>Chào, <%= user.username %>! <span class="wave">👋</span></h1>
+                    
                     <% 
-                        const maxXP = (user.level || 1) * 1000;
+                        const currentLevel = user.level || 1;
                         const currentXP = user.xp || 0;
-                        const percent = Math.min((currentXP / maxXP) * 100, 100);
+                        const nextLevelXP = currentLevel * 1000; 
+                        const percentXP = Math.min((currentXP / nextLevelXP) * 100, 100);
                     %>
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: <%= percent %>%"></div>
-                </div>
-            </div>
-        </div>
-        <div class="hero-image">
-            <img src="/img/dashboard-hero.svg" alt="Learning" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2936/2936719.png'">
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <a href="/my-garden" class="action-btn action-garden" title="Vào khu vườn">
-            <i class="fas fa-seedling"></i>
-            <span>Vườn của tôi</span>
-        </a>
-        <a href="/lesson/add" class="action-btn action-create" title="Soạn bài mới">
-            <i class="fas fa-pen-fancy"></i>
-            <span>Tạo bài học</span>
-        </a>
-        <a href="/courses" class="action-btn action-explore" title="Khám phá khóa học">
-            <i class="fas fa-book"></i>
-            <span>Khám phá</span>
-        </a>
-        <a href="/news/post" class="action-btn action-news" title="Đăng tin tức">
-            <i class="fas fa-newspaper"></i>
-            <span>Đăng bài</span>
-        </a>
-    </div>
-
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="icon-box bg-primary-subtle text-primary"><i class="fas fa-book-open"></i></div>
-            <div>
-                <h3><%= enrolledCourses ? enrolledCourses.length : 0 %></h3>
-                <p>Khóa đang học</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="icon-box bg-success-subtle text-success"><i class="fas fa-check-circle"></i></div>
-            <div>
-                <h3><%= completedLessonsCount || 0 %></h3>
-                <p>Bài hoàn thành</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="icon-box bg-warning-subtle text-warning"><i class="fas fa-bolt"></i></div>
-            <div>
-                <h3><%= user.points || 0 %></h3>
-                <p>Điểm tích lũy</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="icon-box bg-danger-subtle text-danger"><i class="fas fa-fire"></i></div>
-            <div>
-                <h3><%= user.streak || 0 %> Ngày</h3>
-                <p>Chuỗi liên tục</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="main-layout">
-        <div class="layout-left">
-            
-            <% if (recentCourse) { %>
-            <div class="section-block">
-                <div class="section-header">
-                    <h2><i class="fas fa-play-circle text-primary me-2"></i> Tiếp tục học</h2>
-                </div>
-                <div class="continue-card">
-                    <img src="<%= recentCourse.image || '/img/default-course.png' %>" alt="Course">
-                    <div class="continue-info">
-                        <h4><%= recentCourse.title %></h4>
-                        <div class="progress mt-2" style="height: 6px;">
-                            <div class="progress-bar" style="width: <%= recentCourse.progress %>%"></div>
-                        </div>
-                        <small class="text-muted"><%= recentCourse.progress %>% hoàn thành</small>
+                    <div class="xp-bar-container" title="<%= currentXP %> / <%= nextLevelXP %> XP">
+                        <div class="xp-bar-fill" style="width: <%= percentXP %>%;"></div>
+                        <span class="xp-text"><%= currentXP %> / <%= nextLevelXP %> XP</span>
                     </div>
-                    <a href="/course/<%= recentCourse._id %>" class="btn btn-primary btn-sm rounded-pill px-4">Học ngay</a>
-                </div>
-            </div>
-            <% } %>
-
-            <div class="section-block">
-                <div class="section-header">
-                    <h2><i class="fas fa-chart-line text-success me-2"></i> Hoạt động tuần này</h2>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="activityChart"></canvas>
                 </div>
             </div>
 
-            <div class="section-block">
-                <div class="section-header">
-                    <h2><i class="fas fa-graduation-cap text-warning me-2"></i> Khóa học của tôi</h2>
-                    <a href="/courses" class="text-primary text-decoration-none small fw-bold">Xem tất cả</a>
+            <div class="header-stats">
+                <div class="h-stat-item">
+                    <i class="fas fa-fire text-danger"></i>
+                    <div>
+                        <span class="stat-val"><%= user.streak || 0 %></span>
+                        <span class="stat-lbl">Streak</span>
+                    </div>
                 </div>
+                <div class="h-stat-item">
+                    <i class="fas fa-bolt text-warning"></i>
+                    <div>
+                        <span class="stat-val"><%= user.points || 0 %></span>
+                        <span class="stat-lbl">Điểm</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-grid">
+            <div class="dash-main">
                 
-                <div class="course-list">
-                    <% if (enrolledCourses && enrolledCourses.length > 0) { %>
-                        <% enrolledCourses.forEach(course => { %>
-                        <div class="course-item">
-                            <img src="<%= course.image || '/img/default-course.png' %>" class="course-thumb">
-                            <div class="course-details">
-                                <h5><a href="/course/<%= course._id %>"><%= course.title %></a></h5>
-                                <div class="d-flex justify-content-between small text-muted mb-1">
-                                    <span><%= course.completedLessons %>/<%= course.totalLessons %> bài</span>
-                                    <span><%= course.progress %>%</span>
+                <% if (recentCourse) { %>
+                    <div class="section-card highlight-card animate__animated animate__fadeInUp">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Tiếp tục học</h3>
+                        </div>
+                        <div class="recent-course-box">
+                            <div class="rc-thumb">
+                                <img src="<%= recentCourse.image %>" onerror="this.src='https://i.ibb.co/BVnNtLhp/default-course.png'">
+                                <div class="play-overlay"><i class="fas fa-play"></i></div>
+                            </div>
+                            <div class="rc-info">
+                                <h4><%= recentCourse.title %></h4>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: <%= recentCourse.progress %>%"></div>
                                 </div>
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar bg-success" style="width: <%= course.progress %>%"></div>
+                                <div class="rc-meta">
+                                    <span>Đã hoàn thành <%= recentCourse.progress %>%</span>
+                                    <a href="/course/<%= recentCourse._id %>" class="btn-continue">Vào học <i class="fas fa-arrow-right ms-1"></i></a>
                                 </div>
                             </div>
                         </div>
-                        <% }); %>
-                    <% } else { %>
-                        <div class="text-center py-4 text-muted">
-                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" class="mb-3 opacity-50">
-                            <p>Bạn chưa đăng ký khóa học nào.</p>
-                            <a href="/courses" class="btn btn-outline-primary btn-sm">Khám phá ngay</a>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-        </div>
+                    </div>
+                <% } %>
 
-        <div class="layout-right">
-            
-            <div class="widget-card garden-widget">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="m-0 fw-bold"><i class="fas fa-seedling text-success"></i> Khu vườn</h5>
-                    <a href="/my-garden" class="btn btn-xs btn-light rounded-pill">Vào vườn</a>
+                <div class="section-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Giờ học tuần này</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="learningChart"></canvas>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <img src="/img/garden-preview.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/15170/15170366.png'" width="80" class="mb-2">
-                    <p class="small text-muted mb-2">Chăm sóc cây để nhận thêm XP!</p>
-                    <div class="d-flex justify-content-center gap-3">
-                        <span class="badge bg-primary-subtle text-primary"><i class="fas fa-tint"></i> <%= gardenData ? (gardenData.water || 0) : 0 %> Nước</span>
-                        <span class="badge bg-warning-subtle text-warning"><i class="fas fa-coins"></i> <%= gardenData ? (gardenData.gold || 0) : 0 %> Vàng</span>
+
+                <div class="section-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+                    <div class="card-header space-between">
+                        <h3><i class="fas fa-layer-group"></i> Khóa học của tôi</h3>
+                        <% if(enrolledCourses && enrolledCourses.length > 0) { %>
+                            <span class="badge-count"><%= enrolledCourses.length %></span>
+                        <% } %>
+                    </div>
+                    
+                    <div class="my-courses-list">
+                        <% if (enrolledCourses && enrolledCourses.length > 0) { %>
+                            <% enrolledCourses.forEach(course => { %>
+                                <a href="/course/<%= course._id %>" class="mc-item">
+                                    <img src="<%= course.image %>" onerror="this.src='https://i.ibb.co/BVnNtLhp/default-course.png'">
+                                    <div class="mc-info">
+                                        <h5><%= course.title %></h5>
+                                        <div class="mc-progress-mini">
+                                            <div class="bar" style="width: <%= course.progress %>%"></div>
+                                        </div>
+                                        <span class="mc-stat"><%= course.completedLessons %>/<%= course.totalLessons %> bài</span>
+                                    </div>
+                                    <div class="mc-arrow"><i class="fas fa-chevron-right"></i></div>
+                                </a>
+                            <% }) %>
+                        <% } else { %>
+                            <div class="text-center py-5">
+                                <p class="text-muted mb-3">Bạn chưa tham gia khóa học nào.</p>
+                                <a href="/courses" class="btn-continue">Khám phá ngay</a>
+                            </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
 
-            
+            <div class="dash-sidebar">
+                
+                <div class="widget-card garden-widget animate__animated animate__fadeInRight">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-seedling text-success"></i> Nông trại</h3>
+                    </div>
+                    <div class="garden-minimal">
+                        <div class="garden-stats-row">
+                            <div class="gs-item">
+                                <i class="fas fa-tint text-primary"></i>
+                                <span class="gs-value"><%= gardenData ? gardenData.water : 0 %></span>
+                                <span class="gs-label">Nước</span>
+                            </div>
+                            <div class="gs-divider"></div>
+                            <div class="gs-item">
+                                <i class="fas fa-coins text-warning"></i>
+                                <span class="gs-value"><%= gardenData ? gardenData.gold : 0 %></span>
+                                <span class="gs-label">Vàng</span>
+                            </div>
+                        </div>
+                        <a href="/my-garden" class="btn-garden-go">
+                            Vào chăm sóc <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="widget-card animate__animated animate__fadeInRight" style="animation-delay: 0.1s">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-trophy text-warning"></i> Thành tích</h3>
+                    </div>
+                    <div class="achievements-list">
+                        <% if (userAchievements && userAchievements.length > 0) { %>
+                            <% userAchievements.forEach(ua => { 
+                                const ach = ua.achievementId || {}; 
+                            %>
+                                <div class="ach-row">
+                                    <div class="ach-icon"><%= ach.icon || '🏆' %></div>
+                                    <div class="ach-details">
+                                        <span class="ach-name"><%= ach.name %></span>
+                                        <span class="ach-date"><%= new Date(ua.unlockedAt).toLocaleDateString('vi-VN') %></span>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        <% } else { %>
+                            <div class="text-center py-3 text-muted small">
+                                Chưa có thành tích nào.
+                            </div>
+                        <% } %>
+                        <a href="/achievements" class="btn-view-all">Xem tất cả</a>
+                    </div>
+                </div>
+
+                <div class="widget-card animate__animated animate__fadeInRight" style="animation-delay: 0.2s">
+                    <div class="widget-header"><h3>Lối tắt</h3></div>
+                    <div class="shortcuts-grid">
+                        <a href="/courses" class="sc-btn"><i class="fas fa-search"></i> Khóa học</a>
+                        <a href="/leaderboard" class="sc-btn"><i class="fas fa-chart-bar"></i> BXH</a>
+                        <a href="/profile/edit" class="sc-btn"><i class="fas fa-user-cog"></i> Hồ sơ</a>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>
-
-<style>
-.achievements-grid-mini .achievement-mini {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.achievements-grid-mini .achievement-mini:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-}
-
-.achievement-mini-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-}
-
-.achievement-mini-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #0f172a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.achievement-mini-date {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 4px;
-}
-</style>
-
-<script>
-async function loadDashboardAchievements() {
-    try {
-        const response = await fetch('/api/achievements/my-achievements');
-        const data = await response.json();
-        
-        if (data.success) {
-            const container = document.getElementById('dashboard-achievements');
-            const recent = data.achievements.slice(0, 4); // Show latest 4
-            
-            if (recent.length === 0) {
-                container.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 20px;">
-                        <p style="margin: 0;">Chưa có thành tích nào. Hãy bắt đầu học!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = recent.map(a => {
-                const achievement = a.achievementId || a.achievement;
-                const name = achievement?.name || 'Thành tích';
-                const icon = achievement?.icon || '🏆';
-                const description = achievement?.description || 'Thành tích';
-                return `
-                    <div class="achievement-mini" title="${description}">
-                        <div class="achievement-mini-icon">${icon}</div>
-                        <div class="achievement-mini-name">${name}</div>
-                        <div class="achievement-mini-date">${new Date(a.unlockedAt).toLocaleDateString('vi-VN')}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-    } catch (err) {
-        console.error('Load achievements error:', err);
-    }
-}
-
-// Load achievements when dashboard loads
-document.addEventListener('DOMContentLoaded', loadDashboardAchievements);
-</script>
 
 <script src="/js/dashboard.js"></script>
 <%- include('partials/footer') %>

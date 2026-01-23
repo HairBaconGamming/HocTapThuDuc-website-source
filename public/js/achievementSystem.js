@@ -1,198 +1,83 @@
-<!-- public/js/achievementSystem.js -->
+const AchievementSystem = {
+    init: function() {
+        // Lắng nghe socket hoặc check định kỳ nếu cần
+        // Hiện tại giả sử hệ thống gọi hàm showUnlock() khi có phản hồi từ API login/complete lesson
+    },
 
-// Achievement Notification Manager
-class AchievementNotificationManager {
-    constructor() {
-        this.lastCheckTime = localStorage.getItem('lastAchievementCheck') || new Date().getTime();
-    }
+    // Hàm gọi hiển thị thông báo
+    showUnlock: function(data) {
+        // [FIX LỖI DỮ LIỆU]
+        // Kiểm tra xem data là object Achievement gốc hay UserAchievement (có lồng nhau)
+        // Cấu trúc thường là: data.achievementId (nếu đã populate) HOẶC data (nếu trả về raw achievement)
+        
+        let achievement = null;
+        let unlockedAt = new Date();
 
-    async checkForNewAchievements() {
-        try {
-            const response = await fetch('/api/achievements/my-achievements');
-            if (!response.ok) return;
-
-            const data = await response.json();
-            if (!data.success || !data.achievements) return;
-
-            // Check for achievements newer than last check
-            const now = new Date().getTime();
-            const newAchievements = data.achievements.filter(a => {
-                const unlockedTime = new Date(a.unlockedAt).getTime();
-                return unlockedTime > this.lastCheckTime;
-            });
-
-            // Show notifications for each new achievement
-            newAchievements.forEach(achievement => {
-                this.showNotification(achievement);
-            });
-
-            this.lastCheckTime = now;
-            localStorage.setItem('lastAchievementCheck', now);
-        } catch (err) {
-            console.error('Error checking achievements:', err);
+        if (data.achievementId && data.achievementId.name) {
+            // Trường hợp trả về UserAchievement đã populate
+            achievement = data.achievementId;
+            unlockedAt = data.unlockedAt;
+        } else if (data.name) {
+            // Trường hợp trả về trực tiếp Achievement
+            achievement = data;
+        } else if (data.achievement) {
+             // Trường hợp lồng trong field achievement
+             achievement = data.achievement;
         }
-    }
 
-    showNotification(achievement) {
-        const notification = this.createNotificationElement(achievement);
-        document.body.appendChild(notification);
+        // Nếu vẫn không tìm thấy tên, dừng lại để tránh lỗi hiển thị rỗng
+        if (!achievement || !achievement.name) {
+            console.error("Achievement Data Invalid:", data);
+            return;
+        }
 
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            notification.classList.add('hide');
-            setTimeout(() => notification.remove(), 400);
-        }, 5000);
-    }
-
-    createNotificationElement(achievement) {
-        const div = document.createElement('div');
-        div.className = 'achievement-notification';
+        // [FIX LỖI +0 ĐIỂM] & ICON
+        const name = achievement.name;
+        const icon = achievement.icon || '🏆'; // Icon mặc định nếu thiếu
+        const points = achievement.points || achievement.xp || 10; // Fallback điểm nếu thiếu
         
-        // Handle both data structures
-        const name = achievement.achievement?.name || achievement.name || 'Thành tích';
-        const points = achievement.achievement?.points || achievement.points || 0;
-        const icon = achievement.icon || '🏆';
-        
-        div.innerHTML = `
-            <div class="achievement-notify-content">
-                <div class="achievement-notify-icon">${icon}</div>
-                <div class="achievement-notify-text">
-                    <div class="achievement-notify-title">🏆 Bạn đã mở khóa thành tích!</div>
-                    <div class="achievement-notify-name">${name}</div>
-                    <div class="achievement-notify-points">+${points} ⭐</div>
-                </div>
-                <button class="achievement-notify-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        this.renderToast(name, icon, points);
+        this.playSound();
+    },
+
+    renderToast: function(name, icon, points) {
+        const container = document.getElementById('achievement-toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'ach-toast';
+        toast.innerHTML = `
+            <div class="ach-icon-wrapper">${icon}</div>
+            <div class="ach-content">
+                <div class="ach-title">Thành tích mở khóa!</div>
+                <div class="ach-name">${name}</div>
+                <div class="ach-points">+${points} Điểm thưởng</div>
             </div>
         `;
-        return div;
+
+        container.appendChild(toast);
+
+        // Kích hoạt animation sau 1 frame
+        requestAnimationFrame(() => {
+            toast.classList.add('active');
+        });
+
+        // Tự động ẩn sau 5 giây
+        setTimeout(() => {
+            toast.classList.remove('active');
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500); // Xóa khỏi DOM
+        }, 5000);
+    },
+
+    playSound: function() {
+        const audio = document.getElementById('ach-sound');
+        if (audio) {
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log("Audio autoplay blocked")); // Bắt lỗi nếu trình duyệt chặn
+        }
     }
-}
+};
 
-// Styles
-const achievementStyles = `
-<style>
-.achievement-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    z-index: 10000;
-    animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-width: 350px;
-    margin: 10px;
-}
-
-.achievement-notify-content {
-    display: flex;
-    gap: 12px;
-    padding: 16px 20px;
-    align-items: flex-start;
-}
-
-.achievement-notify-icon {
-    font-size: 2.5rem;
-    min-width: 50px;
-    text-align: center;
-    animation: bounce 0.6s ease;
-}
-
-.achievement-notify-text {
-    flex: 1;
-    min-width: 0;
-}
-
-.achievement-notify-title {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.achievement-notify-name {
-    font-size: 1.05rem;
-    font-weight: bold;
-    margin-bottom: 6px;
-    word-wrap: break-word;
-}
-
-.achievement-notify-points {
-    font-size: 0.9rem;
-    opacity: 0.95;
-    font-weight: 500;
-}
-
-.achievement-notify-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.2s;
-    padding: 0;
-    margin: -8px;
-}
-
-.achievement-notify-close:hover {
-    opacity: 1;
-}
-
-.achievement-notification.hide {
-    animation: slideOutDown 0.4s ease forwards;
-}
-
-@keyframes slideInUp {
-    from {
-        transform: translateY(400px) scale(0.9);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutDown {
-    from {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(400px) scale(0.9);
-        opacity: 0;
-    }
-}
-
-@keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-@media (max-width: 480px) {
-    .achievement-notification {
-        bottom: 10px;
-        right: 10px;
-        left: 10px;
-        max-width: none;
-    }
-}
-</style>
-`;
-
-// Initialize and inject styles
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        document.head.insertAdjacentHTML('beforeend', achievementStyles);
-        const manager = new AchievementNotificationManager();
-        // Check every 10 seconds
-        setInterval(() => manager.checkForNewAchievements(), 10000);
-    });
-} else {
-    document.head.insertAdjacentHTML('beforeend', achievementStyles);
-    const manager = new AchievementNotificationManager();
-    setInterval(() => manager.checkForNewAchievements(), 10000);
-}
+// Expose ra global để các file khác gọi được
+window.AchievementSystem = AchievementSystem;

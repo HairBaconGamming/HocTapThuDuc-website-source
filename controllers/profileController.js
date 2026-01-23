@@ -6,6 +6,7 @@ const { UserAchievement } = require('../models/Achievement');
 const LevelUtils = require('../utils/level');
 const moment = require('moment-timezone');
 const streakHelper = require('../utils/streakHelper');
+const realmHelper = require('../utils/realmHelper');
 
 exports.getProfile = async (req, res) => {
     try {
@@ -63,11 +64,14 @@ exports.getProfile = async (req, res) => {
         // 7. Tính streak với thời gian reset tiếp theo
         const streakInfo = await streakHelper.getStreakInfo(userId);
 
+        const realmInfo = realmHelper.getRealmData(user.level || 1);
+
         // 8. Render View
         res.render('profile', {
             title: `Hồ sơ ${user.username}`,
             profileUser: user,
             currentUser: req.user,
+            realmInfo: realmInfo,
             isOwner: req.user && req.user._id.toString() === user._id.toString(),
             
             levelInfo: levelInfo,

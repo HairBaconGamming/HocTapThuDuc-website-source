@@ -1,5 +1,7 @@
 <%- include('partials/header') %>
+
 <link rel="stylesheet" href="/css/styleProfile.css">
+<link rel="stylesheet" href="/css/styleRealm.css">
 
 <div class="profile-wrapper">
     
@@ -33,25 +35,8 @@
             <% } %>
         </div>
 
-        <div class="bento-card realm-card" data-realm="<%= Math.floor((levelInfo.level - 1) / 10) %>">
-            <div class="realm-header">
-                <div>
-                    <div class="realm-label">Cảnh giới hiện tại</div>
-                    <div class="realm-name"><%= levelInfo.fullName %></div>
-                </div>
-                <div class="realm-icon">⚡</div>
-            </div>
-
-            <div class="xp-section">
-                <div class="xp-track">
-                    <div class="xp-fill" style="width: <%= levelInfo.progress %>%"></div>
-                </div>
-                
-                <div class="xp-stats">
-                    <span><%= levelInfo.progress %>%</span>
-                    <span><%= levelInfo.currentXP.toLocaleString() %> / <%= levelInfo.requiredXP.toLocaleString() %> XP</span>
-                </div>
-            </div>
+        <div class="bento-card realm-card-wrapper" style="padding: 0; background: transparent; border: none; box-shadow: none; overflow: visible;">
+            <%- include('partials/realmDisplay', { realmInfo: realmInfo, user: profileUser }) %>
         </div>
 
         <div class="stats-container">
@@ -75,7 +60,7 @@
         <a href="<%= isOwner ? '/my-garden' : '/my-garden/visit/' + profileUser._id %>" class="bento-card garden-link-card">
             <div class="garden-content">
                 <div><%= isOwner ? 'Về Nông Trại' : 'Ghé thăm Vườn' %></div>
-                <div>Trồng cây, nuôi cá, chill... 🌱</div>
+                <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">Trồng cây, nuôi cá, chill... 🌱</div>
             </div>
             <div class="garden-arrow">➔</div>
         </a>
@@ -83,15 +68,19 @@
         <div class="bento-card achievement-card">
             <div class="achievement-header">
                 <span>🏆 Thành tích</span>
-                <span class="achievement-count"><%= totalAchievements %> thành tích</span>
+                <span class="achievement-count"><%= totalAchievements %> đã đạt</span>
             </div>
             
             <div class="achievement-grid">
                 <% if (achievements && achievements.length > 0) { %>
                     <% achievements.forEach(achievement => { %>
-                        <div class="achievement-item" title="<%= achievement.achievementData?.name || 'Thành tích' %>">
-                            <div class="achievement-icon"><%= achievement.achievementData?.icon || '🎖️' %></div>
-                            <div class="achievement-name"><%= (achievement.achievementData?.name || 'Thành tích').substring(0, 15) %></div>
+                        <div class="achievement-item" title="<%= achievement.achievementId?.name || 'Thành tích' %>">
+                            <div class="achievement-icon">
+                                <%= achievement.achievementId?.icon || '🎖️' %>
+                            </div>
+                            <div class="achievement-name">
+                                <%= (achievement.achievementId?.name || 'Thành tích').substring(0, 15) %>
+                            </div>
                         </div>
                     <% }); %>
                 <% } else { %>
@@ -100,6 +89,12 @@
                     </div>
                 <% } %>
             </div>
+            
+            <% if (totalAchievements > 6) { %>
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="/achievements" class="btn-sm btn-light">Xem tất cả</a>
+                </div>
+            <% } %>
         </div>
 
         <div class="stats-container-bottom">
@@ -115,8 +110,8 @@
             </div>
             <div class="mini-stat-bottom total-points">
                 <div class="stat-emoji">⭐</div>
-                <div class="stat-num"><%= stats.points.toLocaleString() %></div>
-                <div class="stat-title">Điểm</div>
+                <div class="stat-num"><%= (stats.achievementPoints || 0).toLocaleString() %></div>
+                <div class="stat-title">Điểm TT</div>
             </div>
         </div>
 
@@ -131,7 +126,9 @@
                         <div class="activity-item">
                             <div class="act-icon">📝</div>
                             <div class="act-info">
-                                <div class="act-title">Đã học xong: <%= activity.lessonId ? activity.lessonId.title : 'Bài học ẩn' %></div>
+                                <div class="act-title">
+                                    Đã học xong: <strong><%= activity.lessonId ? activity.lessonId.title : 'Bài học ẩn' %></strong>
+                                </div>
                                 <div class="act-time">
                                     <%= moment(activity.completedAt).fromNow() %>
                                 </div>

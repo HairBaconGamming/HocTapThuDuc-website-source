@@ -1,0 +1,167 @@
+/* public/css/styleRealm.css */
+
+/* --- CONTAINER CHÍNH --- */
+.realm-card-container {
+    position: relative;
+    /* Dùng biến --realm-color được truyền từ inline style */
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-radius: 24px;
+    padding: 40px 20px;
+    overflow: hidden;
+    color: white;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    isolation: isolate;
+    transition: all 0.5s ease;
+}
+
+/* Hiệu ứng viền phát sáng theo màu cảnh giới */
+.realm-card-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, var(--realm-color), transparent 60%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+/* Background động */
+.realm-bg-effect {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.15;
+    background: radial-gradient(circle at 50% 30%, var(--realm-color), transparent 70%);
+    filter: blur(50px);
+    animation: realm-pulse 6s ease-in-out infinite;
+}
+
+/* --- VÒNG TRÒN VISUAL --- */
+.realm-visual-wrapper {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 25px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.realm-ring-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px dashed var(--realm-color);
+    opacity: 0.6;
+    animation: realm-spin 20s linear infinite;
+    box-shadow: 0 0 15px var(--realm-color);
+}
+
+.realm-ring-inner {
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--realm-color);
+    border-bottom-color: var(--realm-color);
+    animation: realm-spin-reverse 8s linear infinite;
+}
+
+.realm-core-icon {
+    font-size: 3rem;
+    color: white;
+    z-index: 2;
+    text-shadow: 0 0 20px var(--realm-color);
+    animation: realm-float 3s ease-in-out infinite;
+}
+
+/* Badge Level */
+.realm-level-tag {
+    position: absolute;
+    bottom: -12px;
+    background: var(--realm-color);
+    color: #000;
+    font-weight: 800;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    box-shadow: 0 0 10px var(--realm-color);
+    text-transform: uppercase;
+}
+
+/* --- TEXT INFO --- */
+.realm-saga-name {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--realm-color);
+    margin-bottom: 5px;
+    opacity: 0.8;
+}
+
+.realm-name {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    background: linear-gradient(to bottom, #fff, var(--realm-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.2));
+}
+
+.realm-layer {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 15px;
+}
+
+.realm-desc {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* --- PROGRESS BAR --- */
+.cultivation-progress-box {
+    position: relative;
+    width: 100%;
+    padding: 0 10px;
+}
+
+.cultivation-bar-bg {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cultivation-bar-fill {
+    height: 100%;
+    background: var(--realm-color);
+    border-radius: 10px;
+    box-shadow: 0 0 10px var(--realm-color);
+    transition: width 1s ease;
+}
+
+.cultivation-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    margin-top: 8px;
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes realm-spin { to { transform: rotate(360deg); } }
+@keyframes realm-spin-reverse { to { transform: rotate(-360deg); } }
+@keyframes realm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes realm-pulse { 0%, 100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.1); } }

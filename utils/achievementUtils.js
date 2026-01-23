@@ -1,3 +1,4 @@
+const mongoose = require('mongoose'); // [FIX] Import mongoose
 const { AchievementType, UserAchievement } = require('../models/Achievement');
 const User = require('../models/User');
 const LessonCompletion = require('../models/LessonCompletion');
@@ -126,7 +127,7 @@ async function onPointsGained(userId) {
   try {
     // Calculate current achievement points from unlocked achievements
     const pointsData = await UserAchievement.aggregate([
-      { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+      { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new'
       { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
       { $unwind: '$achievement' },
       { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
@@ -200,7 +201,7 @@ async function getAchievementProgress(userId) {
         case 'points_reached': {
           // Calculate achievement points from unlocked achievements
           const pointsData = await UserAchievement.aggregate([
-            { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+            { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new' - Đây là chỗ gây lỗi
             { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
             { $unwind: '$achievement' },
             { $group: { _id: null, totalPoints: { $sum: '$achievement.points' } } }
@@ -266,7 +267,7 @@ async function getAchievementStats(userId) {
 
     // Tính total points từ achievements
     const pointsData = await UserAchievement.aggregate([
-      { $match: { user: require('mongoose').Types.ObjectId(userId) } },
+      { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new'
       { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
       { $unwind: '$achievement' },
       { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }

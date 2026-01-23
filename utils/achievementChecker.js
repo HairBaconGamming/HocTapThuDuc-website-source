@@ -1,207 +1,132 @@
-// utils/achievementChecker.js - DEPRECATED
-// Sử dụng utils/achievementUtils.js thay thế
+const User = require('../models/User');
+const UserAchievement = require('../models/Achievement').UserAchievement;
+const Achievement = require('../models/Achievement').Achievement;
+const LessonCompletion = require('../models/LessonCompletion');
+const Garden = require('../models/Garden');
 
-// Re-export từ achievementUtils
-const { achievementChecker } = require('./achievementUtils');
-module.exports = achievementChecker;
+const achievementChecker = {
+    /**
+     * Hàm kiểm tra và mở khóa thành tích
+     * @param {String} userId - ID người dùng
+     * @param {String} type - Loại kiểm tra ('lesson_count', 'streak', 'garden', 'custom')
+     * @param {Object} data - Dữ liệu bổ sung (vd: count, triggerType)
+     */
+    checkAndUnlockAchievements: async (userId, type, data = {}) => {
+        try {
+            // 1. Lấy tất cả thành tích thuộc loại hình này mà user CHƯA đạt được
+            // Trước tiên lấy danh sách ID đã đạt
+            const userUnlocked = await UserAchievement.find({ user: userId }).distinct('achievementId');
+            
+            // Tìm các thành tích chưa đạt thuộc loại này
+            // Lưu ý: type 'custom' dùng cho các logic đặc biệt (login, special event)
+            const query = { 
+                _id: { $nin: userUnlocked },
+                type: type 
+            };
 
-                // Thêm points cho user
-                user.points = (user.points || 0) + achievement.points;
-                await user.save();
-
-                unlockedAchievements.push({
-                    ...achievement.toObject(),
-                    unlockedAt: newAchievement.unlockedAt
-                });
+            // Nếu là custom trigger (vd: login), cần khớp thêm condition.trigger
+            if (type === 'custom' && data.triggerType) {
+                query['condition.trigger'] = data.triggerType;
             }
-        }
 
-        return unlockedAchievements;
-    } catch (err) {
-        console.error('Error checking achievements:', err);
-        return [];
-    }
-}
+            const availableAchievements = await Achievement.find(query);
 
-/**
- * Evaluate điều kiện achievement
- */
-function evaluateCondition(condition, data) {
-    const { type, value, operator } = condition;
-    const actualValue = data[type] || 0;
+            if (availableAchievements.length === 0) return { unlocked: false };
 
-    switch (operator) {
-        case '>=':
-            return actualValue >= value;
-        case '>':
-            return actualValue > value;
-        case '==':
-            return actualValue == value;
-        case '<=':
-            return actualValue <= value;
-        default:
-            return false;
-    }
-}
+            const newUnlocks = [];
 
-/**
- * Trigger achievement check khi lesson hoàn thành
- */
-async function onLessonCompleted(userId) {
-    try {
-        const completionCount = await LessonCompletion.countDocuments({ user: userId });
-        return await checkAndUnlockAchievements(userId, 'lessons_completed', {
-            lessons_completed: completionCount
-        });
-    } catch (err) {
-        console.error('Error on lesson completed:', err);
-        return [];
-    }
-}
+            // 2. Kiểm tra điều kiện từng thành tích
+            for (const ach of availableAchievements) {
+                let isUnlocked = false;
+                const cond = ach.condition;
 
-/**
- * Trigger achievement check khi user đạt điểm
- */
-async function onPointsGained(userId) {
-    try {
-        const user = await User.findById(userId);
-        return await checkAndUnlockAchievements(userId, 'points_reached', {
-            points_reached: user.points || 0
-        });
-    } catch (err) {
-        console.error('Error on points gained:', err);
-        return [];
-    }
-}
+                switch (type) {
+                    case 'lesson_count':
+                        // data.count là số bài đã học
+                        if (cond.value && data.count >= cond.value) isUnlocked = true;
+                        break;
 
-/**
- * Trigger achievement check hàng ngày (streak, login)
- */
-async function onDailyCheck(userId) {
-    try {
-        const user = await User.findById(userId);
-        
-        // Trigger multiple condition checks
-        const results = [];
-        results.push(...await checkAndUnlockAchievements(userId, 'streak_days', {
-            streak_days: user.streak || 0
-        }));
-        
-        return results;
-    } catch (err) {
-        console.error('Error on daily check:', err);
-        return [];
-    }
-}
+                    case 'streak':
+                        // data.streak là chuỗi ngày
+                        if (cond.value && data.streak >= cond.value) isUnlocked = true;
+                        break;
+                    
+                    case 'garden':
+                        // data.level hoặc data.action
+                        // Ví dụ: Trồng cây đầu tiên
+                        if (cond.code === 'GARDEN_FIRST_PLANT' && data.action === 'plant') isUnlocked = true;
+                        break;
 
-/**
- * Lấy tất cả achievements của user
- */
-async function getUserAchievements(userId) {
-    try {
-        const userAchievements = await UserAchievement.find({ user: userId })
-            .sort({ unlockedAt: -1 })
-            .lean();
+                    case 'custom':
+                        // Logic riêng
+                        if (cond.trigger === 'login') isUnlocked = true; // Login lần đầu mỗi ngày check
+                        break;
+                        
+                    default:
+                        break;
+                }
 
-        return userAchievements;
-    } catch (err) {
-        console.error('Error getting user achievements:', err);
-        return [];
-    }
-}
+                if (isUnlocked) {
+                    newUnlocks.push({
+                        user: userId,
+                        achievementId: ach._id,
+                        unlockedAt: new Date()
+                    });
+                }
+            }
 
-/**
- * Lấy achievement progress (để hiển thị %, số bài còn lại, etc)
- */
-async function getAchievementProgress(userId) {
-    try {
-        const user = await User.findById(userId);
-        const completionCount = await LessonCompletion.countDocuments({ user: userId });
+            // 3. Lưu vào DB và Trả về kết quả
+            if (newUnlocks.length > 0) {
+                // Insert các bản ghi mới
+                const insertedDocs = await UserAchievement.insertMany(newUnlocks);
+                
+                // [QUAN TRỌNG] Populate ngược lại để lấy thông tin Name/Icon/Points
+                // insertMany trả về documents, nhưng để chắc chắn có full info từ bảng Achievement, ta populate
+                // Mongoose insertMany không hỗ trợ populate trực tiếp, phải query lại hoặc populate trên doc trả về (tùy version).
+                // Cách an toàn nhất là query lại theo ID vừa tạo.
+                
+                const insertedIds = insertedDocs.map(doc => doc._id);
+                
+                const populatedAchievements = await UserAchievement.find({ _id: { $in: insertedIds } })
+                    .populate('achievementId'); // <--- FIX LỖI THIẾU TÊN/ICON TẠI ĐÂY
 
-        const allAchievements = await AchievementType.find({ isActive: true });
-        const unlockedIds = await UserAchievement.find({ user: userId })
-            .select('achievementId')
-            .lean();
-        const unlockedIdSet = new Set(unlockedIds.map(a => a.achievementId));
+                // Cộng điểm cho User luôn
+                let totalPointsToAdd = 0;
+                populatedAchievements.forEach(ua => {
+                    if (ua.achievementId && ua.achievementId.points) {
+                        totalPointsToAdd += ua.achievementId.points;
+                    }
+                });
 
-        const progress = allAchievements.map(achievement => {
-            const isUnlocked = unlockedIdSet.has(achievement.id);
+                if (totalPointsToAdd > 0) {
+                    await User.findByIdAndUpdate(userId, { $inc: { points: totalPointsToAdd } });
+                }
 
-            if (isUnlocked) {
-                return {
-                    id: achievement.id,
-                    name: achievement.name,
-                    icon: achievement.icon,
-                    isUnlocked: true,
-                    progress: 100
+                console.log(`✅ User ${userId} unlocked ${newUnlocks.length} achievements! (+${totalPointsToAdd} pts)`);
+
+                return { 
+                    unlocked: true, 
+                    newAchievements: populatedAchievements // Trả về array đầy đủ thông tin
                 };
             }
 
-            // Hitung progress cho achievements chưa unlock
-            let currentValue = 0;
-            let targetValue = achievement.condition.value;
+            return { unlocked: false };
 
-            if (achievement.condition.type === 'lessons_completed') {
-                currentValue = completionCount;
-            } else if (achievement.condition.type === 'points_reached') {
-                currentValue = user.points || 0;
-            } else if (achievement.condition.type === 'streak_days') {
-                currentValue = user.streak || 0;
-            }
+        } catch (error) {
+            console.error("Achievement Check Error:", error);
+            return { unlocked: false, error: error.message };
+        }
+    },
 
-            const progressPercent = Math.min(Math.round((currentValue / targetValue) * 100), 99);
-
-            return {
-                id: achievement.id,
-                name: achievement.name,
-                icon: achievement.icon,
-                description: achievement.description,
-                isUnlocked: false,
-                currentValue,
-                targetValue,
-                progress: progressPercent,
-                rarity: achievement.rarity
-            };
-        });
-
-        return progress;
-    } catch (err) {
-        console.error('Error getting achievement progress:', err);
-        return [];
+    // Shortcut helper: Check khi hoàn thành bài học
+    onLessonCompleted: async (userId) => {
+        try {
+            const count = await LessonCompletion.countDocuments({ user: userId });
+            return await achievementChecker.checkAndUnlockAchievements(userId, 'lesson_count', { count });
+        } catch (e) {
+            console.error(e);
+        }
     }
-}
-
-/**
- * Lấy unlock stats
- */
-async function getAchievementStats(userId) {
-    try {
-        const totalAchievements = await AchievementType.countDocuments({ isActive: true });
-        const unlockedAchievements = await UserAchievement.countDocuments({ user: userId });
-        const achievementPointsData = await UserAchievement.aggregate([
-            { $match: { user: mongoose.Types.ObjectId(userId) } },
-            { $group: { _id: null, achievementPoints: { $sum: '$achievementData.points' } } }
-        ]);
-
-        return {
-            total: totalAchievements,
-            unlocked: unlockedAchievements,
-            locked: totalAchievements - unlockedAchievements,
-            completionPercent: Math.round((unlockedAchievements / totalAchievements) * 100),
-            achievementPoints: achievementPointsData[0]?.achievementPoints || 0
-        };
-    } catch (err) {
-        console.error('Error getting achievement stats:', err);
-        return { total: 0, unlocked: 0, locked: 0, completionPercent: 0, achievementPoints: 0 };
-    }
-}
-
-module.exports = {
-    checkAndUnlockAchievements,
-    onLessonCompleted,
-    onPointsGained,
-    onDailyCheck,
-    getUserAchievements,
-    getAchievementProgress,
-    getAchievementStats
 };
+
+module.exports = { achievementChecker };
