@@ -75,7 +75,7 @@
                         </div>
                         <div class="member-info">
                             <h3><%= user.username %></h3>
-                            <span class="member-role"><%= user.role === 'admin' ? 'Quản trị viên' : 'Học sinh chăm chỉ' %></span>
+                            <span class="member-role"><%= user.isAdmin ? 'Quản trị viên' : (user.isTeacher ? 'Giáo viên' : 'Học sinh chăm chỉ') %></span>
                         </div>
                     </div>
                     

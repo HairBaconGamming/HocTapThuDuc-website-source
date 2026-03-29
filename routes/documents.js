@@ -6,10 +6,13 @@ const multer = require("multer");
 const { Readable } = require("stream");
 const { isLoggedIn, isTeacher } = require("../middlewares/auth");
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require("../utils/secrets");
 
 const router = express.Router();
 
-const conn = mongoose.createConnection(process.env.MONGO_URI);
+const mongoUri = (process.env.MONGO_URI || 'mongodb://localhost:27017/studypro').replace(/^"(.*)"$/, '$1');
+const conn = mongoose.createConnection(mongoUri);
+const JWT_SECRET = getJwtSecret();
 
 let bucket;
 conn.once("open", () => {
@@ -108,7 +111,7 @@ router.get("/public-view/:id", async (req, res) => {
     if (!bucket) return res.status(500).send("Storage service is not ready.");
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_fallback_secret');
+        const decoded = jwt.verify(token, JWT_SECRET);
         
         // Token giờ sẽ chứa fileId
         if (decoded.fileId !== req.params.id) {

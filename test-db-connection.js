@@ -6,7 +6,19 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const colors = require('colors/safe');
+let colors;
+try {
+  colors = require('colors/safe');
+} catch (error) {
+  const passthrough = (value) => value;
+  colors = {
+    cyan: passthrough,
+    yellow: passthrough,
+    gray: passthrough,
+    green: passthrough,
+    red: passthrough,
+  };
+}
 
 console.log(colors.cyan('\n🔍 MongoDB Connection Test\n'));
 
@@ -17,8 +29,6 @@ console.log(colors.gray(uri.replace(/:[^:]*@/, ':****@'))); // Hide password
 console.log();
 
 const mongooseOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 15000,
   socketTimeoutMS: 25000,
   maxPoolSize: 10,

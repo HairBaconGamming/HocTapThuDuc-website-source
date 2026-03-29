@@ -5,6 +5,31 @@ const Course = require('../models/Course');
 const LessonRevision = require('../models/LessonRevision');
 const User = require('../models/User');
 const Garden = require('../models/Garden');
+const mongoose = require('mongoose');
+
+const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
+
+async function getOwnedCourse(courseId, user) {
+    if (!courseId) return null;
+
+    const query = { _id: courseId };
+    if (!user.isAdmin) {
+        query.author = user._id;
+    }
+
+    return Course.findOne(query).select('_id author').lean();
+}
+
+async function canManageLesson(user, lesson) {
+    if (!user || !lesson) return false;
+    if (user.isAdmin) return true;
+    if (lesson.createdBy && lesson.createdBy.toString() === user._id.toString()) return true;
+    if (lesson.courseId) {
+        const ownedCourse = await Course.findOne({ _id: lesson.courseId, author: user._id }).select('_id').lean();
+        return !!ownedCourse;
+    }
+    return false;
+}
 
 exports.saveLessonAjax = async (req, res) => {
     try {
@@ -14,15 +39,30 @@ exports.saveLessonAjax = async (req, res) => {
             courseId // <--- Bắt buộc phải có courseId gửi lên
         } = req.body;
 
+        const normalizedIsPro = toBoolean(isPro);
+        const normalizedIsPublished = toBoolean(isPublished);
+        const normalizedSubjectId = subjectId || undefined;
+        const ownedCourse = courseId ? await getOwnedCourse(courseId, req.user) : null;
+        if (courseId && !ownedCourse) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền lưu bài trong khóa học này.' });
+        }
+
         let savedLessonId = currentEditingId;
         let currentLessonDoc;
+        let existingLesson = null;
 
         // --- 1. XỬ LÝ BÀI HỌC HIỆN TẠI (Main Lesson) ---
         const lessonPayload = {
-            title, content, type, subjectId, courseId, 
-            isPro, isPublished,
-            quizData: quizData ? JSON.parse(quizData) : [],
-            createdBy: req.user._id
+            title,
+            content,
+            type,
+            subject: normalizedSubjectId,
+            subjectId: normalizedSubjectId,
+            courseId: courseId || undefined,
+            isPro: normalizedIsPro,
+            isProOnly: normalizedIsPro,
+            isPublished: normalizedIsPublished,
+            quizData: quizData ? JSON.parse(quizData) : []
         };
 
         // Kiểm tra xem có phải bài mới không (current_new_lesson hoặc new_lesson_...)
@@ -32,16 +72,30 @@ exports.saveLessonAjax = async (req, res) => {
 
         if (isNewLesson) {
             // TẠO MỚI
-            currentLessonDoc = new Lesson(lessonPayload);
+            currentLessonDoc = new Lesson({ ...lessonPayload, createdBy: req.user._id });
             await currentLessonDoc.save();
             savedLessonId = currentLessonDoc._id.toString();
         } else {
             // CẬP NHẬT (Chỉ khi ID hợp lệ)
-            if (require('mongoose').Types.ObjectId.isValid(currentEditingId)) {
-                currentLessonDoc = await Lesson.findByIdAndUpdate(currentEditingId, lessonPayload, { new: true });
+            if (mongoose.Types.ObjectId.isValid(currentEditingId)) {
+                existingLesson = await Lesson.findById(currentEditingId);
+                if (!existingLesson) {
+                    return res.status(404).json({ success: false, error: 'Không tìm thấy bài học cần cập nhật.' });
+                }
+
+                const canManage = await canManageLesson(req.user, existingLesson);
+                if (!canManage) {
+                    return res.status(403).json({ success: false, error: 'Bạn không có quyền sửa bài học này.' });
+                }
+
+                currentLessonDoc = await Lesson.findByIdAndUpdate(
+                    currentEditingId,
+                    { ...lessonPayload, createdBy: existingLesson.createdBy || req.user._id },
+                    { new: true }
+                );
             } else {
                 // Fallback: Tạo mới nếu ID rác
-                currentLessonDoc = new Lesson(lessonPayload);
+                currentLessonDoc = new Lesson({ ...lessonPayload, createdBy: req.user._id });
                 await currentLessonDoc.save();
                 savedLessonId = currentLessonDoc._id.toString();
             }
@@ -172,12 +226,16 @@ exports.saveLessonAjax = async (req, res) => {
 exports.getLessonDetail = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!require('mongoose').Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(404).json({ success: false, error: 'ID không hợp lệ' });
         }
-        const lesson = await require('../models/Lesson').findById(id).lean();
+        const lesson = await Lesson.findById(id).lean();
         if (!lesson) {
             return res.status(404).json({ success: false, error: 'Không tìm thấy bài học' });
+        }
+        const canManage = await canManageLesson(req.user, lesson);
+        if (!canManage) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền xem bài học này trong editor.' });
         }
         res.json({ success: true, lesson });
     } catch (err) {
@@ -189,6 +247,14 @@ exports.getLessonDetail = async (req, res) => {
 exports.getRevisions = async (req, res) => {
     try {
         const { id } = req.params; // lessonId
+        const lesson = await Lesson.findById(id).select('createdBy courseId').lean();
+        if (!lesson) {
+            return res.status(404).json({ success: false, error: 'Không tìm thấy bài học.' });
+        }
+        const canManage = await canManageLesson(req.user, lesson);
+        if (!canManage) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền xem lịch sử bài học này.' });
+        }
         // Chỉ lấy các trường cần thiết để nhẹ gánh (bỏ content)
         const revisions = await LessonRevision.find({ lessonId: id })
             .select('title createdAt updatedBy') 
@@ -209,6 +275,15 @@ exports.restoreRevision = async (req, res) => {
         const revision = await LessonRevision.findById(revisionId);
         
         if (!revision) return res.status(404).json({ success: false, error: 'Phiên bản không tồn tại' });
+
+        const lesson = await Lesson.findById(revision.lessonId).select('createdBy courseId');
+        if (!lesson) {
+            return res.status(404).json({ success: false, error: 'Bài học gốc không còn tồn tại.' });
+        }
+        const canManage = await canManageLesson(req.user, lesson);
+        if (!canManage) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền khôi phục phiên bản này.' });
+        }
 
         // Update bài học hiện tại bằng nội dung của revision
         await Lesson.findByIdAndUpdate(revision.lessonId, {

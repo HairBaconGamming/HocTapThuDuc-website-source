@@ -46,10 +46,10 @@ exports.getAdminPanel = async (req, res) => {
         }
 
         // 2. CHART: User Structure (Phân loại User)
-        const countPro = await User.countDocuments({ isPro: true });
-        const countTeacher = await User.countDocuments({ isTeacher: true });
         const countAdmin = await User.countDocuments({ isAdmin: true });
-        const countNormal = totalUsers - countPro - countTeacher - countAdmin; // Tương đối (nếu user không overlap quyền)
+        const countTeacher = await User.countDocuments({ isTeacher: true, isAdmin: { $ne: true } });
+        const countPro = await User.countDocuments({ isPro: true, isTeacher: { $ne: true }, isAdmin: { $ne: true } });
+        const countNormal = await User.countDocuments({ isPro: { $ne: true }, isTeacher: { $ne: true }, isAdmin: { $ne: true } });
 
         // 3. CHART: Content Distribution (Khóa học theo Môn)
         // Lấy top 5 môn có nhiều khóa học nhất (hoặc tất cả)
@@ -58,7 +58,7 @@ exports.getAdminPanel = async (req, res) => {
         
         // Dùng Promise.all để chạy nhanh hơn thay vì await trong loop
         await Promise.all(subjects.map(async (sub) => {
-            const count = await Course.countDocuments({ subject: sub._id });
+            const count = await Course.countDocuments({ subjectId: sub._id });
             if (count > 0) { // Chỉ lấy môn có khóa học để đỡ rác biểu đồ
                 subjectLabels.push(sub.name);
                 subjectCounts.push(count);
@@ -178,7 +178,7 @@ exports.deleteCourse = async (req, res) => {
         // Xóa Course, Unit, Lesson liên quan (Basic cleanup)
         await Course.findByIdAndDelete(courseId);
         await Unit.deleteMany({ courseId: courseId });
-        // (Nâng cao: Cần tìm Lesson ID để xóa trong bảng Lesson nữa)
+        await Lesson.deleteMany({ courseId: courseId });
         
         res.redirect('/admin?tab=courses');
     } catch (err) {

@@ -6,9 +6,9 @@ const courseSchema = new mongoose.Schema({
     subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     isPublished: { type: Boolean, default: false },
+    isPro: { type: Boolean, default: false },
     description: String,
     thumbnail: String,
-    isPublished: { type: Boolean, default: false },
     
     // TRƯỜNG MỚI: Chứa cấu trúc cây dạng JSON string (Bản nháp)
     draftTree: { type: String, default: null },

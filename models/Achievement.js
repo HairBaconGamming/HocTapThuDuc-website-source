@@ -35,7 +35,7 @@ const AchievementTypeSchema = new mongoose.Schema({
 // User Achievement - Ghi lại achievement mà user đã unlock
 const UserAchievementSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  achievementId: { type: String, required: true }, // Reference đến AchievementType.id
+  achievementId: { type: mongoose.Schema.Types.ObjectId, ref: 'AchievementType', required: true },
   achievementData: { // Snapshot của achievement tại thời điểm unlock
     name: String,
     description: String,

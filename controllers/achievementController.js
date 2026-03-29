@@ -16,17 +16,20 @@ exports.getUserAchievements = async (req, res) => {
 
         res.json({
             success: true,
-            achievements: achievements.map(a => ({
+            achievements: achievements.map(a => {
+                const detail = a.achievementId || a.achievementData || {};
+                return ({
                 _id: a._id,
                 achievement: a.achievementId,
                 unlockedAt: a.unlockedAt,
-                icon: a.achievementId.icon,
-                name: a.achievementId.name,
-                description: a.achievementId.description,
-                points: a.achievementId.points,
-                rarity: a.achievementId.rarity,
-                category: a.achievementId.category
-            }))
+                icon: detail.icon,
+                name: detail.name,
+                description: detail.description,
+                points: detail.points,
+                rarity: detail.rarity,
+                category: detail.category
+            });
+            })
         });
     } catch (err) {
         console.error('Get user achievements error:', err);
@@ -181,7 +184,7 @@ exports.getAchievementsWithProgress = async (req, res) => {
 
         // Get unlocked achievement IDs
         const unlockedAchievements = await UserAchievement.find({ user: userId })
-            .select('achievementId')
+            .select('achievementId unlockedAt')
             .lean();
         const unlockedIds = new Set(
             unlockedAchievements.map(a => a.achievementId.toString())
@@ -227,4 +230,3 @@ exports.getAchievementsWithProgress = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
-

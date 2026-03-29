@@ -7,19 +7,19 @@ const unitController = require('../controllers/unitController');
 // Các route này sẽ được prefix là /api trong server.js
 
 // 1. Lấy danh sách khóa học theo môn
-router.get('/courses/by-subject/:subjectId', courseController.getCoursesBySubject);
+router.get('/courses/by-subject/:subjectId', isTeacher, courseController.getCoursesBySubject);
 
 // 2. Tạo khóa học nhanh
 router.post('/courses/quick-create', isTeacher, courseController.createQuickCourse);
 
 // 3. Lấy cấu trúc cây (Tree)
-router.get('/tree/by-course/:courseId', courseController.getTreeByCourse);
+router.get('/tree/by-course/:courseId', isTeacher, courseController.getTreeByCourse);
 
 // 4. Hủy bản nháp
 router.post('/course/:courseId/discard-draft', isTeacher, courseController.discardDraft);
 
 // 5. Route cũ (Lấy Unit theo môn)
-router.get('/units/:subjectId', unitController.getUnitsBySubject);
+router.get('/units/:subjectId', isTeacher, unitController.getUnitsBySubject);
 
 router.post('/course/:courseId/delete', isTeacher, courseController.deleteCourse);
 
@@ -31,6 +31,5 @@ router.post('/course/:courseId/update', isTeacher, courseController.updateCourse
 
 // New routes for publication management
 router.post('/course/status', isTeacher, courseController.updateCourseStatus);
-router.post('/unit/bulk-status', isTeacher, courseController.bulkUpdateUnitStatus);
 
 module.exports = router;

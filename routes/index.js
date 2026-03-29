@@ -23,7 +23,7 @@ const profileController = require('../controllers/profileController');
 const leaderboardController = require('../controllers/leaderboardController');
 
 // Import Middleware
-const { isLoggedIn } = require('../middlewares/auth');
+const { isLoggedIn, hasProAccess } = require('../middlewares/auth');
 
 // --- 1. HOME PAGE ---
 router.get("/", async (req, res) => {
@@ -37,7 +37,7 @@ router.get("/", async (req, res) => {
             .lean();
 
         const totalCourses = await Course.countDocuments({ isPublished: true });
-        const totalStudents = await User.countDocuments({ role: 'student' });
+        const totalStudents = await User.countDocuments({ isAdmin: { $ne: true }, isTeacher: { $ne: true } });
         const totalLessons = await Lesson.countDocuments({}); 
 
         res.render("index", {
@@ -255,7 +255,7 @@ router.get("/subjects/:id", async (req, res) => {
 router.get("/leaderboard", isLoggedIn, leaderboardController.getLeaderboard);
 
 router.get("/pro-images", isLoggedIn, (req, res) => {
-    if (req.user && req.user.isPro) res.render("proImages", { user: req.user, activePage: "proImages" });
+    if (hasProAccess(req.user)) res.render("proImages", { user: req.user, activePage: "proImages" });
     else { req.flash("error", "Chỉ dành cho PRO."); res.redirect("/upgrade"); }
 });
 

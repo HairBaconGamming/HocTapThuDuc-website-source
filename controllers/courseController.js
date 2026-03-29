@@ -3,6 +3,30 @@ const Unit = require('../models/Unit');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 
+const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
+
+async function findOwnedCourse(courseId, user, { lean = false } = {}) {
+    if (!courseId) return null;
+
+    const query = { _id: courseId };
+    if (!(user && user.isAdmin)) {
+        query.author = user._id;
+    }
+
+    let cursor = Course.findOne(query);
+    if (lean) cursor = cursor.lean();
+    return cursor;
+}
+
+async function ensureOwnedCourse(courseId, user, res, { lean = false, notFoundMessage = 'Không tìm thấy khóa học hoặc bạn không có quyền truy cập.' } = {}) {
+    const course = await findOwnedCourse(courseId, user, { lean });
+    if (!course) {
+        res.status(403).json({ success: false, error: notFoundMessage });
+        return null;
+    }
+    return course;
+}
+
 exports.getCourseDetail = async (req, res) => {
     try {
         const { id } = req.params; // Lấy ID từ URL (vd: /course/65a...)
@@ -12,12 +36,26 @@ exports.getCourseDetail = async (req, res) => {
             .populate('author', 'username avatar bio')
             .populate('subjectId', 'name')
             .lean();
+
+        const authorId = course && course.author && typeof course.author === 'object'
+            ? course.author._id?.toString()
+            : course?.author?.toString();
+        const canViewDraft = !!(
+            req.user && (
+                req.user.isAdmin ||
+                (authorId && authorId === req.user._id.toString())
+            )
+        );
         
         if (!course) {
             return res.status(404).render('404', { title: 'Không tìm thấy khóa học', user: req.user });
         }
 
         // 2. Lấy danh sách Chương + Bài học (Chỉ lấy bài đã Publish)
+        if (!course.isPublished && !canViewDraft) {
+            return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
+        }
+
         const units = await Unit.find({ courseId: id })
             .sort({ order: 1 })
             .populate({
@@ -118,8 +156,11 @@ exports.createQuickCourse = async (req, res) => {
 exports.getTreeByCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const course = await Course.findById(courseId).lean();
-        if (!course) return res.status(404).json({ error: 'Course not found' });
+        const course = await ensureOwnedCourse(courseId, req.user, res, {
+            lean: true,
+            notFoundMessage: 'Khóa học không tồn tại hoặc bạn không có quyền xem cấu trúc này.'
+        });
+        if (!course) return;
 
         // 1. If there's a draft tree, return it (priority)
         if (course.draftTree) {
@@ -165,6 +206,10 @@ exports.getTreeByCourse = async (req, res) => {
 exports.discardDraft = async (req, res) => {
     try {
         const { courseId } = req.params;
+        const course = await ensureOwnedCourse(courseId, req.user, res, {
+            notFoundMessage: 'Bạn không có quyền hủy bản nháp của khóa học này.'
+        });
+        if (!course) return;
         await Course.findByIdAndUpdate(courseId, { draftTree: null, lastEditedLessonId: null });
         res.json({ success: true });
     } catch (err) {
@@ -176,14 +221,10 @@ exports.discardDraft = async (req, res) => {
 exports.deleteCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-
-        // Kiểm tra quyền sở hữu: Phải là tác giả HOẶC là Admin trùm
-        const course = await Course.findById(courseId);
-        if (!course) return res.status(404).json({ error: 'Khóa học không tồn tại' });
-
-        if (course.author.toString() !== req.user._id.toString() && req.user.username !== 'truonghoangnam') {
-            return res.status(403).json({ error: 'Không có quyền xóa khóa học của người khác' });
-        }
+        const course = await ensureOwnedCourse(courseId, req.user, res, {
+            notFoundMessage: 'Khóa học không tồn tại hoặc bạn không có quyền xóa.'
+        });
+        if (!course) return;
 
         // Thực hiện xóa (như cũ)
         await Lesson.deleteMany({ courseId: courseId });
@@ -200,8 +241,10 @@ exports.deleteCourse = async (req, res) => {
 // API: Lấy chi tiết khóa học (cho Modal Settings)
 exports.getCourseDetails = async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        if (!course) return res.status(404).json({ success: false, error: 'Không tìm thấy' });
+        const course = await ensureOwnedCourse(req.params.courseId, req.user, res, {
+            notFoundMessage: 'Không tìm thấy khóa học hoặc bạn không có quyền xem.'
+        });
+        if (!course) return;
         res.json({ success: true, course });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -214,8 +257,10 @@ exports.updateCourse = async (req, res) => {
         const { courseId } = req.params;
         
         // Kiểm tra quyền sở hữu trước khi update
-        const course = await Course.findOne({ _id: courseId, author: req.user._id });
-        if (!course) return res.status(403).json({ success: false, error: 'Bạn không có quyền sửa khóa học này' });
+        const course = await ensureOwnedCourse(courseId, req.user, res, {
+            notFoundMessage: 'Bạn không có quyền sửa khóa học này'
+        });
+        if (!course) return;
 
         const { title, thumbnail, description, isPro, isPublished } = req.body;
         
@@ -223,8 +268,8 @@ exports.updateCourse = async (req, res) => {
         course.title = title;
         course.thumbnail = thumbnail;
         course.description = description;
-        course.isPro = isPro;
-        course.isPublished = isPublished;
+        course.isPro = toBoolean(isPro);
+        course.isPublished = toBoolean(isPublished);
         await course.save();
 
         res.json({ success: true });
@@ -237,10 +282,15 @@ exports.updateCourse = async (req, res) => {
 exports.updateCourseStatus = async (req, res) => {
     try {
         const { courseId, isPublished } = req.body;
-        // Chỉ chủ sở hữu mới được sửa (Middleware check rồi hoặc check thêm ở đây)
-        await Course.findByIdAndUpdate(courseId, { isPublished: isPublished });
+        const course = await ensureOwnedCourse(courseId, req.user, res, {
+            notFoundMessage: 'Bạn không có quyền cập nhật trạng thái khóa học này.'
+        });
+        if (!course) return;
 
-        res.json({ success: true, msg: isPublished ? 'Đã công khai khóa học!' : 'Đã chuyển khóa học về nháp.' });
+        const publishValue = toBoolean(isPublished);
+        await Course.findByIdAndUpdate(courseId, { isPublished: publishValue });
+
+        res.json({ success: true, msg: publishValue ? 'Đã công khai khóa học!' : 'Đã chuyển khóa học về nháp.' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -256,15 +306,28 @@ exports.bulkUpdateUnitStatus = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Vui lòng lưu cấu trúc chương trước khi thao tác hàng loạt.' });
         }
 
+        const unit = await Unit.findById(unitId).lean();
+        if (!unit) {
+            return res.status(404).json({ success: false, error: 'Không tìm thấy chương cần cập nhật.' });
+        }
+
+        const course = await findOwnedCourse(unit.courseId, req.user, { lean: true });
+        if (!course) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền cập nhật chương này.' });
+        }
+
+        const publishValue = toBoolean(isPublished);
+
         // Cập nhật tất cả Lesson thuộc Unit này
-        await Lesson.updateMany(
+        const result = await Lesson.updateMany(
             { unitId: unitId },
-            { $set: { isPublished: isPublished } }
+            { $set: { isPublished: publishValue } }
         );
 
         res.json({
             success: true,
-            msg: isPublished ? 'Đã đăng tất cả bài trong chương!' : 'Đã gỡ tất cả bài trong chương về nháp.'
+            updatedCount: result.modifiedCount,
+            msg: publishValue ? 'Đã đăng tất cả bài trong chương!' : 'Đã gỡ tất cả bài trong chương về nháp.'
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -281,9 +344,21 @@ exports.updateCourseFull = async (req, res) => {
             curriculumSnapshot 
         } = req.body;
 
+        const ownedCourse = await ensureOwnedCourse(courseId, req.user, res, {
+            notFoundMessage: 'Bạn không có quyền đồng bộ khóa học này.'
+        });
+        if (!ownedCourse) return;
+
+        const normalizedIsPro = toBoolean(isPro);
+        const normalizedIsPublished = toBoolean(isPublished);
+
         // 1. Cập nhật thông tin cơ bản của Course
         await Course.findByIdAndUpdate(courseId, {
-            title, description, thumbnail, isPro, isPublished
+            title,
+            description,
+            thumbnail,
+            isPro: normalizedIsPro,
+            isPublished: normalizedIsPublished
         });
 
         let unitMapping = {};

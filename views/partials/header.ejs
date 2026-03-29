@@ -57,7 +57,7 @@
                 </a>
                 <div class="dropdown-menu">
                     <a href="/news" class="tool-dropdown-link"><i class="fas fa-eye"></i> <span>Lướt NewsFeed</span></a>
-                    <% if (user && user.isPro) { %>
+                    <% if (user && (user.isPro || user.isTeacher || user.isAdmin)) { %>
                         <a href="/news/post" class="tool-dropdown-link"><i class="fas fa-pen-nib"></i> <span>Lên bài ngay (Spill Tea)</span></a>
                     <% } %>
                 </div>
@@ -68,14 +68,14 @@
                     <i class="fas fa-rocket icon"></i> Đồ chơi <i class="fas fa-chevron-down dropdown-indicator"></i>
                 </a>
                 <div class="dropdown-menu">
-                    <% if (user && (user.isPro || user.isTeacher || user.role === 'admin')) { %>
+                    <% if (user && (user.isPro || user.isTeacher || user.isAdmin)) { %>
                         <a href="/lesson/add" class="tool-dropdown-link loading-link <%= activePage === 'lessonAdd' ? 'active' : '' %>"> 
                             <i class="fa-solid fa-share-from-square icon"></i> <span>Share bí kíp</span> 
                         </a>
                     <% } %>
                     
                     <a href="/leaderboard" class="tool-dropdown-link"><i class="fas fa-trophy"></i> <span>Đua Top Server</span></a>
-                    <% if (user && user.isPro) { %>
+                    <% if (user && (user.isPro || user.isTeacher || user.isAdmin)) { %>
                         <a href="/pro-images" class="tool-dropdown-link"><i class="fas fa-images"></i> <span>Kho ảnh xịn</span></a>
                     <% } else { %>
                         <a href="/upgrade" class="tool-dropdown-link"><i class="fas fa-crown" style="color: gold;"></i> <span>Nâng cấp VIP</span></a>
@@ -91,7 +91,7 @@
                         <% if(user.isPro) { %> <i class="fas fa-check-circle" style="color: #a2d2ff; font-size: 0.8rem; margin-left: 3px;" title="Tài khoản xịn"></i> <% } %>
                     </a>
                     <div class="dropdown-menu">
-                        <% if(user.isAdmin || user.role === 'admin') { %>
+                        <% if(user.isAdmin) { %>
                              <a href="/admin" class="tool-dropdown-link" style="color: var(--primary); font-weight: bold;"><i class="fas fa-user-shield"></i> <span>Trang Admin</span></a>
                         <% } %>
                         <a href="/dashboard" class="tool-dropdown-link"><i class="fas fa-gamepad"></i> <span>Căn cứ địa (Dashboard)</span></a>

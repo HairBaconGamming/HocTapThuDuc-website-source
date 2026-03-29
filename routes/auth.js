@@ -4,7 +4,10 @@ const passport = require("passport");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { isLoggedIn } = require("../middlewares/auth");
+const { isLoggedIn, hasProAccess } = require("../middlewares/auth");
+const { getJwtSecret } = require("../utils/secrets");
+
+const JWT_SECRET = getJwtSecret();
 
 // Danh sách trường học (Nên để file riêng, nhưng để đảm bảo logic full tôi paste vào đây)
 const validSchools = [
@@ -52,8 +55,8 @@ router.post("/login", (req, res, next) => {
             if (req.body.redirect_to_forum === 'true' && process.env.FORUM_APP_URL) {
                 const token = jwt.sign({ 
                     id: user._id, username: user.username, email: user.email, 
-                    isPro: user.isPro, isAdmin: user.isAdmin 
-                }, process.env.JWT_SECRET, { expiresIn: '1d' });
+                    isPro: user.isPro, isAdmin: user.isAdmin, isTeacher: user.isTeacher
+                }, JWT_SECRET, { expiresIn: '1d' });
                 return res.redirect(`${process.env.FORUM_APP_URL}#token=${token}`);
             }
             req.flash("success", "Đăng nhập thành công!");
@@ -127,7 +130,7 @@ router.get("/logout", (req, res, next) => {
 
 // Upgrade
 router.get("/upgrade", isLoggedIn, (req, res) => {
-    if (req.user.isPro) return res.redirect("/dashboard");
+    if (hasProAccess(req.user)) return res.redirect("/dashboard");
     res.render("upgrade", { user: req.user, activePage: "upgrade" });
 });
 

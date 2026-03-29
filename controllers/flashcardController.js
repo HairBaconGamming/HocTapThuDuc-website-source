@@ -83,7 +83,8 @@ exports.processReview = async (req, res) => {
                 bonusFertilizer = 1;
                 await Garden.findOneAndUpdate(
                     { user: req.user._id },
-                    { $inc: { fertilizer: 1 } }
+                    { $inc: { fertilizer: 1 } },
+                    { upsert: true }
                 );
             }
         }

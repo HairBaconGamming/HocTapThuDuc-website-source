@@ -17,6 +17,10 @@ module.exports.isLoggedIn = function (req, res, next) {
   }
 };
 
+function hasProAccess(user) {
+  return !!(user && (user.isPro || user.isAdmin || user.isTeacher));
+}
+
 // Kiểm tra xem người dùng đã đăng nhập và có tài khoản Pro không
 module.exports.isPro = function (req, res, next) {
   // 1. Kiểm tra đăng nhập trước
@@ -29,7 +33,7 @@ module.exports.isPro = function (req, res, next) {
   }
 
   // 2. Kiểm tra quyền: PRO hoặc ADMIN hoặc TEACHER đều được qua
-  if (req.user.isPro || req.user.isAdmin || req.user.isTeacher) {
+  if (hasProAccess(req.user)) {
     return next();
   } else {
     // Không có quyền
@@ -101,3 +105,5 @@ module.exports.canManageUsers = async (req, res, next) => {
     // Nếu không phải cả hai, từ chối
     return res.status(403).json({ error: 'Quyền truy cập bị từ chối.' });
 };
+
+module.exports.hasProAccess = hasProAccess;

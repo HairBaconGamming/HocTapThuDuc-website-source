@@ -4,7 +4,8 @@ const multer = require("multer");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const upload = multer();
-const { isLoggedIn, isPro } = require("../middlewares/auth");
+const { isLoggedIn, isPro, hasProAccess } = require("../middlewares/auth");
+const { getJwtSecret } = require("../utils/secrets");
 const { processLessonContent, getWordDiff, gradeEssaySimple, gradeEssaySmart, gradeEssayAIAll, levenshtein } = require("../utils/essayHelpers");
 const Lesson = require("../models/Lesson");
 const Subject = require("../models/Subject");
@@ -16,6 +17,8 @@ const Garden = require('../models/Garden');
 const LevelUtils = require("../utils/level");
 const { achievementChecker } = require("../utils/achievementUtils");
 const streakHelper = require("../utils/streakHelper");
+
+const JWT_SECRET = getJwtSecret();
 
 // Rate Limiters
 const rateLimit = require("express-rate-limit");
@@ -47,9 +50,9 @@ router.post("/add", isLoggedIn, async (req, res) => {
         const tagsArray = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
 
         const newLesson = new Lesson({
-            subject: subjectId, title, content, category, type: type || "markdown",
+            subject: subjectId, subjectId, title, content, category, type: type || "markdown",
             createdBy: req.user._id, editorData: req.body.editorData,
-            isProOnly: isProOnly === "true", tags: tagsArray
+            isPro: isProOnly === "true", isProOnly: isProOnly === "true", tags: tagsArray
         });
 
         await newLesson.save();
@@ -69,7 +72,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     try {
         const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar isTeacher").lean();
         if (!lesson) return res.redirect("/subjects");
-        if (lesson.isProOnly && !req.user.isPro) { req.flash("error", "Cần PRO."); return res.redirect("/upgrade"); }
+        if ((lesson.isPro || lesson.isProOnly) && !hasProAccess(req.user)) { req.flash("error", "Cần PRO."); return res.redirect("/upgrade"); }
 
         // Try to resolve subject: primary source is lesson.subject, fallback to lesson.subjectId
         let subject = null;
@@ -97,7 +100,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             try {
                 const doc = JSON.parse(lesson.editorData.document);
                 if (doc.fileId) {
-                    const token = jwt.sign({ fileId: doc.fileId }, process.env.JWT_SECRET, { expiresIn: '10m' });
+                    const token = jwt.sign({ fileId: doc.fileId }, JWT_SECRET, { expiresIn: '10m' });
                     doc.publicViewUrl = `${req.protocol}://${req.get('host')}/documents/public-view/${doc.fileId}?token=${token}`;
                 }
                 lessonData.documentData = doc;
@@ -112,7 +115,10 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         try {
             const visibility = { isPublished: true };
             // Non-PRO users should not see PRO-only lessons in navigation
-            if (!req.user?.isPro) visibility.isProOnly = { $ne: true };
+            if (!hasProAccess(req.user)) {
+                visibility.isProOnly = { $ne: true };
+                visibility.isPro = { $ne: true };
+            }
 
             const listFilter = { ...visibility };
             if (lesson.unitId) listFilter.unitId = lesson.unitId;
@@ -190,9 +196,9 @@ router.post("/:id/edit", isLoggedIn, upload.none(), async (req, res) => {
         if (!lesson || lesson.createdBy.toString() !== req.user._id.toString()) return res.redirect("/dashboard");
 
         const { subjectId, title, category, type, editorData, isProOnly, tags } = req.body;
-        lesson.subject = subjectId; lesson.title = title; lesson.category = category;
+        lesson.subject = subjectId; lesson.subjectId = subjectId; lesson.title = title; lesson.category = category;
         lesson.type = type || "markdown"; lesson.editorData = editorData;
-        lesson.isProOnly = isProOnly === "true";
+        lesson.isPro = isProOnly === "true"; lesson.isProOnly = isProOnly === "true";
         lesson.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
         lesson.content = processLessonContent(req.body);
 
@@ -211,7 +217,7 @@ router.post("/:id/delete", isLoggedIn, async (req, res) => {
     res.redirect("/dashboard");
 });
 
-router.post("/:id/complete", isLoggedIn, async (req, res) => {
+router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
     try {
         const lessonId = req.params.id;
         const userId = req.user._id;
@@ -242,11 +248,7 @@ router.post("/:id/complete", isLoggedIn, async (req, res) => {
         // Gọi hàm updateStreak trước khi user.save() lần cuối
         const streakResult = await streakHelper.updateStreak(userId);
         if (streakResult && streakResult.updated) {
-            // Nếu helper đã save user thì ta không cần save lại, 
-            // nhưng để chắc chắn đồng bộ dữ liệu points/level ở trên, ta gán lại streak vào biến user hiện tại
-            user.streak = streakResult.streak;
-            // Lưu ý: Helper đã save user rồi, nhưng user ở đây (biến user) đang giữ data level/points mới
-            // Nên ta cần save biến user này đè lên.
+            user.currentStreak = streakResult.streak;
         }
         
         await user.save(); // Save lần cuối cùng cập nhật tất cả (Level, Points, Streak)
@@ -266,7 +268,7 @@ router.post("/:id/complete", isLoggedIn, async (req, res) => {
             message: "Hoàn thành bài học!",
             points: POINTS,
             xp: XP_REWARD,
-            streak: user.streak, // Trả về streak mới để frontend hiển thị
+            streak: user.currentStreak || 0, // Trả về streak mới để frontend hiển thị
             isLevelUp: levelRes.hasLeveledUp,
             achievements: unlocked
         });
@@ -288,7 +290,7 @@ router.post("/essay/grade/:lessonId", isLoggedIn, async (req, res) => {
 
         let essayData = JSON.parse(lesson.editorData?.essay || "[]");
         let method = lesson.editorData?.essayGrading || "simple";
-        if (method === "smart" && !req.user.isPro) method = "simple";
+        if (method === "smart" && !hasProAccess(req.user)) method = "simple";
 
         let scores = [], diffs = [], comments = [];
 

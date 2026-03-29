@@ -5,6 +5,7 @@ const GardenSchema = new mongoose.Schema({
     gold: { type: Number, default: 100 },
     tutorialStep: { type: Number, default: 0 },
     water: { type: Number, default: 1 },
+    fertilizer: { type: Number, default: 0 },
     
     // [MỚI] Lưu vị trí Camera
     camera: {

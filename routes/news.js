@@ -7,7 +7,7 @@ const fs = require("fs");
 const router = express.Router();
 const News = require("../models/News");
 const Subject = require("../models/Subject");
-const { isLoggedIn, isPro } = require("../middlewares/auth");
+const { isLoggedIn, isPro, hasProAccess } = require("../middlewares/auth");
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "../public/uploads");
@@ -54,7 +54,7 @@ router.get("/", async (req, res) => {
     if (q) filter.title = { $regex: q, $options: "i" };
 
     // Nếu không phải user PRO, không lấy các tin thuộc "Tài khoản PRO"
-    if (!(req.user && req.user.isPro)) {
+    if (!hasProAccess(req.user)) {
       filter.category = { $ne: "Tài khoản PRO" };
     }
 
@@ -141,7 +141,7 @@ router.post("/post", isLoggedIn, isPro, upload.single("image"), async (req, res)
 
     if (req.file) {
       // Backend guard: do not accept uploaded files from non-PRO users
-      if (!req.user || !req.user.isPro) {
+      if (!hasProAccess(req.user)) {
         // remove the uploaded file from disk if present
         try {
           if (req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
@@ -188,7 +188,7 @@ router.post("/:id/edit", isLoggedIn, isPro, upload.single("image"), async (req, 
       return res.redirect("/news");
     }
     // Nếu tin hoặc cập nhật sang "Tài khoản PRO", kiểm tra quyền PRO
-    if (category === "Tài khoản PRO" && !(req.user && req.user.isPro)) {
+    if (category === "Tài khoản PRO" && !hasProAccess(req.user)) {
       req.flash("error", "Tính năng này chỉ dành cho tài khoản PRO.");
       return res.redirect("/news");
     }
@@ -197,7 +197,7 @@ router.post("/:id/edit", isLoggedIn, isPro, upload.single("image"), async (req, 
     let finalImage = imageUrl || newsItem.image || '';
 
     if (req.file) {
-      if (!req.user || !req.user.isPro) {
+      if (!hasProAccess(req.user)) {
         // remove uploaded file
         try {
           if (req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
@@ -239,7 +239,7 @@ router.post("/:id/delete", isLoggedIn, async (req, res) => {
       return res.redirect("/news");
     }
     // Nếu tin thuộc "Tài khoản PRO", kiểm tra nếu người dùng là PRO
-    if (newsItem.category === "Tài khoản PRO" && !(req.user && req.user.isPro)) {
+    if (newsItem.category === "Tài khoản PRO" && !hasProAccess(req.user)) {
       req.flash("error", "Tính năng này chỉ dành cho tài khoản PRO.");
       return res.redirect("/news");
     }
@@ -263,7 +263,7 @@ router.get("/:id", async (req, res) => {
     if (!newsItem) return res.send("Tin tức không tồn tại.");
 
     // Nếu tin thuộc "Tài khoản PRO", chỉ hiển thị nếu user là PRO
-    if (newsItem.category === "Tài khoản PRO" && !(req.user && req.user.isPro)) {
+    if (newsItem.category === "Tài khoản PRO" && !hasProAccess(req.user)) {
       req.flash("error", "Tính năng này chỉ dành cho tài khoản PRO.");
       return res.redirect("/news");
     }

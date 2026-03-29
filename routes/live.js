@@ -4,7 +4,9 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const { isLoggedIn } = require("../middlewares/auth");
-const SECRET_KEY = process.env.JWT_SECRET || "your_secret_key";
+const { getJwtSecret } = require("../utils/secrets");
+
+const SECRET_KEY = getJwtSecret();
 
 // Hàm tiện ích để tạo token cho người dùng
 function createToken(user) {
@@ -27,7 +29,7 @@ router.get("/create", isLoggedIn, (req, res) => {
 
 // Route để tạo live stream link cho user chủ phòng
 router.post("/create", isLoggedIn, async (req, res) => {
-  const roomOwnerId = req.user._id;
+  const roomOwnerId = req.user._id.toString();
   const roomOwnerName = req.user.username;
   try {
     const title = req.body.title || `Live Stream của ${roomOwnerName}`;

@@ -12,6 +12,9 @@ const courseController = require('../controllers/courseController');
 const authMiddleware = require('../middlewares/auth');
 const gardenController = require('../controllers/gardenController');
 const { achievementChecker } = require('../utils/achievementUtils');
+const { getJwtSecret } = require('../utils/secrets');
+
+const JWT_SECRET = getJwtSecret();
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -48,11 +51,11 @@ router.post('/auth/login', (req, res, next) => {
             username: user.username, 
             email: user.email, 
             isPro: user.isPro, 
-            isAdmin: user.isAdmin 
+            isAdmin: user.isAdmin,
+            isTeacher: user.isTeacher
         };
         
-        const secretKey = process.env.JWT_SECRET || 'secret_key_fallback';
-        const token = jwt.sign(payload, secretKey, { expiresIn: '1d' });
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 
         return res.json({ 
             success: true, 
@@ -63,7 +66,8 @@ router.post('/auth/login', (req, res, next) => {
                 username: user.username, 
                 email: user.email, 
                 isPro: user.isPro, 
-                isAdmin: user.isAdmin 
+                isAdmin: user.isAdmin,
+                isTeacher: user.isTeacher
             } 
         });
     })(req, res, next);
@@ -107,7 +111,9 @@ router.get('/auth/status', (req, res) => {
             id: req.user._id, 
             username: req.user.username, 
             email: req.user.email, 
-            isPro: req.user.isPro 
+            isPro: req.user.isPro,
+            isAdmin: req.user.isAdmin,
+            isTeacher: req.user.isTeacher
         };
         res.json({ isAuthenticated: true, user: userInfo });
     } else {
@@ -145,11 +151,11 @@ router.post('/user/avatar', isLoggedIn, isPro, async (req, res) => {
 // --- API LESSON & COURSE ---
 router.post('/lesson/save', isTeacher, lessonController.saveLessonAjax);
 router.get('/lesson/:id', isTeacher, lessonController.getLessonDetail);
-router.post('/unit/bulk-status', unitController.bulkUpdateStatus);
-router.post('/course/:id/update-full', courseController.updateCourseFull);
+router.post('/unit/bulk-status', isTeacher, courseController.bulkUpdateUnitStatus);
+router.post('/course/:id/update-full', isTeacher, courseController.updateCourseFull);
 router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
-router.get('/lesson/:id/revisions', lessonController.getRevisions);
-router.post('/lesson/restore/:revisionId', lessonController.restoreRevision);
+router.get('/lesson/:id/revisions', isTeacher, lessonController.getRevisions);
+router.post('/lesson/restore/:revisionId', isTeacher, lessonController.restoreRevision);
 router.post('/lesson/claim-study-reward', authMiddleware.isLoggedIn, lessonController.claimStudyReward);
 
 router.get('/ping', (req, res) => {

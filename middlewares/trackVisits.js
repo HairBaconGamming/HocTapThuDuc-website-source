@@ -1,24 +1,38 @@
 // middlewares/trackVisits.js
 const VisitStats = require('../models/VisitStats');
 const moment = require('moment-timezone');
+const mongoose = require('mongoose');
 
 const trackVisits = async (req, res, next) => {
     try {
-        // Chỉ đếm các request GET tới trang chính, bỏ qua file tĩnh/api/admin để tránh rác data
-        if (req.method === 'GET' && !req.path.startsWith('/admin') && !req.path.startsWith('/api') && !req.path.startsWith('/public')) {
-            
+        const isStaticAsset = /\.[a-z0-9]+$/i.test(req.path);
+        const isPageRequest = req.method === 'GET'
+            && !req.path.startsWith('/admin')
+            && !req.path.startsWith('/api')
+            && !isStaticAsset;
+
+        if (isPageRequest && mongoose.connection.readyState === 1) {
             const now = new Date();
-            // Tạo chuỗi ngày theo múi giờ Việt Nam (YYYY-MM-DD)
             const dateStr = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
 
-            await VisitStats.findOneAndUpdate(
-                { dateStr: dateStr },
-                { 
-                    $inc: { count: 1 }, // Tăng count lên 1
-                    $setOnInsert: { dateStr: dateStr, date: now } // Nếu chưa có thì set ngày tạo
-                },
-                { upsert: true, new: true } // Upsert: chưa có thì tạo mới
-            );
+            await Promise.all([
+                VisitStats.findOneAndUpdate(
+                    { dateStr: 'totalVisits' },
+                    {
+                        $inc: { count: 1 },
+                        $setOnInsert: { dateStr: 'totalVisits', date: now }
+                    },
+                    { upsert: true, new: true }
+                ),
+                VisitStats.findOneAndUpdate(
+                    { dateStr },
+                    {
+                        $inc: { count: 1 },
+                        $setOnInsert: { dateStr, date: now }
+                    },
+                    { upsert: true, new: true }
+                )
+            ]);
         }
     } catch (err) {
         console.error("Lỗi trackVisits:", err);

@@ -120,7 +120,7 @@ async function runTests() {
         console.log(`   Unlocked: ${stats.unlocked}`);
         console.log(`   Locked: ${stats.locked}`);
         console.log(`   Completion: ${stats.completion}%`);
-        console.log(`   Points: ${stats.points}\n`);
+        console.log(`   Points: ${stats.achievementPoints}\n`);
 
         // Cleanup
         console.log('🧹 Cleaning up test data...');

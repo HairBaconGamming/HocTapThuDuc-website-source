@@ -14,7 +14,8 @@ async function seedVisitStats() {
             console.error("❌ Lỗi: Chưa cấu hình MONGO_URI trong file .env");
             process.exit(1);
         }
-        await mongoose.connect(process.env.MONGO_URI);
+        const mongoUri = process.env.MONGO_URI.replace(/^"(.*)"$/, '$1');
+        await mongoose.connect(mongoUri);
         console.log("🔌 Đã kết nối MongoDB.");
 
         // 2. Thiết lập ngày hôm nay
@@ -23,8 +24,8 @@ async function seedVisitStats() {
 
         // 3. Cập nhật hoặc tạo mới bản ghi với count = 4739 cho totalVisits
         const result = await VisitStats.findOneAndUpdate(
-            { key: "totalVisits" },
-            { $set: { count: 4739 } },
+            { dateStr: "totalVisits" },
+            { $set: { count: 4739, dateStr: "totalVisits" } },
             { upsert: true, new: true }
         );
 

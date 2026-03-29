@@ -13,12 +13,11 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require("helmet"); // [NEW] Security Headers
 const socketio = require("socket.io");
-const moment = require("moment-timezone");
 
 // Models & Utils
 const News = require("./models/News");
-const VisitStats = require("./models/VisitStats");
 const { banCheck } = require("./middlewares/banCheck");
+const { getSessionSecret } = require("./utils/secrets");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -33,8 +32,6 @@ app.locals.io = io;
 // DB Connection with Enhanced Configuration
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/studypro';
 const mongooseOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 15000,     // Tăng lên 15s
   socketTimeoutMS: 25000,              // Socket timeout 25s
   maxPoolSize: 10,                     // Tối đa 10 connection
@@ -121,7 +118,7 @@ app.use(express.static("public"));
 app.use(rateLimit({ windowMs: 1*60000, max: 1000 })); // 1000 req/min
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || "s3cret",
+    secret: getSessionSecret(),
     resave: false, saveUninitialized: false,
     cookie: { secure: 'auto', httpOnly: true, maxAge: 30*24*3600000 }
 }));
@@ -153,20 +150,6 @@ app.use(async (req, res, next) => {
 // Kiểm tra Ban user (sau khi đã có res.locals đầy đủ)
 app.use(banCheck);
 
-// [OPTIMIZE] Visit Stats - Non-blocking (Fire-and-forget)
-app.use((req, res, next) => { // Bỏ async để không chặn request chính
-    if(req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/static')) {
-        const today = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD");
-        // Chạy ngầm trong background với error handling
-        if(mongoose.connection.readyState === 1) { // 1 = connected
-            Promise.all([
-                VisitStats.findOneAndUpdate({ dateStr: "totalVisits" }, { $inc: { count: 1 } }, { upsert: true }).exec().catch(e => console.warn('VisitStats error:', e.message)),
-                VisitStats.findOneAndUpdate({ dateStr: `dailyVisits_${today}` }, { $inc: { count: 1 } }, { upsert: true }).exec().catch(e => console.warn('VisitStats error:', e.message))
-            ]).catch(err => console.warn("Stats Error:", err.message));
-        }
-    }
-    next();
-});
 
 app.use(trackVisits);
 
