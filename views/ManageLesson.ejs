@@ -11,7 +11,40 @@
 
 <div class="container-fluid" style="padding: 0; background: var(--studio-bg);">
     
-    <form id="lessonForm" action="/lesson/<%= (lesson) ? 'edit/'+lesson._id : 'add' %>" method="POST" class="studio-wrapper">
+    <form id="lessonForm" action="/lesson/<%= (lesson) ? 'edit/'+lesson._id : 'add' %>" method="POST" class="studio-shell">
+        <div class="studio-topbar">
+            <div class="studio-topbar-main">
+                <div class="studio-topbar-copy">
+                    <span class="studio-kicker">Lesson Studio</span>
+                    <h1>Bien soan hoc lieu trong mot workspace</h1>
+                    <p>Quan ly cau truc khoa hoc, chuong va bai hoc trong mot editor lien mach, tap trung vao toc do va do ro thao tac.</p>
+                </div>
+
+                <div class="studio-topbar-grid">
+                    <div class="studio-topbar-card">
+                        <span>Context</span>
+                        <strong id="studioContextLabel">Course</strong>
+                    </div>
+                    <div class="studio-topbar-card">
+                        <span>Selection</span>
+                        <strong id="studioSelectionLabel">Chua chon noi dung</strong>
+                    </div>
+                    <div class="studio-topbar-card">
+                        <span>Status</span>
+                        <strong id="saveStatus" data-tone="idle">San sang</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="studio-pill-row">
+                <span class="studio-pill" id="studioSubjectChip">Chua chon mon</span>
+                <span class="studio-pill" id="studioCourseChip">Chua chon khoa</span>
+                <span class="studio-pill" id="studioSelectionChip">Chua chon bai hoc</span>
+                <span class="studio-pill" id="studioMetricsChip">0 blocks</span>
+            </div>
+        </div>
+
+        <div class="studio-wrapper">
         
         <aside class="studio-panel left-panel">
             <div class="panel-header">
@@ -52,6 +85,27 @@
                     </div>
                 </div>
 
+                <div class="studio-overview-card">
+                    <span class="studio-overview-kicker">Workspace map</span>
+                    <h3 id="studioCourseHeadline">Chua chon khoa hoc</h3>
+                    <p id="studioStructureHint">Chon mon hoc va khoa hoc de mo cay giao trinh, sau do keo tha chuong va bai hoc ngay trong panel nay.</p>
+
+                    <div class="studio-overview-stats">
+                        <div class="overview-stat">
+                            <strong id="treeUnitCount">0</strong>
+                            <span>Units</span>
+                        </div>
+                        <div class="overview-stat">
+                            <strong id="treeLessonCount">0</strong>
+                            <span>Lessons</span>
+                        </div>
+                        <div class="overview-stat">
+                            <strong id="treeDraftCount">0</strong>
+                            <span>Drafts</span>
+                        </div>
+                    </div>
+                </div>
+
                 <hr class="studio-divider">
 
                 <div id="treeContainer" class="curriculum-tree">
@@ -73,18 +127,55 @@
         <div class="studio-workspace" style="display: contents;">
             
             <div id="emptyStatePanel" class="studio-panel center-panel" style="align-items: center; justify-content: center; text-align: center; display: flex;">
-                <div>
+                <div class="studio-empty-state">
                     <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" style="width: 150px; opacity: 0.5; margin-bottom: 20px;">
-                    <h3 style="color: #999;">Content Studio</h3>
-                    <p style="color: #bbb;">Chọn Khóa học, Chương hoặc Bài học<br>để bắt đầu chỉnh sửa.</p>
+                    <span class="studio-empty-kicker">Lesson workspace</span>
+                    <h3 id="studioCanvasTitle" style="color: #999;">Content Studio</h3>
+                    <div class="studio-empty-actions">
+                        <span><i class="fas fa-hand-point-left"></i> Chon bai hoc de vao block editor</span>
+                        <span><i class="fas fa-sliders-h"></i> Inspector ben phai thay doi theo ngu canh</span>
+                    </div>
+                    <p id="studioCanvasHint" style="color: #bbb;">Chọn Khóa học, Chương hoặc Bài học<br>để bắt đầu chỉnh sửa.</p>
                 </div>
             </div>
 
             <div id="editorMainPanel" style="display: none; contents;">
                 
                 <main class="studio-panel center-panel">
-                    <div class="panel-body" style="background: #fafafa;">
-                        
+                    <div class="panel-body studio-editor-body" style="background: #fafafa;">
+                        <div class="editor-workspace-head">
+                            <div>
+                                <span class="workspace-kicker" id="studioCanvasEyebrow">Lesson canvas</span>
+                                <h2 id="studioCanvasHeading">Chua chon bai hoc</h2>
+                                <p id="studioCanvasSubhead">Khi mo bai hoc, ban co the sap xep block, cap nhat noi dung va theo doi thong so ngay tai day.</p>
+                            </div>
+                            <button type="button" class="workspace-quick-action" onclick="openBlockMenu(-1, event)">
+                                <i class="fas fa-plus"></i> Them block
+                            </button>
+                        </div>
+
+                        <div class="editor-insight-row">
+                            <div class="editor-insight-card">
+                                <span>Blocks</span>
+                                <strong id="metricBlockCount">0</strong>
+                            </div>
+                            <div class="editor-insight-card">
+                                <span>Words</span>
+                                <strong id="metricWordCount">0</strong>
+                            </div>
+                            <div class="editor-insight-card">
+                                <span>Media</span>
+                                <strong id="metricMediaCount">0</strong>
+                            </div>
+                            <div class="editor-insight-card">
+                                <span>Read time</span>
+                                <strong id="metricReadTime">0 min</strong>
+                            </div>
+                            <div class="block-menu-footer">
+                                <span><kbd>Alt</kbd> + <kbd>/</kbd> mo menu</span>
+                            </div>
+                        </div>
+
                         <input type="text" name="title" id="mainTitleInput" class="editor-title-input" 
                             placeholder="Nhập tên bài học..." required autocomplete="off">
                         
@@ -103,6 +194,10 @@
                         </div>
                         
                         <div id="blockMenu" class="block-menu-popup">
+                            <div class="block-menu-search">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="blockMenuSearch" placeholder="Tim nhanh block...">
+                            </div>
                             <div class="menu-header">CHỌN LOẠI NỘI DUNG</div>
                             <div class="menu-grid">
                                 <div class="menu-item" onclick="addBlock('text')">
@@ -152,6 +247,11 @@
             </div>
             
             <div class="panel-body">
+                <div class="studio-inspector-intro">
+                    <span class="studio-inspector-kicker">Inspector</span>
+                    <h3 id="studioInspectorTitle">Dieu khien theo ngu canh</h3>
+                    <p id="studioInspectorBody">Chon course, unit hoac lesson de mo dung bo thuoc tinh, action va thong tin can thiet.</p>
+                </div>
 
                 <div id="panel-course" class="context-panel" style="display:none;">
                     <div class="panel-section-title" style="color:#2563eb; background:#eff6ff; border:1px solid #dbeafe;">
@@ -183,6 +283,17 @@
                             <span>Yêu cầu VIP (PRO)</span>
                             <label class="switch-toggle">
                                 <input type="checkbox" id="pCoursePro">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-item">
+                        <span class="control-label">Trang thai cong khai</span>
+                        <div class="switch-wrapper">
+                            <span>Cho phep hoc vien xem khoa hoc</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="pCoursePublic">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -281,9 +392,19 @@
                     </div>
                 </div>
 
+                <div class="studio-help-card">
+                    <span class="studio-help-kicker">Quick flow</span>
+                    <h4>Nhip lam viec goi gon</h4>
+                    <p>Chon bai hoc o cay trai, bien tap block o giua va dung inspector ben phai de publish, export JSON hoac xem lich su.</p>
+                    <div class="studio-help-shortcuts">
+                        <span><kbd>Ctrl</kbd> + <kbd>S</kbd> luu nhap</span>
+                        <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> dang bai</span>
+                    </div>
+                </div>
             </div>
         </aside>
 
+        </div>
     </form>
 
 </div>

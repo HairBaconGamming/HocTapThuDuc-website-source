@@ -19,6 +19,12 @@ let activeUnitId = null;      // ID chương đang chọn
 // Xử lý trường hợp URL là /add
 if (currentLessonId === 'add') currentLessonId = 'current_new_lesson';
 
+const studioState = {
+    lessonDirty: false,
+    courseDirty: false,
+    lastSavedAt: null
+};
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -35,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(treeInput) treeInput.value = val;
                 }
             }
+            markStudioDirty();
+            refreshStudioUI();
         });
     }
 });
@@ -72,6 +80,8 @@ function initApp() {
                     if(treeInput) treeInput.value = val;
                 }
             }
+            markStudioDirty();
+            refreshStudioUI();
         });
     }
 
@@ -80,12 +90,280 @@ function initApp() {
         const modal = document.getElementById('mathLiveModal');
         if (e.target === modal) closeMathModal();
     });
+
+    bindStudioEnhancements();
+    refreshStudioUI();
 }
 
 // Helper set text status
-function setSaveStatus(text) {
+function setSaveStatus(text, tone = null) {
     const el = document.getElementById('saveStatus');
-    if (el) el.innerText = text;
+    if (el) {
+        el.innerText = text;
+        el.dataset.tone = tone || el.dataset.tone || 'idle';
+    }
+
+}
+
+function getDirtyScope(scope = activeContext) {
+    return scope === 'lesson' ? 'lesson' : 'course';
+}
+
+function hasDirtyChanges() {
+    return studioState.lessonDirty || studioState.courseDirty;
+}
+
+function markStudioDirty(scope = activeContext) {
+    studioState[`${getDirtyScope(scope)}Dirty`] = true;
+    setSaveStatus('Co thay doi chua luu', 'dirty');
+}
+
+function clearStudioDirty(message = 'Da dong bo', scope = activeContext) {
+    studioState[`${getDirtyScope(scope)}Dirty`] = false;
+    studioState.lastSavedAt = new Date();
+    if (hasDirtyChanges()) setSaveStatus('Co thay doi chua luu', 'dirty');
+    else setSaveStatus(message, 'saved');
+}
+
+function getSelectedOptionLabel(id, fallback) {
+    const select = document.getElementById(id);
+    if (!select || !select.options || select.selectedIndex < 0) return fallback;
+    return select.options[select.selectedIndex]?.text?.trim() || fallback;
+}
+
+function getActiveUnitTitle() {
+    if (!activeUnitId) return 'Chua chon chuong';
+    const unitEl = document.querySelector(`.tree-unit[data-unit-id="${activeUnitId}"]`);
+    const input = unitEl ? unitEl.querySelector('.unit-title-input') : null;
+    return input?.value?.trim() || document.getElementById('settingUnitTitle')?.value?.trim() || 'Chuong hien tai';
+}
+
+function getActiveLessonTitle() {
+    const title = document.getElementById('mainTitleInput')?.value?.trim();
+    if (title) return title;
+    if (activeLessonId) {
+        const lessonEl = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"]`);
+        const input = lessonEl ? lessonEl.querySelector('.lesson-title-input') : null;
+        if (input?.value?.trim()) return input.value.trim();
+    }
+    return 'Chua chon bai hoc';
+}
+
+function getTextWordCount(value) {
+    return (value || '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .filter(Boolean).length;
+}
+
+function getLessonMetrics() {
+    let words = 0;
+    let media = 0;
+
+    blocks.forEach((block) => {
+        if (!block || !block.type) return;
+
+        if (block.type === 'text') {
+            words += getTextWordCount(block.data?.text || '');
+        } else if (block.type === 'callout') {
+            words += getTextWordCount(block.data?.text || '');
+        } else if (block.type === 'resource') {
+            words += getTextWordCount(block.data?.title || '');
+        } else if (block.type === 'question') {
+            (block.data?.questions || []).forEach((question) => {
+                words += getTextWordCount(question?.question || '');
+                words += getTextWordCount(question?.explanation || '');
+                words += getTextWordCount(question?.modelAnswer || '');
+            });
+        } else if (block.type === 'code') {
+            words += getTextWordCount(block.data?.code || '');
+        } else if (block.type === 'html_preview') {
+            words += getTextWordCount(block.data?.html || '');
+        }
+
+        if (['image', 'video', 'resource', 'html_preview'].includes(block.type)) {
+            media += 1;
+        }
+    });
+
+    return {
+        blocks: blocks.length,
+        words,
+        media,
+        readTime: Math.max(0, Math.ceil(words / 180))
+    };
+}
+
+function refreshTreeOverview() {
+    const unitCount = document.getElementById('treeUnitCount');
+    const lessonCount = document.getElementById('treeLessonCount');
+    const draftCount = document.getElementById('treeDraftCount');
+    const headline = document.getElementById('studioCourseHeadline');
+    const hint = document.getElementById('studioStructureHint');
+
+    const units = document.querySelectorAll('.tree-unit').length;
+    const lessons = document.querySelectorAll('.tree-lesson').length;
+    const drafts = document.querySelectorAll('.tree-lesson .fa-pencil-ruler').length;
+
+    if (unitCount) unitCount.textContent = String(units);
+    if (lessonCount) lessonCount.textContent = String(lessons);
+    if (draftCount) draftCount.textContent = String(drafts);
+
+    const courseName = getSelectedOptionLabel('selectCourse', 'Chua chon khoa hoc');
+    if (headline) headline.textContent = courseName;
+    if (hint) {
+        hint.textContent = lessons
+            ? `Workspace hien co ${units} chuong va ${lessons} bai hoc. Keo tha de sap xep va chon muc bat ky de bien tap.`
+            : 'Chon mon hoc va khoa hoc de mo cay giao trinh, sau do keo tha chuong va bai hoc ngay trong panel nay.';
+    }
+}
+
+function updateModeCopy(mode) {
+    const subjectLabel = getSelectedOptionLabel('selectSubject', 'Chua chon mon');
+    const courseLabel = getSelectedOptionLabel('selectCourse', 'Chua chon khoa');
+    const lessonTitle = getActiveLessonTitle();
+    const unitTitle = getActiveUnitTitle();
+    const metrics = getLessonMetrics();
+
+    const copyMap = {
+        course: {
+            context: 'Course',
+            selection: courseLabel,
+            canvasTitle: courseLabel,
+            canvasHint: 'Chinh sua metadata khoa hoc, thong tin cong khai va sap xep toan bo chuong ngay trong workspace.',
+            heading: 'Tong quan khoa hoc',
+            subhead: 'Bam vao chuong hoac bai hoc de di sau hon, hoac tiep tuc tinh chinh metadata cua khoa hoc.',
+            inspectorTitle: 'Course inspector',
+            inspectorBody: 'Panel nay giu thong tin chung cua khoa hoc, che do cong khai va thao tac dong bo cau truc.'
+        },
+        unit: {
+            context: 'Unit',
+            selection: unitTitle,
+            canvasTitle: unitTitle,
+            canvasHint: 'Dang o che do quan ly chuong. Ban co the doi ten, danh dau trang thai va thao tac hang loat cho toan chuong.',
+            heading: unitTitle,
+            subhead: 'Chon bai hoc trong chuong de mo block editor hoac dung inspector de thao tac hang loat.',
+            inspectorTitle: 'Unit inspector',
+            inspectorBody: 'Panel nay dung de doi ten chuong, publish nhieu bai cung luc va xu ly cac thao tac cap chuong.'
+        },
+        lesson: {
+            context: 'Lesson',
+            selection: lessonTitle,
+            canvasTitle: lessonTitle,
+            canvasHint: 'Dang trong block editor. Sap xep khoi, viet noi dung va theo doi thong so bien soan ngay tai trung tam.',
+            heading: lessonTitle,
+            subhead: `Bai hoc hien co ${metrics.blocks} block, ${metrics.words} tu va ${metrics.media} thanh phan media.`,
+            inspectorTitle: 'Lesson inspector',
+            inspectorBody: 'Panel nay dieu khien quyen truy cap, publish, import export JSON va lich su phien ban cho bai hoc.'
+        }
+    };
+
+    const copy = copyMap[mode] || copyMap.course;
+    const contextLabel = document.getElementById('studioContextLabel');
+    const selectionLabel = document.getElementById('studioSelectionLabel');
+    const subjectChip = document.getElementById('studioSubjectChip');
+    const courseChip = document.getElementById('studioCourseChip');
+    const selectionChip = document.getElementById('studioSelectionChip');
+    const metricsChip = document.getElementById('studioMetricsChip');
+    const canvasTitle = document.getElementById('studioCanvasTitle');
+    const canvasHint = document.getElementById('studioCanvasHint');
+    const canvasHeading = document.getElementById('studioCanvasHeading');
+    const canvasSubhead = document.getElementById('studioCanvasSubhead');
+    const inspectorTitle = document.getElementById('studioInspectorTitle');
+    const inspectorBody = document.getElementById('studioInspectorBody');
+    const eyebrow = document.getElementById('studioCanvasEyebrow');
+
+    if (contextLabel) contextLabel.textContent = copy.context;
+    if (selectionLabel) selectionLabel.textContent = copy.selection;
+    if (subjectChip) subjectChip.textContent = subjectLabel;
+    if (courseChip) courseChip.textContent = courseLabel;
+    if (selectionChip) selectionChip.textContent = copy.selection;
+    if (metricsChip) metricsChip.textContent = `${metrics.blocks} blocks · ${metrics.words} words`;
+    if (canvasTitle) canvasTitle.textContent = copy.canvasTitle;
+    if (canvasHint) canvasHint.innerHTML = copy.canvasHint;
+    if (canvasHeading) canvasHeading.textContent = copy.heading;
+    if (canvasSubhead) canvasSubhead.textContent = copy.subhead;
+    if (inspectorTitle) inspectorTitle.textContent = copy.inspectorTitle;
+    if (inspectorBody) inspectorBody.textContent = copy.inspectorBody;
+    if (eyebrow) eyebrow.textContent = mode === 'lesson' ? 'Lesson canvas' : mode === 'unit' ? 'Unit workspace' : 'Course overview';
+
+    const metricBlockCount = document.getElementById('metricBlockCount');
+    const metricWordCount = document.getElementById('metricWordCount');
+    const metricMediaCount = document.getElementById('metricMediaCount');
+    const metricReadTime = document.getElementById('metricReadTime');
+
+    if (metricBlockCount) metricBlockCount.textContent = String(metrics.blocks);
+    if (metricWordCount) metricWordCount.textContent = String(metrics.words);
+    if (metricMediaCount) metricMediaCount.textContent = String(metrics.media);
+    if (metricReadTime) metricReadTime.textContent = `${metrics.readTime} min`;
+}
+
+function refreshStudioUI(mode = activeContext) {
+    refreshTreeOverview();
+    updateModeCopy(mode);
+}
+
+function filterBlockMenu(query) {
+    const normalized = (query || '').trim().toLowerCase();
+    document.querySelectorAll('#blockMenu .menu-item').forEach((item) => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = !normalized || text.includes(normalized) ? 'flex' : 'none';
+    });
+}
+
+function bindStudioEnhancements() {
+    const searchInput = document.getElementById('blockMenuSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => filterBlockMenu(e.target.value));
+    }
+
+    ['pCourseTitle', 'pCourseDesc', 'pCourseThumb'].forEach((id) => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.addEventListener('input', () => {
+            markStudioDirty();
+            refreshStudioUI();
+            autoSaveCourse();
+        });
+    });
+
+    ['pCoursePro', 'pCoursePublic'].forEach((id) => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.addEventListener('change', () => {
+            markStudioDirty();
+            refreshStudioUI();
+            autoSaveCourse();
+        });
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (!hasDirtyChanges()) return;
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    document.addEventListener('keydown', (event) => {
+        const isSave = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's';
+        const isPublish = (event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p';
+        const isQuickInsert = event.altKey && event.key === '/';
+
+        if (isSave) {
+            event.preventDefault();
+            if (activeContext === 'lesson') submitLessonAJAX(false);
+            else if (activeContext === 'course') saveCourseStatus(false);
+        } else if (isPublish) {
+            event.preventDefault();
+            if (activeContext === 'lesson') submitLessonAJAX(true);
+            else if (activeContext === 'course') saveCourseStatus(true);
+        } else if (isQuickInsert && activeContext === 'lesson') {
+            event.preventDefault();
+            const placeholder = document.querySelector('.add-block-placeholder');
+            if (placeholder) openBlockMenu(blocks.length - 1, { currentTarget: placeholder });
+        }
+    });
 }
 
 // Toggle menu cấu hình cho HTML Block
@@ -96,7 +374,7 @@ function toggleHtmlSettings(idx) {
 }
 
 // --- HÀM CHUYỂN NGỮ CẢNH RIGHT PANEL ---
-function switchPanelMode(mode) {
+function legacySwitchPanelMode(mode) {
     activeContext = mode;
     
     const pCourse = document.getElementById('panel-course');
@@ -143,6 +421,28 @@ function switchPanelMode(mode) {
     }
 }
 
+function switchPanelMode(mode) {
+    activeContext = mode;
+
+    ['course', 'unit', 'lesson'].forEach((panel) => {
+        const element = document.getElementById(`panel-${panel}`);
+        if (element) element.style.display = panel === mode ? 'block' : 'none';
+    });
+
+    const editorPanel = document.getElementById('editorMainPanel');
+    const emptyPanel = document.getElementById('emptyStatePanel');
+
+    if (mode === 'lesson') {
+        if (editorPanel) editorPanel.style.display = 'contents';
+        if (emptyPanel) emptyPanel.style.display = 'none';
+    } else {
+        if (editorPanel) editorPanel.style.display = 'none';
+        if (emptyPanel) emptyPanel.style.display = 'flex';
+    }
+
+    refreshStudioUI(mode);
+}
+
 /* ==========================================================================
    PART 1: LEFT PANEL - CURRICULUM TREE & COURSE MANAGER
    ========================================================================== */
@@ -163,6 +463,7 @@ async function loadCourses(subjectId) {
 
     if(!subjectId) {
         if(courseGroup) courseGroup.style.display = 'none';
+        refreshStudioUI('course');
         return;
     }
 
@@ -182,6 +483,7 @@ async function loadCourses(subjectId) {
         }
         
         if(courseGroup) courseGroup.style.display = 'block';
+        refreshStudioUI('course');
 
     } catch(err) {
         console.error(err);
@@ -359,6 +661,7 @@ function selectUnit(uId, headerEl) {
     // 3. Switch Mode sang Panel Chương
     if (typeof switchPanelMode === 'function') {
         switchPanelMode('unit');
+        refreshStudioUI('unit');
     } else {
         console.error("Thiếu hàm switchPanelMode!");
     }
@@ -382,6 +685,7 @@ function selectCourse() {
     // 3. Chuyển Panel
     if(typeof switchPanelMode === 'function') {
         switchPanelMode('course');
+        refreshStudioUI('course');
     }
 }
 
@@ -453,6 +757,13 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
         </div>
         <div class="tree-lesson-list" data-unit-id="${id}"></div>
     `;
+    const unitTitleInput = unitEl.querySelector('.unit-title-input');
+    if (unitTitleInput) {
+        unitTitleInput.addEventListener('input', () => {
+            markStudioDirty();
+            refreshStudioUI(activeContext);
+        });
+    }
 
     const listContainer = unitEl.querySelector('.tree-lesson-list');
 
@@ -475,7 +786,11 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
             group: 'lessons', 
             handle: '.drag-handle',
             animation: 150,
-            ghostClass: 'sortable-ghost'
+            ghostClass: 'sortable-ghost',
+            onEnd: () => {
+                markStudioDirty();
+                refreshStudioUI(activeContext);
+            }
         });
     }
     
@@ -540,6 +855,8 @@ function createLessonDOM(lesson, isCurrent = false) {
             const mainInput = document.getElementById('mainTitleInput');
             if(mainInput) mainInput.value = e.target.value;
         }
+        markStudioDirty();
+        refreshStudioUI(activeContext);
     });
 
     return el;
@@ -612,6 +929,8 @@ async function deleteLessonDOM(btn, lessonId, event) {
 function addTempUnit() {
     const tempId = 'new_unit_' + Date.now();
     createUnitDOM(tempId, '', []);
+    markStudioDirty();
+    refreshStudioUI(activeContext);
 }
 
 function addTempLessonToUnit(btn) {
@@ -626,6 +945,8 @@ function addTempLessonToUnit(btn) {
 
     // Tự động chọn bài vừa tạo
     selectLesson(tempId, 'Bài học mới');
+    markStudioDirty();
+    refreshStudioUI('lesson');
     
     // Focus vào ô nhập tên Ở GIỮA
     setTimeout(() => {
@@ -940,6 +1261,7 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
     
     const mainTitleInput = document.getElementById('mainTitleInput');
     if(mainTitleInput) mainTitleInput.value = titleFallback;
+    setSaveStatus('Dang tai...', 'saving');
     
     setSaveStatus('Đang tải...');
 
@@ -949,6 +1271,7 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
         initBlocks(''); 
         const isProInp = document.getElementById('isProInput');
         if(isProInp) isProInp.checked = false;
+        setSaveStatus('Ban nhap chua luu', 'dirty');
         
         setSaveStatus('Bản nháp (Chưa lưu)');
         updateStatusBadge(false); // Luôn là nháp
@@ -984,6 +1307,7 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
 
                 // Load Blocks
                 initBlocks(l.content);
+                clearStudioDirty('Da dong bo');
                 
                 setSaveStatus('Đã đồng bộ');
             } else {
@@ -994,6 +1318,8 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
             Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
         }
     }
+
+    refreshStudioUI('lesson');
 }
 
 function updateStatusBadge(isPublished) {
@@ -1052,6 +1378,7 @@ function initBlocks(initialContent) {
             onEnd: function (evt) {
                 const item = blocks.splice(evt.oldIndex, 1)[0];
                 blocks.splice(evt.newIndex, 0, item);
+                markStudioDirty();
                 renderBlocks(); // Re-render để cập nhật index
             }
         });
@@ -1364,7 +1691,11 @@ function renderBlocks() {
              ta.value = b.data?.text || '';
              // [FIX] Dùng onchange thay vì oninput để giảm tần suất re-render (dù callout là input thuần)
              // Nhưng nếu dùng textarea thuần thì không render lại cả block nên oninput vẫn ok, chỉ cần không gọi renderBlocks() trong đó
-             ta.addEventListener('input', (e) => { blocks[idx].data.text = e.target.value; });
+             ta.addEventListener('input', (e) => {
+                 blocks[idx].data.text = e.target.value;
+                 markStudioDirty();
+                 refreshStudioUI('lesson');
+             });
              body.appendChild(ta);
         // --- RENDER TYPE: HTML PREVIEW (FULL FEATURES) ---
         } else if (b.type === 'html_preview') {
@@ -1482,6 +1813,8 @@ function renderBlocks() {
             textarea.addEventListener('input', (e) => {
                 const val = e.target.value;
                 blocks[idx].data.html = val; // Lưu data ngay lập tức
+                markStudioDirty();
+                refreshStudioUI('lesson');
                 
                 clearTimeout(timer);
                 timer = setTimeout(() => {
@@ -1499,6 +1832,8 @@ function renderBlocks() {
                     this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
                     this.selectionStart = this.selectionEnd = start + 2;
                     blocks[idx].data.html = this.value;
+                    markStudioDirty();
+                    refreshStudioUI('lesson');
                 }
             });
 
@@ -1534,6 +1869,7 @@ function renderBlocks() {
 
     // Init EasyMDE for all text blocks
     initMarkdownEditors(); // Hàm này cần được viết lại để không re-focus linh tinh
+    refreshStudioUI(activeContext);
 
     // 2. [FIX] Khôi phục vị trí cuộn sau khi render xong
     // Dùng setTimeout để đảm bảo DOM đã vẽ xong
@@ -1628,6 +1964,8 @@ function initMarkdownEditors() {
         easyMDE.codemirror.on("change", () => {
             if(blocks[idx] && blocks[idx].data) {
                 blocks[idx].data.text = easyMDE.value();
+                markStudioDirty();
+                refreshStudioUI('lesson');
             }
         });
         editors[idx] = easyMDE;
@@ -1676,10 +2014,16 @@ function insertMathToEditor(isBlock) {
 function openBlockMenu(index, event) {
     blockInsertIndex = index;
     const menu = document.getElementById('blockMenu');
+    const searchInput = document.getElementById('blockMenuSearch');
     
     if (menu && event) {
         // 1. Hiển thị trước để trình duyệt tính toán kích thước thực
         menu.style.display = 'block';
+        if (searchInput) {
+            searchInput.value = '';
+            filterBlockMenu('');
+            setTimeout(() => searchInput.focus(), 0);
+        }
         
         // 2. Lấy vị trí của nút bấm (Inserter Button)
         // event.currentTarget là dòng kẻ, ta lấy nút tròn bên trong hoặc chính dòng kẻ
@@ -1719,7 +2063,10 @@ function openBlockMenu(index, event) {
 
 function closeBlockMenu() {
     const menu = document.getElementById('blockMenu');
+    const searchInput = document.getElementById('blockMenuSearch');
     if (menu) menu.style.display = 'none';
+    if (searchInput) searchInput.value = '';
+    filterBlockMenu('');
     blockInsertIndex = -2;
 }
 
@@ -1753,6 +2100,7 @@ function addBlock(type) {
     else blocks.splice(blockInsertIndex + 1, 0, newBlock);
 
     closeBlockMenu();
+    markStudioDirty();
     renderBlocks();
 }
 
@@ -1762,6 +2110,7 @@ function deleteBlock(index) {
     }).then((res) => {
         if(res.isConfirmed) {
             blocks.splice(index, 1);
+            markStudioDirty();
             renderBlocks();
         }
     });
@@ -1772,6 +2121,7 @@ function moveBlock(index, dir) {
     if(newIndex < 0 || newIndex >= blocks.length) return;
     const item = blocks.splice(index, 1)[0];
     blocks.splice(newIndex, 0, item);
+    markStudioDirty();
     renderBlocks();
 }
 
@@ -1783,6 +2133,7 @@ function serializeBlocks() {
 function updateVideoBlock(idx, field, value) {
     if (!blocks[idx].data) blocks[idx].data = {};
     blocks[idx].data[field] = value;
+    markStudioDirty();
     renderBlocks(); 
 }
 
@@ -1839,6 +2190,7 @@ function updateBlockData(index, path, value) {
     target[finalKey] = value;
 
     // Re-render block preview only (avoid full reload for performance if desired)
+    markStudioDirty();
     renderBlocks();
 }
 
@@ -2028,8 +2380,8 @@ function serializeQuestionData(containerId) {
    ========================================================================== */
 
 async function submitLessonAJAX(publishStatus) {
-    const btnDraft = document.querySelector('.btn-draft');
-    const btnPublish = document.querySelector('.btn-publish');
+    const btnDraft = document.querySelector('#panel-lesson .btn-draft');
+    const btnPublish = document.querySelector('#panel-lesson .btn-publish');
     
     // UI Loading
     const originalDraftText = btnDraft ? btnDraft.innerHTML : 'Lưu nháp';
@@ -2044,6 +2396,8 @@ async function submitLessonAJAX(publishStatus) {
         btnDraft.disabled = true;
         if(btnPublish) btnPublish.disabled = true;
     }
+
+    setSaveStatus(publishStatus ? 'Dang dang bai...' : 'Dang luu nhap...', 'saving');
 
     try {
         const titleInput = document.getElementById('mainTitleInput');
@@ -2159,6 +2513,8 @@ async function submitLessonAJAX(publishStatus) {
             
             const lastSaved = document.getElementById('lastSavedTime');
             if(lastSaved) lastSaved.innerText = new Date().toLocaleTimeString('vi-VN');
+            clearStudioDirty(publishStatus ? 'Da dang bai' : 'Da luu nhap');
+            refreshStudioUI('lesson');
 
             // Cập nhật ID thật nếu là bài mới
             if(String(activeLessonId).startsWith('new_lesson_') || activeLessonId === 'current_new_lesson') {
@@ -2187,6 +2543,7 @@ async function submitLessonAJAX(publishStatus) {
     } finally {
         if(btnPublish) { btnPublish.innerHTML = originalPublishText; btnPublish.disabled = false; }
         if(btnDraft) { btnDraft.innerHTML = originalDraftText; btnDraft.disabled = false; }
+        if (hasDirtyChanges()) setSaveStatus('Co thay doi chua luu', 'dirty');
     }
 }
 
@@ -2283,7 +2640,9 @@ async function importLessonJSON(input) {
             if (validBlocks) {
                 // 1. Cập nhật Blocks
                 blocks = validBlocks;
+                markStudioDirty();
                 renderBlocks();
+                refreshStudioUI('lesson');
 
                 // 2. Tự động điền tiêu đề nếu có (Format AI)
                 if (lessonTitle) {
@@ -2393,6 +2752,7 @@ function autoSaveCourse() {
     // UI Feedback: Đang lưu...
     const headerLabel = document.getElementById('panelHeaderLabel');
     headerLabel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu cấu hình...';
+    setSaveStatus('Dang luu cau hinh khoa hoc...', 'saving');
 
     courseSaveTimeout = setTimeout(async () => {
         const courseId = document.getElementById('hiddenCourseId').value;
@@ -2414,15 +2774,18 @@ function autoSaveCourse() {
             
             if(data.success) {
                 headerLabel.innerHTML = '<i class="fas fa-check" style="color:#22c55e"></i> Đã lưu cấu hình';
+                clearStudioDirty('Da luu cau hinh khoa hoc');
                 // Update select box tên khóa học nếu cần
                 const select = document.getElementById('selectCourse');
                 if(select && select.options[select.selectedIndex]) {
                     select.options[select.selectedIndex].text = title;
                 }
+                refreshStudioUI('course');
                 setTimeout(() => { headerLabel.innerHTML = '<i class="fas fa-sliders-h"></i> Thiết lập'; }, 2000);
             }
         } catch(e) {
             headerLabel.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:red"></i> Lỗi lưu';
+            setSaveStatus('Luu cau hinh that bai', 'error');
         }
     }, 1000); // Lưu sau 1s ngừng gõ
 }
@@ -2476,7 +2839,7 @@ async function saveCourseStatus(isPublished) {
 
     // UI Feedback
     const btnText = isPublished ? 'Đang đăng...' : 'Đang lưu...';
-    setSaveStatus(btnText); // Tận dụng hàm setSaveStatus có sẵn hoặc dùng Swal loading
+    setSaveStatus(btnText, 'saving'); // Tận dụng hàm setSaveStatus có sẵn hoặc dùng Swal loading
 
     try {
         const curriculumSnapshot = getTreeStructure();
@@ -2524,6 +2887,8 @@ async function saveCourseStatus(isPublished) {
             }
             
             // Reload lại cây nếu cần thiết (optional)
+            clearStudioDirty(isPublished ? 'Da cong khai khoa hoc' : 'Da luu nhap khoa hoc');
+            refreshStudioUI('course');
             // loadCurriculumByCourse(courseId); 
         } else {
             Swal.fire('Lỗi', data.error || 'Lỗi khi lưu khóa học', 'error');
@@ -2541,6 +2906,8 @@ function fillCoursePanel(course) {
     document.getElementById('pCourseThumb').value = course.thumbnail || '';
     document.getElementById('pCourseThumbPreview').src = course.thumbnail || '/img/default-course.jpg';
     document.getElementById('pCoursePro').checked = course.isPro || false;
+    const coursePublic = document.getElementById('pCoursePublic');
+    if (coursePublic) coursePublic.checked = course.isPublished || false;
     
     // Update Badge
     const badge = document.getElementById('courseStatusBadge');
@@ -2549,6 +2916,8 @@ function fillCoursePanel(course) {
         badge.style.background = course.isPublished ? '#dcfce7' : '#f1f5f9';
         badge.style.color = course.isPublished ? '#166534' : '#475569';
     }
+
+    refreshStudioUI('course');
 }
 
 // Hàm đăng (hoặc ẩn) tất cả bài học trong 1 chương
