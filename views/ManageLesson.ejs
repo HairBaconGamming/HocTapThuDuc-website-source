@@ -1,487 +1,624 @@
-<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= lesson ? `Lesson Editor V4 · ${lesson.title}` : 'Lesson Editor V4' %></title>
+    <link rel="icon" type="image/png" href="https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/823029_library_512x512.png?v=1741523759119">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styleStudio.css">
+    <link rel="stylesheet" href="/css/styleStudioV4.css">
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="studio-v4-page" data-user-id="<%= user ? user._id : '' %>">
+    <div class="studio-v4-root">
+        <form id="lessonForm" action="/lesson/<%= lesson ? 'edit/' + lesson._id : 'add' %>" method="POST" class="studio-shell studio-v4-shell">
+            <input type="hidden" name="courseId" id="hiddenCourseId">
+            <input type="hidden" name="subjectId" id="hiddenSubjectId" value="<%= lesson ? lesson.subjectId : '' %>">
+            <input type="hidden" name="curriculumSnapshot" id="curriculumSnapshot">
+            <input type="hidden" name="currentEditingId" id="currentEditingId" value="<%= lesson ? lesson._id : '' %>">
 
-<link rel="stylesheet" href="/css/styleStudio.css">
-<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-
-<div class="container-fluid" style="padding: 0; background: var(--studio-bg);">
-    
-    <form id="lessonForm" action="/lesson/<%= (lesson) ? 'edit/'+lesson._id : 'add' %>" method="POST" class="studio-shell">
-        <div class="studio-topbar">
-            <div class="studio-topbar-main">
-                <div class="studio-topbar-copy">
-                    <span class="studio-kicker">Lesson Studio</span>
-                    <h1>Bien soan hoc lieu trong mot workspace</h1>
-                    <p>Quan ly cau truc khoa hoc, chuong va bai hoc trong mot editor lien mach, tap trung vao toc do va do ro thao tac.</p>
-                </div>
-
-                <div class="studio-topbar-grid">
-                    <div class="studio-topbar-card">
-                        <span>Context</span>
-                        <strong id="studioContextLabel">Course</strong>
+            <section class="studio-v4-toolbar">
+                <div class="studio-v4-toolbar-main">
+                    <div class="studio-v4-brand">
+                        <a href="/dashboard" class="studio-v4-ghost-link studio-v4-exit-link">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Rời studio</span>
+                        </a>
+                        <div class="studio-v4-brand-stack">
+                            <span class="studio-v4-kicker">Lesson Editor V4</span>
+                            <h1>Studio biên soạn học liệu toàn màn hình</h1>
+                        </div>
+                        <p>Bỏ header website, dồn toàn bộ không gian cho canvas, sidebars linh hoạt và nhịp biên tập gọn hơn.</p>
                     </div>
-                    <div class="studio-topbar-card">
-                        <span>Selection</span>
-                        <strong id="studioSelectionLabel">Chua chon noi dung</strong>
-                    </div>
-                    <div class="studio-topbar-card">
-                        <span>Status</span>
-                        <strong id="saveStatus" data-tone="idle">San sang</strong>
-                    </div>
-                </div>
-            </div>
 
-            <div class="studio-pill-row">
-                <span class="studio-pill" id="studioSubjectChip">Chua chon mon</span>
-                <span class="studio-pill" id="studioCourseChip">Chua chon khoa</span>
-                <span class="studio-pill" id="studioSelectionChip">Chua chon bai hoc</span>
-                <span class="studio-pill" id="studioMetricsChip">0 blocks</span>
-            </div>
-        </div>
-
-        <div class="studio-wrapper">
-        
-        <aside class="studio-panel left-panel">
-            <div class="panel-header">
-                <span><i class="fas fa-sitemap"></i> Cấu trúc</span>
-                <span id="treeLoading" style="display:none;"><i class="fas fa-spinner fa-spin"></i></span>
-            </div>
-            
-            <div class="panel-body">
-                
-                <div class="step-group">
-                    <label class="step-label">1. Môn học</label>
-                    <select id="selectSubject" class="studio-select" onchange="loadCourses(this.value)">
-                        <option value="">-- Chọn Môn --</option>
-                        <% subjects.forEach(s => { %>
-                            <option value="<%= s._id %>"><%= s.name %></option>
-                        <% }) %>
-                    </select>
-                </div>
-
-                <div class="step-group" id="courseSelectGroup" style="display:none; margin-top:10px;">
-                    <label class="step-label">2. Khóa học</label>
-                    <div style="display:flex; gap:5px;">
-                        <select id="selectCourse" class="studio-select" onchange="loadCurriculumByCourse(this.value)" style="flex-grow:1;">
-                            <option value="">-- Chọn Khóa Học --</option>
-                        </select>
-                        
-                        <button type="button" class="btn-icon-mini" onclick="promptCreateCourse()" title="Tạo khóa học mới">
-                            <i class="fas fa-plus"></i>
+                    <div class="studio-v4-toolbar-actions">
+                        <div class="studio-v4-viewport-switch" aria-label="Khung nhìn canvas">
+                            <button type="button" class="is-active" data-preview-mode="desktop">Desktop</button>
+                            <button type="button" data-preview-mode="tablet">Tablet</button>
+                            <button type="button" data-preview-mode="mobile">Mobile</button>
+                        </div>
+                        <button type="button" class="studio-v4-ghost-button" id="studioFocusToggle">
+                            <i class="fas fa-expand"></i>
+                            <span>Focus</span>
                         </button>
-                        
-                        <button type="button" class="btn-icon-mini" onclick="selectCourse()" title="Cấu hình khóa học (Right Panel)" style="color:#3b82f6; border-color:#93c5fd;">
-                            <i class="fas fa-cog"></i>
-                        </button>
-
-                        <button type="button" class="btn-icon-mini delete-btn" onclick="deleteCurrentCourse()" title="Xóa khóa học" style="color:#ef4444; border-color:#fca5a5;">
-                            <i class="fas fa-trash"></i>
+                        <button type="button" class="studio-v4-primary-button" data-studio-action="quick-save">
+                            <i class="fas fa-save"></i>
+                            <span>Lưu nhanh</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="studio-overview-card">
-                    <span class="studio-overview-kicker">Workspace map</span>
-                    <h3 id="studioCourseHeadline">Chua chon khoa hoc</h3>
-                    <p id="studioStructureHint">Chon mon hoc va khoa hoc de mo cay giao trinh, sau do keo tha chuong va bai hoc ngay trong panel nay.</p>
-
-                    <div class="studio-overview-stats">
-                        <div class="overview-stat">
-                            <strong id="treeUnitCount">0</strong>
-                            <span>Units</span>
-                        </div>
-                        <div class="overview-stat">
-                            <strong id="treeLessonCount">0</strong>
-                            <span>Lessons</span>
-                        </div>
-                        <div class="overview-stat">
-                            <strong id="treeDraftCount">0</strong>
-                            <span>Drafts</span>
+                <div class="studio-v4-toolbar-meta">
+                    <div class="studio-v4-meta-card">
+                        <span>Ngữ cảnh</span>
+                        <strong id="studioContextLabel">Khóa học</strong>
+                    </div>
+                    <div class="studio-v4-meta-card">
+                        <span>Đang chọn</span>
+                        <strong id="studioSelectionLabel">Chưa chọn nội dung</strong>
+                    </div>
+                    <div class="studio-v4-meta-card">
+                        <span>Trạng thái</span>
+                        <strong id="saveStatus" data-tone="idle">Sẵn sàng</strong>
+                    </div>
+                    <div class="studio-v4-meta-card studio-v4-meta-card-wide">
+                        <span>Nhịp làm việc</span>
+                        <div class="studio-pill-row">
+                            <span class="studio-pill" id="studioSubjectChip">Chưa chọn môn</span>
+                            <span class="studio-pill" id="studioCourseChip">Chưa chọn khóa</span>
+                            <span class="studio-pill" id="studioSelectionChip">Chưa chọn bài học</span>
+                            <span class="studio-pill" id="studioMetricsChip">0 blocks</span>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <hr class="studio-divider">
-
-                <div id="treeContainer" class="curriculum-tree">
-                    <div class="empty-state">Vui lòng chọn khóa học.</div>
-                </div>
-
-                <button type="button" class="btn-add-unit-big" id="btnAddUnitMain" onclick="addTempUnit()" style="display:none;">
-                    <i class="fas fa-plus-circle"></i> Thêm Chương Mới
-                </button>
-
-            </div>
-        </aside>
-
-        <input type="hidden" name="courseId" id="hiddenCourseId">
-        <input type="hidden" name="subjectId" id="hiddenSubjectId" value="<%= lesson ? lesson.subjectId : '' %>">
-        <input type="hidden" name="curriculumSnapshot" id="curriculumSnapshot">
-        <input type="hidden" name="currentEditingId" id="currentEditingId" value="<%= lesson ? lesson._id : '' %>">
-
-        <div class="studio-workspace" style="display: contents;">
-            
-            <div id="emptyStatePanel" class="studio-panel center-panel" style="align-items: center; justify-content: center; text-align: center; display: flex;">
-                <div class="studio-empty-state">
-                    <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" style="width: 150px; opacity: 0.5; margin-bottom: 20px;">
-                    <span class="studio-empty-kicker">Lesson workspace</span>
-                    <h3 id="studioCanvasTitle" style="color: #999;">Content Studio</h3>
-                    <div class="studio-empty-actions">
-                        <span><i class="fas fa-hand-point-left"></i> Chon bai hoc de vao block editor</span>
-                        <span><i class="fas fa-sliders-h"></i> Inspector ben phai thay doi theo ngu canh</span>
-                    </div>
-                    <p id="studioCanvasHint" style="color: #bbb;">Chọn Khóa học, Chương hoặc Bài học<br>để bắt đầu chỉnh sửa.</p>
-                </div>
-            </div>
-
-            <div id="editorMainPanel" style="display: none; contents;">
-                
-                <main class="studio-panel center-panel">
-                    <div class="panel-body studio-editor-body" style="background: #fafafa;">
-                        <div class="editor-workspace-head">
-                            <div>
-                                <span class="workspace-kicker" id="studioCanvasEyebrow">Lesson canvas</span>
-                                <h2 id="studioCanvasHeading">Chua chon bai hoc</h2>
-                                <p id="studioCanvasSubhead">Khi mo bai hoc, ban co the sap xep block, cap nhat noi dung va theo doi thong so ngay tai day.</p>
-                            </div>
-                            <button type="button" class="workspace-quick-action" onclick="openBlockMenu(-1, event)">
-                                <i class="fas fa-plus"></i> Them block
-                            </button>
+            <div class="studio-wrapper studio-v4-grid" id="studioWorkspace">
+                <section class="studio-dock-shell studio-dock-shell-left" id="studioLeftDock" data-dock-side="left" data-dock-state="open">
+                    <div class="studio-dock-bar">
+                        <div>
+                            <span class="studio-dock-kicker">Navigator</span>
+                            <h2>Điều hướng</h2>
                         </div>
-
-                        <div class="editor-insight-row">
-                            <div class="editor-insight-card">
-                                <span>Blocks</span>
-                                <strong id="metricBlockCount">0</strong>
-                            </div>
-                            <div class="editor-insight-card">
-                                <span>Words</span>
-                                <strong id="metricWordCount">0</strong>
-                            </div>
-                            <div class="editor-insight-card">
-                                <span>Media</span>
-                                <strong id="metricMediaCount">0</strong>
-                            </div>
-                            <div class="editor-insight-card">
-                                <span>Read time</span>
-                                <strong id="metricReadTime">0 min</strong>
-                            </div>
-                            <div class="block-menu-footer">
-                                <span><kbd>Alt</kbd> + <kbd>/</kbd> mo menu</span>
-                            </div>
-                        </div>
-
-                        <input type="text" name="title" id="mainTitleInput" class="editor-title-input" 
-                            placeholder="Nhập tên bài học..." required autocomplete="off">
-                        
-                        <div class="type-tabs">
-                            <div class="type-tab active"><i class="fas fa-cubes"></i> Block Editor</div>
-                        </div>
-                        
-                        <input type="hidden" name="type" value="theory"> 
-                        <input type="hidden" name="content" id="finalContentJSON">
-                        <input type="hidden" name="quizData" id="quizDataInput">
-                        
-                        <div id="editorCanvas" class="block-container"></div>
-
-                        <div class="add-block-placeholder" onclick="openBlockMenu(-1, event)">
-                            <i class="fas fa-plus"></i> Thêm nội dung
-                        </div>
-                        
-                        <div id="blockMenu" class="block-menu-popup">
-                            <div class="block-menu-search">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="blockMenuSearch" placeholder="Tim nhanh block...">
-                            </div>
-                            <div class="menu-header">CHỌN LOẠI NỘI DUNG</div>
-                            <div class="menu-grid">
-                                <div class="menu-item" onclick="addBlock('text')">
-                                    <div class="menu-icon" style="background:#e0f2fe; color:#0284c7"><i class="fab fa-markdown"></i></div>
-                                    <span>Văn bản</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('image')">
-                                    <div class="menu-icon" style="background:#dcfce7; color:#16a34a"><i class="fas fa-image"></i></div>
-                                    <span>Hình ảnh</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('video')">
-                                    <div class="menu-icon" style="background:#fee2e2; color:#dc2626"><i class="fab fa-youtube"></i></div>
-                                    <span>Video Youtube</span>
-                                </div>
-                                
-                                <div class="menu-item" onclick="addBlock('html_preview')">
-                                    <div class="menu-icon" style="background:#ffedd5; color:#ea580c"><i class="fab fa-html5"></i></div>
-                                    <span>HTML Preview</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('resource')">
-                                    <div class="menu-icon" style="background:#f3f4f6; color:#4b5563"><i class="fas fa-link"></i></div>
-                                    <span>Link Tài liệu</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('code')">
-                                    <div class="menu-icon" style="background:#1e293b; color:#38bdf8"><i class="fas fa-code"></i></div>
-                                    <span>Code Snippet</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('question')">
-                                    <div class="menu-icon" style="background:#fef3c7; color:#d97706"><i class="fas fa-question-circle"></i></div>
-                                    <span>Câu hỏi & Bài tập</span>
-                                </div>
-                                <div class="menu-item" onclick="addBlock('callout')">
-                                    <div class="menu-icon" style="background:#f3e8ff; color:#9333ea"><i class="fas fa-exclamation"></i></div>
-                                    <span>Ghi chú</span>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </main>
-            </div>
-        </div>
-
-        <aside class="studio-panel right-panel">
-            <div class="panel-header" id="panelHeaderLabel">
-                <i class="fas fa-sliders-h"></i> Thiết lập
-            </div>
-            
-            <div class="panel-body">
-                <div class="studio-inspector-intro">
-                    <span class="studio-inspector-kicker">Inspector</span>
-                    <h3 id="studioInspectorTitle">Dieu khien theo ngu canh</h3>
-                    <p id="studioInspectorBody">Chon course, unit hoac lesson de mo dung bo thuoc tinh, action va thong tin can thiet.</p>
-                </div>
-
-                <div id="panel-course" class="context-panel" style="display:none;">
-                    <div class="panel-section-title" style="color:#2563eb; background:#eff6ff; border:1px solid #dbeafe;">
-                        <i class="fas fa-book"></i> THÔNG TIN KHÓA HỌC
-                        <span id="courseStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem; background:#cbd5e1; color:#475569;">LOADING...</span>
-                    </div>
-                    
-                    <div class="control-item">
-                        <span class="control-label">Tên khóa học</span>
-                        <input type="text" id="pCourseTitle" class="studio-input" placeholder="Nhập tên khóa...">
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Mô tả ngắn</span>
-                        <textarea id="pCourseDesc" class="studio-input" rows="3" style="font-size:0.85rem"></textarea>
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Ảnh bìa (Thumbnail)</span>
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <img id="pCourseThumbPreview" src="/img/default-course.jpg" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;">
-                            <input type="text" id="pCourseThumb" class="studio-input" placeholder="URL ảnh..." onchange="updateCourseThumbPreview()">
-                        </div>
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Thiết lập nâng cao</span>
-                        <div class="switch-wrapper">
-                            <span>Yêu cầu VIP (PRO)</span>
-                            <label class="switch-toggle">
-                                <input type="checkbox" id="pCoursePro">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Trang thai cong khai</span>
-                        <div class="switch-wrapper">
-                            <span>Cho phep hoc vien xem khoa hoc</span>
-                            <label class="switch-toggle">
-                                <input type="checkbox" id="pCoursePublic">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="control-item actions-area" style="margin-top:20px; padding-top:15px; border-top:1px dashed #eee;">
-                        <button type="button" class="btn-studio btn-publish" onclick="saveCourseStatus(true)" style="width:100%; margin-bottom:8px;">
-                            <i class="fas fa-globe"></i> ĐĂNG KHÓA HỌC
-                        </button>
-                        <button type="button" class="btn-studio btn-draft" onclick="saveCourseStatus(false)" style="width:100%;">
-                            <i class="fas fa-save"></i> Lưu Nháp
-                        </button>
-                        
-                        <div style="font-size:0.75rem; color:#666; margin-top:10px; text-align:center;">
-                            *Hành động này sẽ lưu thông tin và đồng bộ toàn bộ cấu trúc chương (xóa các chương thừa).
-                        </div>
-                    </div>
-                </div>
-
-                <div id="panel-unit" class="context-panel" style="display:none;">
-                    <div class="panel-section-title" style="color:#b45309; background:#fffbeb; border:1px solid #fcd34d;">
-                        <i class="fas fa-folder-open"></i> CÀI ĐẶT CHƯƠNG
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Tên chương</span>
-                        <input type="text" id="settingUnitTitle" class="studio-input" oninput="syncUnitTitleToTree(this)">
-                    </div>
-
-                    <div class="control-item">
-                        <span class="control-label">Thao tác nhanh (Bulk Actions)</span>
-                        <div style="display:flex; gap:5px; margin-top:5px;">
-                            <button type="button" class="btn-secondary" onclick="saveUnitStatus(false)" style="flex:1; font-size:0.75rem; padding:8px;">
-                                <i class="fas fa-pencil-ruler"></i> Nháp All
-                            </button>
-                            <button type="button" class="btn-primary" onclick="saveUnitStatus(true)" style="flex:1; font-size:0.75rem; padding:8px;">
-                                <i class="fas fa-check-circle"></i> Đăng All
-                            </button>
-                        </div>
-                        <div style="font-size:0.75rem; color:#888; margin-top:5px;">
-                            *Áp dụng cho tất cả bài học trong chương này.
-                        </div>
-                    </div>
-                   
-                    <div class="control-item" style="border-top:1px dashed #eee; padding-top:10px; margin-top:10px;">
-                        <button type="button" class="btn-icon-mini delete-btn" style="width:100%; justify-content:center; color:#ef4444; border:1px solid #fca5a5; background:#fef2f2;" onclick="triggerDeleteActiveUnit()">
-                            <i class="fas fa-trash"></i> Xóa Chương Này
+                        <button type="button" class="studio-dock-toggle" data-dock-toggle="left" aria-label="Thu gọn điều hướng">
+                            <i class="fas fa-panel-left"></i>
                         </button>
                     </div>
-                </div>
 
-                <div id="panel-lesson" class="context-panel" style="display:none;">
-                    <div class="panel-section-title" style="color:#15803d; background:#dcfce7; border:1px solid #86efac;">
-                        <i class="fas fa-file-alt"></i> CẤU HÌNH BÀI HỌC
-                        <span id="publishStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem;">NHÁP</span>
+                    <div class="studio-dock-tabs" data-dock-tabs="left">
+                        <button type="button" class="is-active" data-dock-target="left-structure">Cấu trúc</button>
+                        <button type="button" data-dock-target="left-outline">Dàn ý</button>
+                        <button type="button" data-dock-target="left-assets">Tài nguyên</button>
+                        <button type="button" data-dock-target="left-revisions">Phiên bản</button>
                     </div>
 
-                    <div class="control-item">
-                        <span class="control-label">Quyền truy cập</span>
-                        <div class="switch-wrapper">
-                            <span>Yêu cầu VIP (PRO)</span>
-                            <label class="switch-toggle">
-                                <input type="checkbox" name="isPro" id="isProInput" <%= (lesson && lesson.isPro) ? 'checked' : '' %>>
-                                <span class="slider"></span>
-                            </label>
+                    <div class="studio-dock-panels">
+                        <section class="studio-dock-panel is-active" data-dock-panel="left-structure">
+                            <aside class="studio-panel left-panel">
+                                <div class="panel-header">
+                                    <span><i class="fas fa-sitemap"></i> Cấu trúc</span>
+                                    <span id="treeLoading" style="display:none;"><i class="fas fa-spinner fa-spin"></i></span>
+                                </div>
+
+                                <div class="panel-body">
+                                    <div class="step-group">
+                                        <label class="step-label">1. Môn học</label>
+                                        <select id="selectSubject" class="studio-select">
+                                            <option value="">-- Chọn môn --</option>
+                                            <% subjects.forEach((s) => { %>
+                                                <option value="<%= s._id %>"><%= s.name %></option>
+                                            <% }) %>
+                                        </select>
+                                    </div>
+
+                                    <div class="step-group" id="courseSelectGroup" style="display:none; margin-top:10px;">
+                                        <label class="step-label">2. Khóa học</label>
+                                        <div style="display:flex; gap:5px;">
+                                            <select id="selectCourse" class="studio-select" style="flex-grow:1;">
+                                                <option value="">-- Chọn khóa học --</option>
+                                            </select>
+                                            <button type="button" class="btn-icon-mini" data-studio-action="prompt-create-course" title="Tạo khóa học mới">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <button type="button" class="btn-icon-mini" data-studio-action="select-course-panel" title="Mở cấu hình khóa học" style="color:#3b82f6; border-color:#93c5fd;">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                            <button type="button" class="btn-icon-mini delete-btn" data-studio-action="delete-current-course" title="Xóa khóa học" style="color:#ef4444; border-color:#fca5a5;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="studio-overview-card">
+                                        <span class="studio-overview-kicker">Workspace map</span>
+                                        <h3 id="studioCourseHeadline">Chưa chọn khóa học</h3>
+                                        <p id="studioStructureHint">Chọn môn học và khóa học để mở cây giáo trình, sau đó kéo thả chương và bài học ngay trong panel này.</p>
+                                        <div class="studio-overview-stats">
+                                            <div class="overview-stat">
+                                                <strong id="treeUnitCount">0</strong>
+                                                <span>Units</span>
+                                            </div>
+                                            <div class="overview-stat">
+                                                <strong id="treeLessonCount">0</strong>
+                                                <span>Lessons</span>
+                                            </div>
+                                            <div class="overview-stat">
+                                                <strong id="treeDraftCount">0</strong>
+                                                <span>Drafts</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="studio-divider">
+
+                                    <div id="treeContainer" class="curriculum-tree">
+                                        <div class="empty-state">Vui lòng chọn khóa học.</div>
+                                    </div>
+
+                                    <button type="button" class="btn-add-unit-big" id="btnAddUnitMain" data-studio-action="add-temp-unit" style="display:none;">
+                                        <i class="fas fa-plus-circle"></i> Thêm chương mới
+                                    </button>
+                                </div>
+                            </aside>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="left-outline">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Outline</span>
+                                <h3>Dàn ý nội dung</h3>
+                                <p>Canvas sẽ tự sinh dàn ý và các mốc điều hướng theo block ngay tại đây.</p>
+                            </div>
+                            <div id="v4OutlineTree" class="studio-smart-list studio-smart-list-empty">
+                                <div class="studio-smart-empty">
+                                    <i class="fas fa-list-ul"></i>
+                                    <span>Chưa có cấu trúc để hiển thị.</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="left-assets">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Inventory</span>
+                                <h3>Tài nguyên đang dùng</h3>
+                                <p>Ảnh, video, tài liệu và block HTML sẽ được gom về đây để rà nhanh.</p>
+                            </div>
+                            <div id="v4AssetInventory" class="studio-smart-list studio-smart-list-empty">
+                                <div class="studio-smart-empty">
+                                    <i class="fas fa-photo-film"></i>
+                                    <span>Chưa có tài nguyên nào trong bài học.</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="left-revisions">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Timeline</span>
+                                <h3>Lịch sử và mốc chỉnh sửa</h3>
+                                <p>Mở nhanh revision và xem tín hiệu lưu gần nhất của bài học.</p>
+                            </div>
+                            <div class="studio-smart-actions">
+                                <button type="button" class="studio-v4-secondary-button" data-studio-action="open-revisions">
+                                    <i class="fas fa-history"></i> Mở lịch sử phiên bản
+                                </button>
+                            </div>
+                            <div id="v4RevisionQuickList" class="studio-smart-list studio-smart-list-empty">
+                                <div class="studio-smart-empty">
+                                    <i class="fas fa-clock-rotate-left"></i>
+                                    <span>Lưu bài học để kích hoạt các mốc revision.</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+                <div class="studio-dock-resizer" data-resizer="left" aria-hidden="true"></div>
+
+                <section class="studio-main-shell" id="studioMainShell" data-preview-mode="desktop">
+                    <div class="studio-workspace-v4">
+                        <div id="emptyStatePanel" class="studio-empty-panel" style="display:flex;">
+                            <div class="studio-empty-state">
+                                <div class="studio-empty-icon">
+                                    <i class="fas fa-wand-magic-sparkles"></i>
+                                </div>
+                                <span class="studio-empty-kicker">Lesson workspace</span>
+                                <h3 id="studioCanvasTitle">Content Studio</h3>
+                                <div class="studio-empty-actions">
+                                    <span><i class="fas fa-hand-point-left"></i> Chọn bài học để mở block editor ở trung tâm.</span>
+                                    <span><i class="fas fa-panorama"></i> Chuyển khung nhìn desktop, tablet hoặc mobile khi cần rà bố cục.</span>
+                                </div>
+                                <p id="studioCanvasHint">Chọn khóa học, chương hoặc bài học để bắt đầu chỉnh sửa.</p>
+                            </div>
+                        </div>
+
+                        <div id="editorMainPanel" style="display:none;">
+                            <main class="studio-panel center-panel">
+                                <div class="panel-body studio-editor-body" style="background:#fafafa;">
+                                    <div class="editor-workspace-head">
+                                        <div>
+                                            <span class="workspace-kicker" id="studioCanvasEyebrow">Lesson canvas</span>
+                                            <h2 id="studioCanvasHeading">Chưa chọn bài học</h2>
+                                            <p id="studioCanvasSubhead">Khi mở bài học, bạn có thể sắp xếp block, cập nhật nội dung và theo dõi thông số ngay tại đây.</p>
+                                        </div>
+                                        <button type="button" class="workspace-quick-action" data-canvas-action="open-menu" data-insert-index="-1">
+                                            <i class="fas fa-plus"></i> Thêm block
+                                        </button>
+                                    </div>
+
+                                    <div class="editor-insight-row">
+                                        <div class="editor-insight-card"><span>Blocks</span><strong id="metricBlockCount">0</strong></div>
+                                        <div class="editor-insight-card"><span>Words</span><strong id="metricWordCount">0</strong></div>
+                                        <div class="editor-insight-card"><span>Media</span><strong id="metricMediaCount">0</strong></div>
+                                        <div class="editor-insight-card"><span>Read time</span><strong id="metricReadTime">0 min</strong></div>
+                                        <div class="block-menu-footer">
+                                            <span><kbd>Alt</kbd> + <kbd>/</kbd> mở menu block</span>
+                                        </div>
+                                    </div>
+
+                                    <input type="text" name="title" id="mainTitleInput" class="editor-title-input" placeholder="Nhập tên bài học..." required autocomplete="off">
+
+                                    <div class="type-tabs">
+                                        <div class="type-tab active"><i class="fas fa-cubes"></i> Block Editor</div>
+                                    </div>
+
+                                    <input type="hidden" name="type" value="theory">
+                                    <input type="hidden" name="content" id="finalContentJSON">
+                                    <input type="hidden" name="quizData" id="quizDataInput">
+
+                                    <div id="editorCanvas" class="block-container"></div>
+
+                                    <div class="add-block-placeholder" data-canvas-action="open-menu" data-insert-index="-1">
+                                        <i class="fas fa-plus"></i> Thêm nội dung
+                                    </div>
+
+                                    <div id="blockMenu" class="block-menu-popup">
+                                        <div class="block-menu-search">
+                                            <i class="fas fa-search"></i>
+                                            <input type="text" id="blockMenuSearch" placeholder="Tìm nhanh block...">
+                                        </div>
+                                        <div class="menu-header">CHỌN LOẠI NỘI DUNG</div>
+                                        <div class="menu-grid">
+                                            <div class="menu-item" data-block-type="text"><div class="menu-icon" style="background:#e0f2fe; color:#0284c7"><i class="fab fa-markdown"></i></div><span>Văn bản</span></div>
+                                            <div class="menu-item" data-block-type="image"><div class="menu-icon" style="background:#dcfce7; color:#16a34a"><i class="fas fa-image"></i></div><span>Hình ảnh</span></div>
+                                            <div class="menu-item" data-block-type="video"><div class="menu-icon" style="background:#fee2e2; color:#dc2626"><i class="fab fa-youtube"></i></div><span>Video</span></div>
+                                            <div class="menu-item" data-block-type="html_preview"><div class="menu-icon" style="background:#ffedd5; color:#ea580c"><i class="fab fa-html5"></i></div><span>HTML preview</span></div>
+                                            <div class="menu-item" data-block-type="resource"><div class="menu-icon" style="background:#f3f4f6; color:#4b5563"><i class="fas fa-link"></i></div><span>Link tài liệu</span></div>
+                                            <div class="menu-item" data-block-type="code"><div class="menu-icon" style="background:#1e293b; color:#38bdf8"><i class="fas fa-code"></i></div><span>Code snippet</span></div>
+                                            <div class="menu-item" data-block-type="question"><div class="menu-icon" style="background:#fef3c7; color:#d97706"><i class="fas fa-question-circle"></i></div><span>Câu hỏi &amp; bài tập</span></div>
+                                            <div class="menu-item" data-block-type="callout"><div class="menu-icon" style="background:#f3e8ff; color:#9333ea"><i class="fas fa-exclamation"></i></div><span>Ghi chú</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </main>
                         </div>
                     </div>
 
-                    <div class="control-item">
-                        <span class="control-label">Thông tin</span>
-                        <div class="meta-info" style="font-size:0.85rem; color:#555;">
-                            <div style="margin-bottom:5px;"><i class="fas fa-user-edit"></i> Tác giả: <b><%= user.username %></b></div>
-                            <div><i class="far fa-clock"></i> <span id="lastSavedTime"><%= lesson ? new Date(lesson.updatedAt).toLocaleTimeString('vi-VN') : 'Chưa lưu' %></span></div>
+                    <div class="studio-utility-tray" id="studioUtilityTray">
+                        <div class="studio-utility-card">
+                            <span>Canvas</span>
+                            <strong id="v4CanvasModeLabel">Desktop</strong>
+                            <p>Chuyển khung nhìn và focus mode để rà bố cục.</p>
+                        </div>
+                        <div class="studio-utility-card">
+                            <span>Dàn ý</span>
+                            <strong id="v4OutlineSummary">0 mục</strong>
+                            <p>Tự động cập nhật theo block, heading và các mốc điều hướng.</p>
+                        </div>
+                        <div class="studio-utility-card">
+                            <span>Chất lượng</span>
+                            <strong id="v4QualitySummary">Đang chờ phân tích</strong>
+                            <p>Checklist thông minh sẽ cảnh báo thiếu nội dung và rủi ro publish.</p>
                         </div>
                     </div>
+                </section>
 
-                    <div class="control-item actions-area" style="margin-top:20px;">
-                         <button type="button" class="btn-studio btn-publish" onclick="submitLessonAJAX(true)" style="width:100%; margin-bottom:8px;">
-                            <i class="fas fa-rocket"></i> ĐĂNG BÀI
+                <div class="studio-dock-resizer" data-resizer="right" aria-hidden="true"></div>
+
+                <section class="studio-dock-shell studio-dock-shell-right" id="studioRightDock" data-dock-side="right" data-dock-state="open">
+                    <div class="studio-dock-bar">
+                        <div>
+                            <span class="studio-dock-kicker">Inspector</span>
+                            <h2>Thanh bên thông minh</h2>
+                        </div>
+                        <button type="button" class="studio-dock-toggle" data-dock-toggle="right" aria-label="Thu gọn inspector">
+                            <i class="fas fa-panel-right"></i>
                         </button>
-                        <button type="button" class="btn-studio btn-draft" onclick="submitLessonAJAX(false)" style="width:100%;">
-                            <i class="fas fa-save"></i> Lưu Nháp
-                        </button>
-                        
-                        <div style="display:flex; gap:5px; margin-top:15px; border-top:1px dashed #eee; padding-top:15px;">
-                            <button type="button" class="btn-secondary" onclick="exportLessonJSON()" style="flex:1; font-size:0.8rem;"><i class="fas fa-download"></i> Xuất JSON</button>
-                            <button type="button" class="btn-secondary" onclick="document.getElementById('importJsonInput').click()" style="flex:1; font-size:0.8rem;"><i class="fas fa-upload"></i> Nhập JSON</button>
-                            <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importLessonJSON(this)">
-                        </div>
-
-                        <div class="control-item" style="border-top:1px dashed #eee; margin-top:10px; padding-top:10px;">
-                            <button type="button" class="btn-studio" onclick="openRevisionHistory()" style="width:100%; background:#f8fafc; color:#334155; border:1px solid #cbd5e1;">
-                                <i class="fas fa-history"></i> Lịch sử phiên bản
-                            </button>
-                        </div>
                     </div>
-                </div>
 
-                <div class="studio-help-card">
-                    <span class="studio-help-kicker">Quick flow</span>
-                    <h4>Nhip lam viec goi gon</h4>
-                    <p>Chon bai hoc o cay trai, bien tap block o giua va dung inspector ben phai de publish, export JSON hoac xem lich su.</p>
-                    <div class="studio-help-shortcuts">
-                        <span><kbd>Ctrl</kbd> + <kbd>S</kbd> luu nhap</span>
-                        <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> dang bai</span>
+                    <div class="studio-dock-tabs" data-dock-tabs="right">
+                        <button type="button" class="is-active" data-dock-target="right-properties">Thuộc tính</button>
+                        <button type="button" data-dock-target="right-layout">Bố cục</button>
+                        <button type="button" data-dock-target="right-quality">Chất lượng</button>
+                        <button type="button" data-dock-target="right-publish">Xuất bản</button>
                     </div>
-                </div>
+
+                    <div class="studio-dock-panels">
+                        <section class="studio-dock-panel is-active" data-dock-panel="right-properties">
+                            <aside class="studio-panel right-panel">
+                                <div class="panel-header" id="panelHeaderLabel">
+                                    <i class="fas fa-sliders-h"></i> Thiết lập
+                                </div>
+
+                                <div class="panel-body">
+                                    <div class="studio-inspector-intro">
+                                        <span class="studio-inspector-kicker">Inspector</span>
+                                        <h3 id="studioInspectorTitle">Điều khiển theo ngữ cảnh</h3>
+                                        <p id="studioInspectorBody">Chọn course, unit hoặc lesson để mở đúng bộ thuộc tính, action và thông tin cần thiết.</p>
+                                    </div>
+
+                                    <div id="panel-course" class="context-panel" style="display:none;">
+                                        <div class="panel-section-title" style="color:#2563eb; background:#eff6ff; border:1px solid #dbeafe;">
+                                            <i class="fas fa-book"></i> THÔNG TIN KHÓA HỌC
+                                            <span id="courseStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem; background:#cbd5e1; color:#475569;">LOADING...</span>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Tên khóa học</span>
+                                            <input type="text" id="pCourseTitle" class="studio-input" placeholder="Nhập tên khóa...">
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Mô tả ngắn</span>
+                                            <textarea id="pCourseDesc" class="studio-input" rows="3" style="font-size:0.85rem"></textarea>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Ảnh bìa</span>
+                                            <div style="display:flex; gap:5px; align-items:center;">
+                                                <img id="pCourseThumbPreview" src="/img/default-course.jpg" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;">
+                                            <input type="text" id="pCourseThumb" class="studio-input" placeholder="URL ảnh...">
+                                            </div>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Thiết lập nâng cao</span>
+                                            <div class="switch-wrapper">
+                                                <span>Yêu cầu VIP (PRO)</span>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" id="pCoursePro">
+                                                    <span class="slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Trạng thái công khai</span>
+                                            <div class="switch-wrapper">
+                                                <span>Cho phép học viên xem khóa học</span>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" id="pCoursePublic">
+                                                    <span class="slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="control-item actions-area" style="margin-top:20px; padding-top:15px; border-top:1px dashed #eee;">
+                                            <button type="button" class="btn-studio btn-publish" data-studio-action="save-course" data-publish-state="publish" style="width:100%; margin-bottom:8px;"><i class="fas fa-globe"></i> Đăng khóa học</button>
+                                            <button type="button" class="btn-studio btn-draft" data-studio-action="save-course" data-publish-state="draft" style="width:100%;"><i class="fas fa-save"></i> Lưu nháp</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="panel-unit" class="context-panel" style="display:none;">
+                                        <div class="panel-section-title" style="color:#b45309; background:#fffbeb; border:1px solid #fcd34d;">
+                                            <i class="fas fa-folder-open"></i> CÀI ĐẶT CHƯƠNG
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Tên chương</span>
+                                            <input type="text" id="settingUnitTitle" class="studio-input">
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Thao tác nhanh</span>
+                                            <div style="display:flex; gap:5px; margin-top:5px;">
+                                                <button type="button" class="btn-secondary" data-studio-action="save-unit" data-publish-state="draft" style="flex:1; font-size:0.75rem; padding:8px;"><i class="fas fa-pencil-ruler"></i> Nháp all</button>
+                                                <button type="button" class="btn-primary" data-studio-action="save-unit" data-publish-state="publish" style="flex:1; font-size:0.75rem; padding:8px;"><i class="fas fa-check-circle"></i> Đăng all</button>
+                                            </div>
+                                            <div style="font-size:0.75rem; color:#888; margin-top:5px;">Áp dụng cho tất cả bài học trong chương này.</div>
+                                        </div>
+                                        <div class="control-item" style="border-top:1px dashed #eee; padding-top:10px; margin-top:10px;">
+                                            <button type="button" class="btn-icon-mini delete-btn" style="width:100%; justify-content:center; color:#ef4444; border:1px solid #fca5a5; background:#fef2f2;" data-studio-action="delete-active-unit">
+                                                <i class="fas fa-trash"></i> Xóa chương này
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div id="panel-lesson" class="context-panel" style="display:none;">
+                                        <div class="panel-section-title" style="color:#15803d; background:#dcfce7; border:1px solid #86efac;">
+                                            <i class="fas fa-file-alt"></i> CẤU HÌNH BÀI HỌC
+                                            <span id="publishStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem;">NHÁP</span>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Quyền truy cập</span>
+                                            <div class="switch-wrapper">
+                                                <span>Yêu cầu VIP (PRO)</span>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" name="isPro" id="isProInput" <%= lesson && lesson.isPro ? 'checked' : '' %>>
+                                                    <span class="slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Thông tin</span>
+                                            <div class="meta-info" style="font-size:0.85rem; color:#555;">
+                                                <div style="margin-bottom:5px;"><i class="fas fa-user-edit"></i> Tác giả: <b><%= user.username %></b></div>
+                                                <div><i class="far fa-clock"></i> <span id="lastSavedTime"><%= lesson ? new Date(lesson.updatedAt).toLocaleTimeString('vi-VN') : 'Chưa lưu' %></span></div>
+                                            </div>
+                                        </div>
+                                        <div class="control-item actions-area" style="margin-top:20px;">
+                                            <button type="button" class="btn-studio btn-publish" data-studio-action="save-lesson" data-publish-state="publish" style="width:100%; margin-bottom:8px;"><i class="fas fa-rocket"></i> Đăng bài</button>
+                                            <button type="button" class="btn-studio btn-draft" data-studio-action="save-lesson" data-publish-state="draft" style="width:100%;"><i class="fas fa-save"></i> Lưu nháp</button>
+                                            <div style="display:flex; gap:5px; margin-top:15px; border-top:1px dashed #eee; padding-top:15px;">
+                                                <button type="button" class="btn-secondary" data-studio-action="export-lesson-json" style="flex:1; font-size:0.8rem;"><i class="fas fa-download"></i> Xuất JSON</button>
+                                                <button type="button" class="btn-secondary" data-studio-action="open-import-json" style="flex:1; font-size:0.8rem;"><i class="fas fa-upload"></i> Nhập JSON</button>
+                                                <input type="file" id="importJsonInput" accept=".json" style="display:none">
+                                            </div>
+                                            <div class="control-item" style="border-top:1px dashed #eee; margin-top:10px; padding-top:10px;">
+                                                <button type="button" class="btn-studio" data-studio-action="open-revisions" style="width:100%; background:#f8fafc; color:#334155; border:1px solid #cbd5e1;"><i class="fas fa-history"></i> Lịch sử phiên bản</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="studio-help-card">
+                                        <span class="studio-help-kicker">Quick flow</span>
+                                        <h4>Nhịp làm việc gói gọn</h4>
+                                        <p>Chọn bài học ở cây trái, biên tập block ở giữa và dùng inspector bên phải để publish, export JSON hoặc xem lịch sử.</p>
+                                        <div class="studio-help-shortcuts">
+                                            <span><kbd>Ctrl</kbd> + <kbd>S</kbd> lưu nháp</span>
+                                            <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> đăng bài</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="right-layout">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Layout Lab</span>
+                                <h3>Tối ưu bố cục canvas</h3>
+                                <p>Điều chỉnh khung nhìn và chế độ tập trung mà không rời khỏi bài học.</p>
+                            </div>
+                            <div class="studio-smart-group">
+                                <span class="studio-smart-label">Khung nhìn</span>
+                                <div class="studio-v4-viewport-switch studio-v4-viewport-switch-stack">
+                                    <button type="button" class="is-active" data-preview-mode="desktop">Desktop</button>
+                                    <button type="button" data-preview-mode="tablet">Tablet</button>
+                                    <button type="button" data-preview-mode="mobile">Mobile</button>
+                                </div>
+                            </div>
+                            <div class="studio-smart-group">
+                                <span class="studio-smart-label">Chế độ làm việc</span>
+                                <button type="button" class="studio-v4-secondary-button" id="studioFocusToggleSecondary">
+                                    <i class="fas fa-maximize"></i> Bật / tắt focus mode
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="right-quality">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Quality Engine</span>
+                                <h3>Kiểm tra nội dung thông minh</h3>
+                                <p>Rà nhanh lỗi ẩn về tiêu đề, block trống, media thiếu URL, quiz thiếu đáp án và HTML rủi ro.</p>
+                            </div>
+                            <div id="v4QualityChecks" class="studio-smart-list studio-smart-list-empty">
+                                <div class="studio-smart-empty">
+                                    <i class="fas fa-shield-heart"></i>
+                                    <span>Chưa có dữ liệu để phân tích.</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="studio-dock-panel" data-dock-panel="right-publish">
+                            <div class="studio-v4-sidecard">
+                                <span class="studio-v4-sidekicker">Publish Desk</span>
+                                <h3>Checklist trước khi xuất bản</h3>
+                                <p>Hợp nhất trạng thái biên soạn, checklist chất lượng và thao tác lưu/đăng nhanh trong một chỗ.</p>
+                            </div>
+                            <div id="v4PublishChecklist" class="studio-smart-list studio-smart-list-empty">
+                                <div class="studio-smart-empty">
+                                    <i class="fas fa-rocket"></i>
+                                    <span>Chọn bài học để xem checklist xuất bản.</span>
+                                </div>
+                            </div>
+                            <div class="studio-smart-actions">
+                                <button type="button" class="studio-v4-primary-button" data-studio-action="quick-publish"><i class="fas fa-paper-plane"></i> Đăng nhanh</button>
+                                <button type="button" class="studio-v4-secondary-button" data-studio-action="quick-draft"><i class="fas fa-floppy-disk"></i> Lưu nháp</button>
+                            </div>
+                        </section>
+                    </div>
+                </section>
             </div>
-        </aside>
+        </form>
+    </div>
 
-        </div>
-    </form>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://unpkg.com/mathlive"></script>
+    <style>
+        math-field { font-size: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%; margin-bottom: 15px; background: #fff; }
+        .math-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; display: none; align-items: center; justify-content: center; }
+        .math-modal-box { background: #fff; width: 500px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+    </style>
 
-</div>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
-<script src="https://unpkg.com/mathlive"></script>
-<style>
-    /* CSS cho MathLive Modal */
-    math-field {
-        font-size: 20px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        width: 100%;
-        margin-bottom: 15px;
-        background: #fff;
-    }
-    .math-modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); z-index: 9999;
-        display: none; align-items: center; justify-content: center;
-    }
-    .math-modal-box {
-        background: #fff; width: 500px; padding: 20px;
-        border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-</style>
-
-<div id="mathLiveModal" class="math-modal-overlay">
-    <div class="math-modal-box">
-        <h3 style="margin-bottom:15px; display:flex; justify-content:space-between;">
-            <span><i class="fas fa-square-root-alt"></i> Soạn công thức Toán</span>
-            <span onclick="closeMathModal()" style="cursor:pointer; color:#999;">&times;</span>
-        </h3>
-        
-        <math-field id="mathLiveInput" virtual-keyboard-mode="manual"></math-field>
-        
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button type="button" class="btn-secondary" onclick="insertMathToEditor(false)">Inline ($)</button>
-            <button type="button" class="btn-primary" onclick="insertMathToEditor(true)">Block ($$)</button>
+    <div id="mathLiveModal" class="math-modal-overlay">
+        <div class="math-modal-box">
+            <h3 style="margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fas fa-square-root-alt"></i> Soạn công thức Toán</span>
+                <span data-modal-action="close-math" style="cursor:pointer; color:#999;">&times;</span>
+            </h3>
+            <math-field id="mathLiveInput" virtual-keyboard-mode="manual"></math-field>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn-secondary" data-studio-action="insert-math" data-math-mode="inline">Inline ($)</button>
+                <button type="button" class="btn-primary" data-studio-action="insert-math" data-math-mode="block">Block ($$)</button>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="revisionModal" class="math-modal-overlay">
-    <div class="math-modal-box" style="width: 600px; max-width: 95%;">
-        <h3 style="margin-bottom:15px; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <span><i class="fas fa-history"></i> Lịch sử chỉnh sửa (Max 50)</span>
-            <span onclick="document.getElementById('revisionModal').style.display='none'" style="cursor:pointer; color:#999;">&times;</span>
-        </h3>
-        
-        <div id="revisionList" style="max-height: 400px; overflow-y: auto;">
-            <div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
-        </div>
-        
-        <div style="text-align:right; margin-top:15px; font-size:0.8rem; color:#666;">
-            *Khôi phục sẽ ghi đè lên nội dung hiện tại.
+    <div id="revisionModal" class="math-modal-overlay">
+        <div class="math-modal-box" style="width:600px; max-width:95%;">
+            <h3 style="margin-bottom:15px; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <span><i class="fas fa-history"></i> Lịch sử chỉnh sửa (max 50)</span>
+                <span data-modal-action="close-revision" style="cursor:pointer; color:#999;">&times;</span>
+            </h3>
+            <div id="revisionList" style="max-height:400px; overflow-y:auto;">
+                <div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+            </div>
+            <div style="text-align:right; margin-top:15px; font-size:0.8rem; color:#666;">*Khôi phục sẽ ghi đè lên nội dung hiện tại.</div>
         </div>
     </div>
-</div>
 
-<%- include('partials/footer') %>
+    <div id="courseSettingsModal" class="math-modal-overlay">
+        <div class="math-modal-box" style="width:560px; max-width:95%;">
+            <h3 style="margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fas fa-book"></i> Cấu hình khóa học</span>
+                <span data-modal-action="close-course-settings" style="cursor:pointer; color:#999;">&times;</span>
+            </h3>
+            <div style="display:grid; gap:12px;">
+                <label style="display:grid; gap:6px;">
+                    <span>Tên khóa học</span>
+                    <input type="text" id="settingCourseTitle" class="studio-input" placeholder="Nhập tên khóa học...">
+                </label>
+                <label style="display:grid; gap:6px;">
+                    <span>Mô tả</span>
+                    <textarea id="settingCourseDesc" class="studio-input" rows="3"></textarea>
+                </label>
+                <label style="display:grid; gap:6px;">
+                    <span>Ảnh bìa</span>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <img id="thumbPreview" src="/img/default-course.jpg" alt="Thumbnail preview" style="width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid #e2e8f0;">
+                        <input type="text" id="settingCourseThumb" class="studio-input" placeholder="URL ảnh bìa...">
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <span>Yêu cầu PRO</span>
+                    <input type="checkbox" id="settingCoursePro">
+                </label>
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <span>Công khai khóa học</span>
+                    <input type="checkbox" id="settingCoursePublic">
+                </label>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+                    <button type="button" class="btn-secondary" data-studio-action="close-course-settings">Đóng</button>
+                    <button type="button" class="btn-primary" data-studio-action="save-course-settings">Lưu thay đổi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="/js/lessonEditorV3.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Lấy dữ liệu content từ server (đã được EJS escape an toàn)
-        const rawServerData = `<%- (lesson && lesson.content) ? lesson.content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') : '' %>`;
-        
-        // Gọi hàm initBlocks trong lessonEditorV3.js
-        if(typeof initBlocks === 'function') {
-            initBlocks(rawServerData);
-        }
-    });
-</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="/js/lessonEditorTreeRenderers.js"></script>
+    <script src="/js/lessonEditorBlockRenderers.js"></script>
+    <script src="/js/lessonEditorCanvasEngine.js"></script>
+    <script src="/js/lessonEditorV3.js"></script>
+    <script src="/js/lessonEditorV4.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawServerData = `<%- (lesson && lesson.content) ? lesson.content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') : '' %>`;
+            if (typeof initBlocks === 'function') initBlocks(rawServerData);
+            if (window.LessonEditorV4 && typeof window.LessonEditorV4.syncNow === 'function') {
+                window.LessonEditorV4.syncNow('server-bootstrap');
+            }
+        });
+    </script>
+</body>
+</html>

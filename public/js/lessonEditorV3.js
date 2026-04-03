@@ -17,6 +17,8 @@ let activeContext = 'course'; // 'course' | 'unit' | 'lesson'
 let activeUnitId = null;      // ID chương đang chọn
 
 // Xử lý trường hợp URL là /add
+let lessonCanvasEngine = null;
+
 if (currentLessonId === 'add') currentLessonId = 'current_new_lesson';
 
 const studioState = {
@@ -24,6 +26,112 @@ const studioState = {
     courseDirty: false,
     lastSavedAt: null
 };
+
+function cloneBlocksForBridge() {
+    try {
+        return JSON.parse(JSON.stringify(blocks));
+    } catch (err) {
+        return [];
+    }
+}
+
+function getStudioBridgeSnapshot() {
+    return {
+        blocks: cloneBlocksForBridge(),
+        activeLessonId,
+        activeUnitId,
+        activeContext,
+        studioState: { ...studioState },
+        metrics: typeof getLessonMetrics === 'function' ? getLessonMetrics() : { blocks: 0, words: 0, media: 0, readTime: 0 },
+        title: document.getElementById('mainTitleInput')?.value?.trim() || '',
+        courseId: document.getElementById('hiddenCourseId')?.value || '',
+        subjectId: document.getElementById('hiddenSubjectId')?.value || ''
+    };
+}
+
+function notifyStudioBridge(reason = 'update') {
+    const detail = {
+        reason,
+        snapshot: getStudioBridgeSnapshot()
+    };
+
+    document.dispatchEvent(new CustomEvent('lesson-studio:statechange', { detail }));
+}
+
+window.LessonStudioBridge = {
+    getSnapshot: getStudioBridgeSnapshot,
+    notify: notifyStudioBridge,
+    openRevisionHistory: () => typeof openRevisionHistory === 'function' && openRevisionHistory(),
+    quickSave: () => {
+        if (activeContext === 'lesson') return submitLessonAJAX(false);
+        if (activeContext === 'course') return saveCourseStatus(false);
+        if (activeContext === 'unit') return saveUnitStatus(false);
+    },
+    quickPublish: () => {
+        if (activeContext === 'lesson') return submitLessonAJAX(true);
+        if (activeContext === 'course') return saveCourseStatus(true);
+        if (activeContext === 'unit') return saveUnitStatus(true);
+    },
+    quickDraft: () => {
+        if (activeContext === 'lesson') return submitLessonAJAX(false);
+        if (activeContext === 'course') return saveCourseStatus(false);
+        if (activeContext === 'unit') return saveUnitStatus(false);
+    }
+};
+
+const lessonBlockTemplates = {
+    text: { type: 'text', data: { text: '' } },
+    image: { type: 'image', data: { url: '' } },
+    video: { type: 'video', data: { url: '' } },
+    html_preview: {
+        type: 'html_preview',
+        data: {
+            html: '\n<h1>Hello World</h1>',
+            settings: {
+                showSource: true,
+                defaultTab: 'result',
+                height: 400,
+                viewport: 'responsive',
+                includeBootstrap: false
+            }
+        }
+    },
+    resource: { type: 'resource', data: { title: '', url: '', iconType: 'drive' } },
+    code: { type: 'code', data: { language: 'javascript', code: '' } },
+    callout: { type: 'callout', data: { text: '' } },
+    question: { type: 'question', data: { questions: [] } }
+};
+
+function ensureCanvasEngine() {
+    if (lessonCanvasEngine || !window.LessonCanvasEngine || typeof window.LessonCanvasEngine.create !== 'function') {
+        return lessonCanvasEngine;
+    }
+
+    lessonCanvasEngine = window.LessonCanvasEngine.create({
+        getBlocks: () => blocks,
+        getInsertIndex: () => blockInsertIndex,
+        setInsertIndex: (value) => {
+            blockInsertIndex = value;
+        },
+        createTemplate: (type) => lessonBlockTemplates[type],
+        markDirty: () => markStudioDirty('lesson'),
+        render: () => renderBlocks(),
+        filterMenu: (query) => filterBlockMenu(query),
+        confirmDelete: async () => {
+            const result = await Swal.fire({
+                title: 'Xóa khối này?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa'
+            });
+            return result.isConfirmed;
+        },
+        editQuestionBlock: (index) => editQuestionBlock(index)
+    });
+
+    lessonCanvasEngine.bindDelegates();
+    return lessonCanvasEngine;
+}
 
 function buildSandboxedPreviewSrcdoc(htmlCode, includeBootstrap = false, bodyPadding = 15) {
     let head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
@@ -74,6 +182,7 @@ function initApp() {
             if (!menu.contains(e.target) && 
                 !e.target.closest('.add-block-placeholder') && 
                 !e.target.closest('.inserter-line') &&
+                !e.target.closest('[data-canvas-action="open-menu"]') &&
                 !e.target.closest('.btn-icon-mini')) {
                 closeBlockMenu();
             }
@@ -105,6 +214,7 @@ function initApp() {
     });
 
     bindStudioEnhancements();
+    ensureCanvasEngine();
     refreshStudioUI();
 }
 
@@ -129,6 +239,7 @@ function hasDirtyChanges() {
 function markStudioDirty(scope = activeContext) {
     studioState[`${getDirtyScope(scope)}Dirty`] = true;
     setSaveStatus('Co thay doi chua luu', 'dirty');
+    notifyStudioBridge('dirty');
 }
 
 function clearStudioDirty(message = 'Da dong bo', scope = activeContext) {
@@ -136,6 +247,7 @@ function clearStudioDirty(message = 'Da dong bo', scope = activeContext) {
     studioState.lastSavedAt = new Date();
     if (hasDirtyChanges()) setSaveStatus('Co thay doi chua luu', 'dirty');
     else setSaveStatus(message, 'saved');
+    notifyStudioBridge('saved');
 }
 
 function getSelectedOptionLabel(id, fallback) {
@@ -316,6 +428,7 @@ function updateModeCopy(mode) {
 function refreshStudioUI(mode = activeContext) {
     refreshTreeOverview();
     updateModeCopy(mode);
+    notifyStudioBridge('ui-refresh');
 }
 
 function filterBlockMenu(query) {
@@ -332,10 +445,21 @@ function bindStudioEnhancements() {
         searchInput.addEventListener('input', (e) => filterBlockMenu(e.target.value));
     }
 
+    const subjectSelect = document.getElementById('selectSubject');
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', (event) => loadCourses(event.target.value));
+    }
+
+    const courseSelect = document.getElementById('selectCourse');
+    if (courseSelect) {
+        courseSelect.addEventListener('change', (event) => loadCurriculumByCourse(event.target.value));
+    }
+
     ['pCourseTitle', 'pCourseDesc', 'pCourseThumb'].forEach((id) => {
         const field = document.getElementById(id);
         if (!field) return;
         field.addEventListener('input', () => {
+            if (id === 'pCourseThumb') updateCourseThumbPreview();
             markStudioDirty();
             refreshStudioUI();
             autoSaveCourse();
@@ -351,6 +475,28 @@ function bindStudioEnhancements() {
             autoSaveCourse();
         });
     });
+
+    const settingUnitTitle = document.getElementById('settingUnitTitle');
+    if (settingUnitTitle) {
+        settingUnitTitle.addEventListener('input', (event) => {
+            syncUnitTitleToTree(event.target);
+            markStudioDirty();
+            refreshStudioUI(activeContext);
+        });
+    }
+
+    const settingCourseThumb = document.getElementById('settingCourseThumb');
+    if (settingCourseThumb) {
+        settingCourseThumb.addEventListener('input', () => {
+            const thumbPreview = document.getElementById('thumbPreview');
+            if (thumbPreview) thumbPreview.src = settingCourseThumb.value || '/img/default-course.jpg';
+        });
+    }
+
+    const importJsonInput = document.getElementById('importJsonInput');
+    if (importJsonInput) {
+        importJsonInput.addEventListener('change', () => importLessonJSON(importJsonInput));
+    }
 
     window.addEventListener('beforeunload', (event) => {
         if (!hasDirtyChanges()) return;
@@ -377,10 +523,183 @@ function bindStudioEnhancements() {
             if (placeholder) openBlockMenu(blocks.length - 1, { currentTarget: placeholder });
         }
     });
+
+    document.addEventListener('click', (event) => {
+        const modalAction = event.target.closest('[data-modal-action]');
+        if (modalAction) {
+            const action = modalAction.dataset.modalAction;
+            if (action === 'close-math') closeMathModal();
+            else if (action === 'close-revision') {
+                const revisionModal = document.getElementById('revisionModal');
+                if (revisionModal) revisionModal.style.display = 'none';
+            } else if (action === 'close-course-settings') {
+                closeCourseSettings();
+            }
+            return;
+        }
+
+        const revisionAction = event.target.closest('[data-revision-action]');
+        if (revisionAction) {
+            if (revisionAction.dataset.revisionAction === 'restore' && revisionAction.dataset.revisionId) {
+                restoreRevision(revisionAction.dataset.revisionId);
+            }
+            return;
+        }
+
+        const studioAction = event.target.closest('[data-studio-action]');
+        if (studioAction) {
+            const action = studioAction.dataset.studioAction;
+
+            if (action === 'prompt-create-course') {
+                promptCreateCourse();
+                return;
+            }
+
+            if (action === 'select-course-panel') {
+                selectCourse();
+                return;
+            }
+
+            if (action === 'delete-current-course') {
+                deleteCurrentCourse();
+                return;
+            }
+
+            if (action === 'add-temp-unit') {
+                addTempUnit();
+                return;
+            }
+
+            if (action === 'open-revisions') {
+                openRevisionHistory();
+                return;
+            }
+
+            if (action === 'save-course') {
+                saveCourseStatus(studioAction.dataset.publishState === 'publish');
+                return;
+            }
+
+            if (action === 'save-unit') {
+                saveUnitStatus(studioAction.dataset.publishState === 'publish');
+                return;
+            }
+
+            if (action === 'delete-active-unit') {
+                triggerDeleteActiveUnit();
+                return;
+            }
+
+            if (action === 'save-lesson') {
+                submitLessonAJAX(studioAction.dataset.publishState === 'publish');
+                return;
+            }
+
+            if (action === 'export-lesson-json') {
+                exportLessonJSON();
+                return;
+            }
+
+            if (action === 'open-import-json') {
+                importJsonInput?.click();
+                return;
+            }
+
+            if (action === 'insert-math') {
+                insertMathToEditor(studioAction.dataset.mathMode === 'block');
+                return;
+            }
+
+            if (action === 'close-course-settings') {
+                closeCourseSettings();
+                return;
+            }
+
+            if (action === 'save-course-settings') {
+                saveCourseSettings();
+                return;
+            }
+        }
+
+        const treeAction = event.target.closest('[data-tree-action]');
+        if (treeAction) {
+            const action = treeAction.dataset.treeAction;
+
+            if (action === 'noop') {
+                event.stopPropagation();
+                return;
+            }
+
+            if (action === 'select-course-root') {
+                selectCourse();
+                return;
+            }
+
+            if (action === 'select-unit') {
+                if (event.target.closest('.unit-title-input')) return;
+                selectUnit(treeAction.dataset.unitId || treeAction.closest('.tree-unit')?.dataset.unitId, treeAction);
+                return;
+            }
+
+            if (action === 'add-lesson') {
+                event.stopPropagation();
+                addTempLessonToUnit(treeAction);
+                return;
+            }
+
+            if (action === 'select-lesson') {
+                if (event.target.closest('.lesson-title-input')) return;
+                const lessonEl = treeAction.closest('.tree-lesson');
+                const lessonInput = lessonEl?.querySelector('.lesson-title-input');
+                if (lessonEl?.dataset.lessonId) {
+                    selectLesson(
+                        lessonEl.dataset.lessonId,
+                        lessonInput ? lessonInput.value : 'Bài học mới',
+                        lessonEl.dataset.lessonType || 'theory'
+                    );
+                }
+                return;
+            }
+
+            if (action === 'delete-lesson') {
+                event.stopPropagation();
+                const lessonId = treeAction.dataset.lessonId || treeAction.closest('.tree-lesson')?.dataset.lessonId;
+                if (lessonId) deleteLessonDOM(treeAction, lessonId, event);
+                return;
+            }
+
+            if (action === 'discard-draft' && treeAction.dataset.courseId) {
+                discardDraft(treeAction.dataset.courseId);
+                return;
+            }
+        }
+
+        const quizAction = event.target.closest('[data-quiz-action]');
+        if (!quizAction) return;
+
+        const action = quizAction.dataset.quizAction;
+        if (action === 'add-question') {
+            addQuestionItem(quizAction.dataset.containerId, quizAction.dataset.questionType);
+        } else if (action === 'add-option') {
+            addOptionToQuestion(quizAction, quizAction.dataset.groupName);
+        } else if (action === 'remove-option') {
+            quizAction.parentElement.remove();
+        } else if (action === 'remove-question') {
+            quizAction.closest('.quiz-item')?.remove();
+        }
+    });
+
+    document.addEventListener('change', (event) => {
+        const quizAction = event.target.closest('[data-quiz-action="toggle-multi"]');
+        if (!quizAction) return;
+        toggleMulti(quizAction, quizAction.dataset.groupName);
+    });
 }
 
 // Toggle menu cấu hình cho HTML Block
 function toggleHtmlSettings(idx) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.toggleFlag(idx, '_settingsOpen');
     if (!blocks[idx]) return;
     blocks[idx]._settingsOpen = !blocks[idx]._settingsOpen;
     renderBlocks();
@@ -530,18 +849,7 @@ async function loadCurriculumByCourse(courseId) {
 
         // KIỂM TRA: LÀ BẢN NHÁP HAY LIVE?
         if (dataTree.source === 'draft') {
-            const alertHtml = `
-                <div style="background:#fff7ed; color:#c2410c; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ffedd5; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
-                    <div>
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        <b>Chế độ Bản Nháp</b><br>
-                        <span style="font-size:0.8rem; opacity:0.8">Thay đổi chưa được công khai.</span>
-                    </div>
-                    <button type="button" onclick="discardDraft('${courseId}')" style="border:none; background:white; border:1px solid #c2410c; color:#c2410c; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem;">
-                        <i class="fas fa-undo"></i> Hủy nháp
-                    </button>
-                </div>`;
-            container.innerHTML = alertHtml;
+            container.appendChild(createDraftAlert(courseId));
             renderTreeFromJson(dataTree.tree); 
         } else {
             // Live mode
@@ -578,6 +886,40 @@ async function loadCurriculumByCourse(courseId) {
     }
 }
 
+function createDraftAlert(courseId) {
+    const alertBox = document.createElement('div');
+    alertBox.style.cssText = 'background:#fff7ed; color:#c2410c; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ffedd5; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;';
+
+    const info = document.createElement('div');
+
+    const strong = document.createElement('strong');
+    strong.textContent = 'Chế độ Bản Nháp';
+
+    const subText = document.createElement('span');
+    subText.style.cssText = 'font-size:0.8rem; opacity:0.8';
+    subText.textContent = 'Thay đổi chưa được công khai.';
+
+    const warningIcon = document.createElement('i');
+    warningIcon.className = 'fas fa-exclamation-triangle';
+    warningIcon.style.marginRight = '6px';
+
+    info.append(warningIcon, strong, document.createElement('br'), subText);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.treeAction = 'discard-draft';
+    button.dataset.courseId = courseId;
+    button.style.cssText = 'border:none; background:white; border:1px solid #c2410c; color:#c2410c; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem;';
+
+    const buttonIcon = document.createElement('i');
+    buttonIcon.className = 'fas fa-undo';
+    buttonIcon.style.marginRight = '4px';
+    button.append(buttonIcon, document.createTextNode('Hủy nháp'));
+
+    alertBox.append(info, button);
+    return alertBox;
+}
+
 // --- 3. RENDER TREE TỪ JSON ---
 function renderTreeFromJson(units) {
     const container = document.getElementById('treeContainer');
@@ -598,17 +940,21 @@ function renderTreeFromJson(units) {
                        ? courseSelect.options[courseSelect.selectedIndex].text 
                        : 'Khóa học hiện tại';
     
-    const rootEl = document.createElement('div');
-    rootEl.className = 'tree-root-item';
-    rootEl.style.cssText = 'padding: 10px 5px; font-weight: 700; color: #2563eb; cursor: pointer; border-bottom: 2px solid #eff6ff; display: flex; align-items: center;';
-    rootEl.innerHTML = `
-        <i class="fas fa-graduation-cap" style="margin-right: 8px;"></i>
-        <span style="flex-grow: 1;">${courseName}</span>
-        <i class="fas fa-chevron-right" style="font-size: 0.8rem; color: #bfdbfe;"></i>
-    `;
-    
-    // Click vào root -> Chọn khóa học
-    rootEl.onclick = () => selectCourse();
+    const rootEl = window.LessonTreeRenderers
+        ? window.LessonTreeRenderers.createRootNode(courseName)
+        : document.createElement('div');
+
+    if (!window.LessonTreeRenderers) {
+        rootEl.className = 'tree-root-item';
+        rootEl.dataset.treeAction = 'select-course-root';
+        rootEl.style.cssText = 'padding: 10px 5px; font-weight: 700; color: #2563eb; cursor: pointer; border-bottom: 2px solid #eff6ff; display: flex; align-items: center;';
+        rootEl.innerHTML = `
+            <i class="fas fa-graduation-cap" style="margin-right: 8px;"></i>
+            <span style="flex-grow: 1;">${courseName}</span>
+            <i class="fas fa-chevron-right" style="font-size: 0.8rem; color: #bfdbfe;"></i>
+        `;
+    }
+
     listWrapper.appendChild(rootEl);
 
 
@@ -733,12 +1079,6 @@ function triggerDeleteActiveUnit() {
     if(!activeUnitId) return;
     const unitEl = document.querySelector(`.tree-unit[data-unit-id="${activeUnitId}"]`);
     if(unitEl) {
-        // Tìm nút xóa trong DOM ảo và click nó (tận dụng hàm deleteUnitDOM cũ)
-        // Hoặc viết lại hàm deleteUnitDirect(activeUnitId)
-        // Cách nhanh:
-        const btnDelete = unitEl.querySelector('.tree-actions .btn-icon-mini[onclick*="deleteUnitDOM"]'); 
-        // Lưu ý: Code cũ tôi đã xóa nút delete ở header để chuyển vào panel.
-        // NẾU BẠN MUỐN GIỮ NÚT TRÊN CÂY THÌ OK. NẾU KHÔNG THÌ GỌI LOGIC TRỰC TIẾP:
         deleteUnitDOM({ closest: () => unitEl }); // Mock element
     }
 }
@@ -748,31 +1088,35 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
     // Nếu không truyền container thì lấy mặc định
     const container = targetContainer || document.getElementById('treeListWrapper') || document.getElementById('treeContainer');
 
-    const unitEl = document.createElement('div');
-    unitEl.className = 'tree-unit';
-    unitEl.dataset.unitId = id; 
+    const unitEl = window.LessonTreeRenderers
+        ? window.LessonTreeRenderers.createUnitNode(id, title)
+        : document.createElement('div');
 
-    // [QUAN TRỌNG] Thêm onclick="selectUnit(...)" vào class tree-unit-header
-    unitEl.innerHTML = `
-        <div class="tree-unit-header" onclick="selectUnit('${id}', this)">
-            <div style="display:flex; align-items:center; flex-grow:1;">
-                <i class="fas fa-grip-vertical drag-handle-unit" 
-                   style="color:#ccc; cursor:grab; margin-right:8px;" 
-                   title="Kéo để sắp xếp chương"
-                   onclick="event.stopPropagation()"></i> <input type="text" class="unit-title-input" value="${title}" 
-                       placeholder="Nhập tên chương..."
-                       onchange="this.setAttribute('value', this.value)"
-                       oninput="syncTreeToUnitPanel(this)"
-                       onclick="event.stopPropagation()"> </div>
-            <div class="tree-actions">
-                <button type="button" class="btn-icon-mini" onclick="addTempLessonToUnit(this); event.stopPropagation();" title="Thêm bài vào chương này"><i class="fas fa-plus"></i></button>
+    if (!window.LessonTreeRenderers) {
+        unitEl.className = 'tree-unit';
+        unitEl.dataset.unitId = id;
+        unitEl.innerHTML = `
+            <div class="tree-unit-header" data-tree-action="select-unit" data-unit-id="${id}">
+                <div style="display:flex; align-items:center; flex-grow:1;">
+                    <i class="fas fa-grip-vertical drag-handle-unit" 
+                       data-tree-action="noop"
+                       style="color:#ccc; cursor:grab; margin-right:8px;" 
+                       title="Kéo để sắp xếp chương"></i>
+                    <input type="text" class="unit-title-input" value="${title}" placeholder="Nhập tên chương...">
                 </div>
-        </div>
-        <div class="tree-lesson-list" data-unit-id="${id}"></div>
-    `;
+                <div class="tree-actions">
+                    <button type="button" class="btn-icon-mini" data-tree-action="add-lesson" data-unit-id="${id}" title="Thêm bài vào chương này"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <div class="tree-lesson-list" data-unit-id="${id}"></div>
+        `;
+    }
+
     const unitTitleInput = unitEl.querySelector('.unit-title-input');
     if (unitTitleInput) {
+        unitTitleInput.addEventListener('click', (event) => event.stopPropagation());
         unitTitleInput.addEventListener('input', () => {
+            syncTreeToUnitPanel(unitTitleInput);
             markStudioDirty();
             refreshStudioUI(activeContext);
         });
@@ -818,51 +1162,44 @@ function createUnitDOM(id, title, lessons = [], targetContainer) {
 
 // --- 5. CREATE LESSON DOM (Duy nhất) ---
 function createLessonDOM(lesson, isCurrent = false) {
-    const el = document.createElement('div');
     const lessonId = lesson._id || lesson.id;
-    
-    // Class Active
-    el.className = `tree-lesson ${String(lessonId) === String(activeLessonId) ? 'active' : ''}`;
-    el.dataset.lessonId = lessonId;
-    
-    // Icon loại bài học
-    let icon = '<i class="fas fa-file-alt"></i>';
-    if(lesson.type === 'video') icon = '<i class="fas fa-video"></i>';
-    if(lesson.type === 'question' || lesson.type === 'quiz') icon = '<i class="fas fa-question-circle"></i>';
+    const el = window.LessonTreeRenderers
+        ? window.LessonTreeRenderers.createLessonNode(lesson, isCurrent ? lessonId : activeLessonId)
+        : document.createElement('div');
 
-    // Trạng thái Nháp
-    let statusIcon = '';
-    if (lesson.isPublished === false || String(lessonId).startsWith('new_') || lessonId === 'current_new_lesson') {
-        statusIcon = `<i class="fas fa-pencil-ruler" style="font-size: 0.7rem; color: #f59e0b;" title="Bản nháp"></i>`;
+    if (!window.LessonTreeRenderers) {
+        el.className = `tree-lesson ${String(lessonId) === String(activeLessonId) ? 'active' : ''}`;
+        el.dataset.lessonId = lessonId;
+        el.dataset.lessonType = lesson.type || 'theory';
+        el.dataset.treeAction = 'select-lesson';
+
+        let icon = '<i class="fas fa-file-alt"></i>';
+        if(lesson.type === 'video') icon = '<i class="fas fa-video"></i>';
+        if(lesson.type === 'question' || lesson.type === 'quiz') icon = '<i class="fas fa-question-circle"></i>';
+
+        let statusIcon = '';
+        if (lesson.isPublished === false || String(lessonId).startsWith('new_') || lessonId === 'current_new_lesson') {
+            statusIcon = `<i class="fas fa-pencil-ruler" style="font-size: 0.7rem; color: #f59e0b;" title="Bản nháp"></i>`;
+        }
+
+        el.innerHTML = `
+            <div style="display:flex; align-items:center; flex-grow:1; overflow:hidden; padding-right:5px;">
+                <i class="fas fa-ellipsis-v drag-handle" data-tree-action="noop" style="margin-right:8px; cursor:grab; color:#ccc;"></i>
+                <span class="lesson-icon" style="margin-right:8px;">${icon}</span>
+                <input type="text" class="lesson-title-input" value="${lesson.title}" style="flex-grow:1; border:none; background:transparent; min-width:0;">
+            </div>
+            <div class="lesson-actions" style="display:flex; align-items:center; gap:8px;">
+                ${statusIcon}
+                <button type="button" class="btn-icon-mini delete-lesson-btn" title="Xóa bài học" data-tree-action="delete-lesson" data-lesson-id="${lessonId}">
+                    <i class="fas fa-times" style="color:#ef4444;"></i>
+                </button>
+            </div>
+        `;
     }
-
-    // --- CẤU TRÚC HTML MỚI (CÓ NÚT XÓA) ---
-    // Sử dụng Flexbox để căn chỉnh: [Drag][Icon][Input] ......... [Status][Delete]
-    el.innerHTML = `
-        <div style="display:flex; align-items:center; flex-grow:1; overflow:hidden; padding-right:5px;">
-            <i class="fas fa-ellipsis-v drag-handle" style="margin-right:8px; cursor:grab; color:#ccc;"></i>
-            <span class="lesson-icon" style="margin-right:8px;">${icon}</span>
-            <input type="text" class="lesson-title-input" value="${lesson.title}" 
-                   onchange="this.setAttribute('value', this.value)" 
-                   onclick="event.stopPropagation()"
-                   style="flex-grow:1; border:none; background:transparent; min-width:0;"> 
-        </div>
-        
-        <div class="lesson-actions" style="display:flex; align-items:center; gap:8px;">
-            ${statusIcon}
-            <button type="button" class="btn-icon-mini delete-lesson-btn" 
-                    title="Xóa bài học" 
-                    onclick="deleteLessonDOM(this, '${lessonId}', event)">
-                <i class="fas fa-times" style="color:#ef4444;"></i>
-            </button>
-        </div>
-    `;
-
-    // Sự kiện click chọn bài
-    el.onclick = () => selectLesson(lessonId, lesson.title, lesson.type);
     
     // Live update title
     const input = el.querySelector('input');
+    input.addEventListener('click', (event) => event.stopPropagation());
     input.addEventListener('input', (e) => {
         if(String(lessonId) === String(activeLessonId)) {
             const mainInput = document.getElementById('mainTitleInput');
@@ -1333,6 +1670,7 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
     }
 
     refreshStudioUI('lesson');
+    notifyStudioBridge('lesson-selected');
 }
 
 function updateStatusBadge(isPublished) {
@@ -1357,6 +1695,7 @@ function updateStatusBadge(isPublished) {
 // --- 2. BLOCK EDITOR CORE ---
 
 function initBlocks(initialContent) {
+    ensureCanvasEngine();
     let parsed = null;
     
     // Parse JSON
@@ -1380,6 +1719,7 @@ function initBlocks(initialContent) {
     }
 
     renderBlocks();
+    notifyStudioBridge('blocks-init');
     
     // Sortable Blocks (Kéo thả thứ tự nội dung)
     const canvas = document.getElementById('editorCanvas');
@@ -1400,10 +1740,10 @@ function initBlocks(initialContent) {
 
 // --- VIDEO SETTINGS HELPER ---
 function toggleVideoSettings(idx) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.toggleFlag(idx, '_settingsOpen');
     if (!blocks[idx]) return;
-    // Đảo trạng thái hiển thị
     blocks[idx]._settingsOpen = !blocks[idx]._settingsOpen;
-    // Render lại để áp dụng thay đổi UI mà không mất dữ liệu
     renderBlocks();
 }
 
@@ -1421,26 +1761,21 @@ function renderBlocks() {
     const canvas = document.getElementById('editorCanvas');
     if (!canvas) return;
     canvas.innerHTML = '';
+    const blockRenderers = window.LessonBlockRenderers;
 
     blocks.forEach((b, idx) => {
-        // ... (Giữ nguyên toàn bộ logic tạo element của bạn ở đây) ...
-        const el = document.createElement('div');
-        el.className = 'content-block';
-        el.dataset.index = idx;
+        const frame = blockRenderers && typeof blockRenderers.createBlockFrame === 'function'
+            ? blockRenderers.createBlockFrame(idx)
+            : { el: document.createElement('div'), body: document.createElement('div') };
+        const el = frame.el;
+        const body = frame.body;
 
-        // Header Controls
-        const header = document.createElement('div');
-        header.className = 'block-controls';
-        header.innerHTML = `
-            <div class="btn-ctrl drag-handle-block" title="Kéo thả"><i class="fas fa-grip-lines"></i></div>
-            <button type="button" class="btn-ctrl" onclick="moveBlock(${idx}, -1)" title="Lên"><i class="fas fa-arrow-up"></i></button>
-            <button type="button" class="btn-ctrl" onclick="moveBlock(${idx}, 1)" title="Xuống"><i class="fas fa-arrow-down"></i></button>
-            <button type="button" class="btn-ctrl delete" onclick="deleteBlock(${idx})" title="Xóa"><i class="fas fa-trash"></i></button>
-        `;
-        el.appendChild(header);
-
-        const body = document.createElement('div');
-        body.className = 'block-body';
+        if (!el.className) {
+            el.className = 'content-block';
+            el.dataset.index = idx;
+            body.className = 'block-body';
+            el.appendChild(body);
+        }
 
         // --- RENDER TYPE: TEXT ---
         if (b.type === 'text') {
@@ -1463,6 +1798,7 @@ function renderBlocks() {
             // [FIX] onchange thay vì oninput để tránh re-render liên tục khi gõ
             inp.addEventListener('change', (e) => { 
                 blocks[idx].data.url = e.target.value; 
+                markStudioDirty('lesson');
                 renderBlocks(); 
             });
             body.appendChild(inp);
@@ -1474,115 +1810,11 @@ function renderBlocks() {
 
         // --- RENDER TYPE: VIDEO (FIXED) ---
         } else if (b.type === 'video') {
-            const data = b.data || {};
-            const ratio = data.ratio || '16/9';
-            const isAutoplay = data.autoplay || false;
-            const isSettingsOpen = b._settingsOpen === true;
-
-            body.innerHTML = `<div class="block-label"><i class="fab fa-youtube"></i> Video / Embed Link</div>`;
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'video-block-wrapper';
-
-            // Input
-            wrapper.innerHTML = `
-                <div class="video-input-group">
-                    <input type="text" class="studio-select" 
-                           placeholder="Dán link Youtube (Shorts ok), Vimeo hoặc file .mp4..." 
-                           value="${(data.url || '').replace(/"/g, '&quot;')}" 
-                           onchange="updateVideoBlock(${idx}, 'url', this.value)">
-                </div>
-            `;
-
-            // Preview Box
-            const preview = document.createElement('div');
-            preview.className = 'video-preview-box';
-            preview.style.aspectRatio = ratio.replace('/', ' / ');
-            
-           if (data.url) {
-                const videoInfo = getEmbedUrl(data.url, isAutoplay);
-                
-                if (videoInfo.type === 'iframe') {
-                    preview.innerHTML = `<iframe src="${videoInfo.url}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen referrerpolicy="origin"></iframe>`;
-                } else {
-                    preview.innerHTML = `<video src="${videoInfo.url}" controls ${isAutoplay ? 'autoplay muted' : ''} style="width:100%; height:100%"></video>`;
-                }
-            }
-            wrapper.appendChild(preview);
-
-            // Settings Panel
-            const settingsDiv = document.createElement('div');
-            const displayStyle = isSettingsOpen ? 'display:block' : 'display:none';
-            const toggleIcon = isSettingsOpen ? 'fa-chevron-up' : 'fa-chevron-down';
-
-            settingsDiv.innerHTML = `
-                <input type="text" class="studio-select" style="margin-top:10px; border:none; border-bottom:1px dashed #ccc;" 
-                       placeholder="Chú thích (Caption)..." 
-                       value="${(data.caption || '').replace(/"/g, '&quot;')}" 
-                       onchange="updateVideoBlock(${idx}, 'caption', this.value)">
-                
-                <div class="video-settings-toggle" onclick="toggleVideoSettings(${idx})" style="cursor:pointer; color:#2563eb; margin-top:8px; font-size:0.85rem; font-weight:600;">
-                    Cấu hình nâng cao <i class="fas ${toggleIcon}"></i>
-                </div>
-                
-                <div class="video-settings-panel" style="background:#f8fafc; padding:10px; border-radius:6px; margin-top:5px; ${displayStyle}">
-                    <div class="v-setting-item" style="margin-bottom:10px;">
-                        <label style="display:block; font-size:0.8rem; color:#64748b; margin-bottom:4px;">Tỷ lệ khung hình</label>
-                        <select class="studio-select" onchange="updateVideoBlock(${idx}, 'ratio', this.value)">
-                            <option value="16/9" ${ratio === '16/9' ? 'selected' : ''}>16:9 (Mặc định)</option>
-                            <option value="21/9" ${ratio === '21/9' ? 'selected' : ''}>21:9 (Điện ảnh)</option>
-                            <option value="4/3" ${ratio === '4/3' ? 'selected' : ''}>4:3 (Cũ)</option>
-                            <option value="9/16" ${ratio === '9/16' ? 'selected' : ''}>9:16 (Tiktok/Shorts)</option>
-                        </select>
-                    </div>
-                    <div class="v-setting-item" style="display:flex; align-items:center;">
-                        <input type="checkbox" id="vid-auto-${idx}" ${isAutoplay ? 'checked' : ''} 
-                               onchange="updateVideoBlock(${idx}, 'autoplay', this.checked)"
-                               style="margin-right:8px;">
-                        <label for="vid-auto-${idx}" style="font-size:0.9rem;">Tự động phát</label>
-                    </div>
-                </div>
-            `;
-            wrapper.appendChild(settingsDiv);
-            body.appendChild(wrapper);
+            blockRenderers.renderVideoBlock(body, b, idx, { getEmbedUrl });
 
         // --- RENDER TYPE: RESOURCE ---
         } else if (b.type === 'resource') {
-            body.innerHTML = `<div class="block-label"><i class="fas fa-cloud-download-alt"></i> Tài liệu (Google Drive / Link ngoài)</div>`;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'resource-block-wrapper';
-            wrapper.style.cssText = "padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;";
-            wrapper.innerHTML = `
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <div style="flex-grow:1;">
-                        <label style="font-size:0.8rem; color:#6b7280;">Tên tài liệu hiển thị</label>
-                        <input type="text" class="studio-select" 
-                               value="${b.data.title || ''}" 
-                               onchange="updateBlockData(${idx}, 'title', this.value)"
-                               style="font-weight:600;">
-                    </div>
-                    <div style="width:120px;">
-                        <label style="font-size:0.8rem; color:#6b7280;">Loại icon</label>
-                        <select class="studio-select" onchange="updateBlockData(${idx}, 'iconType', this.value)">
-                            <option value="drive" ${b.data.iconType === 'drive' ? 'selected' : ''}>Google Drive</option>
-                            <option value="pdf" ${b.data.iconType === 'pdf' ? 'selected' : ''}>PDF File</option>
-                            <option value="doc" ${b.data.iconType === 'doc' ? 'selected' : ''}>Word/Docs</option>
-                            <option value="zip" ${b.data.iconType === 'zip' ? 'selected' : ''}>File Zip</option>
-                            <option value="link" ${b.data.iconType === 'link' ? 'selected' : ''}>Link Web</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label style="font-size:0.8rem; color:#6b7280;">Đường dẫn (URL)</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" class="studio-select" 
-                               value="${b.data.url || ''}" 
-                               onchange="updateBlockData(${idx}, 'url', this.value)">
-                        <a href="${b.data.url || '#'}" target="_blank" class="btn-icon-mini" style="width:40px; text-decoration:none; display:flex; align-items:center; justify-content:center; border:1px solid #ddd;"><i class="fas fa-external-link-alt"></i></a>
-                    </div>
-                </div>
-            `;
-            el.appendChild(wrapper);
+            blockRenderers.renderResourceBlock(body, b, idx);
 
         // --- RENDER TYPE: CODE SNIPPET ---
         } else if (b.type === 'code') {
@@ -1619,7 +1851,10 @@ function renderBlocks() {
                 langSelect.appendChild(opt);
             });
 
-            langSelect.onchange = (e) => { blocks[idx].data.language = e.target.value; };
+            langSelect.onchange = (e) => {
+                blocks[idx].data.language = e.target.value;
+                markStudioDirty('lesson');
+            };
 
             // Textarea nhập code
             const codeArea = document.createElement('textarea');
@@ -1631,7 +1866,11 @@ function renderBlocks() {
             codeArea.style.cssText = "width: 100%; height: 200px; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; border: none; outline: none; resize: vertical; padding: 5px; line-height: 1.5;";
             
             // Dùng oninput thay vì onchange để mượt mà, nhưng không gọi renderBlocks
-            codeArea.oninput = (e) => { blocks[idx].data.code = e.target.value; };
+            codeArea.oninput = (e) => {
+                blocks[idx].data.code = e.target.value;
+                markStudioDirty('lesson');
+                refreshStudioUI('lesson');
+            };
             // Tab key support (thụt đầu dòng)
             codeArea.addEventListener('keydown', function(e) {
                 if (e.key == 'Tab') {
@@ -1641,6 +1880,8 @@ function renderBlocks() {
                     this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
                     this.selectionStart = this.selectionEnd = start + 4;
                     blocks[idx].data.code = this.value;
+                    markStudioDirty('lesson');
+                    refreshStudioUI('lesson');
                 }
             });
 
@@ -1650,50 +1891,7 @@ function renderBlocks() {
 
         // --- RENDER TYPE: QUIZ ---
         } else if (b.type === 'question' || b.type === 'quiz') {
-             el.classList.add('block-quiz');
-             if (!b.data) b.data = {};
-             if (!b.data.settings) {
-                 b.data.settings = { randomizeQuestions: false, randomizeOptions: false, passingScore: 50, showFeedback: 'submit' };
-             }
-             const settings = b.data.settings;
-             const questions = b.data?.questions || [];
-             const summary = questions.length + ' câu hỏi';
-             
-             const settingsHTML = `
-                <div class="quiz-settings-bar">
-                    <div class="quiz-settings-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'grid' : 'none'">
-                        <i class="fas fa-cog"></i> Cấu hình bài tập (Nhấn để ẩn/hiện)
-                    </div>
-                    <div class="quiz-settings-content" style="display:grid;">
-                        <label class="q-setting-item">
-                            <input type="checkbox" onchange="updateBlockData(${idx}, 'settings.randomizeQuestions', this.checked)" ${settings.randomizeQuestions ? 'checked' : ''}> Đảo ngẫu nhiên câu hỏi
-                        </label>
-                        <label class="q-setting-item">
-                            <input type="checkbox" onchange="updateBlockData(${idx}, 'settings.randomizeOptions', this.checked)" ${settings.randomizeOptions ? 'checked' : ''}> Đảo vị trí đáp án
-                        </label>
-                        <label class="q-setting-item">
-                            <span>Điểm đạt (%):</span>
-                            <input type="number" min="0" max="100" value="${settings.passingScore}" onchange="updateBlockData(${idx}, 'settings.passingScore', Number(this.value))">
-                        </label>
-                        <label class="q-setting-item">
-                            <span>Xem đáp án:</span>
-                            <select onchange="updateBlockData(${idx}, 'settings.showFeedback', this.value)">
-                                <option value="instant" ${settings.showFeedback === 'instant' ? 'selected' : ''}>Ngay khi chọn</option>
-                                <option value="submit" ${settings.showFeedback === 'submit' ? 'selected' : ''}>Sau khi nộp bài</option>
-                                <option value="never" ${settings.showFeedback === 'never' ? 'selected' : ''}>Không hiển thị</option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-             `;
-
-             body.innerHTML = settingsHTML + `
-                <div class="block-label"><i class="fas fa-question-circle"></i> Bộ Câu Hỏi</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="font-size:0.9rem; color:#4b5563;"><strong>${summary}</strong></div>
-                    <button type="button" class="btn-mini-add" onclick="editQuestionBlock(${idx})"><i class="fas fa-edit"></i> Chỉnh sửa</button>
-                </div>
-             `;
+             blockRenderers.renderQuestionBlock(el, body, b, idx);
         
         // --- RENDER TYPE: CALLOUT ---
         } else if (b.type === 'callout') {
@@ -1712,162 +1910,17 @@ function renderBlocks() {
              body.appendChild(ta);
         // --- RENDER TYPE: HTML PREVIEW (FULL FEATURES) ---
         } else if (b.type === 'html_preview') {
-            body.innerHTML = `<div class="block-label"><i class="fab fa-html5"></i> HTML Live Preview</div>`;
-            
-            // 1. Lấy Settings (hoặc dùng mặc định)
-            const settings = b.data.settings || { 
-                showSource: true, 
-                defaultTab: 'result', 
-                height: 400, 
-                viewport: 'responsive', 
-                includeBootstrap: false 
-            };
-            const isSettingsOpen = b._settingsOpen === true;
-            
-            // 2. Render Settings Panel (Ẩn/Hiện dựa vào biến _settingsOpen)
-            const settingsPanel = `
-                <div class="html-settings-panel" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:12px; ${isSettingsOpen ? 'display:block' : 'display:none'}">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">Chế độ xem mặc định</label>
-                            <select class="studio-select" onchange="updateBlockData(${idx}, 'settings.defaultTab', this.value)">
-                                <option value="result" ${settings.defaultTab === 'result' ? 'selected' : ''}>Kết quả (Result)</option>
-                                <option value="code" ${settings.defaultTab === 'code' ? 'selected' : ''}>Mã nguồn (Code)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">Kích thước Viewport</label>
-                            <select class="studio-select" onchange="updateBlockData(${idx}, 'settings.viewport', this.value)">
-                                <option value="responsive" ${settings.viewport === 'responsive' ? 'selected' : ''}>Tự động (Responsive)</option>
-                                <option value="mobile" ${settings.viewport === 'mobile' ? 'selected' : ''}>Điện thoại (375px)</option>
-                                <option value="tablet" ${settings.viewport === 'tablet' ? 'selected' : ''}>Máy tính bảng (768px)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="small text-muted mb-1">Chiều cao khung (px)</label>
-                            <input type="number" class="studio-select" value="${settings.height || 400}" min="100" step="50" onchange="updateBlockData(${idx}, 'settings.height', Number(this.value))">
-                        </div>
-                        <div class="col-12 mt-2 d-flex gap-3 pt-2 border-top">
-                            <label class="d-flex align-items-center cursor-pointer">
-                                <input type="checkbox" class="me-2" onchange="updateBlockData(${idx}, 'settings.showSource', this.checked)" ${settings.showSource !== false ? 'checked' : ''}>
-                                <span class="small">Cho phép học viên xem Code</span>
-                            </label>
-                            <label class="d-flex align-items-center cursor-pointer">
-                                <input type="checkbox" class="me-2" onchange="updateBlockData(${idx}, 'settings.includeBootstrap', this.checked)" ${settings.includeBootstrap ? 'checked' : ''}>
-                                <span class="small text-primary fw-bold"><i class="fab fa-bootstrap me-1"></i> Tự động nhúng Bootstrap 5</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // 3. Render Wrapper Chính
-            const wrapper = document.createElement('div');
-            wrapper.className = 'html-preview-wrapper';
-            wrapper.style.cssText = "display: flex; flex-direction: column; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff;";
-
-            // Header con của Block (Nút bật tắt cấu hình)
-            const configHeader = `
-                <div style="padding: 8px 12px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-                    <div class="small fw-bold text-secondary">SOURCE & PREVIEW</div>
-                    <button type="button" class="btn btn-sm btn-light border" onclick="toggleHtmlSettings(${idx})" style="font-size:0.75rem; color:#475569;">
-                        <i class="fas fa-cog"></i> Cấu hình hiển thị
-                    </button>
-                </div>
-            `;
-            
-            // Container 2 cột (Code | Preview)
-            const columnsContainer = document.createElement('div');
-            columnsContainer.style.cssText = "display: flex; flex-wrap: wrap; min-height: 300px;";
-
-            // --- CỘT TRÁI: CODE EDITOR ---
-            const leftCol = document.createElement('div');
-            leftCol.style.cssText = "flex: 1; min-width: 300px; display: flex; flex-direction: column; border-right: 1px solid #cbd5e1; background: #1e293b;";
-            
-            const textarea = document.createElement('textarea');
-            textarea.className = 'studio-select'; 
-            // Style đè lên class mặc định để ra giao diện Code Editor tối màu
-            textarea.style.cssText = "flex: 1; border: none; resize: vertical; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; padding: 15px; background: #1e293b; color: #e2e8f0; line-height: 1.6; outline: none; min-height: 300px;";
-            textarea.placeholder = "<h1>Nhập mã HTML/CSS/JS...</h1>";
-            textarea.value = b.data?.html || '';
-            textarea.spellcheck = false;
-
-            // --- CỘT PHẢI: LIVE PREVIEW ---
-            const rightCol = document.createElement('div');
-            rightCol.style.cssText = "flex: 1; min-width: 300px; display: flex; flex-direction: column; background: #fff; position: relative;";
-            
-            // Thanh tiêu đề nhỏ cho Preview
-            const previewHeader = document.createElement('div');
-            previewHeader.style.cssText = "padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;";
-            previewHeader.innerHTML = 'Kết quả thực thi';
-
-            const iframe = document.createElement('iframe');
-            iframe.style.cssText = "flex: 1; width: 100%; border: none; background: #fff;";
-            iframe.sandbox = 'allow-scripts allow-forms allow-modals allow-popups';
-            iframe.referrerPolicy = 'no-referrer';
-            
-            // Hàm cập nhật nội dung Iframe (Inject Bootstrap nếu cần)
-            const updatePreview = (val) => {
-                iframe.srcdoc = buildSandboxedPreviewSrcdoc(val, settings.includeBootstrap, 15);
-            };
-
-            // Event Listeners: Input -> Update Data & Preview
-            let timer;
-            textarea.addEventListener('input', (e) => {
-                const val = e.target.value;
-                blocks[idx].data.html = val; // Lưu data ngay lập tức
-                markStudioDirty();
-                refreshStudioUI('lesson');
-                
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    updatePreview(val);
-                }, 800); // Debounce 800ms
+            blockRenderers.renderHtmlPreviewBlock(body, b, idx, {
+                buildSandboxedPreviewSrcdoc,
+                markStudioDirty: () => markStudioDirty('lesson'),
+                refreshStudioUI
             });
-            
-            // Hỗ trợ phím TAB trong textarea
-            textarea.addEventListener('keydown', function(e) {
-                if (e.key == 'Tab') {
-                    e.preventDefault();
-                    var start = this.selectionStart;
-                    var end = this.selectionEnd;
-                    // Chèn 2 spaces
-                    this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
-                    this.selectionStart = this.selectionEnd = start + 2;
-                    blocks[idx].data.html = this.value;
-                    markStudioDirty();
-                    refreshStudioUI('lesson');
-                }
-            });
-
-            // Chạy preview lần đầu
-            setTimeout(() => updatePreview(textarea.value), 100);
-
-            // Ráp các phần lại với nhau
-            leftCol.appendChild(textarea);
-            rightCol.appendChild(previewHeader);
-            rightCol.appendChild(iframe);
-            
-            columnsContainer.appendChild(leftCol);
-            columnsContainer.appendChild(rightCol);
-
-            wrapper.innerHTML = configHeader; // Header cấu hình
-            wrapper.appendChild(columnsContainer);
-
-            // Chèn Panel Settings lên đầu, sau đó đến Wrapper
-            body.innerHTML += settingsPanel; 
-            body.appendChild(wrapper);
         }
 
         el.appendChild(body);
         canvas.appendChild(el);
 
-        // Inserter Line
-        const inserter = document.createElement('div');
-        inserter.className = 'inserter-line';
-        inserter.innerHTML = `<div class="inserter-btn"><i class="fas fa-plus"></i></div>`;
-        inserter.onclick = (e) => openBlockMenu(idx, e);
-        canvas.appendChild(inserter);
+        blockRenderers.appendInserter(canvas, idx);
     });
 
     // Init EasyMDE for all text blocks
@@ -1879,6 +1932,7 @@ function renderBlocks() {
     setTimeout(() => {
         window.scrollTo(0, scrollPos);
         if(editorPanel) editorPanel.scrollTop = panelScroll;
+        notifyStudioBridge('blocks-rendered');
     }, 0);
 }
 
@@ -2015,6 +2069,10 @@ function insertMathToEditor(isBlock) {
 }
 
 function openBlockMenu(index, event) {
+    const engine = ensureCanvasEngine();
+    if (engine && event && event.currentTarget) {
+        return engine.openMenu(index, event.currentTarget);
+    }
     blockInsertIndex = index;
     const menu = document.getElementById('blockMenu');
     const searchInput = document.getElementById('blockMenuSearch');
@@ -2065,6 +2123,8 @@ function openBlockMenu(index, event) {
 }
 
 function closeBlockMenu() {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.closeMenu();
     const menu = document.getElementById('blockMenu');
     const searchInput = document.getElementById('blockMenuSearch');
     if (menu) menu.style.display = 'none';
@@ -2074,40 +2134,20 @@ function closeBlockMenu() {
 }
 
 function addBlock(type) {
-    const tpl = {
-        text: { type: 'text', data: { text: '' } },
-        image: { type: 'image', data: { url: '' } },
-        video: { type: 'video', data: { url: '' } },
-        html_preview: { 
-            type: 'html_preview', 
-            data: { 
-                html: '\n<h1>Hello World</h1>',
-                settings: {
-                    showSource: true,      // Cho phép xem code
-                    defaultTab: 'result',  // Tab mặc định: result | code
-                    height: 400,           // Chiều cao mặc định
-                    viewport: 'responsive',// responsive | mobile | tablet
-                    includeBootstrap: false// Tự động thêm Bootstrap
-                }
-            } 
-        },
-        resource: { type: 'resource', data: { title: '', url: '', iconType: 'drive' } },
-        code: { type: 'code', data: { language: 'javascript', code: '' } },
-        callout: { type: 'callout', data: { text: '' } },
-        question: { type: 'question', data: { questions: [] } }
-    };
-    
-    const newBlock = JSON.parse(JSON.stringify(tpl[type]));
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.addBlock(type);
 
+    const newBlock = JSON.parse(JSON.stringify(lessonBlockTemplates[type]));
     if (blockInsertIndex === -1) blocks.push(newBlock);
     else blocks.splice(blockInsertIndex + 1, 0, newBlock);
-
     closeBlockMenu();
     markStudioDirty();
     renderBlocks();
 }
 
 function deleteBlock(index) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.deleteBlock(index);
     Swal.fire({
         title: 'Xóa khối này?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa'
     }).then((res) => {
@@ -2120,6 +2160,8 @@ function deleteBlock(index) {
 }
 
 function moveBlock(index, dir) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.moveBlock(index, dir);
     const newIndex = index + dir;
     if(newIndex < 0 || newIndex >= blocks.length) return;
     const item = blocks.splice(index, 1)[0];
@@ -2134,6 +2176,8 @@ function serializeBlocks() {
 
 // --- VIDEO HELPERS ---
 function updateVideoBlock(idx, field, value) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.updateField(idx, field, value);
     if (!blocks[idx].data) blocks[idx].data = {};
     blocks[idx].data[field] = value;
     markStudioDirty();
@@ -2173,26 +2217,21 @@ function getEmbedUrl(url, autoplay) {
 
 // Update nested data path in a block (e.g. 'settings.randomizeQuestions')
 function updateBlockData(index, path, value) {
+    const engine = ensureCanvasEngine();
+    if (engine) return engine.updateField(index, path, value);
     if (typeof index !== 'number' || !blocks[index]) return;
     const keys = path.split('.');
     let target = blocks[index].data;
-
-    // Walk down to the parent of the final key
     for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
         if (!target[k]) target[k] = {};
         target = target[k];
     }
-
-    // Coerce numeric strings to number when appropriate
     const finalKey = keys[keys.length - 1];
     if (typeof value === 'string' && /^\d+$/.test(value)) {
         value = Number(value);
     }
-
     target[finalKey] = value;
-
-    // Re-render block preview only (avoid full reload for performance if desired)
     markStudioDirty();
     renderBlocks();
 }
@@ -2213,9 +2252,9 @@ function editQuestionBlock(blockIndex) {
                 <div id="${containerId}"></div>
             </div>
             <div class="add-q-buttons">
-                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'choice')"><i class="fas fa-list-ul"></i> Trắc nghiệm</button>
-                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'fill')"><i class="fas fa-edit"></i> Điền từ</button>
-                <button type="button" class="btn-add-q" onclick="addQuestionItem('${containerId}', 'essay')"><i class="fas fa-pen-nib"></i> Tự luận</button>
+                <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="choice"><i class="fas fa-list-ul"></i> Trắc nghiệm</button>
+                <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="fill"><i class="fas fa-edit"></i> Điền từ</button>
+                <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="essay"><i class="fas fa-pen-nib"></i> Tự luận</button>
             </div>
         `,
         width: 850,
@@ -2273,7 +2312,7 @@ window.addOptionToQuestion = function(btn, groupName) {
     div.innerHTML = `
         <input type="${inputType}" name="${groupName}" class="q-correct-check" value="${idx}" style="cursor:pointer;">
         <input type="text" class="studio-select q-opt-val" value="" placeholder="Đáp án ${idx+1}">
-        <button type="button" class="btn-ctrl delete" onclick="this.parentElement.remove()" tabindex="-1"><i class="fas fa-minus"></i></button>
+        <button type="button" class="btn-ctrl delete" data-quiz-action="remove-option" tabindex="-1"><i class="fas fa-minus"></i></button>
     `;
     container.appendChild(div);
 }
@@ -2293,7 +2332,7 @@ function renderSingleQuestionItem(q, idx, container) {
     div.style.cssText = "background:#f9fafb; padding:15px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:15px; position:relative;";
 
     let badge = '', contentHtml = '';
-    const deleteBtn = `<button type="button" class="btn-ctrl delete" style="position:absolute; top:10px; right:10px;" onclick="this.closest('.quiz-item').remove()"><i class="fas fa-trash"></i></button>`;
+    const deleteBtn = `<button type="button" class="btn-ctrl delete" style="position:absolute; top:10px; right:10px;" data-quiz-action="remove-question"><i class="fas fa-trash"></i></button>`;
 
     if (q.type === 'choice' || !q.type) { 
         badge = `<span class="q-type-badge q-type-choice">TRẮC NGHIỆM</span>`;
@@ -2308,7 +2347,7 @@ function renderSingleQuestionItem(q, idx, container) {
                 <div class="option-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
                     <input type="${inputType}" name="${uniqueName}" class="q-correct-check" value="${i}" ${isChecked} style="cursor:pointer;">
                     <input type="text" class="studio-select q-opt-val" value="${opt}" placeholder="Đáp án ${i+1}">
-                    <button type="button" class="btn-ctrl delete" onclick="this.parentElement.remove()" tabindex="-1"><i class="fas fa-minus"></i></button>
+                    <button type="button" class="btn-ctrl delete" data-quiz-action="remove-option" tabindex="-1"><i class="fas fa-minus"></i></button>
                 </div>`;
         });
 
@@ -2316,9 +2355,9 @@ function renderSingleQuestionItem(q, idx, container) {
             <input type="text" class="studio-select q-title" placeholder="Nhập câu hỏi..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
             <div class="q-options-container">${optsHtml}</div>
             <div style="margin-top:10px; display:flex; gap:10px;">
-                <button type="button" class="btn-mini-add" onclick="addOptionToQuestion(this, '${uniqueName}')">+ Đáp án</button>
+                <button type="button" class="btn-mini-add" data-quiz-action="add-option" data-group-name="${uniqueName}">+ Đáp án</button>
                 <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
-                    <input type="checkbox" class="q-multi-toggle" onchange="toggleMulti(this, '${uniqueName}')" ${q.isMulti ? 'checked' : ''}> Chọn nhiều
+                    <input type="checkbox" class="q-multi-toggle" data-quiz-action="toggle-multi" data-group-name="${uniqueName}" ${q.isMulti ? 'checked' : ''}> Chọn nhiều
                 </label>
             </div>
         `;
@@ -2982,25 +3021,14 @@ async function openRevisionHistory() {
                 return;
             }
 
-            let html = '';
-            data.revisions.forEach(rev => {
-                const timeStr = new Date(rev.createdAt).toLocaleString('vi-VN');
-                html += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #f1f5f9; hover:bg-gray-50;">
-                        <div>
-                            <div style="font-weight:600; color:#334155;">${timeStr}</div>
-                            <div style="font-size:0.8rem; color:#64748b;">
-                                <i class="fas fa-user"></i> ${rev.updatedBy ? rev.updatedBy.username : 'Ẩn danh'} 
-                                - Tiêu đề: <b>${rev.title}</b>
-                            </div>
-                        </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="restoreRevision('${rev._id}')">
-                            <i class="fas fa-undo"></i> Khôi phục
-                        </button>
-                    </div>
-                `;
+            list.replaceChildren();
+            const fragment = document.createDocumentFragment();
+
+            data.revisions.forEach((rev) => {
+                fragment.appendChild(createRevisionItem(rev));
             });
-            list.innerHTML = html;
+
+            list.appendChild(fragment);
         } else {
             list.innerHTML = '<div class="text-danger text-center">Lỗi tải dữ liệu.</div>';
         }
@@ -3027,4 +3055,43 @@ async function restoreRevision(revId) {
         console.error(e);
         alert('Lỗi kết nối server.');
     }
+}
+
+function createRevisionItem(rev) {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #f1f5f9;';
+
+    const content = document.createElement('div');
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600; color:#334155;';
+    title.textContent = new Date(rev.createdAt).toLocaleString('vi-VN');
+
+    const meta = document.createElement('div');
+    meta.style.cssText = 'font-size:0.8rem; color:#64748b;';
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-user';
+    icon.style.marginRight = '6px';
+
+    const username = rev.updatedBy ? rev.updatedBy.username : 'Ẩn danh';
+    const boldTitle = document.createElement('b');
+    boldTitle.textContent = rev.title || 'Không có tiêu đề';
+
+    meta.append(icon, document.createTextNode(`${username} - Tiêu đề: `), boldTitle);
+    content.append(title, meta);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-sm btn-outline-primary';
+    button.dataset.revisionAction = 'restore';
+    button.dataset.revisionId = rev._id;
+
+    const buttonIcon = document.createElement('i');
+    buttonIcon.className = 'fas fa-undo';
+    buttonIcon.style.marginRight = '6px';
+    button.append(buttonIcon, document.createTextNode('Khôi phục'));
+
+    wrapper.append(content, button);
+    return wrapper;
 }
