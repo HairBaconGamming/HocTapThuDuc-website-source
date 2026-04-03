@@ -84,6 +84,12 @@
                     <img src="https://cdn-icons-png.flaticon.com/512/427/427112.png" class="pixel-icon">
                     <span id="ui-water"><%= garden.water %></span>
                 </div>
+                <div class="res-item" title="Phan bon">
+                    <span class="resource-badge fertilizer">
+                        <i class="fas fa-flask"></i>
+                    </span>
+                    <span id="ui-fertilizer"><%= garden.fertilizer || 0 %></span>
+                </div>
                 <div class="res-item" title="Vàng">
                     <img src="https://cdn-icons-png.flaticon.com/512/217/217853.png" class="pixel-icon">
                     <span id="ui-gold"><%= garden.gold %></span>
@@ -94,12 +100,12 @@
         <div id="plantingModeUI" class="planting-ui" style="display: none;">
             <div class="planting-label">🌱 Đang trồng...</div>
             <div class="planting-item-name" id="plantingItemName">Hạt Giống</div>
-            <button class="pixel-btn btn-cancel-plant" onclick="window.cancelPlanting()">
+            <button id="cancelPlantingBtn" class="pixel-btn btn-cancel-plant">
                 Hủy (X)
             </button>
         </div>
 
-        <div id="mobileMoveBtn" class="mobile-action-btn" onclick="toggleMoveMode()" style="display: none;">
+        <div id="mobileMoveBtn" class="mobile-action-btn" style="display: none;">
             <i class="fas fa-arrows-alt"></i>
         </div>
 
@@ -116,7 +122,7 @@
                     <h3 id="statName">...</h3>
                     <div id="statStageBadge" class="pixel-badge">...</div>
                 </div>
-                <button class="pixel-btn-close" onclick="hidePlantStats()">X</button>
+                <button id="closePlantStatsBtn" class="pixel-btn-close">X</button>
             </div>
             
             <div class="info-body">
@@ -158,43 +164,66 @@
                 <div class="info-footer">
                     <small id="statSoilStatus">---</small>
                 </div>
+                <% if (isOwner) { %>
+                    <div class="plant-action-row" id="plantActionRow">
+                        <button id="statFertilizeBtn" class="plant-action-btn" type="button">
+                            BON PHAN (+1 CAP)
+                        </button>
+                        <div class="plant-action-meta">
+                            Con <span id="statFertilizerCount"><%= garden.fertilizer || 0 %></span> phan bon
+                        </div>
+                    </div>
+                <% } %>
             </div>
         </div>
 
+        <% if (isOwner) { %>
+            <div class="pixel-panel quest-panel" id="dailyQuestPanel">
+                <div class="quest-panel-header">
+                    <div>
+                        <div class="quest-panel-kicker">Hom Nay</div>
+                        <h3>Nhiem Vu Khu Vuon</h3>
+                    </div>
+                    <div class="quest-panel-badge">+Thuong</div>
+                </div>
+                <div class="quest-list" id="dailyQuestList"></div>
+            </div>
+        <% } %>
+
         <div class="hud-bottom" id="mainToolbar">
             <div class="pixel-panel toolbar">
-                <div class="tool-slot" onclick="selectTool('move')" data-tool="move" title="Di chuyển">
+                <div class="tool-slot" data-tool="move" title="Di chuyển">
                     <img src="<%= assets.FARMING.tools.move.icon %>">
                     <span class="key-hint">1</span>
                 </div>
                 
-                <div class="tool-slot active" onclick="selectTool('cursor')" data-tool="cursor" title="Xem info">
+                <div class="tool-slot active" data-tool="cursor" title="Xem info">
                     <img src="<%= assets.FARMING.tools.cursor.icon %>">
                     <span class="key-hint">2</span>
                 </div>
 
                 <% if (isOwner) { %>
-                    <div class="tool-slot" onclick="selectTool('hoe')" data-tool="hoe" title="Cuốc đất">
+                    <div class="tool-slot" data-tool="hoe" title="Cuốc đất">
                         <img src="<%= assets.FARMING.tools.hoe.icon %>">
                         <span class="key-hint">3</span>
                     </div>
                     
-                    <div class="tool-slot" onclick="selectTool('water')" data-tool="water" title="Tưới nước">
+                    <div class="tool-slot" data-tool="water" title="Tưới nước">
                         <img src="<%= assets.FARMING.tools.water.icon %>">
                         <span class="key-hint">4</span>
                     </div>
                     
-                    <div class="tool-slot shop-slot" onclick="openShopHTML('plant')" data-tool="shop" title="Cửa hàng">
+                    <div class="tool-slot shop-slot" data-tool="shop" data-shop-tab="plant" title="Cửa hàng">
                         <img src="/api/pro-images/1767285084901-romnys.png">
                         <span class="key-hint">F</span>
                     </div>
 
-                    <div class="tool-slot" onclick="selectTool('basket')" data-tool="basket" title="Thu hoạch">
+                    <div class="tool-slot" data-tool="basket" title="Thu hoạch">
                         <img src="<%= assets.FARMING.tools.basket.icon %>">
                         <span class="key-hint">5</span>
                     </div>
                     
-                    <div class="tool-slot" onclick="selectTool('shovel')" data-tool="shovel" title="Xóa bỏ">
+                    <div class="tool-slot" data-tool="shovel" title="Xóa bỏ">
                         <img src="<%= assets.FARMING.tools.shovel.icon %>">
                         <span class="key-hint">6</span>
                     </div>
@@ -210,15 +239,15 @@
         <div class="pixel-window shop-window">
             <div class="window-header">
                 <div class="win-title">🛒 Tạp Hóa Thôn Quê</div>
-                <button class="pixel-btn-close red" onclick="closeShop()">X</button>
+                <button id="closeShopBtn" class="pixel-btn-close red">X</button>
             </div>
             
             <div class="window-body">
                 <div class="shop-list-col">
                     <div class="shop-tabs">
-                        <button class="pixel-tab active" onclick="renderShopItems('plant')" id="tab-plant">Hạt Giống</button>
-                        <button class="pixel-tab" onclick="renderShopItems('decor')" id="tab-decor">Trang Trí</button>
-                        <button class="pixel-tab" onclick="renderShopItems('plot')" id="tab-plot">Đất Đai</button>
+                        <button class="pixel-tab active" data-shop-tab="plant" id="tab-plant">Hạt Giống</button>
+                        <button class="pixel-tab" data-shop-tab="decor" id="tab-decor">Trang Trí</button>
+                        <button class="pixel-tab" data-shop-tab="plot" id="tab-plot">Đất Đai</button>
                     </div>
                     <div class="shop-grid-container">
                         <div class="shop-grid" id="shopGrid">
@@ -263,7 +292,7 @@
                             </div>
 
                             <div class="detail-actions">
-                                <button id="btn-confirm-buy" class="btn-buy-action" onclick="confirmBuy()">
+                                <button id="btn-confirm-buy" class="btn-buy-action">
                                     MUA & TRỒNG
                                 </button>
                                 <div class="user-balance">
@@ -284,503 +313,24 @@
         window.isOwner = <%= typeof isOwner !== "undefined" ? isOwner : true %>;
         window.gardenAssets = JSON.parse(document.getElementById('gardenAssets').textContent);
         window.gardenData = JSON.parse(document.getElementById('gardenData').textContent);
-        
-        // Fallback nếu dữ liệu cũ chưa có
-        if (!window.gardenData.userLevel) window.gardenData.userLevel = 1;
-        if (!window.gardenData.currentXP) window.gardenData.currentXP = 0;
-        if (!window.gardenData.nextLevelXP) window.gardenData.nextLevelXP = 100;
-        if (!window.gardenData.userLevel) window.gardenData.userLevel = 1;
-        if (!window.gardenData.gold) window.gardenData.gold = 0;
-        if (typeof window.gardenData.tutorialStep === 'undefined') {
-            window.gardenData.tutorialStep = 0;
+    </script>
+
+    <script src="/js/gardenShared.js"></script>
+    <script>
+        if (window.GardenShared && window.GardenShared.applyGardenDefaults) {
+            window.GardenShared.applyGardenDefaults(window.gardenData);
         }
     </script>
-
-    <script>
-        // --- TU TIÊN LOADING SYSTEM (Huyền Huyễn Edition) ---
-        const LoadingSystem = {
-            // Bí kíp tu luyện (Tips)
-            tips: [
-                "Dùng 'Thủy Linh Quyết' (Tưới nước) thường xuyên để Linh Thảo hấp thụ tinh hoa nhật nguyệt.",
-                "Gặp cây khô héo, hãy dùng Xẻng để 'Đoạn Tuyệt Duyên Trần', tránh làm ô uế linh mạch.",
-                "Muốn đột phá cảnh giới nhanh chóng? Hãy ghé 'Tàng Bảo Các' (Shop) mua hạt giống Thiên Phẩm.",
-                "Thường xuyên du ngoạn Động Phủ của các đạo hữu khác để đàm đạo và học hỏi pháp trận.",
-                "Mỗi loại Linh Dược đều có thời khắc 'Độ Kiếp' (Chín) khác nhau, chớ để lỡ thời cơ thu hoạch.",
-                "Tích lũy Linh Thạch để mở rộng ranh giới Linh Điền, xây dựng cơ đồ vạn năm.",
-                "Tâm bất biến giữa dòng đời vạn biến, nhưng cây thiếu nước thì... chết chắc."
-            ],
-            
-            // Quá trình khởi tạo (Loading Steps)
-            steps: [
-                { pct: 10, text: "Đang hấp thụ Thiên Địa Linh Khí..." },
-                { pct: 25, text: "Đang ngưng tụ hình hài Vạn Vật..." },
-                { pct: 45, text: "Đang khai mở không gian Linh Điền..." },
-                { pct: 60, text: "Triệu hồi Thổ Địa cai quản..." },
-                { pct: 75, text: "Đang khắc họa Tụ Linh Trận..." },
-                { pct: 85, text: "Ổn định Tâm Ma, củng cố Đạo Tâm..." },
-                { pct: 95, text: "Sắp hoàn tất Độ Kiếp..." }
-            ],
-            
-            currentPct: 0,
-            interval: null,
-
-            init() {
-                // Chọn ngẫu nhiên một bí kíp
-                const randomTip = this.tips[Math.floor(Math.random() * this.tips.length)];
-                document.getElementById('load-tip-text').innerText = randomTip;
-
-                // Giả lập thanh tiến độ (Chạy đến 90% thì dừng chờ Game thật)
-                this.interval = setInterval(() => {
-                    if (this.currentPct < 90) {
-                        this.currentPct += Math.random() * 5; 
-                        this.updateUI();
-                    }
-                }, 200);
-            },
-
-            updateUI() {
-                const pct = Math.min(100, Math.floor(this.currentPct));
-                document.getElementById('load-bar').style.width = pct + '%';
-                document.getElementById('load-percent').innerText = pct; // Bỏ dấu % nếu muốn style số to
-
-                // Cập nhật trạng thái tu luyện
-                // Dùng reverse().find() để lấy trạng thái gần nhất với % hiện tại
-                const step = this.steps.slice().reverse().find(s => pct >= s.pct);
-                if (step) {
-                    document.getElementById('load-status-text').innerText = step.text;
-                }
-            },
-
-            // Hàm này được gọi từ gardenPhaser.js khi map vẽ xong
-            finish() {
-                clearInterval(this.interval);
-                this.currentPct = 100;
-                this.updateUI();
-                
-                document.getElementById('load-status-text').innerText = "Đại Đạo Đã Thành! Nhập Định!";
-                
-                // Hiệu ứng biến mất (Fade out)
-                setTimeout(() => {
-                    const el = document.getElementById('rustic-loading'); // Hoặc id của cái loading bạn đang dùng
-                    if(el) {
-                        el.style.opacity = '0';
-                        setTimeout(() => {
-                            el.style.display = 'none';
-                            // Gọi Tutorial nếu là tân thủ
-                            if (window.Tutorial && !window.Tutorial.active) {
-                                // window.Tutorial.init(); // Uncomment dòng này nếu muốn auto chạy
-                            }
-                        }, 600);
-                    }
-                }, 800);
-            }
-        };
-
-        // Khởi chạy hệ thống
-        LoadingSystem.init();
-
-        // Expose ra global để Phaser gọi khi load xong assets
-        window.finishLoading = () => LoadingSystem.finish();
-    </script>
-
+    <script src="/js/gardenSceneSetup.js"></script>
+    <script src="/js/gardenSceneRendering.js"></script>
+    <script src="/js/gardenSceneInteractions.js"></script>
     <script src="/js/gardenPhaser.js"></script>
-
+    <script src="/js/gardenUI.js"></script>
     <script>
-        // --- UI FUNCTIONS ---
-        
-        // [NEW] HỆ THỐNG KHÓA TOOL CHO TUTORIAL
-        window.allowedTutorialTool = null; // Null = Cho phép tất cả
-
-        window.setAllowedTool = function(toolName) {
-            window.allowedTutorialTool = toolName;
-            
-            // Cập nhật giao diện: Làm mờ các tool không được phép
-            document.querySelectorAll('.tool-slot').forEach(el => {
-                const tool = el.getAttribute('data-tool');
-                // Nút Shop (data-tool="shop") luôn mở nếu toolName là 'cursor' hoặc 'shop'
-                if (tool === 'shop' && (toolName === 'cursor' || toolName === null)) {
-                    el.classList.remove('disabled-tool');
-                    return;
-                }
-
-                if (toolName === null || tool === toolName) {
-                    el.classList.remove('disabled-tool');
-                } else {
-                    el.classList.add('disabled-tool');
-                }
-            });
-        };
-
-        // 1. Toggle Planting Mode UI
-        window.togglePlantingUI = function(active, itemName = '') {
-            const ui = document.getElementById('plantingModeUI');
-            const toolbar = document.getElementById('mainToolbar');
-            if (active) {
-                ui.style.display = 'flex';
-                document.getElementById('plantingItemName').innerText = itemName;
-                toolbar.classList.add('disabled-toolbar');
-                window.hidePlantStats();
-            } else {
-                ui.style.display = 'none';
-                toolbar.classList.remove('disabled-toolbar');
-            }
+        if (window.initGardenPage) {
+            window.initGardenPage();
         }
-
-        // 2. Stats Panel Logic
-        let statsInterval = null;
-        window.showPlantStats = function(itemData) {
-            const panel = document.getElementById('plantStats');
-            if (statsInterval) clearInterval(statsInterval);
-
-            // [FIX] Xử lý trường hợp Đất (không có trong PLANTS config)
-            const isPlot = itemData.type === 'plot';
-            const config = isPlot ? null : window.gardenAssets.PLANTS[itemData.itemId];
-
-            // Nếu không phải đất và không tìm thấy config cây -> Ẩn
-            if (!isPlot && !config) { window.hidePlantStats(); return; }
-
-            panel.classList.add('active'); // Hiện bảng
-
-            const render = () => {
-                // ... (Logic render giữ nguyên từ bản trước) ...
-                if (isPlot) {
-                    document.getElementById('statName').innerText = "Ô Đất Trống";
-                    document.getElementById('statImg').src = "/api/pro-images/1767291175911-ytf6vu.png";
-                    document.getElementById('statStageBadge').innerText = "Sẵn sàng";
-                    document.getElementById('statStageBadge').className = "pixel-badge grey";
-                    
-                    document.getElementById('statGrowthBar').style.width = "0%";
-                    document.getElementById('statWitherBar').style.width = "0%";
-                    document.getElementById('statTotalTime').innerText = "---";
-                    document.getElementById('statPrice').innerText = "---";
-                    document.getElementById('statSoilStatus').innerText = "Đất trống";
-                } else {
-                    document.getElementById('statName').innerText = config.name;
-                    document.getElementById('statImg').src = config.stages[itemData.stage || 0];
-                    document.getElementById('statPrice').innerText = config.rewardGold.min + "-" + config.rewardGold.max;
-
-                    // Tính toán thời gian
-                    const now = Date.now();
-                    const lastUpdate = itemData.lastUpdated ? new Date(itemData.lastUpdated).getTime() : new Date(itemData.plantedAt).getTime();
-                    const elapsed = now - lastUpdate;
-
-                    // Check đất ướt (Tìm item đất tương ứng trong data global)
-                    let plot = window.gardenData.items.find(i => i.type === 'plot' && i.x === itemData.x && i.y === itemData.y);
-                    let isWet = false;
-                    if (plot && plot.lastWatered && (now - new Date(plot.lastWatered).getTime() < 24*3600000)) isWet = true;
-
-                    document.getElementById('statSoilStatus').innerText = isWet ? "💧 Đất ẩm" : "🌵 Đất khô";
-                    document.getElementById('statSoilStatus').style.color = isWet ? "#29b6f6" : "#ef5350";
-
-                    // Growth Progress & Wither logic (giữ nguyên code tính toán)
-                    // ... (Code tính toán % như cũ)
-                    const currentProgress = (itemData.growthProgress || 0) + (isWet ? elapsed : 0);
-                    const timePerStage = parseDuration(config.growthTime);
-                    const maxStage = config.maxStage || 3;
-                    const stage = Math.min(Math.floor(currentProgress / timePerStage), maxStage);
-                    const pct = Math.min(100, ((currentProgress % timePerStage) / timePerStage) * 100);
-                    
-                    if (stage >= maxStage) {
-                        document.getElementById('statGrowthBar').style.width = "100%";
-                        document.getElementById('statTimeProgress').innerText = "MAX";
-                        document.getElementById('statStageBadge').innerText = "ĐÃ CHÍN";
-                        document.getElementById('statStageBadge').className = "pixel-badge green";
-                        document.getElementById('statTotalTime').innerText = "Thu hoạch!";
-                        document.getElementById('statStageTime').innerText = "---";
-                    } else {
-                        document.getElementById('statGrowthBar').style.width = pct + "%";
-                        document.getElementById('statTimeProgress').innerText = Math.floor(pct) + "%";
-                        document.getElementById('statStageBadge').innerText = `Cấp ${stage+1}/${maxStage+1}`;
-                        document.getElementById('statStageBadge').className = "pixel-badge yellow";
-                        const remaining = timePerStage - (currentProgress % timePerStage);
-                        document.getElementById('statTotalTime').innerText = formatTime(remaining);
-                        document.getElementById('statStageTime').innerText = formatTime(remaining);
-                    }
-                    
-                    // Wither Bar update... [FIX v10.4] Tính độ ẩm chính xác
-                    const witherTime = parseDuration(config.witherTime || '30 phút');
-                    const lastWaterTime = plot?.lastWatered ? new Date(plot.lastWatered).getTime() : new Date(itemData.plantedAt).getTime();
-                    const timeSinceWater = now - lastWaterTime;
-                    const witherProgress = Math.max(0, timeSinceWater - (24 * 3600000)); // Bắt đầu tính sau 24h
-                    const healthPct = Math.max(0, 100 - ((witherProgress / witherTime) * 100));
-                    document.getElementById('statWitherBar').style.width = healthPct + "%";
-                    document.getElementById('statWitherVal').innerText = Math.floor(healthPct) + "%";
-                    
-                    // [UPGRADE v10.4] Hiển thị thời gian còn lại cho độ ẩm
-                    const remainingWaterTime = witherTime - witherProgress;
-                    document.getElementById('statWateringTime').innerText = formatTime(Math.max(0, remainingWaterTime));
-                    document.getElementById('statWateringTime').style.color = healthPct > 50 ? "#29b6f6" : (healthPct > 20 ? "#ffa726" : "#ef5350");
-                    
-                    if (healthPct > 0 && !isWet && remainingWaterTime > 0) {
-                        const wateringText = formatTime(remainingWaterTime);
-                        document.getElementById('statSoilStatus').innerText = `🌵 Đất khô - Tưới trong ${wateringText}`;
-                    } else if (isWet) {
-                        document.getElementById('statSoilStatus').innerText = `💧 Đất ẩm - Còn ${formatTime(24*3600000 - timeSinceWater)}`;
-                    } else {
-                        document.getElementById('statSoilStatus').innerText = "☠️ Đất quá khô - Cây sắp chết!";
-                    }
-                }
-            };
-            
-            render();
-            statsInterval = setInterval(render, 1000);
-        };
-
-        window.hidePlantStats = function() {
-            if (statsInterval) clearInterval(statsInterval);
-            document.getElementById('plantStats').classList.remove('active');
-        };
-
-        // 3. Shop UI Logic
-        let selectedShopItem = null; // Biến lưu item đang chọn
-
-        // Mở Shop (Reset về tab Plant & hiện NPC)
-        function openShopHTML(tab = 'plant') {
-            document.getElementById('shopOverlay').style.display = 'flex';
-            document.getElementById('shop-npc-state').style.display = 'flex';
-            document.getElementById('shop-item-state').style.display = 'none';
-            selectedShopItem = null;
-            
-            // Cập nhật số tiền hiện tại
-            document.getElementById('shop-user-gold').innerText = window.gardenData.gold;
-            
-            renderShopItems(tab);
-
-            // [FIX QUAN TRỌNG] Báo hiệu cho Tutorial biết là Shop đã mở
-            if(window.gameEvents) window.gameEvents.emit('shopOpen'); 
-        }
-
-        function closeShop() { document.getElementById('shopOverlay').style.display = 'none'; }
-
-        function renderShopItems(type) {
-            // Active Tab UI
-            document.querySelectorAll('.pixel-tab').forEach(t => t.classList.remove('active'));
-            const tabBtn = document.getElementById(`tab-${type}`);
-            if(tabBtn) tabBtn.classList.add('active');
-
-            const container = document.getElementById('shopGrid');
-            container.innerHTML = '';
-
-            let items = [];
-            const userLevel = window.gardenData.userLevel || 1;
-
-            // [FIX] Chuẩn hóa dữ liệu: Map 'price' từ config sang 'buyPrice' để dùng chung
-            if (type === 'plant') {
-                Object.entries(window.gardenAssets.PLANTS || {}).forEach(([key, val]) => {
-                    items.push({ 
-                        id: key, 
-                        ...val, 
-                        buyPrice: val.price, // [FIX] Ánh xạ giá đúng
-                        category: 'plant' 
-                    });
-                });
-            } else if (type === 'decor') {
-                Object.entries(window.gardenAssets.DECORS || {}).forEach(([key, val]) => {
-                    items.push({ 
-                        id: key, 
-                        ...val, 
-                        buyPrice: val.price, // [FIX] Ánh xạ giá đúng
-                        category: 'decor' 
-                    });
-                });
-            } else if (type === 'plot') {
-                // [UPDATE] Đất đai để trống theo yêu cầu
-                items = []; 
-            }
-
-            if (items.length === 0) {
-                container.innerHTML = '<div style="padding:40px; text-align:center; width:100%; color:#8d6e63; font-style:italic;">(Trống trơn...)</div>';
-                return;
-            }
-
-            // Render từng thẻ
-            items.forEach(item => {
-                const reqLevel = item.unlockLevel || 1;
-                const isLocked = userLevel < reqLevel;
-                
-                // Lấy icon
-                let icon = item.icon;
-                if (!icon && item.stages) icon = item.stages[item.stages.length-1]; // Ảnh cây chín
-                if (!icon && item.image) icon = item.image; // Ảnh decor
-                
-                const card = document.createElement('div');
-                card.className = `shop-card ${isLocked ? 'locked' : ''}`;
-                card.onclick = () => selectShopItem(item, isLocked);
-
-                // [FIX] Hiển thị giá: Dùng item.buyPrice đã map ở trên
-                const displayPrice = item.buyPrice !== undefined ? item.buyPrice : '??';
-
-                let lockHtml = isLocked ? `
-                    <div class="lock-overlay"><i class="fas fa-lock"></i></div>
-                    <div class="req-level">Lv ${reqLevel}</div>
-                ` : '';
-
-                card.innerHTML = `
-                    ${lockHtml}
-                    <img src="${icon}">
-                    <div class="name">${item.name}</div>
-                    <div class="price">💰 ${displayPrice}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // Xử lý khi chọn Item
-        function selectShopItem(item, isLocked) {
-            selectedShopItem = item;
-
-            // Highlight
-            document.querySelectorAll('.shop-card').forEach(c => c.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
-
-            // Chuyển view
-            document.getElementById('shop-npc-state').style.display = 'none';
-            document.getElementById('shop-item-state').style.display = 'flex';
-
-            // Fill Info
-            let icon = item.icon || (item.stages ? item.stages[item.stages.length-1] : item.image);
-            document.getElementById('d-img').src = icon;
-            document.getElementById('d-name').innerText = item.name;
-            document.getElementById('d-type').innerText = item.category === 'plant' ? 'Hạt Giống' : 'Trang Trí';
-            
-            // Level Requirement
-            const lvEl = document.getElementById('d-level');
-            lvEl.innerText = "Cấp " + (item.unlockLevel || 1);
-            lvEl.style.color = isLocked ? "#ef5350" : "#33691e";
-            if(isLocked) lvEl.innerHTML += ' <i class="fas fa-exclamation-circle"></i>';
-
-            // Stats
-            if (item.category === 'plant') {
-                document.getElementById('d-time').innerText = item.growthTime || 'Unknown';
-                document.getElementById('d-xp').innerText = (item.rewardXP || 0) + ' XP';
-            } else {
-                document.getElementById('d-time').innerText = 'Vĩnh viễn';
-                document.getElementById('d-xp').innerText = 'Trang trí';
-            }
-
-            // [FIX] Giá tiền
-            const price = item.buyPrice !== undefined ? item.buyPrice : 0;
-            document.getElementById('d-price').innerText = price + " Xu";
-
-            // Button Logic
-            const btn = document.getElementById('btn-confirm-buy');
-            const userGold = window.gardenData.gold || 0;
-
-            if (isLocked) {
-                btn.disabled = true;
-                btn.innerText = `CẦN LEVEL ${item.unlockLevel || 1}`;
-                btn.style.background = "#9e9e9e";
-                btn.style.borderColor = "#616161";
-            } else if (userGold < price) {
-                btn.disabled = true;
-                btn.innerText = "KHÔNG ĐỦ TIỀN";
-                btn.style.background = "#ef5350"; // Đỏ
-                btn.style.borderColor = "#b71c1c";
-            } else {
-                btn.disabled = false;
-                btn.innerText = "MUA & TRỒNG";
-                btn.style.background = "var(--accent-green)";
-                btn.style.borderColor = "#2e7d32";
-            }
-        }
-
-        // Xử lý Mua thật
-        function confirmBuy() {
-            if (!selectedShopItem) return;
-            
-            // Gọi hàm cũ để emit event xuống Phaser
-            // Lưu ý: Hàm buyItem cũ trong garden.ejs cần sửa lại chút để không nhận tham số click nữa mà lấy từ selected
-            if(window.gameEvents) {
-                window.gameEvents.emit('buyItem', { id: selectedShopItem.id, type: selectedShopItem.category });
-                closeShop();
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-            const key = e.key.toLowerCase();
-            const isOwner = window.isOwner;
-            if (key === 'x') { window.cancelPlanting(); return; }
-            if (key === 'escape') { closeShop(); hidePlantStats(); window.cancelPlanting(); return; }
-
-            const tools = { '1':'move', '2':'cursor', '3':'hoe', '4':'water', '5':'basket', '6':'shovel' };
-            if (tools[key]) {
-                const toolName = tools[key];
-                // Check quyền
-                if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== toolName) return;
-                
-                if (isOwner || ['1','2'].includes(key)) selectTool(toolName);
-            }
-            if (key === 'f' && isOwner) {
-                // Check quyền mở shop (dùng tạm quyền cursor)
-                if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== 'cursor') return;
-                openShopHTML('plant');
-            }
-        });
-
-        // Emit sự kiện chọn tool xuống Phaser
-        window.selectTool = function(toolName) {
-            if(document.getElementById('mainToolbar').classList.contains('disabled-toolbar')) return;
-            
-            // Check nếu tool này đang bị khóa bởi tutorial
-            if (window.allowedTutorialTool !== null && window.allowedTutorialTool !== toolName) {
-                return; // Chặn luôn
-            }
-
-            if(window.gameEvents) window.gameEvents.emit('toolChanged', toolName);
-            document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
-            const activeEl = document.querySelector(`.tool-slot[data-tool="${toolName}"]`);
-            if(activeEl) activeEl.classList.add('active');
-        };
-
-        // Toggle Move Mode from UI
-        window.toggleMoveMode = function() {
-            const btn = document.getElementById('mobileMoveBtn');
-            btn.classList.toggle('active');
-            window.gameEvents.emit('toggleMoveMode');
-        }
-
-        // Callback từ Phaser để hiện/ẩn nút
-        window.updateMobileMoveBtn = function(show) {
-            const btn = document.getElementById('mobileMoveBtn');
-            if (btn) btn.style.display = show ? 'flex' : 'none';
-            if (!show) btn.classList.remove('active'); // Reset state
-        }
-
-        // Helpers [UPGRADE v10.4] Hiển thị thời gian chi tiết hơn
-        function formatTime(ms) {
-            if (ms <= 0) return "00:00";
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            
-            // Nếu lớn hơn 1 giờ -> hiển thị giờ
-            if (hours > 0) {
-                return `${hours}g ${minutes}p`;
-            }
-            // Nếu lớn hơn 1 phút -> hiển thị phút:giây
-            if (minutes > 0) {
-                return `${minutes}p ${seconds}s`;
-            }
-            // Nếu ít hơn 1 phút -> hiển thị giây
-            return `${seconds}s`;
-        }
-        function parseDuration(str) { const num = parseInt(str); return num * (str.includes('giờ') ? 3600000 : 60000); }
-
-        const PING_INTERVAL = 10 * 60 * 1000; // 10 phút
-
-        setInterval(() => {
-            fetch('/api/ping')
-                .then(res => {
-                    // console.log('Keep-alive ping:', res.status); // Bật nếu muốn debug
-                })
-                .catch(err => {
-                    console.warn('Keep-alive failed:', err);
-                });
-        }, PING_INTERVAL);
     </script>
-
     <link rel="stylesheet" href="/css/styleTutorial.css">
     <script src="/js/tutorial.js"></script>
 </body>

@@ -4,8 +4,8 @@ const Unit = require('../models/Unit');
 const Course = require('../models/Course');
 const LessonRevision = require('../models/LessonRevision');
 const User = require('../models/User');
-const Garden = require('../models/Garden');
 const mongoose = require('mongoose');
+const { grantWater } = require('../services/gardenRewardService');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -303,18 +303,13 @@ exports.claimStudyReward = async (req, res) => {
     try {
         const userId = req.user._id;
         
-        // Lấy cả User (để check time) và Garden (để cộng nước)
         const user = await User.findById(userId);
-        const garden = await Garden.findOne({ user: userId }); // [2] TÌM GARDEN
-
-        if (!garden) {
-            return res.status(404).json({ success: false, msg: 'Bạn chưa kích hoạt Linh Điền!' });
+        if (!user) {
+            return res.status(404).json({ success: false, msg: 'Không tìm thấy người dùng.' });
         }
 
         // 1. Chống Hack Speed/Spam Request
         const now = Date.now();
-        // Lưu ý: Đảm bảo model User của bạn đã có trường lastStudyRewardAt
-        // Nếu chưa có, bạn cần thêm vào schema User hoặc chuyển logic time này sang schema Garden
         const lastClaim = user.lastStudyRewardAt ? new Date(user.lastStudyRewardAt).getTime() : 0;
         const diff = now - lastClaim;
 
@@ -327,9 +322,7 @@ exports.claimStudyReward = async (req, res) => {
         const reward = 1 + bonus;
 
         // 3. Cập nhật Dữ liệu
-        // [3] CỘNG NƯỚC VÀO GARDEN (ĐÚNG)
-        garden.water = (garden.water || 0) + reward; 
-        await garden.save();
+        const garden = await grantWater(userId, reward);
 
         // Cập nhật thời gian nhận thưởng vào User
         user.lastStudyRewardAt = now;

@@ -96,6 +96,22 @@ body, html {
 .resources { display: flex; gap: 10px; border-radius: 8px; margin-left: auto; }
 .res-item { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: 1.2rem; }
 .pixel-icon { width: 20px; height: 20px; }
+.resource-badge {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid rgba(62, 39, 35, 0.7);
+    background: #fff3e0;
+    color: #6a1b9a;
+    font-size: 0.7rem;
+}
+.resource-badge.fertilizer {
+    background: linear-gradient(180deg, #f3e5f5, #e1bee7);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
 
 /* 2. PLANTING MODE UI (Nổi bật) */
 .planting-ui {
@@ -117,6 +133,125 @@ body, html {
     display: none; flex-direction: column; gap: 10px; border-radius: 10px; z-index: 100;
 }
 .plant-info-panel.active { display: flex; animation: popIn 0.2s; }
+.quest-panel {
+    position: absolute;
+    top: 70px;
+    left: 10px;
+    width: 280px;
+    background: rgba(255, 248, 225, 0.97);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 90;
+}
+.quest-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 2px dashed #a1887f;
+    padding-bottom: 8px;
+}
+.quest-panel-header h3 {
+    margin: 2px 0 0;
+    font-size: 1.3rem;
+    color: #4e342e;
+}
+.quest-panel-kicker {
+    font-size: 0.8rem;
+    color: #8d6e63;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.quest-panel-badge {
+    padding: 2px 8px;
+    border: 2px solid #2e7d32;
+    background: #dcedc8;
+    color: #33691e;
+    font-size: 0.85rem;
+}
+.quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.quest-card {
+    padding: 8px;
+    border: 2px solid #bcaaa4;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.quest-card.complete {
+    border-color: #66bb6a;
+    background: #f1f8e9;
+}
+.quest-card.claimed {
+    border-color: #90a4ae;
+    background: #eceff1;
+}
+.quest-topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+.quest-title {
+    font-size: 1.05rem;
+    color: #3e2723;
+}
+.quest-progress-label {
+    font-size: 0.8rem;
+    color: #6d4c41;
+}
+.quest-desc {
+    font-size: 0.82rem;
+    color: #795548;
+    line-height: 1.15;
+}
+.quest-progress {
+    width: 100%;
+    height: 10px;
+    border: 2px solid #3e2723;
+    background: #d7ccc8;
+}
+.quest-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #66bb6a, #9ccc65);
+    transition: width 0.2s ease-out;
+}
+.quest-bottomline {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+.quest-reward {
+    font-size: 0.8rem;
+    color: #5d4037;
+}
+.quest-claim-btn {
+    padding: 6px 10px;
+    border: 2px solid #3e2723;
+    background: #ffcc80;
+    color: #4e342e;
+    font-family: var(--pixel-font);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.quest-claim-btn:disabled {
+    background: #cfd8dc;
+    color: #607d8b;
+    cursor: not-allowed;
+}
+.quest-empty {
+    font-size: 0.9rem;
+    color: #795548;
+    text-align: center;
+    padding: 8px 0;
+}
 .info-header { display: flex; gap: 10px; border-bottom: 2px dashed #a1887f; padding-bottom: 8px; }
 .info-thumb { width: 50px; height: 50px; background: #d7ccc8; border: 2px solid var(--border-dark); display: flex; align-items: center; justify-content: center; }
 .info-thumb img { width: 40px; height: 40px; }
@@ -141,6 +276,44 @@ body, html {
 .info-cell small { font-size: 0.75rem; color: #795548; font-weight: bold; }
 .info-cell strong { font-size: 1rem; color: #2e7d32; word-break: break-word; text-align: center; }
 .text-gold { color: #f57f17; }
+.plant-action-row {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px dashed #a1887f;
+    flex-direction: column;
+    gap: 8px;
+}
+.plant-action-row.active {
+    display: flex;
+}
+.plant-action-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border: 3px solid #6a1b9a;
+    background: linear-gradient(180deg, #ab47bc, #7b1fa2);
+    color: #fff;
+    font-family: var(--pixel-font);
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #4a148c;
+}
+.plant-action-btn:active {
+    transform: translateY(4px);
+    box-shadow: none;
+}
+.plant-action-btn:disabled {
+    background: #bdbdbd;
+    border-color: #757575;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+.plant-action-meta {
+    font-size: 0.85rem;
+    color: #6d4c41;
+    text-align: center;
+}
 
 /* 4. BOTTOM TOOLBAR */
 .hud-bottom { display: flex; justify-content: center; width: 100%; padding-bottom: 10px; }
@@ -244,6 +417,15 @@ body, html {
 @media (max-width: 768px) {
     .hud-top { flex-wrap: wrap; }
     .resources { margin-left: 0; width: 100%; justify-content: center; margin-top: 5px; }
+    .quest-panel {
+        top: auto;
+        bottom: 170px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-height: 210px;
+        overflow-y: auto;
+    }
     .plant-info-panel { top: auto; bottom: 85px; right: 10px; left: 10px; width: auto; border: 3px solid var(--accent-gold); box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
 }
 

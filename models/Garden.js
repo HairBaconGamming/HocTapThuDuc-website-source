@@ -6,10 +6,9 @@ const GardenSchema = new mongoose.Schema({
     tutorialStep: { type: Number, default: 0 },
     water: { type: Number, default: 1 },
     fertilizer: { type: Number, default: 0 },
-    
-    // [MỚI] Lưu vị trí Camera
+
     camera: {
-        x: { type: Number, default: 2048 }, // Giữa map (64*64/2)
+        x: { type: Number, default: 2048 },
         y: { type: Number, default: 2048 },
         zoom: { type: Number, default: 1 }
     },
@@ -20,25 +19,29 @@ const GardenSchema = new mongoose.Schema({
             itemId: { type: String, required: true },
             x: { type: Number, default: 0 },
             y: { type: Number, default: 0 },
-            
             stage: { type: Number, default: 0 },
-            lastWatered: { type: Date, default: null }, 
+            lastWatered: { type: Date, default: null },
             growthProgress: { type: Number, default: 0 },
-            
-            // [MỚI] Cơ chế héo hon
-            witherProgress: { type: Number, default: 0 }, // Thời gian đã bị khát nước (ms)
-            isDead: { type: Boolean, default: false },    // Cây đã chết chưa?
-            
+            witherProgress: { type: Number, default: 0 },
+            isDead: { type: Boolean, default: false },
             lastUpdated: { type: Date, default: Date.now },
             plantedAt: { type: Date, default: Date.now }
         }
     ],
-    
-    // [ACHIEVEMENTS] Tracking for achievements
-    harvestCount: { type: Number, default: 0 },      // Số lần thu hoạch
-    waterCount: { type: Number, default: 0 },        // Số lần tưới cây
-    totalGoldCollected: { type: Number, default: 0 }, // Tổng vàng thu hoạch được
-    plantSurvivalStreak: { type: Number, default: 0 } // Chuỗi ngày cây sống (liên tiếp)
+
+    harvestCount: { type: Number, default: 0 },
+    waterCount: { type: Number, default: 0 },
+    plantCount: { type: Number, default: 0 },
+    totalGoldCollected: { type: Number, default: 0 },
+    plantSurvivalStreak: { type: Number, default: 0 },
+
+    dailyQuestState: {
+        dateKey: { type: String, default: null },
+        waterCount: { type: Number, default: 0 },
+        harvestCount: { type: Number, default: 0 },
+        plantCount: { type: Number, default: 0 },
+        claimedQuestIds: [{ type: String }]
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Garden', GardenSchema);

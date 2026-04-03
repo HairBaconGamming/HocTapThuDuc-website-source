@@ -10,6 +10,7 @@ const TARGETS = [
   'middlewares',
   'models',
   'routes',
+  'services',
   'utils',
   path.join('public', 'js')
 ];

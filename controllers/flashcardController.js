@@ -1,6 +1,6 @@
 const Flashcard = require('../models/Flashcard');
-const Garden = require('../models/Garden');
 const Lesson = require('../models/Lesson');
+const { grantFertilizer } = require('../services/gardenRewardService');
 
 // 1. Lấy danh sách thẻ cần ôn tập hôm nay (Daily Review)
 exports.getReviewSession = async (req, res) => {
@@ -81,11 +81,7 @@ exports.processReview = async (req, res) => {
             // Tỷ lệ 30% nhận phân bón mỗi thẻ đúng (để tránh lạm phát)
             if (Math.random() < 0.3) {
                 bonusFertilizer = 1;
-                await Garden.findOneAndUpdate(
-                    { user: req.user._id },
-                    { $inc: { fertilizer: 1 } },
-                    { upsert: true }
-                );
+                await grantFertilizer(req.user._id, 1);
             }
         }
 
