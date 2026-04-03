@@ -2,7 +2,12 @@ const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
-const { buildLessonVisibilityFilter } = require('../utils/contentAccess');
+const LessonCompletion = require('../models/LessonCompletion');
+const {
+    buildLessonVisibilityFilter,
+    hasProContentAccess,
+    canManageCourse
+} = require('../utils/contentAccess');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -28,7 +33,125 @@ async function ensureOwnedCourse(courseId, user, res, { lean = false, notFoundMe
     return course;
 }
 
-exports.getCourseDetail = async (req, res) => {
+function estimateLessonMinutes(lesson) {
+    if (typeof lesson?.duration === 'number' && !Number.isNaN(lesson.duration) && lesson.duration > 0) {
+        return Math.max(1, Math.round(lesson.duration));
+    }
+
+    switch (lesson?.type) {
+        case 'video':
+            return 8;
+        case 'quiz':
+        case 'question':
+            return 6;
+        case 'document':
+        case 'resource':
+            return 4;
+        default:
+            return 5;
+    }
+}
+
+function getLessonTypeMeta(type) {
+    switch (type) {
+        case 'video':
+            return { label: 'Video', icon: 'fa-play-circle' };
+        case 'quiz':
+        case 'question':
+            return { label: 'Luyện tập', icon: 'fa-circle-question' };
+        case 'document':
+        case 'resource':
+            return { label: 'Tài liệu', icon: 'fa-file-lines' };
+        case 'code':
+            return { label: 'Code', icon: 'fa-code' };
+        default:
+            return { label: 'Bài học', icon: 'fa-book-open' };
+    }
+}
+
+function buildCourseCtaState({ course, user, progress, firstAccessibleLessonId, resumeLessonId, hasPremiumLocked }) {
+    if (!user) {
+        return {
+            tone: 'guest',
+            eyebrow: 'Sẵn sàng bắt đầu',
+            title: 'Đăng nhập để mở hành trình học',
+            body: 'Lưu tiến độ, đồng bộ bài đang học và mở khóa gợi ý bài tiếp theo ngay trong khóa này.',
+            primary: {
+                href: `/login?redirect=/course/${course._id}`,
+                label: 'Đăng nhập để bắt đầu'
+            },
+            secondary: firstAccessibleLessonId
+                ? { href: `/lesson/${firstAccessibleLessonId}`, label: 'Xem bài mở đầu' }
+                : null
+        };
+    }
+
+    if (!firstAccessibleLessonId) {
+        return {
+            tone: 'locked',
+            eyebrow: 'Nội dung đang khóa',
+            title: hasPremiumLocked ? 'Cần PRO để mở trọn khóa học' : 'Khóa học đang được cập nhật',
+            body: hasPremiumLocked
+                ? 'Một số bài trong khóa đang ở chế độ nâng cao. Nâng cấp để mở đầy đủ lộ trình học.'
+                : 'Khóa học chưa có bài học khả dụng ở thời điểm hiện tại.',
+            primary: hasPremiumLocked
+                ? { href: '/upgrade', label: 'Nâng cấp PRO' }
+                : null,
+            secondary: null
+        };
+    }
+
+    if (progress.completedCount > 0 && progress.completedCount < progress.accessibleCount) {
+        return {
+            tone: 'resume',
+            eyebrow: 'Đang học dở',
+            title: 'Tiếp tục đúng nhịp đang học',
+            body: `Bạn đã hoàn thành ${progress.completedCount}/${progress.accessibleCount} bài có thể truy cập. Hệ thống sẽ đưa bạn đến bài hợp lý tiếp theo.`,
+            primary: {
+                href: `/lesson/${resumeLessonId || firstAccessibleLessonId}`,
+                label: 'Tiếp tục học'
+            },
+            secondary: {
+                href: `/lesson/${firstAccessibleLessonId}`,
+                label: 'Xem lại từ đầu'
+            }
+        };
+    }
+
+    if (progress.accessibleCount > 0 && progress.completedCount === progress.accessibleCount) {
+        return {
+            tone: 'completed',
+            eyebrow: 'Đã hoàn thành',
+            title: 'Ôn tập hoặc mở rộng sâu hơn',
+            body: hasPremiumLocked
+                ? 'Bạn đã đi hết phần đang mở. Có thể ôn lại từ đầu hoặc nâng cấp để học tiếp các bài nâng cao.'
+                : 'Bạn đã hoàn thành toàn bộ phần đang mở của khóa học. Có thể ôn lại để củng cố kiến thức.',
+            primary: {
+                href: `/lesson/${firstAccessibleLessonId}`,
+                label: 'Ôn tập lại'
+            },
+            secondary: hasPremiumLocked
+                ? { href: '/upgrade', label: 'Mở khóa PRO' }
+                : null
+        };
+    }
+
+    return {
+        tone: 'start',
+        eyebrow: 'Khởi động khóa học',
+        title: 'Bắt đầu từ bài mở đầu',
+        body: 'Đi theo lộ trình đã sắp sẵn để giữ nhịp học ổn định và mở dần các bài tiếp theo.',
+        primary: {
+            href: `/lesson/${firstAccessibleLessonId}`,
+            label: 'Bắt đầu học'
+        },
+        secondary: hasPremiumLocked
+            ? { href: '/upgrade', label: 'Mở khóa PRO' }
+            : null
+    };
+}
+
+const legacyGetCourseDetailDeprecated = async (req, res) => {
     try {
         const { id } = req.params; // Lấy ID từ URL (vd: /course/65a...)
 
@@ -438,7 +561,7 @@ exports.updateCourseFull = async (req, res) => {
     }
 };
 
-// Override the legacy public detail handler with the visibility-aware version.
+// Canonical public detail handler used by course detail pages.
 exports.getCourseDetail = async (req, res) => {
     try {
         const { id } = req.params;
@@ -451,64 +574,161 @@ exports.getCourseDetail = async (req, res) => {
             return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
         }
 
-        const authorId = course && course.author && typeof course.author === 'object'
-            ? course.author._id?.toString()
-            : course?.author?.toString();
-        const canViewDraft = !!(
-            req.user && (
-                req.user.isAdmin ||
-                (authorId && authorId === req.user._id.toString())
-            )
-        );
+        const canViewDraft = canManageCourse(req.user, course);
 
         if (!course.isPublished && !canViewDraft) {
             return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
         }
 
-        const lessonMatch = canViewDraft ? {} : buildLessonVisibilityFilter(req.user);
+        const canUsePremium = hasProContentAccess(req.user) || canViewDraft;
+        const lessonMatch = canViewDraft ? {} : { isPublished: true };
         const units = await Unit.find({ courseId: id })
             .sort({ order: 1 })
             .populate({
                 path: 'lessons',
                 match: lessonMatch,
-                select: 'title type isPro isProOnly slug duration',
+                select: 'title type isPro isProOnly slug duration isPublished',
                 options: { sort: { order: 1 } }
             })
             .lean();
 
-        let totalLessons = 0;
         let totalVideos = 0;
         let totalQuiz = 0;
+        let totalDocuments = 0;
         let totalDuration = 0;
-        let firstLessonId = null;
+        let premiumLessons = 0;
+        const lessonIds = [];
 
-        for (const unit of units) {
-            if (!unit.lessons || unit.lessons.length === 0) continue;
+        const normalizedUnits = units.map((unit, unitIndex) => {
+            const normalizedLessons = (unit.lessons || []).map((lesson, lessonIndex) => {
+                const durationMinutes = estimateLessonMinutes(lesson);
+                const typeMeta = getLessonTypeMeta(lesson.type);
+                const isLocked = !canUsePremium && !!(lesson.isPro || lesson.isProOnly);
 
-            if (!firstLessonId) {
-                firstLessonId = unit.lessons[0]._id;
-            }
-
-            totalLessons += unit.lessons.length;
-
-            for (const lesson of unit.lessons) {
+                lessonIds.push(lesson._id);
+                totalDuration += durationMinutes;
                 if (lesson.type === 'video') totalVideos++;
                 if (lesson.type === 'quiz' || lesson.type === 'question') totalQuiz++;
-                if (typeof lesson.duration === 'number' && !isNaN(lesson.duration)) {
-                    totalDuration += lesson.duration;
-                }
-            }
+                if (lesson.type === 'document' || lesson.type === 'resource') totalDocuments++;
+                if (lesson.isPro || lesson.isProOnly) premiumLessons++;
+
+                return {
+                    ...lesson,
+                    index: lessonIndex + 1,
+                    durationMinutes,
+                    durationLabel: `${durationMinutes} phút`,
+                    typeLabel: typeMeta.label,
+                    typeIcon: typeMeta.icon,
+                    isLocked,
+                    canOpen: !isLocked,
+                    link: isLocked
+                        ? (req.user ? '/upgrade' : `/login?redirect=/course/${course._id}`)
+                        : `/lesson/${lesson._id}`
+                };
+            });
+
+            return {
+                ...unit,
+                index: unitIndex + 1,
+                lessons: normalizedLessons
+            };
+        });
+
+        let completedSet = new Set();
+        if (req.user && lessonIds.length > 0) {
+            const completionDocs = await LessonCompletion.find({
+                user: req.user._id,
+                lesson: { $in: lessonIds }
+            }).select('lesson').lean();
+            completedSet = new Set(completionDocs.map((entry) => entry.lesson.toString()));
         }
+
+        const unitsWithProgress = normalizedUnits.map((unit) => {
+            const lessons = unit.lessons.map((lesson) => ({
+                ...lesson,
+                isCompleted: completedSet.has(lesson._id.toString())
+            }));
+            const accessibleCount = lessons.filter((lesson) => !lesson.isLocked).length;
+            const completedCount = lessons.filter((lesson) => lesson.isCompleted && !lesson.isLocked).length;
+
+            return {
+                ...unit,
+                lessons,
+                summary: {
+                    totalCount: lessons.length,
+                    accessibleCount,
+                    completedCount,
+                    lockedCount: lessons.filter((lesson) => lesson.isLocked).length,
+                    durationLabel: `${lessons.reduce((sum, lesson) => sum + lesson.durationMinutes, 0)} phút`
+                }
+            };
+        });
+
+        const flatLessons = unitsWithProgress.flatMap((unit) => unit.lessons);
+        const accessibleLessons = flatLessons.filter((lesson) => !lesson.isLocked);
+        const completedAccessibleCount = accessibleLessons.filter((lesson) => lesson.isCompleted).length;
+        const firstLessonId = accessibleLessons[0]?._id?.toString() || null;
+        const resumeLessonId = accessibleLessons.find((lesson) => !lesson.isCompleted)?._id?.toString() || firstLessonId;
+
+        let studentCount = 0;
+        if (lessonIds.length > 0) {
+            const uniqueStudents = await LessonCompletion.distinct('user', { lesson: { $in: lessonIds } });
+            studentCount = uniqueStudents.length;
+        }
+
+        const stats = {
+            totalLessons: flatLessons.length,
+            totalVideos,
+            totalQuiz,
+            totalDocuments,
+            totalDuration,
+            unitCount: unitsWithProgress.length,
+            premiumLessons,
+            studentCount
+        };
+
+        const progress = {
+            completedCount: completedAccessibleCount,
+            accessibleCount: accessibleLessons.length,
+            totalCount: flatLessons.length,
+            percent: accessibleLessons.length
+                ? Math.round((completedAccessibleCount / accessibleLessons.length) * 100)
+                : 0,
+            remainingCount: Math.max(accessibleLessons.length - completedAccessibleCount, 0)
+        };
+
+        const cta = buildCourseCtaState({
+            course,
+            user: req.user,
+            progress,
+            firstAccessibleLessonId: firstLessonId,
+            resumeLessonId,
+            hasPremiumLocked: flatLessons.some((lesson) => lesson.isLocked)
+        });
+
+        const insightChips = [
+            `${stats.unitCount} chương`,
+            `${stats.totalLessons} bài học`,
+            `${stats.totalDuration} phút`,
+            `${stats.totalVideos} video`,
+            `${stats.totalQuiz} bài luyện tập`
+        ];
 
         res.render('courseDetail', {
             title: course.title,
             course,
-            units,
-            stats: { totalLessons, totalVideos, totalQuiz, totalDuration },
+            units: unitsWithProgress,
+            stats,
+            progress,
+            cta,
             firstLessonId,
+            resumeLessonId,
+            insightChips,
+            canViewDraft,
+            userHasPremiumAccess: canUsePremium,
             breadcrumbs: [
-                { label: 'Trang chu', url: '/' },
-                { label: course.subjectId?.name || 'Mon hoc', url: course.subjectId ? `/subjects/${course.subjectId._id}` : '/subjects' },
+                { label: 'Trang chủ', url: '/' },
+                { label: course.subjectId?.name || 'Môn học', url: course.subjectId ? `/subjects/${course.subjectId._id}` : '/subjects' },
                 { label: course.title, url: null }
             ],
             user: req.user,

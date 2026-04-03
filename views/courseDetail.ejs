@@ -1,262 +1,387 @@
 <%- include('partials/header') %>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<style>
-    :root {
-        --primary: #3b82f6;
-        --dark: #1e293b;
-        --light-bg: #f3f4f6;
-        --border: #e5e7eb;
-    }
-
-    body { background-color: #f8fafc; color: var(--dark); font-family: 'Inter', sans-serif; }
-
-    /* LAYOUT */
-    .course-wrapper {
-        max-width: 1200px; margin: 40px auto; padding: 0 20px;
-        display: grid; grid-template-columns: 2fr 1fr; gap: 40px;
-    }
-
-    /* --- LEFT COLUMN --- */
-    .course-header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; color: #111827; }
-    .course-meta { display: flex; gap: 20px; color: #6b7280; font-size: 0.9rem; margin-bottom: 20px; align-items: center; }
-    .author-badge { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--dark); }
-    .author-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
-
-    /* Description Box */
-    .course-desc-box { background: white; padding: 30px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
-    .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; display: inline-block; }
-    .desc-content { line-height: 1.6; color: #4b5563; }
-
-    /* Curriculum (Accordion) */
-    .curriculum-box { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-    .curr-header { padding: 20px; background: #f9fafb; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    
-    .unit-item { border-bottom: 1px solid var(--border); }
-    .unit-toggle { 
-        padding: 15px 20px; background: #fff; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; 
-        transition: 0.2s;
-    }
-    .unit-toggle:hover { background: #f8fafc; color: var(--primary); }
-    .unit-toggle.active { background: #eff6ff; color: var(--primary); }
-    .unit-toggle i { transition: transform 0.3s; }
-    .unit-toggle.active i { transform: rotate(180deg); }
-
-    .lesson-group { display: none; background: #fcfcfc; }
-    .lesson-group.open { display: block; }
-    .lesson-row { 
-        padding: 12px 20px 12px 40px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;
-        color: #64748b; font-size: 0.95rem; text-decoration: none; transition: 0.2s;
-    }
-    .lesson-row:hover { background: white; color: var(--primary); padding-left: 45px; }
-    
-    .badge-pro { background: #fff7ed; color: #ea580c; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #ffedd5; font-weight: 700; }
-    .badge-free { background: #f0fdf4; color: #16a34a; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0; font-weight: 700; }
-
-    /* --- RIGHT COLUMN (Sticky Card) --- */
-    .sticky-sidebar { position: sticky; top: 20px; }
-    .course-card { 
-        background: white; border-radius: 16px; overflow: hidden; 
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border);
-    }
-    .course-thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; }
-    .course-thumb { width: 100%; height: 100%; object-fit: cover; }
-    .play-overlay { 
-        position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); 
-        display: flex; justify-content: center; align-items: center; opacity: 0; transition: 0.3s; cursor: pointer;
-    }
-    .course-thumb-wrapper:hover .play-overlay { opacity: 1; }
-
-    .card-body { padding: 25px; }
-    .price-tag { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 20px; display: block; }
-    
-    .btn-action { 
-        display: block; width: 100%; padding: 15px; text-align: center; border-radius: 8px; 
-        font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; cursor: pointer; border: none; text-decoration: none;
-    }
-    .btn-primary { background: var(--primary); color: white; margin-bottom: 10px; }
-    .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
-    
-    .features-list { margin-top: 25px; list-style: none; padding: 0; }
-    .features-list li { margin-bottom: 10px; color: #4b5563; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-    .features-list li i { color: var(--primary); width: 20px; text-align: center; }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-        .course-wrapper { grid-template-columns: 1fr; }
-        .sticky-sidebar { position: relative; top: 0; }
-        .course-header { text-align: center; }
-        .course-meta { justify-content: center; }
-    }
-</style>
+<link rel="stylesheet" href="/css/styleCourseDetail.css">
 
 <%- include('partials/breadcrumb') %>
 
-<div class="course-wrapper">
-    <% const canSeePremiumLessons = !!(user && (user.isPro || user.isAdmin || user.isTeacher)); %>
-    <% const getVisibleLessons = (lessons) => (lessons || []).filter(lesson => canSeePremiumLessons || (!lesson.isPro && !lesson.isProOnly)); %>
-    <% const visibleLessonCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).length, 0); %>
-    <% const visibleVideoCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).filter(lesson => lesson.type === 'video').length, 0); %>
-    <% const visibleQuizCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).filter(lesson => lesson.type === 'quiz' || lesson.type === 'question').length, 0); %>
-    
-    <div class="main-content">
-        <div class="course-header">
-            <div style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 10px; text-transform: uppercase;">Khóa học trực tuyến</div>
-            <h1><%= course.title %></h1>
-            
-            <div class="course-meta">
-                <div class="author-badge">
-                    <img src="<%= course.author ? (course.author.avatar || '/img/default-avatar.png') : '/img/default-avatar.png' %>" class="author-avatar">
-                    <span><%= course.author ? course.author.username : 'Admin' %></span>
+<%
+    const authorName = course.author ? course.author.username : 'HTTD Team';
+    const authorAvatar = course.author ? (course.author.avatar || '/img/default-avatar.png') : '/img/default-avatar.png';
+    const authorBio = course.author && course.author.bio ? course.author.bio : 'Đồng hành biên soạn lộ trình học theo nhịp dễ theo dõi và dễ quay lại.';
+    const heroDescription = course.description || 'Khóa học được biên soạn theo dạng hành trình có nhịp, giúp bạn vào đúng bài, biết mình đang ở đâu và học tiếp theo cách gọn hơn.';
+    const totalLocked = units.reduce((sum, unit) => sum + (unit.summary?.lockedCount || 0), 0);
+    const hasStarted = progress.completedCount > 0;
+%>
+
+<main class="course-detail-page">
+    <section class="course-hero">
+        <div class="course-hero-copy">
+            <div class="course-hero-kicker-row">
+                <span class="course-hero-kicker">Khóa học trực tuyến</span>
+                <% if (course.subjectId?.name) { %>
+                    <span class="course-hero-subject"><i class="fas fa-book-open"></i><%= course.subjectId.name %></span>
+                <% } %>
+                <% if (course.isPro) { %>
+                    <span class="course-status-badge is-pro"><i class="fas fa-crown"></i> PRO</span>
+                <% } %>
+                <% if (!course.isPublished && canViewDraft) { %>
+                    <span class="course-status-badge is-draft"><i class="fas fa-flask"></i> Nháp</span>
+                <% } %>
+            </div>
+
+            <h1 class="course-hero-title"><%= course.title %></h1>
+            <p class="course-hero-description"><%= heroDescription %></p>
+
+            <div class="course-meta-row">
+                <div class="course-meta-item">
+                    <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="course-author-avatar">
+                    <div>
+                        <span class="course-meta-label">Biên soạn bởi</span>
+                        <strong><%= authorName %></strong>
+                    </div>
                 </div>
-                <span><i class="far fa-clock"></i> Cập nhật: <%= new Date(course.updatedAt).toLocaleDateString('vi-VN') %></span>
-                <span><i class="fas fa-user-graduate"></i> <%= course.studentsCount || 0 %> học viên</span>
+                <div class="course-meta-item">
+                    <i class="far fa-clock"></i>
+                    <div>
+                        <span class="course-meta-label">Cập nhật</span>
+                        <strong><%= new Date(course.updatedAt).toLocaleDateString('vi-VN') %></strong>
+                    </div>
+                </div>
+                <div class="course-meta-item">
+                    <i class="fas fa-user-graduate"></i>
+                    <div>
+                        <span class="course-meta-label">Người học</span>
+                        <strong><%= stats.studentCount %></strong>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="course-desc-box">
-            <h3 class="section-title">Giới thiệu khóa học</h3>
-            <div class="desc-content">
-                <% if(course.description) { %>
-                    <p style="white-space: pre-line;"><%= course.description %></p>
-                <% } else { %>
-                    <p>Chưa có mô tả chi tiết cho khóa học này.</p>
+            <div class="course-insight-row">
+                <% insightChips.forEach((chip) => { %>
+                    <span class="course-insight-chip"><%= chip %></span>
+                <% }) %>
+                <% if (totalLocked > 0) { %>
+                    <span class="course-insight-chip is-warm"><i class="fas fa-lock"></i><%= totalLocked %> bài nâng cao</span>
+                <% } %>
+            </div>
+
+            <div class="course-hero-actions">
+                <% if (cta.primary) { %>
+                    <a href="<%= cta.primary.href %>" class="course-btn course-btn-primary">
+                        <i class="fas fa-play-circle"></i>
+                        <span><%= cta.primary.label %></span>
+                    </a>
+                <% } %>
+                <% if (cta.secondary) { %>
+                    <a href="<%= cta.secondary.href %>" class="course-btn course-btn-secondary">
+                        <i class="fas fa-compass"></i>
+                        <span><%= cta.secondary.label %></span>
+                    </a>
                 <% } %>
             </div>
         </div>
 
-        <div class="course-desc-box">
-            <h3 class="section-title">Nội dung khóa học</h3>
-            <div style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">
-                <strong><%= units.length %></strong> chương • <strong><%= visibleLessonCount %></strong> bài học
-            </div>
+        <div class="course-hero-visual">
+            <div class="course-cover-card">
+                <div class="course-cover-frame">
+                    <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-cover-image" alt="<%= course.title %>">
+                    <div class="course-cover-glow"></div>
+                </div>
 
-            <div class="curriculum-box">
-                <% if(units.length > 0) { %>
-                    <% units.forEach((unit, idx) => { %>
-                        <% const visibleLessons = getVisibleLessons(unit.lessons); %>
-                        <div class="unit-item">
-                            <div class="unit-toggle <%= idx === 0 ? 'active' : '' %>" onclick="toggleUnit(this)">
-                                <span>
-                                    <i class="fas fa-plus-square" style="margin-right: 8px; opacity: 0.6;"></i> 
-                                    Chương <%= idx + 1 %>: <%= unit.title %>
-                                </span>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <small style="font-weight: 400; color: #999;"><%= visibleLessons.length %> bài</small>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                            </div>
-                            
-                            <div class="lesson-group <%= idx === 0 ? 'open' : '' %>">
-                                <% if(visibleLessons.length > 0) { %>
-                                    <% visibleLessons.forEach(lesson => { %>
-                                        <a href="/lesson/<%= lesson._id %>" class="lesson-row">
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <% if(lesson.type === 'video') { %>
-                                                    <i class="fas fa-play-circle" style="color: #8b5cf6;"></i>
-                                                <% } else if(lesson.type === 'quiz') { %>
-                                                    <i class="fas fa-question-circle" style="color: #f59e0b;"></i>
-                                                <% } else { %>
-                                                    <i class="fas fa-file-text" style="color: #3b82f6;"></i>
-                                                <% } %>
-                                                <%= lesson.title %>
-                                            </div>
-                                            
-                                            <% if(lesson.isPro || lesson.isProOnly) { %>
-                                                <span class="badge-pro"><i class="fas fa-lock"></i> VIP</span>
-                                            <% } else { %>
-                                                <span class="badge-free">Học thử</span>
-                                            <% } %>
-                                        </a>
-                                    <% }) %>
-                                <% } else { %>
-                                    <div style="padding: 15px 40px; color: #999; font-style: italic;">Đang cập nhật bài học...</div>
-                                <% } %>
-                            </div>
+                <div class="course-cover-panel">
+                    <span class="course-cover-eyebrow"><%= cta.eyebrow %></span>
+                    <h2><%= cta.title %></h2>
+                    <p><%= cta.body %></p>
+
+                    <div class="course-progress-card">
+                        <div class="course-progress-head">
+                            <span>Tiến độ đang mở</span>
+                            <strong><%= progress.percent %>%</strong>
                         </div>
-                    <% }) %>
-                <% } else { %>
-                    <div style="padding: 30px; text-align: center; color: #666;">Nội dung đang được biên soạn.</div>
-                <% } %>
+                        <div class="course-progress-bar">
+                            <span style="width:<%= progress.percent %>%"></span>
+                        </div>
+                        <div class="course-progress-meta">
+                            <span><%= progress.completedCount %>/<%= progress.accessibleCount %> bài đã hoàn thành</span>
+                            <span><%= progress.remainingCount %> bài còn lại</span>
+                        </div>
+                    </div>
+
+                    <div class="course-cover-stats">
+                        <div>
+                            <span>Chương</span>
+                            <strong><%= stats.unitCount %></strong>
+                        </div>
+                        <div>
+                            <span>Bài học</span>
+                            <strong><%= stats.totalLessons %></strong>
+                        </div>
+                        <div>
+                            <span>Thời lượng</span>
+                            <strong><%= stats.totalDuration %> phút</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="sticky-sidebar">
-        <div class="course-card">
-            <div class="course-thumb-wrapper">
-                <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-thumb" alt="<%= course.title %>">
-                <% if(firstLessonId) { %>
-                    <a href="/lesson/<%= firstLessonId %>" class="play-overlay">
-                        <i class="fas fa-play-circle" style="font-size: 4rem; color: white;"></i>
-                    </a>
-                <% } %>
-            </div>
-            
-            <div class="card-body">
-                <span class="price-tag"><%= course.isPublished ? 'Miễn phí' : 'Sắp ra mắt' %></span>
-                
-                <% if(user) { %>
-                    <% if (firstLessonId) { %>
-                        <a href="/lesson/<%= firstLessonId %>" class="btn-action btn-primary">
-                            <i class="fas fa-graduation-cap"></i> Vào học ngay
-                        </a>
-                    <% } else { %>
-                        <button class="btn-action btn-primary" style="opacity: 0.6; cursor: not-allowed;" disabled>
-                            Đang cập nhật nội dung
+    <div class="course-detail-layout">
+        <div class="course-main-column">
+            <section class="course-section course-summary-section">
+                <div class="course-section-heading">
+                    <div>
+                        <span class="course-section-kicker">Tổng quan</span>
+                        <h2>Toàn cảnh lộ trình</h2>
+                    </div>
+                    <p>Khóa học giữ nhịp rõ ràng giữa lý thuyết, video và bài luyện tập để bạn biết mình đang ở đâu trong hành trình học.</p>
+                </div>
+
+                <div class="course-summary-grid">
+                    <article class="course-summary-card">
+                        <span>Lộ trình đang mở</span>
+                        <strong><%= progress.accessibleCount %> bài</strong>
+                        <p>Các bài đang có thể học ngay theo quyền truy cập hiện tại.</p>
+                    </article>
+                    <article class="course-summary-card">
+                        <span>Nội dung video</span>
+                        <strong><%= stats.totalVideos %> bài</strong>
+                        <p>Những phần cần trực quan hóa và đi theo nhịp chậm hơn.</p>
+                    </article>
+                    <article class="course-summary-card">
+                        <span>Luyện tập</span>
+                        <strong><%= stats.totalQuiz %> bài</strong>
+                        <p>Checkpoint để kiểm tra hiểu bài thay vì chỉ đọc liên tục.</p>
+                    </article>
+                    <article class="course-summary-card">
+                        <span>Tài liệu</span>
+                        <strong><%= stats.totalDocuments %> mục</strong>
+                        <p>Tài nguyên đi kèm giúp bạn quay lại đúng chỗ khi cần ôn tập.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="course-section course-curriculum-section">
+                <div class="course-section-heading course-section-heading-split">
+                    <div>
+                        <span class="course-section-kicker">Navigator</span>
+                        <h2>Nội dung khóa học</h2>
+                    </div>
+                    <div class="course-section-actions">
+                        <button type="button" class="course-ghost-btn" data-course-action="expand-all">
+                            <i class="fas fa-angle-double-down"></i>
+                            <span>Mở hết</span>
                         </button>
-                    <% } %>
-                <% } else { %>
-                    <a href="/login?redirect=/course/<%= course._id %>" class="btn-action btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Đăng nhập để học
-                    </a>
-                <% } %>
+                        <button type="button" class="course-ghost-btn" data-course-action="collapse-all">
+                            <i class="fas fa-angle-double-up"></i>
+                            <span>Thu gọn</span>
+                        </button>
+                    </div>
+                </div>
 
-                <ul class="features-list">
-                    <li>
-                        <i class="fas fa-check" style="width:20px; text-align:center;"></i> 
-                        Truy cập trọn đời
-                    </li>
-                    <li>
-                        <i class="fas fa-film" style="width:20px; text-align:center;"></i> 
-                        <strong><%= visibleVideoCount %></strong> video bài giảng
-                    </li>
-                    <li>
-                        <i class="fas fa-clipboard-check" style="width:20px; text-align:center;"></i> 
-                        <strong><%= visibleQuizCount %></strong> bài tập thực hành
-                    </li>
-                    <li>
-                        <i class="fas fa-layer-group" style="width:20px; text-align:center;"></i> 
-                        <strong><%= visibleLessonCount %></strong> bài học tổng cộng
-                    </li>
-                    <li>
-                        <i class="fas fa-users" style="width:20px; text-align:center;"></i> 
-                        <strong><%= course.studentsCount || 0 %></strong> học viên đã tham gia
-                    </li>
+                <div class="course-curriculum-toolbar">
+                    <label class="course-search-field">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="courseLessonSearch" placeholder="Tìm nhanh chương hoặc bài học...">
+                    </label>
+
+                    <div class="course-filter-pills" id="courseFilterPills">
+                        <button type="button" class="is-active" data-course-filter="all">Tất cả</button>
+                        <button type="button" data-course-filter="video">Video</button>
+                        <button type="button" data-course-filter="quiz">Luyện tập</button>
+                        <button type="button" data-course-filter="locked">VIP</button>
+                        <% if (user) { %>
+                            <button type="button" data-course-filter="completed">Đã học</button>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="course-results-meta" id="courseResultsMeta">
+                    <span><strong id="courseVisibleLessonCount"><%= progress.accessibleCount %></strong> bài đang hiện</span>
+                    <span><strong id="courseVisibleUnitCount"><%= units.length %></strong> chương còn khớp bộ lọc</span>
+                </div>
+
+                <div class="course-curriculum-stack" id="courseCurriculumStack">
+                    <% if (units.length > 0) { %>
+                        <% units.forEach((unit, unitIndex) => { %>
+                            <article class="course-unit-card" data-unit-card data-unit-title="<%= (unit.title || '').toLowerCase() %>">
+                                <button
+                                    type="button"
+                                    class="course-unit-toggle <%= unitIndex === 0 ? 'is-open' : '' %>"
+                                    data-unit-toggle
+                                    aria-expanded="<%= unitIndex === 0 ? 'true' : 'false' %>">
+                                    <div class="course-unit-copy">
+                                        <span class="course-unit-index">Chương <%= unit.index %></span>
+                                        <h3><%= unit.title %></h3>
+                                        <p>
+                                            <span><%= unit.summary.totalCount %> bài</span>
+                                            <span>•</span>
+                                            <span><%= unit.summary.durationLabel %></span>
+                                            <% if (unit.summary.lockedCount > 0) { %>
+                                                <span>•</span>
+                                                <span><%= unit.summary.lockedCount %> bài khóa</span>
+                                            <% } %>
+                                        </p>
+                                    </div>
+
+                                    <div class="course-unit-meta">
+                                        <% if (unit.summary.completedCount > 0) { %>
+                                            <span class="course-mini-progress"><%= unit.summary.completedCount %>/<%= unit.summary.accessibleCount %></span>
+                                        <% } %>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                </button>
+
+                                <div class="course-unit-body <%= unitIndex === 0 ? 'is-open' : '' %>" data-unit-body>
+                                    <% if (unit.lessons.length > 0) { %>
+                                        <% unit.lessons.forEach((lesson) => { %>
+                                            <% const lessonClasses = [
+                                                'course-lesson-row',
+                                                lesson.isLocked ? 'is-locked' : 'is-open',
+                                                lesson.isCompleted ? 'is-completed' : '',
+                                                lesson._id.toString() === resumeLessonId ? 'is-resume-target' : ''
+                                            ].filter(Boolean).join(' '); %>
+                                            <a
+                                                href="<%= lesson.link %>"
+                                                class="<%= lessonClasses %>"
+                                                data-lesson-row
+                                                data-lesson-title="<%= (lesson.title || '').toLowerCase() %>"
+                                                data-lesson-type="<%= lesson.type %>"
+                                                data-lesson-locked="<%= lesson.isLocked ? 'true' : 'false' %>"
+                                                data-lesson-completed="<%= lesson.isCompleted ? 'true' : 'false' %>">
+                                                <div class="course-lesson-main">
+                                                    <span class="course-lesson-icon"><i class="fas <%= lesson.typeIcon %>"></i></span>
+                                                    <div class="course-lesson-copy">
+                                                        <div class="course-lesson-title-row">
+                                                            <strong><%= lesson.title %></strong>
+                                                            <% if (!lesson.isPublished && canViewDraft) { %>
+                                                                <span class="course-pill is-draft">Nháp</span>
+                                                            <% } %>
+                                                            <% if (lesson.isCompleted) { %>
+                                                                <span class="course-pill is-success"><i class="fas fa-check"></i> Đã học</span>
+                                                            <% } %>
+                                                        </div>
+                                                        <div class="course-lesson-meta">
+                                                            <span><i class="far fa-clock"></i><%= lesson.durationLabel %></span>
+                                                            <span><i class="fas <%= lesson.typeIcon %>"></i><%= lesson.typeLabel %></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="course-lesson-side">
+                                                    <% if (lesson.isLocked) { %>
+                                                        <span class="course-pill is-warm"><i class="fas fa-lock"></i> VIP</span>
+                                                    <% } else { %>
+                                                        <span class="course-pill is-soft">Mở</span>
+                                                    <% } %>
+                                                    <i class="fas fa-arrow-right"></i>
+                                                </div>
+                                            </a>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <div class="course-empty-inline">
+                                            <i class="fas fa-hourglass-half"></i>
+                                            <span>Chương này đang được cập nhật nội dung.</span>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </article>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="course-empty-state">
+                            <i class="fas fa-sparkles"></i>
+                            <h3>Nội dung đang được biên soạn</h3>
+                            <p>Khóa học chưa có cấu trúc bài học khả dụng ở thời điểm hiện tại.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+
+            <section class="course-section course-author-section">
+                <div class="course-section-heading">
+                    <div>
+                        <span class="course-section-kicker">Tác giả & phong cách học</span>
+                        <h2>Học theo nhịp dễ quay lại</h2>
+                    </div>
+                    <p>Bố cục khóa học được ưu tiên để bạn nhìn thấy lộ trình, biết bài nào đang mở, bài nào cần PRO và quay lại đúng điểm đang học.</p>
+                </div>
+
+                <div class="course-author-card">
+                    <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="course-author-card-avatar">
+                    <div class="course-author-card-copy">
+                        <h3><%= authorName %></h3>
+                        <p><%= authorBio %></p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <aside class="course-side-column">
+            <div class="course-side-card course-action-card" data-tone="<%= cta.tone %>">
+                <span class="course-side-kicker"><%= cta.eyebrow %></span>
+                <h2><%= cta.title %></h2>
+                <p><%= cta.body %></p>
+
+                <div class="course-side-actions">
+                    <% if (cta.primary) { %>
+                        <a href="<%= cta.primary.href %>" class="course-btn course-btn-primary course-btn-block">
+                            <i class="fas fa-play-circle"></i>
+                            <span><%= cta.primary.label %></span>
+                        </a>
+                    <% } %>
+                    <% if (cta.secondary) { %>
+                        <a href="<%= cta.secondary.href %>" class="course-btn course-btn-secondary course-btn-block">
+                            <i class="fas fa-compass"></i>
+                            <span><%= cta.secondary.label %></span>
+                        </a>
+                    <% } %>
+                </div>
+
+                <div class="course-rail-progress">
+                    <div>
+                        <span>Tiến độ</span>
+                        <strong><%= progress.percent %>%</strong>
+                    </div>
+                    <div>
+                        <span>Còn lại</span>
+                        <strong><%= progress.remainingCount %> bài</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="course-side-card">
+                <span class="course-side-kicker">Snapshot</span>
+                <h3>Điểm neo nhanh</h3>
+                <ul class="course-side-list">
+                    <li><span>Khóa đang mở</span><strong><%= progress.accessibleCount %> bài</strong></li>
+                    <li><span>Bài nâng cao</span><strong><%= stats.premiumLessons %></strong></li>
+                    <li><span>Tài liệu đính kèm</span><strong><%= stats.totalDocuments %></strong></li>
+                    <li><span>Người học</span><strong><%= stats.studentCount %></strong></li>
                 </ul>
             </div>
-        </div>
+
+            <div class="course-side-card">
+                <span class="course-side-kicker">Nhịp học</span>
+                <h3><%= hasStarted ? 'Bạn đã vào guồng' : 'Đề xuất bắt đầu gọn' %></h3>
+                <p>
+                    <% if (hasStarted) { %>
+                        Tiếp tục từ bài chưa hoàn thành để hệ thống giữ đúng nhịp đang học thay vì bắt đầu lại từ đầu.
+                    <% } else { %>
+                        Mở từ bài đầu và đi lần lượt theo từng chương để nhận đủ phần lý thuyết, video và luyện tập.
+                    <% } %>
+                </p>
+            </div>
+        </aside>
     </div>
-
-</div>
-
-<%- include('partials/footer') %>
+</main>
 
 <script>
-    function toggleUnit(header) {
-        header.classList.toggle('active');
-        const content = header.nextElementSibling;
-        
-        if (content.classList.contains('open')) {
-            content.classList.remove('open');
-        } else {
-            // Nếu muốn đóng các chương khác khi mở chương mới (Accordion effect)
-            // document.querySelectorAll('.lesson-group').forEach(el => el.classList.remove('open'));
-            // document.querySelectorAll('.unit-toggle').forEach(el => el.classList.remove('active'));
-            // header.classList.add('active');
-            
-            content.classList.add('open');
-        }
-    }
+    window.COURSE_DETAIL_STATE = {
+        courseId: "<%= course._id %>",
+        resumeLessonId: <%- JSON.stringify(resumeLessonId || '') %>,
+        firstLessonId: <%- JSON.stringify(firstLessonId || '') %>
+    };
 </script>
+<script src="/js/courseDetail.js"></script>
+
+<%- include('partials/footer') %>

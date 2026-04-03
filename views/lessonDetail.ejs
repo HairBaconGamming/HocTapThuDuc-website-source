@@ -4,102 +4,306 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
 <link rel="stylesheet" href="/css/styleLessonDetail.css">
 
+<%
+    const lessonAuthor = lesson.createdBy ? lesson.createdBy.username : 'HTTD Team';
+    const lessonCategory = lesson.category || 'Bài học';
+    const unitTitle = unit ? unit.title : (course ? course.title : 'Lộ trình hiện tại');
+    const courseTitle = course ? course.title : (subject ? subject.name : 'Kho học liệu');
+%>
+
 <div class="lesson-detail-page">
-    <div class="lesson-container">
-        
-        <aside class="lesson-sidebar" id="lessonSidebar">
-            <div class="sidebar-header">
-                <div class="d-flex align-items-center gap-2 text-dark fw-bold small text-uppercase">
-                    <i class="fas fa-stream text-primary"></i> Mục lục bài học
+    <div class="lesson-layout" id="lessonLayout">
+        <aside class="lesson-rail lesson-rail-left" id="lessonSidebar" data-rail-state="open">
+            <div class="lesson-rail-card lesson-course-card">
+                <div class="lesson-rail-header">
+                    <span class="lesson-rail-kicker">Navigator</span>
+                    <button type="button" class="lesson-rail-icon-button" data-lesson-action="toggle-left-rail" aria-label="Thu gọn mục lục">
+                        <i class="fas fa-panel-left"></i>
+                    </button>
+                </div>
+
+                <a href="<%= course ? ('/course/' + course._id) : '/subjects' %>" class="lesson-course-link">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Quay lại <%= course ? 'khóa học' : 'môn học' %></span>
+                </a>
+
+                <div class="lesson-course-title-group">
+                    <span class="lesson-course-chip"><%= courseTitle %></span>
+                    <h2><%= lesson.title %></h2>
+                    <p><%= unitTitle %></p>
                 </div>
             </div>
-            
-            <div class="toc-wrapper">
-                <ul id="toc-list" class="toc-list">
-                    <li class="p-3 text-muted small fst-italic ps-4">Đang tải mục lục...</li>
-                </ul>
-            </div>
 
-            <div class="p-3 border-top bg-light">
-                <a href="<%= course ? ('/course/' + course._id) : '/subjects' %>" class="btn btn-outline-secondary w-100 btn-sm fw-bold">
-                    <i class="fas fa-arrow-left me-2"></i> Quay lại khóa học
-                </a>
+            <div class="lesson-rail-card lesson-toc-card">
+                <div class="lesson-rail-section-head">
+                    <div>
+                        <span class="lesson-rail-kicker">Mục lục</span>
+                        <h3>Điểm neo trong bài</h3>
+                    </div>
+                    <span class="lesson-inline-progress"><%= lessonPosition.index %>/<%= lessonPosition.total %></span>
+                </div>
+
+                <label class="lesson-search-field">
+                    <i class="fas fa-search"></i>
+                    <input type="search" id="tocSearchInput" placeholder="Tìm trong mục lục...">
+                </label>
+
+                <div class="toc-wrapper">
+                    <ul id="toc-list" class="toc-list">
+                        <li class="lesson-empty-inline">Đang tạo mục lục...</li>
+                    </ul>
+                </div>
             </div>
         </aside>
 
-        <main class="lesson-content-wrapper" id="mainScrollArea">
-            <div class="lesson-content-inner">
-                
-                <div class="lesson-breadcrumb d-none d-md-block">
-                    <div class="breadcrumb-list">
-                        <span class="breadcrumb-item"><a href="/">Trang chủ</a></span>
-                        <span class="breadcrumb-separator">/</span>
-                        <span class="breadcrumb-item"><a href="/courses">Khóa học</a></span>
-                        <span class="breadcrumb-separator">/</span>
-                        <span class="breadcrumb-item active"><%= lesson.title %></span>
+        <main class="lesson-main-shell">
+            <div class="lesson-topbar">
+                <div class="lesson-topbar-copy">
+                    <span class="lesson-topbar-kicker">Reading workspace</span>
+                    <div class="lesson-topbar-path">
+                        <span><%= courseTitle %></span>
+                        <i class="fas fa-chevron-right"></i>
+                        <span><%= unitTitle %></span>
                     </div>
                 </div>
 
-                <div class="lesson-header">
-                    <div class="lesson-meta">
-                        <span class="badge-cat"><%= lesson.category || 'Bài học' %></span>
-                        <span><i class="far fa-calendar-alt me-1"></i> <%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
-                        <span><i class="far fa-user me-1"></i> <%= lesson.createdBy ? lesson.createdBy.username : 'Admin' %></span>
+                <div class="lesson-topbar-actions">
+                    <div class="lesson-mode-switch" id="lessonModeSwitch">
+                        <button type="button" class="is-active" data-layout-mode="standard">Chuẩn</button>
+                        <button type="button" data-layout-mode="focus">Tập trung</button>
+                        <button type="button" data-layout-mode="wide">Rộng</button>
                     </div>
-                    <h1 class="lesson-title"><%= lesson.title %></h1>
-                </div>
-
-                <div id="lessonContentArea">
-                    <div class="text-center py-5 my-5">
-                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-                        <p class="mt-3 text-muted fw-bold">Đang tải nội dung...</p>
-                    </div>
-                </div>
-
-                <div class="lesson-footer d-flex justify-content-between align-items-center mt-5 pt-5 border-top">
-                    <button class="btn btn-light rounded-pill px-4 fw-bold text-secondary" onclick="history.back()">
-                        <i class="fas fa-arrow-left me-2"></i> Quay lại
+                    <button type="button" class="lesson-topbar-button" data-lesson-action="toggle-left-rail">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Mục lục</span>
                     </button>
-
-                    <button id="btn-finish-lesson" class="btn btn-success btn-lg rounded-pill px-5 shadow-sm fw-bold transition-all" onclick="completeLesson('<%= lesson._id %>')">
-                        <span>Hoàn thành</span> <i class="fas fa-check-circle ms-2"></i>
+                    <button type="button" class="lesson-topbar-button" data-lesson-action="toggle-right-rail">
+                        <i class="fas fa-sparkles"></i>
+                        <span>Assist</span>
+                    </button>
+                    <button type="button" class="lesson-topbar-button" id="btn-toggle-comments" data-comments-toggle>
+                        <i class="fas fa-comments"></i>
+                        <span>Thảo luận</span>
+                        <span class="comment-badge-inline" id="comment-badge-inline" style="display:none;">0</span>
                     </button>
                 </div>
-
-                <div class="mt-5 pt-5">
-                     </div>
-
             </div>
+
+            <div class="lesson-resume-banner hidden" id="lessonResumeBanner">
+                <div>
+                    <span class="lesson-resume-kicker">Tiếp tục đúng chỗ</span>
+                    <strong id="lessonResumeLabel">Hệ thống đã lưu vị trí đọc gần nhất của bạn.</strong>
+                </div>
+                <button type="button" class="lesson-resume-button" id="lessonResumeButton">Quay lại vị trí cũ</button>
+            </div>
+
+            <section class="lesson-stage">
+                <header class="lesson-hero">
+                    <div class="lesson-hero-meta-row">
+                        <span class="lesson-badge lesson-badge-primary"><%= lessonCategory %></span>
+                        <span class="lesson-badge"><i class="far fa-user"></i><%= lessonAuthor %></span>
+                        <span class="lesson-badge"><i class="far fa-calendar-alt"></i><%= new Date(lesson.createdAt).toLocaleDateString('vi-VN') %></span>
+                        <% if (isCompleted) { %>
+                            <span class="lesson-badge is-success"><i class="fas fa-check-circle"></i>Đã hoàn thành</span>
+                        <% } %>
+                    </div>
+
+                    <h1 class="lesson-title"><%= lesson.title %></h1>
+                    <p class="lesson-hero-description">
+                        Đọc theo nhịp tự nhiên với mục lục bám theo phần đang xem, khu trợ lý gợi ý bước tiếp theo và lưu lại đúng vị trí bạn đang học.
+                    </p>
+
+                    <div class="lesson-hero-stats">
+                        <div class="lesson-hero-stat">
+                            <span>Vị trí</span>
+                            <strong><%= lessonPosition.index %>/<%= lessonPosition.total %></strong>
+                        </div>
+                        <div class="lesson-hero-stat">
+                            <span>Tiến độ khóa</span>
+                            <strong><%= courseProgress.percent %>%</strong>
+                        </div>
+                        <div class="lesson-hero-stat">
+                            <span>Đã hoàn thành</span>
+                            <strong><%= courseProgress.completedCount %>/<%= courseProgress.totalCount %></strong>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="lesson-reading-shell" id="mainScrollArea">
+                    <article class="lesson-reading-surface">
+                        <div id="lessonContentArea" class="lesson-content-area">
+                            <div class="lesson-loading-state">
+                                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                                <p>Đang tải nội dung bài học...</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <footer class="lesson-footer">
+                    <div class="lesson-navigation-links">
+                        <% if (prevLesson) { %>
+                            <a href="/lesson/<%= prevLesson._id %>" class="lesson-nav-link">
+                                <span class="lesson-nav-kicker">Bài trước</span>
+                                <strong><%= prevLesson.title %></strong>
+                            </a>
+                        <% } else { %>
+                            <div class="lesson-nav-link is-empty">
+                                <span class="lesson-nav-kicker">Bài trước</span>
+                                <strong>Đây là điểm bắt đầu</strong>
+                            </div>
+                        <% } %>
+
+                        <% if (nextLesson) { %>
+                            <a href="/lesson/<%= nextLesson._id %>" class="lesson-nav-link">
+                                <span class="lesson-nav-kicker">Bài tiếp</span>
+                                <strong><%= nextLesson.title %></strong>
+                            </a>
+                        <% } else { %>
+                            <div class="lesson-nav-link is-empty">
+                                <span class="lesson-nav-kicker">Bài tiếp</span>
+                                <strong>Đã tới cuối chặng này</strong>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div class="lesson-footer-actions">
+                        <button id="btn-finish-lesson" class="lesson-complete-button <%= isCompleted ? 'is-completed' : '' %>" data-lesson-complete="<%= lesson._id %>" <%= isCompleted ? 'disabled' : '' %>>
+                            <i class="fas <%= isCompleted ? 'fa-check-circle' : 'fa-rocket' %>"></i>
+                            <span><%= isCompleted ? 'Đã hoàn thành bài học' : 'Hoàn thành bài học' %></span>
+                        </button>
+                    </div>
+                </footer>
+            </section>
         </main>
 
+        <aside class="lesson-rail lesson-rail-right" id="lessonAssistRail" data-rail-state="open">
+            <div class="lesson-rail-card">
+                <div class="lesson-rail-section-head">
+                    <div>
+                        <span class="lesson-rail-kicker">Assist</span>
+                        <h3>Thanh bên thông minh</h3>
+                    </div>
+                    <button type="button" class="lesson-rail-icon-button" data-lesson-action="toggle-right-rail" aria-label="Thu gọn thanh hỗ trợ">
+                        <i class="fas fa-panel-right"></i>
+                    </button>
+                </div>
+
+                <div class="lesson-assist-grid">
+                    <article class="lesson-assist-stat">
+                        <span>Đang đọc</span>
+                        <strong id="currentSectionLabel">Đang chuẩn bị phân tích</strong>
+                    </article>
+                    <article class="lesson-assist-stat">
+                        <span>Section kế tiếp</span>
+                        <strong id="nextSectionLabel">Sẽ cập nhật theo heading</strong>
+                    </article>
+                    <article class="lesson-assist-stat">
+                        <span>Thời lượng ước tính</span>
+                        <strong id="estimatedReadTimeLabel">Đang tính...</strong>
+                    </article>
+                    <article class="lesson-assist-stat">
+                        <span>Chất lượng outline</span>
+                        <strong id="lessonQualityHint">Đang phân tích...</strong>
+                    </article>
+                </div>
+            </div>
+
+            <div class="lesson-rail-card">
+                <div class="lesson-rail-section-head">
+                    <div>
+                        <span class="lesson-rail-kicker">Quick notes</span>
+                        <h3>Ghi chú cá nhân</h3>
+                    </div>
+                    <span class="lesson-inline-progress" id="notesSavedState">Tự lưu</span>
+                </div>
+                <textarea id="lessonQuickNotes" class="lesson-notes-field" placeholder="Viết nhanh điều cần nhớ, ví dụ dễ quên hoặc bước muốn quay lại..."></textarea>
+            </div>
+
+            <div class="lesson-rail-card">
+                <div class="lesson-rail-section-head">
+                    <div>
+                        <span class="lesson-rail-kicker">Nhịp khóa học</span>
+                        <h3>Bài trong chặng này</h3>
+                    </div>
+                    <span class="lesson-inline-progress"><%= courseProgress.completedCount %>/<%= courseProgress.totalCount %></span>
+                </div>
+
+                <div class="lesson-course-progress-bar">
+                    <span style="width:<%= courseProgress.percent %>%"></span>
+                </div>
+
+                <div class="lesson-sequence-list">
+                    <% if (courseLessons && courseLessons.length > 0) { %>
+                        <% courseLessons.forEach((item, index) => { %>
+                            <a href="/lesson/<%= item._id %>" class="lesson-sequence-item <%= item.active ? 'is-active' : '' %> <%= item.completed ? 'is-completed' : '' %>">
+                                <span class="lesson-sequence-index"><%= index + 1 %></span>
+                                <span class="lesson-sequence-copy">
+                                    <strong><%= item.title %></strong>
+                                    <% if (item.completed) { %>
+                                        <small>Đã hoàn thành</small>
+                                    <% } else if (item.active) { %>
+                                        <small>Đang học</small>
+                                    <% } else { %>
+                                        <small>Sẵn sàng mở</small>
+                                    <% } %>
+                                </span>
+                                <i class="fas <%= item.completed ? 'fa-check-circle' : 'fa-arrow-right' %>"></i>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="lesson-empty-inline">Không có danh sách bài học khả dụng để hiển thị.</div>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="lesson-rail-card">
+                <div class="lesson-rail-section-head">
+                    <div>
+                        <span class="lesson-rail-kicker">Bước tiếp theo</span>
+                        <h3>Gợi ý hành động</h3>
+                    </div>
+                </div>
+
+                <div class="lesson-smart-actions">
+                    <% if (recommendedNextLesson) { %>
+                        <a href="/lesson/<%= recommendedNextLesson._id %>" class="lesson-smart-action">
+                            <span class="lesson-smart-action-kicker">Nên học tiếp</span>
+                            <strong><%= recommendedNextLesson.title %></strong>
+                        </a>
+                    <% } %>
+                    <button type="button" class="lesson-smart-action" data-comments-toggle>
+                        <span class="lesson-smart-action-kicker">Thảo luận</span>
+                        <strong>Mở khu bình luận và hỏi ngay khi đang đọc</strong>
+                    </button>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
 
-<button class="btn btn-dark rounded-circle shadow-lg d-lg-none position-fixed" 
-        style="bottom: 90px; left: 20px; width: 50px; height: 50px; z-index: 1000; display:flex; align-items:center; justify-content:center;"
-        onclick="document.getElementById('lessonSidebar').classList.toggle('active')">
-    <i class="fas fa-list-ul fs-5"></i>
-</button>
+<div class="lesson-mobile-actions">
+    <button type="button" class="lesson-mobile-fab" data-lesson-action="toggle-left-rail" aria-label="Mở mục lục">
+        <i class="fas fa-list-ul"></i>
+    </button>
+    <button type="button" class="lesson-mobile-fab is-dark" data-comments-toggle aria-label="Mở thảo luận">
+        <i class="fas fa-comments"></i>
+        <span class="comment-badge" id="comment-badge" style="display:none;">0</span>
+    </button>
+</div>
 
-<button class="btn-floating-comments" id="btn-toggle-comments" title="Thảo luận">
-    <i class="fas fa-comments"></i>
-    <span class="comment-badge" id="comment-badge" style="display:none;">0</span>
-</button>
+<div class="lesson-overlay hidden" id="lessonOverlay"></div>
 
-<div class="comments-modal hidden" id="comments-modal">
+<aside class="comments-modal hidden" id="comments-modal">
     <div class="comments-modal-header">
         <span><i class="far fa-comments me-2"></i>Thảo luận</span>
         <button class="btn-close" id="btn-close-comments" style="filter: invert(0.5); opacity: 0.8;"></button>
     </div>
-    <div class="comments-modal-body" id="comments-modal-body">
-        </div>
-    <div class="comments-modal-footer" id="comments-modal-footer">
-        </div>
-</div>
+    <div class="comments-modal-body" id="comments-modal-body"></div>
+    <div class="comments-modal-footer" id="comments-modal-footer"></div>
+</aside>
 
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -115,20 +319,21 @@
     window.LESSON_ID = '<%= lesson._id %>';
     window.AUTHOR_USERNAME = '<%= lesson.createdBy ? lesson.createdBy.username : "" %>';
     window.USER = <%- user ? JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar }) : 'null' %>;
+    window.LESSON_VIEW_STATE = {
+        lessonId: "<%= lesson._id %>",
+        courseId: <%- JSON.stringify(course ? String(course._id) : '') %>,
+        isCompleted: <%- JSON.stringify(!!isCompleted) %>,
+        progressPercent: <%- JSON.stringify(courseProgress.percent || 0) %>,
+        lessonPosition: <%- JSON.stringify(lessonPosition) %>
+    };
 
-    // [FIX TRIỆT ĐỂ] CHUYỂN DATA SANG BASE64 ĐỂ TRÁNH LỖI KÝ TỰ ĐẶC BIỆT
     <% 
         let rawContent = lesson.content || [];
-        // Nếu là Object/Array thì chuyển thành chuỗi JSON trước
         if (typeof rawContent === 'object') {
             rawContent = JSON.stringify(rawContent);
         }
-        // Chuyển toàn bộ chuỗi sang Base64
-        // Buffer là có sẵn trong môi trường NodeJS (EJS chạy trên server)
         let contentBase64 = Buffer.from(rawContent).toString('base64');
     %>
-    
-    // Gán chuỗi Base64 an toàn vào biến window
     window.LESSON_CONTENT_B64 = "<%= contentBase64 %>";
 </script>
 

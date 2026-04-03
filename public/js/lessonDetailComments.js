@@ -17,14 +17,13 @@ class LessonDetailsCommentsSystem {
     }
 
     setupEventListeners() {
-        const btnToggleComments = document.getElementById('btn-toggle-comments');
         const btnCloseComments = document.getElementById('btn-close-comments');
         const commentsModal = document.getElementById('comments-modal');
+        const toggleButtons = Array.from(document.querySelectorAll('[data-comments-toggle], #btn-toggle-comments'));
 
-        // Toggle modal
-        if (btnToggleComments) {
-            btnToggleComments.addEventListener('click', () => this.toggleCommentsModal());
-        }
+        toggleButtons.forEach((button) => {
+            button.addEventListener('click', () => this.toggleCommentsModal());
+        });
 
         // Close modal
         if (btnCloseComments) {
@@ -61,7 +60,10 @@ class LessonDetailsCommentsSystem {
         if (modal) {
             modal.classList.remove('hidden');
             this.isModalOpen = true;
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('lesson-comments-open');
+            if (window.LessonWorkspace && typeof window.LessonWorkspace.syncOverlay === 'function') {
+                window.LessonWorkspace.syncOverlay();
+            }
         }
     }
 
@@ -70,7 +72,10 @@ class LessonDetailsCommentsSystem {
         if (modal) {
             modal.classList.add('hidden');
             this.isModalOpen = false;
-            document.body.style.overflow = 'auto';
+            document.body.classList.remove('lesson-comments-open');
+            if (window.LessonWorkspace && typeof window.LessonWorkspace.syncOverlay === 'function') {
+                window.LessonWorkspace.syncOverlay();
+            }
         }
     }
 
@@ -98,13 +103,16 @@ class LessonDetailsCommentsSystem {
 
     updateCommentBadge() {
         const badge = document.getElementById('comment-badge');
-        const btnToggle = document.getElementById('btn-toggle-comments');
+        const inlineBadge = document.getElementById('comment-badge-inline');
         
         if (this.commentCount > 0) {
             if (badge) badge.style.display = 'flex';
             if (badge) badge.textContent = this.commentCount > 9 ? '9+' : this.commentCount;
+            if (inlineBadge) inlineBadge.style.display = 'inline-flex';
+            if (inlineBadge) inlineBadge.textContent = this.commentCount > 9 ? '9+' : this.commentCount;
         } else {
             if (badge) badge.style.display = 'none';
+            if (inlineBadge) inlineBadge.style.display = 'none';
         }
     }
 
@@ -280,6 +288,7 @@ class LessonDetailsCommentsSystem {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     window.lessonsCommentSystem = new LessonDetailsCommentsSystem();
+    window.lessonCommentsSystem = window.lessonsCommentSystem;
     
     // Setup comment form in modal footer
     const modalFooter = document.getElementById('comments-modal-footer');

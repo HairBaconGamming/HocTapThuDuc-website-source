@@ -133,6 +133,11 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         // Compute previous/next lessons (within same Unit if present, otherwise within same Subject).
         let prevLesson = null;
         let nextLesson = null;
+        let courseLessons = [];
+        let lessonPosition = { index: 1, total: 1 };
+        let courseProgress = { completedCount: 0, totalCount: 0, percent: 0 };
+        let isCompleted = false;
+        let recommendedNextLesson = null;
         try {
             const listFilter = access.canManage ? {} : buildLessonVisibilityFilter(req.user);
             if (lesson.unitId) listFilter.unitId = lesson.unitId;
@@ -143,6 +148,41 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             const idx = siblings.findIndex(s => s._id.toString() === lesson._id.toString());
             if (idx > 0) prevLesson = siblings[idx - 1];
             if (idx >= 0 && idx < siblings.length - 1) nextLesson = siblings[idx + 1];
+
+            lessonPosition = {
+                index: idx >= 0 ? idx + 1 : 1,
+                total: siblings.length || 1
+            };
+
+            let completedSet = new Set();
+            if (req.user && siblings.length > 0) {
+                const completionDocs = await LessonCompletion.find({
+                    user: req.user._id,
+                    lesson: { $in: siblings.map((item) => item._id) }
+                }).select('lesson').lean();
+                completedSet = new Set(completionDocs.map((entry) => entry.lesson.toString()));
+            }
+
+            courseLessons = siblings.map((item) => ({
+                ...item,
+                completed: completedSet.has(item._id.toString()),
+                active: item._id.toString() === lesson._id.toString()
+            }));
+
+            isCompleted = completedSet.has(lesson._id.toString());
+            courseProgress = {
+                completedCount: courseLessons.filter((item) => item.completed).length,
+                totalCount: courseLessons.length,
+                percent: courseLessons.length
+                    ? Math.round((courseLessons.filter((item) => item.completed).length / courseLessons.length) * 100)
+                    : 0
+            };
+
+            recommendedNextLesson =
+                courseLessons.slice(Math.max(idx + 1, 0)).find((item) => !item.completed) ||
+                nextLesson ||
+                courseLessons.find((item) => !item.completed && !item.active) ||
+                null;
         } catch (e) { /* ignore navigation errors */ }
 
         // Build breadcrumbs: Home > Subject > Course > Lesson
@@ -154,7 +194,23 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         ];
 
         // Pass course to view so Back button can target course page
-        res.render("lessonDetail", { user: req.user, lesson: lessonData, subject, unit, prevLesson, nextLesson, course, marked: req.app.locals.marked, breadcrumbs, activePage: "subjects" });
+        res.render("lessonDetail", {
+            user: req.user,
+            lesson: lessonData,
+            subject,
+            unit,
+            prevLesson,
+            nextLesson,
+            course,
+            courseLessons,
+            lessonPosition,
+            courseProgress,
+            isCompleted,
+            recommendedNextLesson,
+            marked: req.app.locals.marked,
+            breadcrumbs,
+            activePage: "subjects"
+        });
     } catch (e) { res.redirect("/subjects"); }
 });
 
