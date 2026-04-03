@@ -33,11 +33,7 @@ router.post('/auth/login', (req, res, next) => {
                   lastloginUA: req.get('User-Agent') || 'Unknown'
              }).exec().then(async () => {
                   try {
-                       await achievementChecker.checkAndUnlockAchievements(
-                            user._id,
-                            'custom',
-                            { triggerType: 'login' }
-                       );
+                       await achievementChecker.onUserLogin(user._id);
                   } catch (e) {
                        console.error('Error checking achievements on API login:', e);
                   }

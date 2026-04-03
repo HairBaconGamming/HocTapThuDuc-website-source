@@ -1,83 +1,110 @@
 const AchievementSystem = {
-    init: function() {
-        // Lắng nghe socket hoặc check định kỳ nếu cần
-        // Hiện tại giả sử hệ thống gọi hàm showUnlock() khi có phản hồi từ API login/complete lesson
-    },
-
-    // Hàm gọi hiển thị thông báo
-    showUnlock: function(data) {
-        // [FIX LỖI DỮ LIỆU]
-        // Kiểm tra xem data là object Achievement gốc hay UserAchievement (có lồng nhau)
-        // Cấu trúc thường là: data.achievementId (nếu đã populate) HOẶC data (nếu trả về raw achievement)
-        
-        let achievement = null;
-        let unlockedAt = new Date();
-
-        if (data.achievementId && data.achievementId.name) {
-            // Trường hợp trả về UserAchievement đã populate
-            achievement = data.achievementId;
-            unlockedAt = data.unlockedAt;
-        } else if (data.name) {
-            // Trường hợp trả về trực tiếp Achievement
-            achievement = data;
-        } else if (data.achievement) {
-             // Trường hợp lồng trong field achievement
-             achievement = data.achievement;
-        }
-
-        // Nếu vẫn không tìm thấy tên, dừng lại để tránh lỗi hiển thị rỗng
-        if (!achievement || !achievement.name) {
-            console.error("Achievement Data Invalid:", data);
-            return;
-        }
-
-        // [FIX LỖI +0 ĐIỂM] & ICON
-        const name = achievement.name;
-        const icon = achievement.icon || '🏆'; // Icon mặc định nếu thiếu
-        const points = achievement.points || achievement.xp || 10; // Fallback điểm nếu thiếu
-        
-        this.renderToast(name, icon, points);
-        this.playSound();
-    },
-
-    renderToast: function(name, icon, points) {
-        const container = document.getElementById('achievement-toast-container');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = 'ach-toast';
-        toast.innerHTML = `
-            <div class="ach-icon-wrapper">${icon}</div>
-            <div class="ach-content">
-                <div class="ach-title">Thành tích mở khóa!</div>
-                <div class="ach-name">${name}</div>
-                <div class="ach-points">+${points} Điểm thưởng</div>
-            </div>
-        `;
-
-        container.appendChild(toast);
-
-        // Kích hoạt animation sau 1 frame
-        requestAnimationFrame(() => {
-            toast.classList.add('active');
-        });
-
-        // Tự động ẩn sau 5 giây
-        setTimeout(() => {
-            toast.classList.remove('active');
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 500); // Xóa khỏi DOM
-        }, 5000);
-    },
-
-    playSound: function() {
-        const audio = document.getElementById('ach-sound');
-        if (audio) {
-            audio.volume = 0.5;
-            audio.play().catch(e => console.log("Audio autoplay blocked")); // Bắt lỗi nếu trình duyệt chặn
-        }
+  normalize(data) {
+    if (!data) {
+      return null;
     }
+
+    if (data.achievement && data.achievement.name) {
+      return data.achievement;
+    }
+
+    if (data.achievementId && data.achievementId.name) {
+      return {
+        ...data.achievementId,
+        unlockedAt: data.unlockedAt || null
+      };
+    }
+
+    if (data.name) {
+      return data;
+    }
+
+    console.error("Achievement Data Invalid:", data);
+    return null;
+  },
+
+  showUnlock(data) {
+    const achievement = this.normalize(data);
+    if (!achievement) {
+      return;
+    }
+
+    this.renderToast(achievement);
+    this.playSound();
+  },
+
+  renderToast(achievement) {
+    const container = document.getElementById("achievement-toast-container");
+    if (!container) {
+      return;
+    }
+
+    const icon = achievement.icon || "🏆";
+    const points = Number(achievement.points || 0);
+    const name = achievement.name || "Thanh tich moi";
+    const unlockMessage = achievement.unlockMessage || achievement.description || "";
+    const color = achievement.color || "#ffd700";
+
+    const toast = document.createElement("div");
+    toast.className = "ach-toast";
+    toast.style.borderColor = color;
+
+    const iconWrapper = document.createElement("div");
+    iconWrapper.className = "ach-icon-wrapper";
+    iconWrapper.style.background = `linear-gradient(135deg, ${color}, #111827)`;
+    iconWrapper.textContent = icon;
+
+    const content = document.createElement("div");
+    content.className = "ach-content";
+
+    const title = document.createElement("div");
+    title.className = "ach-title";
+    title.textContent = "Thanh tich mo khoa";
+
+    const nameElement = document.createElement("div");
+    nameElement.className = "ach-name";
+    nameElement.textContent = name;
+
+    const pointsElement = document.createElement("div");
+    pointsElement.className = "ach-points";
+    pointsElement.textContent = `+${points} diem thanh tich`;
+
+    content.appendChild(title);
+    content.appendChild(nameElement);
+
+    if (unlockMessage) {
+      const description = document.createElement("div");
+      description.className = "ach-description";
+      description.textContent = unlockMessage;
+      content.appendChild(description);
+    }
+
+    content.appendChild(pointsElement);
+    toast.appendChild(iconWrapper);
+    toast.appendChild(content);
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add("active");
+    });
+
+    setTimeout(() => {
+      toast.classList.remove("active");
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 500);
+    }, 5000);
+  },
+
+  playSound() {
+    const audio = document.getElementById("ach-sound");
+    if (!audio) {
+      return;
+    }
+
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  }
 };
 
-// Expose ra global để các file khác gọi được
 window.AchievementSystem = AchievementSystem;

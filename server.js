@@ -19,6 +19,7 @@ const News = require("./models/News");
 const { banCheck } = require("./middlewares/banCheck");
 const { getSessionSecret } = require("./utils/secrets");
 const { corsOptionsDelegate } = require("./utils/corsPolicy");
+const { setIo } = require("./utils/realtime");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -29,6 +30,15 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 app.locals.io = io;
+setIo(io);
+
+io.on("connection", (socket) => {
+  socket.on("userConnect", (userId) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+  });
+});
 
 // DB Connection with Enhanced Configuration
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/studypro';
@@ -116,6 +126,10 @@ app.use(async (req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.activePage = ''; // Default value an toàn
     
+    res.locals.pendingAchievements = req.session?.newAchievements || [];
+    if (req.session?.newAchievements?.length) {
+        delete req.session.newAchievements;
+    }
     const err = req.flash("error"), succ = req.flash("success");
     res.locals.message = err.length ? { type: "error", message: err[0] } : 
                          succ.length ? { type: "success", message: succ[0] } : { type: null, message: "" };

@@ -1,411 +1,607 @@
-const mongoose = require('mongoose'); // [FIX] Import mongoose
-const { AchievementType, UserAchievement } = require('../models/Achievement');
-const User = require('../models/User');
-const LessonCompletion = require('../models/LessonCompletion');
-const stringSimilarity = require("string-similarity");
+const mongoose = require("mongoose");
+const { AchievementType, UserAchievement } = require("../models/Achievement");
+const User = require("../models/User");
+const Lesson = require("../models/Lesson");
+const LessonCompletion = require("../models/LessonCompletion");
+const Garden = require("../models/Garden");
+const { emitAchievementUnlocked } = require("./realtime");
 
-// Evaluate condition để kiểm tra xem achievement có unlock không
-function evaluateCondition(condition, data) {
-  if (!condition || !condition.type) return false;
+const RARITY_ORDER = {
+  common: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4
+};
 
-  const value = data?.currentValue || 0;
+const CUSTOM_TRIGGER_MAP = {
+  login: ["first_login"],
+  register: ["community_join"]
+};
 
-  switch (condition.operator) {
-    case '>=':
-      return value >= condition.value;
-    case '>':
-      return value > condition.value;
-    case '==':
-      return value === condition.value;
-    case '<=':
-      return value <= condition.value;
-    case '<':
-      return value < condition.value;
+const HIDDEN_ACHIEVEMENT_PLACEHOLDER = {
+  name: "Thanh tich bi an",
+  description: "Mo khoa de kham pha thanh tich nay.",
+  icon: "❓"
+};
+
+function toObjectId(value) {
+  if (value instanceof mongoose.Types.ObjectId) {
+    return value;
+  }
+
+  if (value && typeof value === "object" && value._id) {
+    return toObjectId(value._id);
+  }
+
+  return new mongoose.Types.ObjectId(value);
+}
+
+function toIdString(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value instanceof mongoose.Types.ObjectId) {
+    return value.toString();
+  }
+
+  if (value._id) {
+    return toIdString(value._id);
+  }
+
+  return String(value);
+}
+
+function compareWithOperator(currentValue, targetValue, operator = ">=") {
+  switch (operator) {
+    case ">=":
+      return currentValue >= targetValue;
+    case ">":
+      return currentValue > targetValue;
+    case "==":
+      return currentValue === targetValue;
+    case "<=":
+      return currentValue <= targetValue;
+    case "<":
+      return currentValue < targetValue;
     default:
       return false;
   }
 }
 
-// Kiểm tra và unlock achievements cho user
-async function checkAndUnlockAchievements(userId, triggerType, data = {}) {
-  try {
-    const user = await User.findById(userId);
-    if (!user) return [];
-
-    // Xử lý custom trigger types (login, community_join, etc)
-    let query = { isActive: true };
-    
-    if (triggerType === 'custom') {
-      // Cho custom triggers, tìm achievements có id phù hợp
-      if (data.triggerType === 'login') {
-        // Tìm achievements liên quan đến login hoặc community join
-        query = {
-          isActive: true,
-          'condition.type': 'custom',
-          id: { $in: ['first_login', 'community_join'] }
-        };
-      }
-    } else {
-      // Lấy tất cả achievements cùng điều kiện
-      query['condition.type'] = triggerType;
-    }
-
-    const achievements = await AchievementType.find(query);
-
-    const unlockedAchievements = [];
-
-    for (const achievement of achievements) {
-      // Kiểm tra xem user đã có achievement này chưa
-      const userAchievement = await UserAchievement.findOne({
-        user: userId,
-        achievementId: achievement._id
-      });
-
-      if (userAchievement) continue; // Đã unlock rồi
-
-      // Kiểm tra điều kiện
-      let isConditionMet = false;
-      
-      if (triggerType === 'custom' && data.triggerType === 'login') {
-        // Cho login achievements, luôn unlock (nếu chưa unlock)
-        isConditionMet = true;
-      } else {
-        isConditionMet = evaluateCondition(achievement.condition, data);
-      }
-
-      if (isConditionMet) {
-        // Unlock achievement
-        const newAchievement = await UserAchievement.create({
-          user: userId,
-          achievementId: achievement._id,
-          achievementData: {
-            name: achievement.name,
-            description: achievement.description,
-            icon: achievement.icon,
-            points: achievement.points,
-            rarity: achievement.rarity,
-            category: achievement.category
-          },
-          unlockedAt: new Date()
-        });
-
-        // Note: Achievement points are calculated from unlocked achievements, not stored on user
-
-        unlockedAchievements.push({
-          _id: achievement._id,
-          name: achievement.name,
-          description: achievement.description,
-          icon: achievement.icon,
-          points: achievement.points,
-          rarity: achievement.rarity,
-          category: achievement.category,
-          unlockMessage: achievement.unlockMessage
-        });
-      }
-    }
-
-    return unlockedAchievements;
-  } catch (err) {
-    console.error('Error in checkAndUnlockAchievements:', err);
-    return [];
-  }
+function resolveCustomTriggerIds(triggerKey) {
+  return CUSTOM_TRIGGER_MAP[triggerKey] || [];
 }
 
-// Trigger khi hoàn thành bài học
-async function onLessonCompleted(userId) {
-  try {
-    const lessonCount = await LessonCompletion.countDocuments({ user: userId });
-    return await checkAndUnlockAchievements(userId, 'lessons_completed', { currentValue: lessonCount });
-  } catch (err) {
-    console.error('Error in onLessonCompleted:', err);
-    return [];
+function normalizeAchievementDetail(source) {
+  if (!source) {
+    return {};
   }
+
+  const achievementId = source.achievementId && typeof source.achievementId === "object"
+    ? source.achievementId
+    : null;
+  const achievementData = source.achievementData || {};
+
+  return {
+    _id: source._id ? toIdString(source._id) : achievementId?._id ? toIdString(achievementId._id) : null,
+    id: source.id || achievementId?.id || achievementData.id || null,
+    name: source.name || achievementId?.name || achievementData.name || "Thanh tich",
+    description: source.description || achievementId?.description || achievementData.description || "",
+    icon: source.icon || achievementId?.icon || achievementData.icon || "🏆",
+    color: source.color || achievementId?.color || achievementData.color || "#4f46e5",
+    points: Number(source.points ?? achievementId?.points ?? achievementData.points ?? 0),
+    rarity: source.rarity || achievementId?.rarity || achievementData.rarity || "common",
+    category: source.category || achievementId?.category || achievementData.category || "learning",
+    unlockMessage: source.unlockMessage || achievementId?.unlockMessage || achievementData.unlockMessage || "",
+    isHidden: Boolean(source.isHidden ?? achievementId?.isHidden),
+    condition: source.condition || achievementId?.condition || null
+  };
 }
 
-// Trigger khi nhận điểm
-async function onPointsGained(userId) {
-  try {
-    // Calculate current achievement points from unlocked achievements
-    const pointsData = await UserAchievement.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new'
-      { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
-      { $unwind: '$achievement' },
-      { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
+function createAchievementSnapshot(achievement) {
+  const detail = normalizeAchievementDetail(achievement);
+  return {
+    id: detail.id,
+    name: detail.name,
+    description: detail.description,
+    icon: detail.icon,
+    color: detail.color,
+    points: detail.points,
+    rarity: detail.rarity,
+    category: detail.category,
+    unlockMessage: detail.unlockMessage
+  };
+}
+
+function serializeUnlockedAchievement(userAchievement) {
+  const detail = normalizeAchievementDetail(userAchievement);
+  return {
+    _id: userAchievement?._id ? toIdString(userAchievement._id) : detail._id,
+    achievementId:
+      userAchievement?.achievementId && typeof userAchievement.achievementId === "object"
+        ? toIdString(userAchievement.achievementId._id || userAchievement.achievementId)
+        : toIdString(userAchievement?.achievementId),
+    id: detail.id,
+    name: detail.name,
+    description: detail.description,
+    icon: detail.icon,
+    color: detail.color,
+    points: detail.points,
+    rarity: detail.rarity,
+    category: detail.category,
+    unlockMessage: detail.unlockMessage,
+    unlockedAt: userAchievement?.unlockedAt || null,
+    unlocked: true
+  };
+}
+
+function buildProgressState(achievement, metrics = {}, isUnlocked = false) {
+  const condition = achievement?.condition || {};
+  const targetValue = Number(condition.value ?? 1);
+
+  if (!condition.type) {
+    return {
+      currentValue: 0,
+      targetValue,
+      percent: isUnlocked ? 100 : 0,
+      unlocked: isUnlocked
+    };
+  }
+
+  if (condition.type === "custom") {
+    return {
+      currentValue: isUnlocked ? 1 : 0,
+      targetValue: 1,
+      percent: isUnlocked ? 100 : 0,
+      unlocked: isUnlocked
+    };
+  }
+
+  const currentValue = Number(metrics[condition.type] || 0);
+  const reached = compareWithOperator(currentValue, targetValue, condition.operator);
+  let percent = 0;
+
+  if (isUnlocked || reached) {
+    percent = 100;
+  } else if (targetValue > 0) {
+    percent = Math.max(0, Math.min(99, Math.round((currentValue / targetValue) * 100)));
+  }
+
+  return {
+    currentValue,
+    targetValue,
+    percent,
+    unlocked: isUnlocked || reached
+  };
+}
+
+function evaluateCondition(condition, payload = {}) {
+  if (!condition?.type) {
+    return false;
+  }
+
+  if (condition.type === "custom") {
+    return Boolean(payload.allowCustomUnlock);
+  }
+
+  const metrics = payload.metrics || {};
+  const currentValue = Number(
+    payload.currentValue != null ? payload.currentValue : metrics[condition.type] || 0
+  );
+  const targetValue = Number(condition.value ?? 1);
+  return compareWithOperator(currentValue, targetValue, condition.operator);
+}
+
+function maskLockedAchievement(achievement) {
+  if (!achievement?.isHidden) {
+    return achievement;
+  }
+
+  return {
+    ...achievement,
+    name: HIDDEN_ACHIEVEMENT_PLACEHOLDER.name,
+    description: HIDDEN_ACHIEVEMENT_PLACEHOLDER.description,
+    icon: HIDDEN_ACHIEVEMENT_PLACEHOLDER.icon
+  };
+}
+
+async function getDistinctEnrolledCourseCount(userId) {
+  const [result] = await LessonCompletion.aggregate([
+    { $match: { user: toObjectId(userId) } },
+    {
+      $lookup: {
+        from: "lessons",
+        localField: "lesson",
+        foreignField: "_id",
+        as: "lesson"
+      }
+    },
+    { $unwind: "$lesson" },
+    { $match: { "lesson.courseId": { $exists: true, $ne: null } } },
+    { $group: { _id: "$lesson.courseId" } },
+    { $count: "count" }
+  ]);
+
+  return result?.count || 0;
+}
+
+async function loadAchievementContext(userId) {
+  const normalizedUserId = toObjectId(userId);
+
+  const [user, garden, lessonCount, unlockedAchievements, enrolledCourseCount] =
+    await Promise.all([
+      User.findById(normalizedUserId).lean(),
+      Garden.findOne({ user: normalizedUserId }).lean(),
+      LessonCompletion.countDocuments({ user: normalizedUserId }),
+      UserAchievement.find({ user: normalizedUserId }).sort({ unlockedAt: -1 }).lean(),
+      getDistinctEnrolledCourseCount(normalizedUserId)
     ]);
 
-    const currentAchievementPoints = pointsData[0]?.achievementPoints || 0;
-    return await checkAndUnlockAchievements(userId, 'points_reached', { currentValue: currentAchievementPoints });
-  } catch (err) {
-    console.error('Error in onPointsGained:', err);
-    return [];
+  if (!user) {
+    return null;
   }
+
+  const activePlantCount = (garden?.items || []).filter((item) => item.type === "plant").length;
+  const activeDecorationCount = (garden?.items || []).filter(
+    (item) => item.type === "decoration"
+  ).length;
+
+  const achievementPoints = unlockedAchievements.reduce((total, unlockedAchievement) => {
+    const detail = normalizeAchievementDetail(unlockedAchievement);
+    return total + Number(detail.points || 0);
+  }, 0);
+
+  const metrics = {
+    lessons_completed: lessonCount,
+    points_reached: Math.max(Number(user.points || 0), Number(user.totalPoints || 0)),
+    streak_days: Number(user.currentStreak || 0),
+    level_reached: Number(user.level || 0),
+    courses_enrolled: enrolledCourseCount,
+    plants_planted: Math.max(Number(garden?.plantCount || 0), activePlantCount),
+    plants_harvested: Number(garden?.harvestCount || 0),
+    plants_watered: Number(garden?.waterCount || 0),
+    decorations_placed: Math.max(Number(garden?.decorationCount || 0), activeDecorationCount),
+    gold_collected: Number(garden?.totalGoldCollected || 0),
+    plant_survival_streak: Number(garden?.plantSurvivalStreak || 0),
+    achievement_points: achievementPoints
+  };
+
+  return {
+    user,
+    garden,
+    lessonCount,
+    unlockedAchievements,
+    unlockedIdSet: new Set(unlockedAchievements.map((item) => toIdString(item.achievementId))),
+    unlockedByAchievementId: new Map(
+      unlockedAchievements.map((item) => [toIdString(item.achievementId), item])
+    ),
+    metrics
+  };
 }
 
-// Trigger kiểm tra hàng ngày (streak, login)
-async function onDailyCheck(userId) {
-  try {
-    const user = await User.findById(userId);
-    if (!user) return [];
-    return await checkAndUnlockAchievements(userId, 'streak_days', { currentValue: user.currentStreak || 0 });
-  } catch (err) {
-    console.error('Error in onDailyCheck:', err);
-    return [];
+function buildAchievementQuery(triggerType, data = {}) {
+  const query = { isActive: true };
+
+  if (triggerType === "custom") {
+    const ids = resolveCustomTriggerIds(data.triggerType);
+    query.id = { $in: ids };
+    return query;
   }
+
+  if (Array.isArray(triggerType)) {
+    query["condition.type"] = { $in: triggerType };
+    return query;
+  }
+
+  query["condition.type"] = triggerType;
+  return query;
 }
 
-// Lấy tất cả achievements của user
-async function getUserAchievements(userId) {
+async function unlockAchievement(userId, achievement) {
+  const snapshot = createAchievementSnapshot(achievement);
+
   try {
-    return await UserAchievement.find({ user: userId })
-      .populate('achievementId')
-      .sort({ unlockedAt: -1 })
-      .lean();
+    const userAchievement = await UserAchievement.create({
+      user: toObjectId(userId),
+      achievementId: achievement._id,
+      achievementData: snapshot,
+      unlockedAt: new Date()
+    });
+
+    const payload = serializeUnlockedAchievement({
+      ...userAchievement.toObject(),
+      achievementData: snapshot
+    });
+
+    emitAchievementUnlocked(userId, payload);
+    return payload;
   } catch (err) {
-    console.error('Error in getUserAchievements:', err);
-    return [];
-  }
-}
-
-// Lấy progress của achievements chưa unlock
-async function getAchievementProgress(userId) {
-  try {
-    const user = await User.findById(userId);
-    if (!user) return {};
-
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-
-    // Lấy tất cả achievements đã unlock
-    const unlockedIds = new Set(
-      (await UserAchievement.find({ user: userId }).select('achievementId').lean())
-        .map(a => a.achievementId.toString())
-    );
-
-    // Lấy achievements chưa unlock
-    const lockedAchievements = await AchievementType.find({
-      isActive: true,
-      _id: { $nin: Array.from(unlockedIds) }
-    }).lean();
-
-    const progress = {};
-    for (const achievement of lockedAchievements) {
-      let percent = 0;
-      const target = achievement.condition?.value || 1;
-
-      switch(achievement.condition?.type) {
-        case 'lessons_completed': {
-          const completedCount = await LessonCompletion.countDocuments({ user: userId });
-          percent = Math.min((completedCount / target) * 100, 99);
-          break;
-        }
-        case 'points_reached': {
-          // Calculate achievement points from unlocked achievements
-          const pointsData = await UserAchievement.aggregate([
-            { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new' - Đây là chỗ gây lỗi
-            { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
-            { $unwind: '$achievement' },
-            { $group: { _id: null, totalPoints: { $sum: '$achievement.points' } } }
-          ]);
-          const currentPoints = pointsData[0]?.totalPoints || 0;
-          percent = Math.min((currentPoints / target) * 100, 99);
-          break;
-        }
-        case 'streak_days': {
-          percent = Math.min(((user.currentStreak || 0) / target) * 100, 99);
-          break;
-        }
-        case 'plants_planted': {
-          const plantCount = (garden?.items || []).filter(item => item.type === 'plant' && !item.isDead).length;
-          percent = Math.min((plantCount / target) * 100, 99);
-          break;
-        }
-        case 'plants_harvested': {
-          const harvestCount = garden?.harvestCount || 0;
-          percent = Math.min((harvestCount / target) * 100, 99);
-          break;
-        }
-        case 'plants_watered': {
-          const waterCount = garden?.waterCount || 0;
-          percent = Math.min((waterCount / target) * 100, 99);
-          break;
-        }
-        case 'decorations_placed': {
-          const decorCount = (garden?.items || []).filter(item => item.type === 'decoration').length;
-          percent = Math.min((decorCount / target) * 100, 99);
-          break;
-        }
-        case 'gold_collected': {
-          const goldCollected = garden?.totalGoldCollected || 0;
-          percent = Math.min((goldCollected / target) * 100, 99);
-          break;
-        }
-        case 'plant_survival_streak': {
-          const survivalStreak = garden?.plantSurvivalStreak || 0;
-          percent = Math.min((survivalStreak / target) * 100, 99);
-          break;
-        }
-        default:
-          percent = 0;
-      }
-
-      progress[achievement._id.toString()] = Math.round(percent);
+    if (err?.code === 11000) {
+      return null;
     }
 
-    return progress;
+    throw err;
+  }
+}
+
+async function checkAndUnlockAchievements(userId, triggerType, data = {}) {
+  try {
+    const context = await loadAchievementContext(userId);
+    if (!context) {
+      return [];
+    }
+
+    if (triggerType === "custom" && resolveCustomTriggerIds(data.triggerType).length === 0) {
+      return [];
+    }
+
+    const achievements = await AchievementType.find(buildAchievementQuery(triggerType, data))
+      .sort({ points: 1, createdAt: 1 })
+      .lean();
+
+    const unlocked = [];
+
+    for (const achievement of achievements) {
+      const achievementKey = toIdString(achievement._id);
+      if (context.unlockedIdSet.has(achievementKey)) {
+        continue;
+      }
+
+      const isEligible =
+        triggerType === "custom"
+          ? resolveCustomTriggerIds(data.triggerType).includes(achievement.id)
+          : evaluateCondition(achievement.condition, { metrics: context.metrics });
+
+      if (!isEligible) {
+        continue;
+      }
+
+      const payload = await unlockAchievement(userId, achievement);
+      if (!payload) {
+        continue;
+      }
+
+      context.unlockedIdSet.add(achievementKey);
+      context.unlockedAchievements.unshift(payload);
+      context.metrics.achievement_points += Number(payload.points || 0);
+      unlocked.push(payload);
+    }
+
+    return unlocked;
   } catch (err) {
-    console.error('Error in getAchievementProgress:', err);
+    console.error("Error in checkAndUnlockAchievements:", err);
+    return [];
+  }
+}
+
+async function checkAchievementTriggers(userId, triggerTypes) {
+  const merged = [];
+  const seenIds = new Set();
+
+  for (const triggerType of triggerTypes) {
+    const unlocked = await checkAndUnlockAchievements(userId, triggerType);
+    unlocked.forEach((achievement) => {
+      const id = achievement.id || achievement._id;
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        merged.push(achievement);
+      }
+    });
+  }
+
+  return merged;
+}
+
+async function onUserRegistered(userId) {
+  return checkAndUnlockAchievements(userId, "custom", { triggerType: "register" });
+}
+
+async function onUserLogin(userId) {
+  return checkAndUnlockAchievements(userId, "custom", { triggerType: "login" });
+}
+
+async function onLessonCompleted(userId) {
+  return checkAchievementTriggers(userId, [
+    "lessons_completed",
+    "points_reached",
+    "streak_days",
+    "level_reached"
+  ]);
+}
+
+async function onPointsGained(userId) {
+  return checkAchievementTriggers(userId, ["points_reached", "level_reached"]);
+}
+
+async function onDailyCheck(userId) {
+  return checkAchievementTriggers(userId, ["streak_days", "level_reached"]);
+}
+
+async function onPlantPlanted(userId) {
+  return checkAndUnlockAchievements(userId, "plants_planted");
+}
+
+async function onPlantHarvested(userId) {
+  return checkAchievementTriggers(userId, [
+    "plants_harvested",
+    "gold_collected",
+    "level_reached"
+  ]);
+}
+
+async function onPlantWatered(userId) {
+  return checkAndUnlockAchievements(userId, "plants_watered");
+}
+
+async function onDecorationPlaced(userId) {
+  return checkAndUnlockAchievements(userId, "decorations_placed");
+}
+
+async function onDailyGardenCheck(userId) {
+  return checkAndUnlockAchievements(userId, "plant_survival_streak");
+}
+
+async function getUserAchievements(userId) {
+  try {
+    const achievements = await UserAchievement.find({ user: toObjectId(userId) })
+      .populate("achievementId")
+      .sort({ unlockedAt: -1 })
+      .lean();
+
+    return achievements.map(serializeUnlockedAchievement);
+  } catch (err) {
+    console.error("Error in getUserAchievements:", err);
+    return [];
+  }
+}
+
+async function getAchievementProgressDetails(userId) {
+  try {
+    const context = await loadAchievementContext(userId);
+    if (!context) {
+      return {};
+    }
+
+    const activeAchievements = await AchievementType.find({ isActive: true }).lean();
+
+    return activeAchievements.reduce((progressMap, achievement) => {
+      const key = toIdString(achievement._id);
+      progressMap[key] = buildProgressState(
+        achievement,
+        context.metrics,
+        context.unlockedIdSet.has(key)
+      );
+      return progressMap;
+    }, {});
+  } catch (err) {
+    console.error("Error in getAchievementProgressDetails:", err);
     return {};
   }
 }
 
-// Lấy stats achievements
+async function getAchievementProgress(userId) {
+  const details = await getAchievementProgressDetails(userId);
+  return Object.keys(details).reduce((acc, key) => {
+    acc[key] = details[key].percent || 0;
+    return acc;
+  }, {});
+}
+
+function buildAchievementGalleryItem(achievement, unlockedRecord, progress) {
+  const detail = normalizeAchievementDetail(achievement);
+  const unlocked = Boolean(unlockedRecord);
+  const safeDetail = unlocked ? detail : maskLockedAchievement(detail);
+
+  return {
+    _id: toIdString(achievement._id),
+    id: detail.id,
+    name: safeDetail.name,
+    description: safeDetail.description,
+    icon: safeDetail.icon,
+    color: detail.color,
+    points: detail.points,
+    rarity: detail.rarity,
+    category: detail.category,
+    condition: detail.condition,
+    unlockMessage: detail.unlockMessage,
+    isHidden: detail.isHidden,
+    unlocked,
+    unlockedAt: unlockedRecord?.unlockedAt || null,
+    progress: progress.percent,
+    progressDetail: progress
+  };
+}
+
+async function getAchievementGallery(userId, filters = {}) {
+  try {
+    const context = await loadAchievementContext(userId);
+    if (!context) {
+      return [];
+    }
+
+    const query = { isActive: true };
+    if (filters.category) {
+      query.category = filters.category;
+    }
+    if (filters.rarity) {
+      query.rarity = filters.rarity;
+    }
+
+    const achievements = await AchievementType.find(query).lean();
+    const progressDetails = await getAchievementProgressDetails(userId);
+
+    return achievements
+      .map((achievement) => {
+        const key = toIdString(achievement._id);
+        return buildAchievementGalleryItem(
+          achievement,
+          context.unlockedByAchievementId.get(key),
+          progressDetails[key] || buildProgressState(achievement, context.metrics, false)
+        );
+      })
+      .sort((left, right) => {
+        if (left.unlocked !== right.unlocked) {
+          return left.unlocked ? -1 : 1;
+        }
+
+        const rarityDelta =
+          (RARITY_ORDER[right.rarity] || 0) - (RARITY_ORDER[left.rarity] || 0);
+        if (rarityDelta !== 0) {
+          return rarityDelta;
+        }
+
+        if (right.progress !== left.progress) {
+          return right.progress - left.progress;
+        }
+
+        return left.name.localeCompare(right.name);
+      });
+  } catch (err) {
+    console.error("Error in getAchievementGallery:", err);
+    return [];
+  }
+}
+
 async function getAchievementStats(userId) {
   try {
-    const totalAchievements = await AchievementType.countDocuments({ isActive: true });
-    const unlockedCount = await UserAchievement.countDocuments({ user: userId });
-    const lockedCount = totalAchievements - unlockedCount;
-
-    // Tính total points từ achievements
-    const pointsData = await UserAchievement.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId) } }, // [FIX] Thêm 'new'
-      { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
-      { $unwind: '$achievement' },
-      { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
+    const [totalAchievements, context] = await Promise.all([
+      AchievementType.countDocuments({ isActive: true }),
+      loadAchievementContext(userId)
     ]);
 
-    const achievementPoints = pointsData[0]?.achievementPoints || 0;
+    if (!context) {
+      return { total: 0, unlocked: 0, locked: 0, completion: 0, achievementPoints: 0 };
+    }
+
+    const unlockedCount = context.unlockedAchievements.length;
+    const lockedCount = Math.max(0, totalAchievements - unlockedCount);
 
     return {
       total: totalAchievements,
       unlocked: unlockedCount,
       locked: lockedCount,
       completion: totalAchievements > 0 ? Math.round((unlockedCount / totalAchievements) * 100) : 0,
-      achievementPoints: achievementPoints
+      achievementPoints: context.metrics.achievement_points
     };
   } catch (err) {
-    console.error('Error in getAchievementStats:', err);
+    console.error("Error in getAchievementStats:", err);
     return { total: 0, unlocked: 0, locked: 0, completion: 0, achievementPoints: 0 };
   }
 }
 
-// Legacy: Dictionary chứa URL badge cho từng mốc bài học đã hoàn thành
-const badgeUrls = {
-  10: "https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Rules!.png?v=1743349969433",
-  50: "https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Rules!%20(1).png?v=1743516307951",
-  100: "https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Rules!%20(2).png?v=1743516407488"
-};
-
-// Badge cho người tạo bài học
-const contributionBadgeUrl = "https://cdn.glitch.global/71030012-56ea-4d26-a426-e0099201df1c/Rules!%20(3).png?v=1743599907853"; 
-
-// Legacy: Check and award achievements
-async function checkAndAwardAchievements(user, io) {
-  // Tính số lượng bài học mà người dùng đã hoàn thành
-  const lessonCompletedCount = await LessonCompletion.countDocuments({ user: user._id });
-  console.log(user.username + " completedLessonCount: " + lessonCompletedCount);
-
-  // Mốc thành tích cho bài học đã hoàn thành
-  const lessonMilestones = [10, 50, 100];
-  for (const milestone of lessonMilestones) {
-    if (lessonCompletedCount >= milestone) {
-      console.log(`${user.username} qualifies for ${milestone} lessons achievement`);
-    }
-  }
-
+async function checkAndAwardAchievements() {
+  return [];
 }
 
-// Trigger khi trồng cây
-async function onPlantPlanted(userId) {
-  try {
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-    if (!garden) return [];
-    
-    // Đếm số cây (item type = 'plant')
-    const plantCount = (garden.items || []).filter(item => item.type === 'plant' && !item.isDead).length;
-    return await checkAndUnlockAchievements(userId, 'plants_planted', { currentValue: plantCount });
-  } catch (err) {
-    console.error('Error in onPlantPlanted:', err);
-    return [];
-  }
-}
-
-// Trigger khi thu hoạch
-async function onPlantHarvested(userId, goldEarned = 0) {
-  try {
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-    if (!garden) return [];
-    
-    // Đếm tổng số lần thu hoạch từ history (nếu có) hoặc từ garden.harvestCount
-    // Tạm thời dùng harvestCount nếu tồn tại
-    const harvestCount = garden.harvestCount || 0;
-    
-    // Cộng tổng vàng đã thu hoạch
-    const totalGoldCollected = (garden.totalGoldCollected || 0) + goldEarned;
-    
-    const results = [];
-    results.push(...await checkAndUnlockAchievements(userId, 'plants_harvested', { currentValue: harvestCount + 1 }));
-    results.push(...await checkAndUnlockAchievements(userId, 'gold_collected', { currentValue: totalGoldCollected }));
-    
-    return results;
-  } catch (err) {
-    console.error('Error in onPlantHarvested:', err);
-    return [];
-  }
-}
-
-// Trigger khi tưới cây
-async function onPlantWatered(userId) {
-  try {
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-    if (!garden) return [];
-    
-    // Đếm số lần tưới cây
-    const waterCount = garden.waterCount || 0;
-    return await checkAndUnlockAchievements(userId, 'plants_watered', { currentValue: waterCount + 1 });
-  } catch (err) {
-    console.error('Error in onPlantWatered:', err);
-    return [];
-  }
-}
-
-// Trigger khi đặt trang trí
-async function onDecorationPlaced(userId) {
-  try {
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-    if (!garden) return [];
-    
-    // Đếm số trang trí (item type = 'decoration')
-    const decorationCount = (garden.items || []).filter(item => item.type === 'decoration').length;
-    return await checkAndUnlockAchievements(userId, 'decorations_placed', { currentValue: decorationCount });
-  } catch (err) {
-    console.error('Error in onDecorationPlaced:', err);
-    return [];
-  }
-}
-
-// Trigger kiểm tra plant survival streak hàng ngày
-async function onDailyGardenCheck(userId) {
-  try {
-    const Garden = require('../models/Garden');
-    const garden = await Garden.findOne({ user: userId });
-    if (!garden) return [];
-    
-    // Lấy plant survival streak từ garden
-    const survivalStreak = garden.plantSurvivalStreak || 0;
-    return await checkAndUnlockAchievements(userId, 'plant_survival_streak', { currentValue: survivalStreak });
-  } catch (err) {
-    console.error('Error in onDailyGardenCheck:', err);
-    return [];
-  }
-}
-
-// Export new achievement system functions
 const achievementChecker = {
   checkAndUnlockAchievements,
+  onUserRegistered,
+  onUserLogin,
   onLessonCompleted,
   onPointsGained,
   onDailyCheck,
@@ -416,11 +612,15 @@ const achievementChecker = {
   onDailyGardenCheck,
   getUserAchievements,
   getAchievementProgress,
+  getAchievementProgressDetails,
+  getAchievementGallery,
   getAchievementStats,
-  evaluateCondition
+  evaluateCondition,
+  buildProgressState,
+  resolveCustomTriggerIds
 };
 
-module.exports = { 
+module.exports = {
   checkAndAwardAchievements,
   achievementChecker
 };

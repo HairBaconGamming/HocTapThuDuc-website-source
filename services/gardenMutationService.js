@@ -149,6 +149,8 @@ async function buyItem({ userId, itemId, type, x, y }) {
 
     if (normalizedType === 'plant') {
         garden.plantCount = (garden.plantCount || 0) + 1;
+    } else if (normalizedType === 'decoration') {
+        garden.decorationCount = (garden.decorationCount || 0) + 1;
     }
 
     await garden.save();

@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { isLoggedIn, hasProAccess } = require("../middlewares/auth");
 const { getJwtSecret } = require("../utils/secrets");
+const { achievementChecker } = require("../utils/achievementUtils");
 
 const JWT_SECRET = getJwtSecret();
 
@@ -33,15 +34,7 @@ router.post("/login", (req, res, next) => {
                 user.lastloginUA = req.get("User-Agent") || "Unknown";
                 await user.save();
 
-                // Check achievements on login
-                const { achievementChecker } = require('../utils/achievementUtils');
-                
-                // Check login/community join achievement
-                const newAchievements = await achievementChecker.checkAndUnlockAchievements(
-                    user._id,
-                    'custom',
-                    { triggerType: 'login' }
-                );
+                const newAchievements = await achievementChecker.onUserLogin(user._id);
 
                 // Nếu có achievements mới, lưu vào session để hiển thị
                 if (newAchievements && newAchievements.length > 0) {
@@ -108,6 +101,12 @@ router.post("/register", async (req, res) => {
 
         const newUser = new User({ username, password, class: userClass, school });
         await newUser.save();
+
+        try {
+            await achievementChecker.onUserRegistered(newUser._id);
+        } catch (achievementError) {
+            console.error("Error checking achievements on register:", achievementError);
+        }
         
         req.app.locals.io.emit("liveAccess", { username: newUser.username, time: new Date().toLocaleString("vi-VN"), type: "register" });
         req.flash("success", "Đăng ký thành công!");

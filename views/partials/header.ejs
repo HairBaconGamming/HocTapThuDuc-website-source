@@ -16,7 +16,7 @@
         <link rel="stylesheet" href="/css/styleLogin.css">
     <% } %>
 </head>
-<body class="<%= typeof activePage !== 'undefined' ? activePage : '' %>">
+<body class="<%= typeof activePage !== 'undefined' ? activePage : '' %>" data-user-id="<%= user ? user._id : '' %>">
 
 <header class="header" id="mainHeader">
     <nav class="navbar">
@@ -241,8 +241,23 @@
 
 <!-- Achievement System -->
 <script src="/js/achievementSystem.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <!-- Achievement Notification -->
 <%- include('achievementNotification') %>
+<% if (pendingAchievements && pendingAchievements.length > 0) { %>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const pendingAchievements = <%- JSON.stringify(pendingAchievements) %>;
+  pendingAchievements.forEach(function (achievement, index) {
+    setTimeout(function () {
+      if (window.AchievementSystem && typeof window.AchievementSystem.showUnlock === "function") {
+        window.AchievementSystem.showUnlock(achievement);
+      }
+    }, index * 500);
+  });
+});
+</script>
+<% } %>
 
 <main class="main-content" style="padding-top: 100px;">

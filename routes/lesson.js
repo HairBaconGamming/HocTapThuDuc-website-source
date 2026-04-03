@@ -278,7 +278,9 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
         user.xp = levelRes.newXP;
 
         // 3. Lưu dữ liệu
-        await new LessonCompletion({ user: userId, lesson: lessonId }).save();
+        const completion = new LessonCompletion({ user: userId, lesson: lessonId });
+        completion.$locals = { ...(completion.$locals || {}), skipAchievementCheck: true };
+        await completion.save();
         
         // [QUAN TRỌNG] CẬP NHẬT STREAK TẠI ĐÂY
         // Gọi hàm updateStreak trước khi user.save() lần cuối

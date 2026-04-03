@@ -32,6 +32,7 @@ const GardenSchema = new mongoose.Schema({
     harvestCount: { type: Number, default: 0 },
     waterCount: { type: Number, default: 0 },
     plantCount: { type: Number, default: 0 },
+    decorationCount: { type: Number, default: 0 },
     totalGoldCollected: { type: Number, default: 0 },
     plantSurvivalStreak: { type: Number, default: 0 },
 

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Garden = require('../models/Garden');
 const LessonCompletion = require('../models/LessonCompletion');
 const { UserAchievement } = require('../models/Achievement');
+const { achievementChecker } = require('../utils/achievementUtils');
 const LevelUtils = require('../utils/level');
 const moment = require('moment-timezone');
 const streakHelper = require('../utils/streakHelper');
@@ -40,21 +41,15 @@ exports.getProfile = async (req, res) => {
         }));
 
         // 5. Lấy thông tin achievements
-        const achievements = await UserAchievement.find({ user: userId })
-            .sort({ unlockedAt: -1 })
-            .limit(6)
-            .lean();
-
-        const totalAchievements = await UserAchievement.countDocuments({ user: userId });
-
-        // Calculate achievement points from unlocked achievements
-        const pointsData = await UserAchievement.aggregate([
-            { $match: { user: new mongoose.Types.ObjectId(userId.toString()) } },
-            { $lookup: { from: 'achievementtypes', localField: 'achievementId', foreignField: '_id', as: 'achievement' } },
-            { $unwind: '$achievement' },
-            { $group: { _id: null, achievementPoints: { $sum: '$achievement.points' } } }
-        ]);
-        const achievementPoints = pointsData[0]?.achievementPoints || 0;
+        const achievements = await achievementChecker.getUserAchievements(userId);
+        const recentAchievements = achievements.slice(0, 6).map((achievement) => ({
+            ...achievement,
+            achievementId: {
+                name: achievement.name,
+                icon: achievement.icon
+            }
+        }));
+        const achievementStats = await achievementChecker.getAchievementStats(userId);
 
         // 6. Lấy rank trên leaderboard (sắp xếp theo points)
         const userRank = await User.countDocuments({ 
@@ -79,11 +74,11 @@ exports.getProfile = async (req, res) => {
                 gold: gold,
                 lessons: completedCount,
                 points: user.points || 0,
-                achievementPoints: achievementPoints
+                achievementPoints: achievementStats.achievementPoints || 0
             },
             activities: activities,
-            achievements: achievements,
-            totalAchievements: totalAchievements,
+            achievements: recentAchievements,
+            totalAchievements: achievementStats.unlocked || 0,
             userRank: userRank,
             streak: streakInfo.streak,
             lastStudyDate: streakInfo.lastStudyDate,
