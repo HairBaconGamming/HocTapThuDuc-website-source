@@ -41,7 +41,12 @@ exports.getProfile = async (req, res) => {
         }));
 
         // 5. Lấy thông tin achievements
-        const achievements = await achievementChecker.getUserAchievements(userId);
+        const shouldSyncAchievements =
+            req.user && req.user._id.toString() === user._id.toString();
+
+        const achievements = await achievementChecker.getUserAchievements(userId, {
+            syncEligible: shouldSyncAchievements
+        });
         const recentAchievements = achievements.slice(0, 6).map((achievement) => ({
             ...achievement,
             achievementId: {
@@ -49,7 +54,9 @@ exports.getProfile = async (req, res) => {
                 icon: achievement.icon
             }
         }));
-        const achievementStats = await achievementChecker.getAchievementStats(userId);
+        const achievementStats = await achievementChecker.getAchievementStats(userId, {
+            syncEligible: shouldSyncAchievements
+        });
 
         // 6. Lấy rank trên leaderboard (sắp xếp theo points)
         const userRank = await User.countDocuments({ 

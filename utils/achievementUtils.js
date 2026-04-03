@@ -322,10 +322,68 @@ async function unlockAchievement(userId, achievement) {
     return payload;
   } catch (err) {
     if (err?.code === 11000) {
-      return null;
+      const existing = await UserAchievement.findOne({
+        user: toObjectId(userId),
+        achievementId: achievement._id
+      }).lean();
+
+      if (!existing) {
+        return null;
+      }
+
+      return serializeUnlockedAchievement({
+        ...existing,
+        achievementId: existing.achievementId || achievement._id,
+        achievementData: existing.achievementData || snapshot
+      });
     }
 
     throw err;
+  }
+}
+
+async function syncEligibleAchievements(userId) {
+  try {
+    const context = await loadAchievementContext(userId);
+    if (!context) {
+      return [];
+    }
+
+    const achievements = await AchievementType.find({
+      isActive: true,
+      "condition.type": { $ne: "custom" }
+    })
+      .sort({ points: 1, createdAt: 1 })
+      .lean();
+
+    const unlocked = [];
+
+    for (const achievement of achievements) {
+      const achievementKey = toIdString(achievement._id);
+      if (context.unlockedIdSet.has(achievementKey)) {
+        continue;
+      }
+
+      if (!evaluateCondition(achievement.condition, { metrics: context.metrics })) {
+        continue;
+      }
+
+      const payload = await unlockAchievement(userId, achievement);
+      if (!payload) {
+        continue;
+      }
+
+      context.unlockedIdSet.add(achievementKey);
+      context.unlockedAchievements.unshift(payload);
+      context.unlockedByAchievementId.set(achievementKey, payload);
+      context.metrics.achievement_points += Number(payload.points || 0);
+      unlocked.push(payload);
+    }
+
+    return unlocked;
+  } catch (err) {
+    console.error("Error in syncEligibleAchievements:", err);
+    return [];
   }
 }
 
@@ -446,8 +504,12 @@ async function onDailyGardenCheck(userId) {
   return checkAndUnlockAchievements(userId, "plant_survival_streak");
 }
 
-async function getUserAchievements(userId) {
+async function getUserAchievements(userId, options = {}) {
   try {
+    if (options.syncEligible !== false) {
+      await syncEligibleAchievements(userId);
+    }
+
     const achievements = await UserAchievement.find({ user: toObjectId(userId) })
       .populate("achievementId")
       .sort({ unlockedAt: -1 })
@@ -460,32 +522,40 @@ async function getUserAchievements(userId) {
   }
 }
 
-async function getAchievementProgressDetails(userId) {
+async function buildProgressDetailsFromContext(context) {
+  const activeAchievements = await AchievementType.find({ isActive: true }).lean();
+
+  return activeAchievements.reduce((progressMap, achievement) => {
+    const key = toIdString(achievement._id);
+    progressMap[key] = buildProgressState(
+      achievement,
+      context.metrics,
+      context.unlockedIdSet.has(key)
+    );
+    return progressMap;
+  }, {});
+}
+
+async function getAchievementProgressDetails(userId, options = {}) {
   try {
+    if (options.syncEligible !== false) {
+      await syncEligibleAchievements(userId);
+    }
+
     const context = await loadAchievementContext(userId);
     if (!context) {
       return {};
     }
 
-    const activeAchievements = await AchievementType.find({ isActive: true }).lean();
-
-    return activeAchievements.reduce((progressMap, achievement) => {
-      const key = toIdString(achievement._id);
-      progressMap[key] = buildProgressState(
-        achievement,
-        context.metrics,
-        context.unlockedIdSet.has(key)
-      );
-      return progressMap;
-    }, {});
+    return buildProgressDetailsFromContext(context);
   } catch (err) {
     console.error("Error in getAchievementProgressDetails:", err);
     return {};
   }
 }
 
-async function getAchievementProgress(userId) {
-  const details = await getAchievementProgressDetails(userId);
+async function getAchievementProgress(userId, options = {}) {
+  const details = await getAchievementProgressDetails(userId, options);
   return Object.keys(details).reduce((acc, key) => {
     acc[key] = details[key].percent || 0;
     return acc;
@@ -517,8 +587,12 @@ function buildAchievementGalleryItem(achievement, unlockedRecord, progress) {
   };
 }
 
-async function getAchievementGallery(userId, filters = {}) {
+async function getAchievementGallery(userId, filters = {}, options = {}) {
   try {
+    if (options.syncEligible !== false) {
+      await syncEligibleAchievements(userId);
+    }
+
     const context = await loadAchievementContext(userId);
     if (!context) {
       return [];
@@ -533,7 +607,7 @@ async function getAchievementGallery(userId, filters = {}) {
     }
 
     const achievements = await AchievementType.find(query).lean();
-    const progressDetails = await getAchievementProgressDetails(userId);
+    const progressDetails = await buildProgressDetailsFromContext(context);
 
     return achievements
       .map((achievement) => {
@@ -567,8 +641,12 @@ async function getAchievementGallery(userId, filters = {}) {
   }
 }
 
-async function getAchievementStats(userId) {
+async function getAchievementStats(userId, options = {}) {
   try {
+    if (options.syncEligible !== false) {
+      await syncEligibleAchievements(userId);
+    }
+
     const [totalAchievements, context] = await Promise.all([
       AchievementType.countDocuments({ isActive: true }),
       loadAchievementContext(userId)
@@ -617,7 +695,8 @@ const achievementChecker = {
   getAchievementStats,
   evaluateCondition,
   buildProgressState,
-  resolveCustomTriggerIds
+  resolveCustomTriggerIds,
+  syncEligibleAchievements
 };
 
 module.exports = {
