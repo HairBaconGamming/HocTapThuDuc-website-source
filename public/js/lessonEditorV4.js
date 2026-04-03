@@ -25,8 +25,10 @@
         {
             previewMode: "desktop",
             focus: false,
+            chromeCollapsed: false,
+            wideCanvas: false,
             dockState: { left: "open", right: "open" },
-            widths: { left: 360, right: 360 },
+            widths: { left: 324, right: 332 },
             activeTabs: { left: "left-structure", right: "right-properties" }
         },
         readStorage()
@@ -56,8 +58,8 @@
     }
 
     function applyWidths() {
-        document.documentElement.style.setProperty("--v4-left-width", `${state.widths.left || 360}px`);
-        document.documentElement.style.setProperty("--v4-right-width", `${state.widths.right || 360}px`);
+        document.documentElement.style.setProperty("--v4-left-width", `${state.widths.left || 324}px`);
+        document.documentElement.style.setProperty("--v4-right-width", `${state.widths.right || 332}px`);
     }
 
     function setActiveDockTab(side, target, shouldPersist = true) {
@@ -71,9 +73,14 @@
         tabGroup.querySelectorAll("button[data-dock-target]").forEach((button) => {
             button.classList.toggle("is-active", button.dataset.dockTarget === target);
         });
+        shell.querySelectorAll(".studio-dock-mini-button[data-dock-mini-target]").forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.dockMiniTarget === target);
+        });
         shell.querySelectorAll(".studio-dock-panel").forEach((panel) => {
             panel.classList.toggle("is-active", panel.dataset.dockPanel === target);
         });
+        if (side === "left") applyNavigatorSearch();
+        if (side === "right") applyInspectorSearch();
         if (shouldPersist) persistState();
     }
 
@@ -98,21 +105,54 @@
         if (shouldPersist) persistState();
     }
 
+    function syncLayoutButtons() {
+        document.querySelectorAll("[data-layout-action]").forEach((button) => {
+            const action = button.dataset.layoutAction;
+            let isActive = false;
+
+            if (action === "toggle-left-dock") isActive = state.dockState.left !== "collapsed";
+            else if (action === "toggle-right-dock") isActive = state.dockState.right !== "collapsed";
+            else if (action === "toggle-wide-canvas") isActive = !!state.wideCanvas;
+            else if (action === "toggle-chrome") isActive = !!state.chromeCollapsed;
+
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+    }
+
+    function applyChromeCollapse(shouldPersist = true) {
+        const root = $(".studio-v4-root");
+        if (root) root.classList.toggle("is-chrome-collapsed", !!state.chromeCollapsed);
+        syncLayoutButtons();
+        if (shouldPersist) persistState();
+    }
+
+    function applyWideCanvas(shouldPersist = true) {
+        const root = $(".studio-v4-root");
+        if (root) root.classList.toggle("is-wide-canvas", !!state.wideCanvas);
+        syncLayoutButtons();
+        if (shouldPersist) persistState();
+    }
+
     function applyDockState(side, shouldPersist = true) {
         const shell = side === "left" ? $("#studioLeftDock") : $("#studioRightDock");
         if (!shell) return;
         shell.dataset.dockState = state.dockState[side] || "open";
+        syncLayoutButtons();
         if (shouldPersist) persistState();
     }
 
     function applyStoredLayout() {
         applyPreviewMode(state.previewMode || "desktop", false);
         applyFocusMode(false);
+        applyChromeCollapse(false);
         applyDockState("left", false);
         applyDockState("right", false);
+        applyWideCanvas(false);
         applyWidths();
         setActiveDockTab("left", state.activeTabs.left || "left-structure", false);
         setActiveDockTab("right", state.activeTabs.right || "right-properties", false);
+        syncLayoutButtons();
     }
 
     function bindTabs() {
@@ -147,12 +187,75 @@
         });
     }
 
+    function toggleChromeCompact() {
+        state.chromeCollapsed = !state.chromeCollapsed;
+        applyChromeCollapse();
+    }
+
+    function toggleDockSide(side) {
+        state.dockState[side] = state.dockState[side] === "collapsed" ? "open" : "collapsed";
+        if (state.wideCanvas && state.dockState[side] !== "collapsed") {
+            state.wideCanvas = false;
+            applyWideCanvas(false);
+        }
+        applyDockState(side);
+    }
+
+    function toggleWideCanvas() {
+        state.wideCanvas = !state.wideCanvas;
+        if (state.wideCanvas) {
+            state.dockState.left = "collapsed";
+            state.dockState.right = "collapsed";
+        } else {
+            state.dockState.left = "open";
+            state.dockState.right = "open";
+        }
+        applyDockState("left", false);
+        applyDockState("right", false);
+        applyWideCanvas();
+    }
+
     function bindDockToggles() {
         document.querySelectorAll("[data-dock-toggle]").forEach((button) => {
             button.addEventListener("click", () => {
-                const side = button.dataset.dockToggle;
-                state.dockState[side] = state.dockState[side] === "collapsed" ? "open" : "collapsed";
-                applyDockState(side);
+                toggleDockSide(button.dataset.dockToggle);
+            });
+        });
+    }
+
+    function bindLayoutActions() {
+        document.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-layout-action]");
+            if (!button) return;
+
+            const action = button.dataset.layoutAction;
+            if (action === "toggle-chrome") toggleChromeCompact();
+            else if (action === "toggle-left-dock") toggleDockSide("left");
+            else if (action === "toggle-right-dock") toggleDockSide("right");
+            else if (action === "toggle-wide-canvas") toggleWideCanvas();
+        });
+    }
+
+    function bindDockMiniRail() {
+        document.querySelectorAll("[data-dock-mini]").forEach((rail) => {
+            rail.addEventListener("click", (event) => {
+                const button = event.target.closest("[data-dock-mini-target]");
+                if (!button) return;
+
+                const side = rail.dataset.dockMini;
+                if (!side) return;
+
+                if (state.dockState[side] === "collapsed") {
+                    state.dockState[side] = "open";
+                    if (state.wideCanvas) {
+                        state.wideCanvas = false;
+                        applyWideCanvas(false);
+                    }
+                    applyDockState(side, false);
+                }
+
+                setActiveDockTab(side, button.dataset.dockMiniTarget);
+                persistState();
             });
         });
     }
@@ -162,8 +265,8 @@
             handle.addEventListener("pointerdown", (event) => {
                 const side = handle.dataset.resizer;
                 const startX = event.clientX;
-                const startLeft = state.widths.left || 360;
-                const startRight = state.widths.right || 360;
+                const startLeft = state.widths.left || 324;
+                const startRight = state.widths.right || 332;
 
                 function onMove(moveEvent) {
                     const delta = moveEvent.clientX - startX;
@@ -196,6 +299,58 @@
                 if (action === "quick-publish") window.LessonStudioBridge.quickPublish();
             });
         });
+    }
+
+    function normalizeText(value) {
+        return String(value || "").toLowerCase().trim();
+    }
+
+    function applyNavigatorSearch() {
+        const query = normalizeText($("#studioNavigatorSearch")?.value);
+
+        document.querySelectorAll(".tree-unit").forEach((unitEl) => {
+            const unitInput = unitEl.querySelector(".unit-title-input");
+            const unitMatch = normalizeText(unitInput?.value).includes(query);
+            let lessonMatch = false;
+
+            unitEl.querySelectorAll(".tree-lesson").forEach((lessonEl) => {
+                const lessonInput = lessonEl.querySelector(".lesson-title-input");
+                const matched = !query || normalizeText(lessonInput?.value).includes(query);
+                lessonEl.style.display = matched ? "" : "none";
+                if (matched) lessonMatch = true;
+            });
+
+            unitEl.style.display = !query || unitMatch || lessonMatch ? "" : "none";
+        });
+
+        ["#v4OutlineTree", "#v4AssetInventory", "#v4RevisionQuickList"].forEach((selector) => {
+            const container = $(selector);
+            if (!container) return;
+
+            container.querySelectorAll(".studio-smart-item, .studio-smart-empty").forEach((item) => {
+                const matched = !query || normalizeText(item.textContent).includes(query);
+                item.style.display = matched ? "" : "none";
+            });
+        });
+    }
+
+    function applyInspectorSearch() {
+        const query = normalizeText($("#studioInspectorSearch")?.value);
+        const activePanel = $("#studioRightDock .studio-dock-panel.is-active");
+        if (!activePanel) return;
+
+        activePanel.querySelectorAll(".control-item, .studio-help-card, .studio-smart-group, .studio-smart-item").forEach((item) => {
+            const matched = !query || normalizeText(item.textContent).includes(query);
+            item.style.display = matched ? "" : "none";
+        });
+    }
+
+    function bindDockSearch() {
+        const navigatorSearch = $("#studioNavigatorSearch");
+        if (navigatorSearch) navigatorSearch.addEventListener("input", applyNavigatorSearch);
+
+        const inspectorSearch = $("#studioInspectorSearch");
+        if (inspectorSearch) inspectorSearch.addEventListener("input", applyInspectorSearch);
     }
 
     function describeBlock(block, index) {
@@ -409,12 +564,36 @@
         setTabText("right", "right-layout", "Bố cục");
         setTabText("right", "right-quality", issues.length ? `Chất lượng (${issues.length})` : "Chất lượng");
         setTabText("right", "right-publish", snapshot.studioState.lessonDirty ? "Xuất bản • nháp" : "Xuất bản");
+
+        const sourceIds = ["treeUnitCount", "treeLessonCount", "treeDraftCount"];
+        const targetIds = ["treeUnitCountMini", "treeLessonCountMini", "treeDraftCountMini"];
+        sourceIds.forEach((sourceId, index) => {
+            const source = document.getElementById(sourceId);
+            const target = document.getElementById(targetIds[index]);
+            if (source && target) target.textContent = source.textContent;
+        });
     }
 
     function updateInspectorHint(snapshot, issues) {
         const title = $("#studioInspectorTitle");
         const body = $("#studioInspectorBody");
+        const contextBadge = $("#v4InspectorContextBadge");
+        const stateBadge = $("#v4InspectorStateBadge");
         if (!title || !body) return;
+
+        if (contextBadge) {
+            contextBadge.textContent = snapshot.activeContext === "lesson"
+                ? "Bài học"
+                : snapshot.activeContext === "unit"
+                    ? "Chương"
+                    : "Khóa học";
+        }
+
+        if (stateBadge) {
+            stateBadge.textContent = snapshot.studioState.lessonDirty || snapshot.studioState.courseDirty
+                ? "Có thay đổi"
+                : "Ổn định";
+        }
 
         if (snapshot.activeContext === "lesson") {
             title.textContent = "Điều khiển bài học";
@@ -451,6 +630,8 @@
         renderRevisionHint(snapshot);
         updateInspectorHint(snapshot, issues);
         updateTabSignals(snapshot, issues);
+        applyNavigatorSearch();
+        applyInspectorSearch();
     }
 
     function init() {
@@ -460,6 +641,9 @@
         bindPreviewButtons();
         bindFocusToggles();
         bindDockToggles();
+        bindLayoutActions();
+        bindDockMiniRail();
+        bindDockSearch();
         bindResizers();
         bindQuickActions();
         applyStoredLayout();

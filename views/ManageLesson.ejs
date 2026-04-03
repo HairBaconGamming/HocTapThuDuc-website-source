@@ -46,6 +46,10 @@
                             <button type="button" data-preview-mode="tablet">Tablet</button>
                             <button type="button" data-preview-mode="mobile">Mobile</button>
                         </div>
+                        <button type="button" class="studio-v4-ghost-button" data-layout-action="toggle-chrome">
+                            <i class="fas fa-compress-alt"></i>
+                            <span>Thu gọn</span>
+                        </button>
                         <button type="button" class="studio-v4-ghost-button" id="studioFocusToggle">
                             <i class="fas fa-expand"></i>
                             <span>Focus</span>
@@ -99,6 +103,33 @@
                         <button type="button" data-dock-target="left-outline">Dàn ý</button>
                         <button type="button" data-dock-target="left-assets">Tài nguyên</button>
                         <button type="button" data-dock-target="left-revisions">Phiên bản</button>
+                    </div>
+
+                    <div class="studio-dock-utility studio-dock-utility-left">
+                        <label class="studio-dock-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="studioNavigatorSearch" placeholder="Tìm trong navigator...">
+                        </label>
+                        <div class="studio-dock-chip-row">
+                            <span class="studio-dock-chip"><strong id="treeUnitCountMini">0</strong><span>Chương</span></span>
+                            <span class="studio-dock-chip"><strong id="treeLessonCountMini">0</strong><span>Bài</span></span>
+                            <span class="studio-dock-chip"><strong id="treeDraftCountMini">0</strong><span>Nháp</span></span>
+                        </div>
+                    </div>
+
+                    <div class="studio-dock-mini-rail" data-dock-mini="left" aria-label="Navigator mini rail">
+                        <button type="button" class="studio-dock-mini-button is-active" data-dock-mini-target="left-structure" title="Cấu trúc">
+                            <i class="fas fa-sitemap"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="left-outline" title="Dàn ý">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="left-assets" title="Tài nguyên">
+                            <i class="fas fa-photo-film"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="left-revisions" title="Phiên bản">
+                            <i class="fas fa-clock-rotate-left"></i>
+                        </button>
                     </div>
 
                     <div class="studio-dock-panels">
@@ -248,9 +279,25 @@
                                             <h2 id="studioCanvasHeading">Chưa chọn bài học</h2>
                                             <p id="studioCanvasSubhead">Khi mở bài học, bạn có thể sắp xếp block, cập nhật nội dung và theo dõi thông số ngay tại đây.</p>
                                         </div>
-                                        <button type="button" class="workspace-quick-action" data-canvas-action="open-menu" data-insert-index="-1">
-                                            <i class="fas fa-plus"></i> Thêm block
-                                        </button>
+                                        <div class="studio-canvas-head-actions">
+                                            <div class="studio-canvas-layout-controls">
+                                                <button type="button" class="studio-canvas-layout-button" data-layout-action="toggle-left-dock">
+                                                    <i class="fas fa-sidebar"></i>
+                                                    <span>Navigator</span>
+                                                </button>
+                                                <button type="button" class="studio-canvas-layout-button" data-layout-action="toggle-wide-canvas">
+                                                    <i class="fas fa-arrows-left-right-to-line"></i>
+                                                    <span>Canvas rộng</span>
+                                                </button>
+                                                <button type="button" class="studio-canvas-layout-button" data-layout-action="toggle-right-dock">
+                                                    <i class="fas fa-sliders-h"></i>
+                                                    <span>Inspector</span>
+                                                </button>
+                                            </div>
+                                            <button type="button" class="workspace-quick-action" data-canvas-action="open-menu" data-insert-index="-1">
+                                                <i class="fas fa-plus"></i> Thêm block
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="editor-insight-row">
@@ -338,6 +385,38 @@
                         <button type="button" data-dock-target="right-layout">Bố cục</button>
                         <button type="button" data-dock-target="right-quality">Chất lượng</button>
                         <button type="button" data-dock-target="right-publish">Xuất bản</button>
+                    </div>
+
+                    <div class="studio-dock-utility studio-dock-utility-right">
+                        <div class="studio-dock-chip-row studio-dock-chip-row-rich">
+                            <span class="studio-dock-chip studio-dock-chip-rich">
+                                <span>Ngữ cảnh</span>
+                                <strong id="v4InspectorContextBadge">Khóa học</strong>
+                            </span>
+                            <span class="studio-dock-chip studio-dock-chip-rich">
+                                <span>Trạng thái</span>
+                                <strong id="v4InspectorStateBadge">Sẵn sàng</strong>
+                            </span>
+                        </div>
+                        <label class="studio-dock-search">
+                            <i class="fas fa-compass-drafting"></i>
+                            <input type="text" id="studioInspectorSearch" placeholder="Tìm trong inspector...">
+                        </label>
+                    </div>
+
+                    <div class="studio-dock-mini-rail" data-dock-mini="right" aria-label="Inspector mini rail">
+                        <button type="button" class="studio-dock-mini-button is-active" data-dock-mini-target="right-properties" title="Thuộc tính">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="right-layout" title="Bố cục">
+                            <i class="fas fa-table-columns"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="right-quality" title="Chất lượng">
+                            <i class="fas fa-shield-heart"></i>
+                        </button>
+                        <button type="button" class="studio-dock-mini-button" data-dock-mini-target="right-publish" title="Xuất bản">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
 
                     <div class="studio-dock-panels">
