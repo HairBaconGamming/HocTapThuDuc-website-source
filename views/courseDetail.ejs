@@ -94,6 +94,11 @@
 <%- include('partials/breadcrumb') %>
 
 <div class="course-wrapper">
+    <% const canSeePremiumLessons = !!(user && (user.isPro || user.isAdmin || user.isTeacher)); %>
+    <% const getVisibleLessons = (lessons) => (lessons || []).filter(lesson => canSeePremiumLessons || (!lesson.isPro && !lesson.isProOnly)); %>
+    <% const visibleLessonCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).length, 0); %>
+    <% const visibleVideoCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).filter(lesson => lesson.type === 'video').length, 0); %>
+    <% const visibleQuizCount = units.reduce((sum, unit) => sum + getVisibleLessons(unit.lessons).filter(lesson => lesson.type === 'quiz' || lesson.type === 'question').length, 0); %>
     
     <div class="main-content">
         <div class="course-header">
@@ -114,7 +119,7 @@
             <h3 class="section-title">Giới thiệu khóa học</h3>
             <div class="desc-content">
                 <% if(course.description) { %>
-                    <%- course.description.replace(/\n/g, '<br>') %>
+                    <p style="white-space: pre-line;"><%= course.description %></p>
                 <% } else { %>
                     <p>Chưa có mô tả chi tiết cho khóa học này.</p>
                 <% } %>
@@ -124,12 +129,13 @@
         <div class="course-desc-box">
             <h3 class="section-title">Nội dung khóa học</h3>
             <div style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">
-                <strong><%= units.length %></strong> chương • <strong><%= stats.totalLessons %></strong> bài học
+                <strong><%= units.length %></strong> chương • <strong><%= visibleLessonCount %></strong> bài học
             </div>
 
             <div class="curriculum-box">
                 <% if(units.length > 0) { %>
                     <% units.forEach((unit, idx) => { %>
+                        <% const visibleLessons = getVisibleLessons(unit.lessons); %>
                         <div class="unit-item">
                             <div class="unit-toggle <%= idx === 0 ? 'active' : '' %>" onclick="toggleUnit(this)">
                                 <span>
@@ -137,14 +143,14 @@
                                     Chương <%= idx + 1 %>: <%= unit.title %>
                                 </span>
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <small style="font-weight: 400; color: #999;"><%= unit.lessons ? unit.lessons.length : 0 %> bài</small>
+                                    <small style="font-weight: 400; color: #999;"><%= visibleLessons.length %> bài</small>
                                     <i class="fas fa-chevron-down"></i>
                                 </div>
                             </div>
                             
                             <div class="lesson-group <%= idx === 0 ? 'open' : '' %>">
-                                <% if(unit.lessons && unit.lessons.length > 0) { %>
-                                    <% unit.lessons.forEach(lesson => { %>
+                                <% if(visibleLessons.length > 0) { %>
+                                    <% visibleLessons.forEach(lesson => { %>
                                         <a href="/lesson/<%= lesson._id %>" class="lesson-row">
                                             <div style="display: flex; align-items: center; gap: 10px;">
                                                 <% if(lesson.type === 'video') { %>
@@ -214,15 +220,15 @@
                     </li>
                     <li>
                         <i class="fas fa-film" style="width:20px; text-align:center;"></i> 
-                        <strong><%= stats.totalVideos %></strong> video bài giảng
+                        <strong><%= visibleVideoCount %></strong> video bài giảng
                     </li>
                     <li>
                         <i class="fas fa-clipboard-check" style="width:20px; text-align:center;"></i> 
-                        <strong><%= stats.totalQuiz %></strong> bài tập thực hành
+                        <strong><%= visibleQuizCount %></strong> bài tập thực hành
                     </li>
                     <li>
                         <i class="fas fa-layer-group" style="width:20px; text-align:center;"></i> 
-                        <strong><%= stats.totalLessons %></strong> bài học tổng cộng
+                        <strong><%= visibleLessonCount %></strong> bài học tổng cộng
                     </li>
                     <li>
                         <i class="fas fa-users" style="width:20px; text-align:center;"></i> 

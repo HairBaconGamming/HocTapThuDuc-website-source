@@ -28,7 +28,7 @@ exports.getProfile = async (req, res) => {
 
         // 4. Lấy danh sách hoạt động
         let activities = await LessonCompletion.find({ user: userId })
-            .sort({ createdAt: -1 })
+            .sort({ completedAt: -1 })
             .limit(5)
             .populate('lesson', 'title')
             .lean();

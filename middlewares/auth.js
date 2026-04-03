@@ -1,5 +1,18 @@
 // middlewares/auth.js
 
+function wantsJsonResponse(req) {
+  const accept = String(req.get('accept') || '');
+  return !!(
+    req.xhr ||
+    req.path.startsWith('/api/') ||
+    accept.includes('application/json') ||
+    accept.includes('text/javascript') ||
+    req.get('x-requested-with') === 'XMLHttpRequest' ||
+    req.get('sec-fetch-dest') === 'empty' ||
+    req.get('sec-fetch-mode') === 'cors'
+  );
+}
+
 // Kiểm tra xem người dùng đã đăng nhập hay chưa
 module.exports.isLoggedIn = function (req, res, next) {
   if (req.user) {
@@ -7,7 +20,7 @@ module.exports.isLoggedIn = function (req, res, next) {
     return next();
   } else {
     // Người dùng chưa đăng nhập
-    if (req.accepts('html')) {
+    if (!wantsJsonResponse(req) && req.accepts('html')) {
       // Trả về trang đăng nhập nếu là HTML request
       return res.redirect('/login');
     } else {
@@ -25,7 +38,7 @@ function hasProAccess(user) {
 module.exports.isPro = function (req, res, next) {
   // 1. Kiểm tra đăng nhập trước
   if (!req.user) {
-    if (req.accepts('html')) {
+    if (!wantsJsonResponse(req) && req.accepts('html')) {
       return res.redirect('/login');
     } else {
       return res.status(401).json({ error: "Bạn cần đăng nhập để truy cập tính năng này" });
@@ -37,7 +50,7 @@ module.exports.isPro = function (req, res, next) {
     return next();
   } else {
     // Không có quyền
-    if (req.accepts('html')) {
+    if (!wantsJsonResponse(req) && req.accepts('html')) {
       return res.redirect('/upgrade');
     } else {
       return res.status(403).json({ error: "Tính năng này chỉ dành cho tài khoản PRO" });

@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node scripts/run-syntax-checks.js",
     "test-db": "node test-db-connection.js",
     "dev": "nodemon server.js"
   },

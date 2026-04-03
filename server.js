@@ -98,7 +98,7 @@ const corsOptions = {
         // 1. !origin: Cho phép request không có origin (Postman, Server-to-Server)
         // 2. origin === 'null': Cho phép origin là chuỗi "null" (thường gặp khi redirect, local file, hoặc sandbox iframe)
         // 3. allowed.includes(origin): Domain nằm trong whitelist
-        if (!origin || origin === 'null' || allowed.includes(origin)) {
+        if (!origin || allowed.includes(origin)) {
             return cb(null, true);
         }
         

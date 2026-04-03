@@ -25,6 +25,19 @@ const studioState = {
     lastSavedAt: null
 };
 
+function buildSandboxedPreviewSrcdoc(htmlCode, includeBootstrap = false, bodyPadding = 15) {
+    let head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+    head += '<base target="_blank">';
+    head += `<style>body{margin:0; padding:${bodyPadding}px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>`;
+
+    if (includeBootstrap) {
+        head += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+        head += '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>';
+    }
+
+    return `<!doctype html><html><head>${head}</head><body>${htmlCode || ''}</body></html>`;
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -1790,22 +1803,12 @@ function renderBlocks() {
 
             const iframe = document.createElement('iframe');
             iframe.style.cssText = "flex: 1; width: 100%; border: none; background: #fff;";
+            iframe.sandbox = 'allow-scripts allow-forms allow-modals allow-popups';
+            iframe.referrerPolicy = 'no-referrer';
             
             // Hàm cập nhật nội dung Iframe (Inject Bootstrap nếu cần)
             const updatePreview = (val) => {
-                const doc = iframe.contentWindow.document;
-                doc.open();
-                
-                let headInject = '<style>body{margin:0; padding:15px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
-                
-                if (settings.includeBootstrap) {
-                    headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
-                    // Thêm script bootstrap (optional, để dropdown/modal hoạt động)
-                    headInject += '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>';
-                }
-                
-                doc.write(headInject + val);
-                doc.close();
+                iframe.srcdoc = buildSandboxedPreviewSrcdoc(val, settings.includeBootstrap, 15);
             };
 
             // Event Listeners: Input -> Update Data & Preview

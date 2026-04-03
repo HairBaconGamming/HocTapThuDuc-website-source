@@ -81,6 +81,46 @@ function decodeBase64(str) {
     }).join(''));
 }
 
+function buildSandboxedPreviewSrcdoc(htmlCode, includeBootstrap) {
+    let head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+    head += '<base target="_blank">';
+    head += '<style>body{margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
+
+    if (includeBootstrap) {
+        head += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+        head += '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>';
+    }
+
+    return `<!doctype html><html><head>${head}</head><body>${htmlCode || ''}</body></html>`;
+}
+
+function sanitizeHtml(html, options) {
+    if (window.DOMPurify) {
+        return DOMPurify.sanitize(html || '', options || {});
+    }
+    return html || '';
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getSafeHref(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+    try {
+        const resolved = new URL(rawUrl, window.location.origin);
+        if (['http:', 'https:'].includes(resolved.protocol)) {
+            return resolved.toString();
+        }
+    } catch (e) {}
+    return '';
+}
+
 /* =========================================
    BLOCK RENDERER ENGINE
    ========================================= */
@@ -94,14 +134,14 @@ function renderSingleBlock(block, idx) {
         case 'header': 
             const level = block.data.level || 2;
             const hTag = document.createElement(`h${level}`);
-            hTag.innerHTML = block.data.text;
+            hTag.textContent = block.data.text || '';
             hTag.id = `heading-${idx}`;
             wrapper.appendChild(hTag);
             break;
 
         case 'text':
             let htmlContent = marked.parse(block.data.text || '');
-            if (window.DOMPurify) htmlContent = DOMPurify.sanitize(htmlContent);
+            htmlContent = sanitizeHtml(htmlContent);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             tempDiv.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
@@ -147,11 +187,23 @@ function renderSingleBlock(block, idx) {
                                 title="Video bài học"
                             ></iframe>`;
                     } else {
-                        videoWrapper.innerHTML = `<video src="${videoInfo.url}" controls ${block.data.autoplay ? 'autoplay muted' : ''} style="width:100%; height:100%;"></video>`;
+                        const safeVideoUrl = getSafeHref(videoInfo.url);
+                        if (safeVideoUrl) {
+                            videoWrapper.innerHTML = `<video src="${safeVideoUrl}" controls ${block.data.autoplay ? 'autoplay muted' : ''} style="width:100%; height:100%;"></video>`;
+                        }
                     }
                 } else {
                     videoWrapper.className = 'alert alert-warning my-3';
-                    videoWrapper.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Video không khả dụng: <a href="${block.data.url}" target="_blank">Mở link gốc</a>`;
+                    const fallbackUrl = getSafeHref(block.data.url);
+                    videoWrapper.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Video không khả dụng`;
+                    if (fallbackUrl) {
+                        const link = document.createElement('a');
+                        link.href = fallbackUrl;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = ' Mở link gốc';
+                        videoWrapper.appendChild(link);
+                    }
                 }
                 wrapper.appendChild(videoWrapper);
             }
@@ -159,7 +211,7 @@ function renderSingleBlock(block, idx) {
 
         case 'document':
         case 'resource':
-            const docUrl = block.data.url || '#';
+            const docUrl = getSafeHref(block.data.url) || '#';
             const docTitle = block.data.title || 'Tài liệu đính kèm';
             const docExt = docUrl.split('.').pop().toLowerCase();
             let iconClass = 'fas fa-file-alt';
@@ -170,10 +222,10 @@ function renderSingleBlock(block, idx) {
             else if(['drive'].includes(block.data.iconType)) iconClass = 'fab fa-google-drive text-success';
 
             wrapper.innerHTML = `
-                <a href="${docUrl}" target="_blank" class="document-card text-decoration-none">
+                <a href="${docUrl}" target="_blank" rel="noopener noreferrer" class="document-card text-decoration-none">
                     <div class="doc-icon"><i class="${iconClass}"></i></div>
                     <div class="doc-info">
-                        <div class="doc-title">${docTitle}</div>
+                        <div class="doc-title">${escapeHtml(docTitle)}</div>
                         <div class="doc-meta">Nhấn để xem hoặc tải xuống</div>
                     </div>
                     <div class="doc-action"><i class="fas fa-external-link-alt"></i></div>
@@ -225,7 +277,7 @@ function renderSingleBlock(block, idx) {
                             <div class="tab-pane fade ${isResultActive ? 'show active' : ''}" id="preview-${uniqueId}">
                                 <div class="bg-light checkerboard-bg py-3 px-0 text-center" style="overflow-x: auto;"> 
                                     <div class="iframe-container" style="${containerStyle}">
-                                        <iframe id="iframe-${uniqueId}" style="width:100%; height:100%; border:none;" title="HTML Preview"></iframe>
+                                        <iframe id="iframe-${uniqueId}" style="width:100%; height:100%; border:none;" title="HTML Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe>
                                     </div>
                                 </div>
                             </div>
@@ -243,20 +295,13 @@ function renderSingleBlock(block, idx) {
             setTimeout(() => {
                 const iframe = wrapper.querySelector(`#iframe-${uniqueId}`);
                 if (iframe) {
-                    const doc = iframe.contentWindow.document;
-                    doc.open();
+                    iframe.srcdoc = buildSandboxedPreviewSrcdoc(htmlCode, settings.includeBootstrap);
                     
                     // Inject CSS Bootstrap nếu được bật
-                    let headInject = '<style>body{margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}</style>';
-                    if (settings.includeBootstrap) {
-                        headInject += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
-                    }
                     
                     // [IMPORTANT] Ghi nội dung HTML gốc vào Iframe.
                     // Vì đã qua Base64 -> JSON.parse, htmlCode bây giờ là chuỗi gốc chuẩn xác.
                     // Không cần replace hay clean gì nữa.
-                    doc.write(htmlCode);
-                    doc.close();
                 }
             }, 50);
             break;
@@ -274,7 +319,7 @@ function renderSingleBlock(block, idx) {
         case 'callout':
             const cType = {info:'alert-info', warning:'alert-warning', danger:'alert-danger', success:'alert-success'}[block.data.style] || 'alert-info';
             wrapper.className += ` alert ${cType} border-0 shadow-sm d-flex align-items-start my-3`;
-            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas fa-info-circle fa-lg"></i></div><div class="flex-grow-1">${marked.parse(block.data.text || '')}</div>`;
+            wrapper.innerHTML = `<div class="me-3 mt-1"><i class="fas fa-info-circle fa-lg"></i></div><div class="flex-grow-1">${sanitizeHtml(marked.parse(block.data.text || ''))}</div>`;
             break;
 
         case 'quiz':
@@ -354,7 +399,7 @@ function renderQuizBlock(data, blockIdx) {
                 let opts = '';
                 (q.options || []).forEach((opt, optIdx) => {
                     const isCorrect = (q.correct || []).includes(optIdx);
-                    opts += `<label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative border transition-all" data-option-idx="${optIdx}" data-is-correct="${isCorrect}"><input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}"><span>${opt}</span><i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i><i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i></label>`;
+                    opts += `<label class="quiz-option d-block p-3 rounded mb-2 cursor-pointer position-relative border transition-all" data-option-idx="${optIdx}" data-is-correct="${isCorrect}"><input class="form-check-input me-2" type="${type}" name="${name}" value="${optIdx}" data-correct="${isCorrect}"><span>${escapeHtml(opt)}</span><i class="fas fa-check text-success position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i><i class="fas fa-times text-danger position-absolute end-0 me-3 result-icon" style="display:none; top: 18px;"></i></label>`;
                 });
                 qContent += `<div class="options-list">${opts}</div>`;
             }
@@ -610,6 +655,6 @@ window.completeLesson = async function(id) {
         if(res.ok) {
             triggerConfetti();
             Swal.fire({ title: 'TUYỆT VỜI! 🎉', text: `+${data.points || 10} Điểm`, icon: 'success' }).then(() => window.location.reload());
-        } else { Swal.fire('Lỗi', data.message, 'error'); btn.innerHTML = 'Thử lại'; }
+        } else { Swal.fire('Lỗi', data.message || data.error || 'Không thể hoàn thành bài học.', 'error'); btn.innerHTML = 'Thử lại'; }
     } catch(e) { Swal.fire('Lỗi mạng', 'Kiểm tra kết nối', 'error'); btn.innerHTML = 'Thử lại'; }
 };

@@ -146,8 +146,8 @@ class LessonDetailsCommentsSystem {
     renderSingleComment(comment) {
         const date = new Date(comment.createdAt);
         const timeAgo = this.getTimeAgo(date);
-        const avatar = comment.user?.avatar || '/uploads/default-avatar.png';
-        const username = comment.user?.username || 'Anonymous';
+        const avatar = this.getSafeAssetUrl(comment.user?.avatar, '/uploads/default-avatar.png');
+        const username = this.escapeHtml(comment.user?.username || 'Anonymous');
 
         let repliesHtml = '';
         if (comment.replies && comment.replies.length > 0) {
@@ -176,8 +176,8 @@ class LessonDetailsCommentsSystem {
         replies.forEach(reply => {
             const date = new Date(reply.createdAt);
             const timeAgo = this.getTimeAgo(date);
-            const avatar = reply.user?.avatar || '/uploads/default-avatar.png';
-            const username = reply.user?.username || 'Anonymous';
+            const avatar = this.getSafeAssetUrl(reply.user?.avatar, '/uploads/default-avatar.png');
+            const username = this.escapeHtml(reply.user?.username || 'Anonymous');
 
             html += `
                 <div class="reply-item" style="margin-bottom: 0.8rem; background: #f8fafc; padding: 0.75rem; border-radius: 8px;">
@@ -213,6 +213,23 @@ class LessonDetailsCommentsSystem {
         const div = document.createElement('div');
         div.textContent = content;
         return div.innerHTML;
+    }
+
+    escapeHtml(content) {
+        const div = document.createElement('div');
+        div.textContent = content || '';
+        return div.innerHTML;
+    }
+
+    getSafeAssetUrl(value, fallback) {
+        if (!value || typeof value !== 'string') return fallback;
+        try {
+            const resolved = new URL(value, window.location.origin);
+            if (['http:', 'https:'].includes(resolved.protocol)) {
+                return resolved.toString();
+            }
+        } catch (e) {}
+        return fallback;
     }
 
     async addComment(content) {

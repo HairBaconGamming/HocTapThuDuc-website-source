@@ -16,6 +16,7 @@ const { AchievementType, UserAchievement } = require('../models/Achievement');
 const Garden = require('../models/Garden');
 const LessonRevision = require('../models/LessonRevision');
 const UserActivityLog = require('../models/UserActivityLog');
+const { getCourseAccessState, buildCourseVisibilityFilter } = require('../utils/contentAccess');
 
 // --- IMPORT CONTROLLERS ---
 const courseController = require('../controllers/courseController');
@@ -29,14 +30,14 @@ const { isLoggedIn, hasProAccess } = require('../middlewares/auth');
 router.get("/", async (req, res) => {
     try {
         const subjects = await Subject.find().limit(6).lean();
-        const courses = await Course.find({ isPublished: true })
+        const courses = await Course.find(buildCourseVisibilityFilter(req.user))
             .sort({ createdAt: -1 })
             .limit(6)
             .populate('author', 'username avatar')
             .populate('subjectId', 'name')
             .lean();
 
-        const totalCourses = await Course.countDocuments({ isPublished: true });
+        const totalCourses = await Course.countDocuments(buildCourseVisibilityFilter(req.user));
         const totalStudents = await User.countDocuments({ isAdmin: { $ne: true }, isTeacher: { $ne: true } });
         const totalLessons = await Lesson.countDocuments({}); 
 
@@ -78,7 +79,7 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
 
         // 3. Xử lý logic "Khóa học đã tham gia" & "Khóa học gần nhất"
         // Lấy toàn bộ khóa học public để tham chiếu thông tin
-        const allCourses = await Course.find({ isPublished: true }).select('_id title thumbnail subjectId').lean();
+        const allCourses = await Course.find(buildCourseVisibilityFilter(req.user)).select('_id title thumbnail subjectId').lean();
         
         // Lấy toàn bộ bài học (chỉ lấy field cần thiết) để đếm tổng số bài
         const allLessons = await Lesson.find().select('_id courseId subject').lean();
@@ -235,7 +236,7 @@ router.get("/subjects", async (req, res) => {
     try {
         const subjects = await Subject.find().sort({ name: 1 }).lean();
         const subjectsWithCount = await Promise.all(subjects.map(async (sub) => {
-            const count = await Course.countDocuments({ subjectId: sub._id, isPublished: true });
+            const count = await Course.countDocuments(buildCourseVisibilityFilter(req.user, { subjectId: sub._id }));
             return { ...sub, courseCount: count };
         }));
         res.render("subjects", { user: req.user, subjects: subjectsWithCount, activePage: "subjects", title: "Danh mục Môn học" });
@@ -247,7 +248,7 @@ router.get("/subjects/:id", async (req, res) => {
         const subjectId = req.params.id;
         const subject = await Subject.findById(subjectId).lean();
         if (!subject) return res.redirect('/subjects');
-        const courses = await Course.find({ subjectId: subject._id, isPublished: true }).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
+        const courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
         res.render("subjectDetail", { user: req.user, subject, courses, selectedCourse: null, units: [], lessons: [], totalLessons: 0, uniqueTags: [], activeTag: '', currentCategory: '', currentQuery: '', currentSort: 'desc', activePage: "subjects" });
     } catch (e) { console.error(e); res.redirect('/subjects'); }
 });
@@ -274,11 +275,35 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
     } catch(e) { req.flash("error", "Lỗi."); res.redirect("/profile/edit"); }
 });
 
-router.get('/course/:id', courseController.getCourseDetail);
+router.get('/course/:id', async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id).select('_id author isPublished isPro').lean();
+        if (!course) {
+            return courseController.getCourseDetail(req, res, next);
+        }
+
+        const access = await getCourseAccessState(req.user, course);
+        if (!access.allowed) {
+            if (access.needsPro) {
+                if (req.user) {
+                    req.flash('error', 'Can PRO de xem khoa hoc nay.');
+                    return res.redirect('/upgrade');
+                }
+                return res.redirect(`/login?redirect=/course/${req.params.id}`);
+            }
+
+            return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
+        }
+
+        return courseController.getCourseDetail(req, res, next);
+    } catch (error) {
+        return next(error);
+    }
+});
 
 router.get("/courses", async (req, res) => {
     try {
-        const courses = await Course.find({ isPublished: true }).populate('author', 'username avatar').populate('subjectId', 'name icon').sort({ createdAt: -1 }).lean();
+        const courses = await Course.find(buildCourseVisibilityFilter(req.user)).populate('author', 'username avatar').populate('subjectId', 'name icon').sort({ createdAt: -1 }).lean();
         res.render("courses", { user: req.user, courses, activePage: "courses", title: "Thư viện khóa học" });
     } catch (e) { console.error(e); res.redirect('/'); }
 });

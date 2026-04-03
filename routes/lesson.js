@@ -17,6 +17,10 @@ const Garden = require('../models/Garden');
 const LevelUtils = require("../utils/level");
 const { achievementChecker } = require("../utils/achievementUtils");
 const streakHelper = require("../utils/streakHelper");
+const {
+    getLessonAccessState,
+    buildLessonVisibilityFilter
+} = require("../utils/contentAccess");
 
 const JWT_SECRET = getJwtSecret();
 
@@ -72,7 +76,24 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     try {
         const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar isTeacher").lean();
         if (!lesson) return res.redirect("/subjects");
-        if ((lesson.isPro || lesson.isProOnly) && !hasProAccess(req.user)) { req.flash("error", "Cần PRO."); return res.redirect("/upgrade"); }
+
+        let course = null;
+        try {
+            if (lesson.courseId) {
+                course = await Course.findById(lesson.courseId).populate('subjectId', 'name _id').lean();
+            }
+        } catch (e) { course = null; }
+
+        const access = await getLessonAccessState(req.user, lesson, { course });
+        if (!access.allowed) {
+            if (access.needsPro) {
+                req.flash("error", "Can PRO.");
+                return res.redirect("/upgrade");
+            }
+            return res.redirect("/subjects");
+        }
+
+        course = access.course || course;
 
         // Try to resolve subject: primary source is lesson.subject, fallback to lesson.subjectId
         let subject = null;
@@ -100,7 +121,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             try {
                 const doc = JSON.parse(lesson.editorData.document);
                 if (doc.fileId) {
-                    const token = jwt.sign({ fileId: doc.fileId }, JWT_SECRET, { expiresIn: '10m' });
+                    const token = jwt.sign({ fileId: doc.fileId, lessonId: lesson._id.toString() }, JWT_SECRET, { expiresIn: '10m' });
                     doc.publicViewUrl = `${req.protocol}://${req.get('host')}/documents/public-view/${doc.fileId}?token=${token}`;
                 }
                 lessonData.documentData = doc;
@@ -113,30 +134,16 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         let prevLesson = null;
         let nextLesson = null;
         try {
-            const visibility = { isPublished: true };
-            // Non-PRO users should not see PRO-only lessons in navigation
-            if (!hasProAccess(req.user)) {
-                visibility.isProOnly = { $ne: true };
-                visibility.isPro = { $ne: true };
-            }
-
-            const listFilter = { ...visibility };
+            const listFilter = access.canManage ? {} : buildLessonVisibilityFilter(req.user);
             if (lesson.unitId) listFilter.unitId = lesson.unitId;
-            else listFilter.subject = lesson.unitId ? lesson.unitId : (lesson.subject || lesson.subjectId);
+            else if (course && course._id) listFilter.courseId = course._id;
+            else listFilter.subject = lesson.subject || lesson.subjectId;
 
-            const siblings = await require('../models/Lesson').find(listFilter).sort({ order: 1, _id: 1 }).select('_id title order').lean();
+            const siblings = await Lesson.find(listFilter).sort({ order: 1, _id: 1 }).select('_id title order').lean();
             const idx = siblings.findIndex(s => s._id.toString() === lesson._id.toString());
             if (idx > 0) prevLesson = siblings[idx - 1];
             if (idx >= 0 && idx < siblings.length - 1) nextLesson = siblings[idx + 1];
         } catch (e) { /* ignore navigation errors */ }
-
-        // Try to resolve Course (and its Subject) for breadcrumb (if lesson.courseId present)
-        let course = null;
-        try {
-            if (lesson.courseId) {
-                course = await Course.findById(lesson.courseId).populate('subjectId', 'name _id').lean();
-            }
-        } catch (e) { course = null; }
 
         // Build breadcrumbs: Home > Subject > Course > Lesson
         const breadcrumbs = [
@@ -156,6 +163,22 @@ router.get("/:id/discussion", isLoggedIn, async (req, res) => {
     try {
         const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar isTeacher").lean();
         if (!lesson) return res.redirect("/subjects");
+
+        let course = null;
+        try {
+            if (lesson.courseId) {
+                course = await Course.findById(lesson.courseId).select('_id author isPublished isPro subjectId').lean();
+            }
+        } catch (e) { course = null; }
+
+        const access = await getLessonAccessState(req.user, lesson, { course });
+        if (!access.allowed) {
+            if (access.needsPro) {
+                req.flash("error", "Can PRO.");
+                return res.redirect("/upgrade");
+            }
+            return res.redirect("/subjects");
+        }
 
         // Try to resolve subject
         let subject = null;
@@ -224,7 +247,20 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
 
         // 1. Kiểm tra đã học chưa
         const exists = await LessonCompletion.findOne({ user: userId, lesson: lessonId });
-        if (exists) return res.status(400).json({ error: "Bạn đã hoàn thành bài này rồi." });
+        if (exists) return res.status(400).json({ error: "Bạn đã hoàn thành bài này rồi.", message: "Bạn đã hoàn thành bài này rồi." });
+
+        const lesson = await Lesson.findById(lessonId).select('_id courseId createdBy isPublished isPro isProOnly').lean();
+        if (!lesson) {
+            return res.status(404).json({ error: "Bai hoc khong ton tai.", message: "Bai hoc khong ton tai." });
+        }
+
+        const access = await getLessonAccessState(req.user, lesson);
+        if (!access.allowed || lesson.isPublished === false || access.course?.isPublished === false) {
+            if (access.needsPro) {
+                return res.status(403).json({ error: "Ban can PRO de hoan thanh bai hoc nay.", message: "Ban can PRO de hoan thanh bai hoc nay." });
+            }
+            return res.status(403).json({ error: "Bai hoc nay hien khong san sang de nhan thuong.", message: "Bai hoc nay hien khong san sang de nhan thuong." });
+        }
 
         const user = await User.findById(userId);
         

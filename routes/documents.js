@@ -7,6 +7,10 @@ const { Readable } = require("stream");
 const { isLoggedIn, isTeacher } = require("../middlewares/auth");
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require("../utils/secrets");
+const {
+  findLessonsReferencingDocument,
+  getLessonAccessState
+} = require("../utils/contentAccess");
 
 const router = express.Router();
 
@@ -75,6 +79,28 @@ router.post("/upload", isLoggedIn, isTeacher, upload.single("documentFile"), asy
   }
 });
 
+async function loadGridFsFile(fileId) {
+  const files = await bucket.find({ _id: fileId }).toArray();
+  return files && files.length > 0 ? files[0] : null;
+}
+
+async function canAccessDocumentViaLesson(fileId, user, specificLessonId = null) {
+  const lessons = await findLessonsReferencingDocument(fileId);
+
+  for (const lesson of lessons) {
+    if (specificLessonId && lesson._id.toString() !== String(specificLessonId)) {
+      continue;
+    }
+
+    const access = await getLessonAccessState(user, lesson);
+    if (access.allowed) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // === ROUTE XEM FILE (YÊU CẦU LOGIN) SỬ DỤNG _id ===
 router.get("/view/:id", isLoggedIn, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -84,12 +110,17 @@ router.get("/view/:id", isLoggedIn, async (req, res) => {
 
     try {
         const fileId = new mongoose.Types.ObjectId(req.params.id);
-        const files = await bucket.find({ _id: fileId }).toArray();
-        if (!files || files.length === 0) {
+        const file = await loadGridFsFile(fileId);
+        if (!file) {
             return res.status(404).send("Không tìm thấy tài liệu.");
         }
 
-        const file = files[0];
+        const isOwner = file.metadata?.uploaderId === req.user._id.toString();
+        const canAccessLinkedLesson = await canAccessDocumentViaLesson(req.params.id, req.user);
+        if (!req.user.isAdmin && !isOwner && !canAccessLinkedLesson) {
+            return res.status(403).send("Ban khong co quyen truy cap tai lieu nay.");
+        }
+
         res.set("Content-Type", file.contentType);
         res.set("Content-Disposition", `inline; filename="${file.metadata.originalName}"`);
 
@@ -114,15 +145,19 @@ router.get("/public-view/:id", async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         
         // Token giờ sẽ chứa fileId
-        if (decoded.fileId !== req.params.id) {
+        if (decoded.fileId !== req.params.id || !decoded.lessonId) {
             return res.status(403).send("Invalid token for this file.");
         }
 
         const fileId = new mongoose.Types.ObjectId(req.params.id);
-        const files = await bucket.find({ _id: fileId }).toArray();
-        if (!files || files.length === 0) return res.status(404).send("File not found.");
+        const file = await loadGridFsFile(fileId);
+        if (!file) return res.status(404).send("File not found.");
 
-        const file = files[0];
+        const canAccessLinkedLesson = await canAccessDocumentViaLesson(req.params.id, req.user || null, decoded.lessonId);
+        if (!canAccessLinkedLesson) {
+            return res.status(403).send("Access denied for this lesson document.");
+        }
+
         res.set("Content-Type", file.contentType);
         res.set("Content-Disposition", `inline; filename="${file.metadata.originalName}"`);
         

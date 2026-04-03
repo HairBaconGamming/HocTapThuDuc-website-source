@@ -2,6 +2,10 @@ const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const News = require('../models/News');
+const {
+    buildCourseVisibilityFilter,
+    buildLessonVisibilityFilter
+} = require('../utils/contentAccess');
 
 // --- 1. DANH SÁCH TÍNH NĂNG HỆ THỐNG (Hardcoded) ---
 // (Giữ nguyên như cũ vì nó rất tiện)
@@ -79,10 +83,10 @@ exports.searchPage = async (req, res) => {
         let hotTags = [];
         try {
             // 1. Lấy 3 bài học có lượt xem cao nhất (Trending)
-            const topLessons = await Lesson.find().sort({ views: -1 }).select('title').limit(3).lean();
+            const topLessons = await Lesson.find(buildLessonVisibilityFilter(req.user)).sort({ views: -1 }).select('title').limit(3).lean();
             
             // 2. Lấy 2 khóa học mới nhất
-            const newCourses = await Course.find().sort({ createdAt: -1 }).select('title').limit(2).lean();
+            const newCourses = await Course.find(buildCourseVisibilityFilter(req.user)).sort({ createdAt: -1 }).select('title').limit(2).lean();
 
             // 3. Xây dựng danh sách Tags
             hotTags = [
@@ -115,8 +119,8 @@ exports.searchPage = async (req, res) => {
         if (keyword && keyword.length > 0) {
             const regex = new RegExp(keyword.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i');
             const [lessons, courses, users, news] = await Promise.all([
-                Lesson.find({ title: regex }).select('title slug views description').limit(10).lean(),
-                Course.find({ title: regex }).select('title description thumbnail').limit(10).lean(),
+                Lesson.find(buildLessonVisibilityFilter(req.user, { title: regex })).select('title slug views description').limit(10).lean(),
+                Course.find(buildCourseVisibilityFilter(req.user, { title: regex })).select('title description thumbnail').limit(10).lean(),
                 User.find({ $or: [{ username: regex }, { email: regex }] }).select('username avatar isPro role').limit(10).lean(),
                 News.find({ title: regex }).select('title category createdAt').limit(10).lean()
             ]);
@@ -155,7 +159,7 @@ exports.getSuggestions = async (req, res) => {
 
         // Tìm song song (BỎ Lesson.find)
         const [courses, news, users] = await Promise.all([
-            Course.find({ title: regex }).select('title _id').limit(3).lean(),
+            Course.find(buildCourseVisibilityFilter(req.user, { title: regex })).select('title _id').limit(3).lean(),
             News.find({ title: regex }).select('title _id').limit(3).lean(),
             User.find({ username: regex }).select('username _id avatar isPro').limit(3).lean()
         ]);

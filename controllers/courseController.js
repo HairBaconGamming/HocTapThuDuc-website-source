@@ -2,6 +2,7 @@ const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
+const { buildLessonVisibilityFilter } = require('../utils/contentAccess');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -56,6 +57,7 @@ exports.getCourseDetail = async (req, res) => {
             return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
         }
 
+        const lessonMatch = canViewDraft ? {} : buildLessonVisibilityFilter(req.user);
         const units = await Unit.find({ courseId: id })
             .sort({ order: 1 })
             .populate({
@@ -433,5 +435,87 @@ exports.updateCourseFull = async (req, res) => {
     } catch (err) {
         console.error("Update Course Error:", err);
         res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// Override the legacy public detail handler with the visibility-aware version.
+exports.getCourseDetail = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const course = await Course.findById(id)
+            .populate('author', 'username avatar bio')
+            .populate('subjectId', 'name')
+            .lean();
+
+        if (!course) {
+            return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
+        }
+
+        const authorId = course && course.author && typeof course.author === 'object'
+            ? course.author._id?.toString()
+            : course?.author?.toString();
+        const canViewDraft = !!(
+            req.user && (
+                req.user.isAdmin ||
+                (authorId && authorId === req.user._id.toString())
+            )
+        );
+
+        if (!course.isPublished && !canViewDraft) {
+            return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
+        }
+
+        const lessonMatch = canViewDraft ? {} : buildLessonVisibilityFilter(req.user);
+        const units = await Unit.find({ courseId: id })
+            .sort({ order: 1 })
+            .populate({
+                path: 'lessons',
+                match: lessonMatch,
+                select: 'title type isPro isProOnly slug duration',
+                options: { sort: { order: 1 } }
+            })
+            .lean();
+
+        let totalLessons = 0;
+        let totalVideos = 0;
+        let totalQuiz = 0;
+        let totalDuration = 0;
+        let firstLessonId = null;
+
+        for (const unit of units) {
+            if (!unit.lessons || unit.lessons.length === 0) continue;
+
+            if (!firstLessonId) {
+                firstLessonId = unit.lessons[0]._id;
+            }
+
+            totalLessons += unit.lessons.length;
+
+            for (const lesson of unit.lessons) {
+                if (lesson.type === 'video') totalVideos++;
+                if (lesson.type === 'quiz' || lesson.type === 'question') totalQuiz++;
+                if (typeof lesson.duration === 'number' && !isNaN(lesson.duration)) {
+                    totalDuration += lesson.duration;
+                }
+            }
+        }
+
+        res.render('courseDetail', {
+            title: course.title,
+            course,
+            units,
+            stats: { totalLessons, totalVideos, totalQuiz, totalDuration },
+            firstLessonId,
+            breadcrumbs: [
+                { label: 'Trang chu', url: '/' },
+                { label: course.subjectId?.name || 'Mon hoc', url: course.subjectId ? `/subjects/${course.subjectId._id}` : '/subjects' },
+                { label: course.title, url: null }
+            ],
+            user: req.user,
+            activePage: 'courses'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('error', { message: 'Loi server', user: req.user });
     }
 };
