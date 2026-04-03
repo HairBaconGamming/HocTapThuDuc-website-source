@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node scripts/run-syntax-checks.js && node scripts/run-garden-state-tests.js && node scripts/run-garden-quest-tests.js",
+    "test": "node scripts/run-syntax-checks.js && node scripts/run-garden-state-tests.js && node scripts/run-garden-quest-tests.js && node scripts/run-cors-policy-tests.js",
     "test-db": "node test-db-connection.js",
     "dev": "nodemon server.js"
   },

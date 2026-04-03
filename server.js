@@ -18,6 +18,7 @@ const socketio = require("socket.io");
 const News = require("./models/News");
 const { banCheck } = require("./middlewares/banCheck");
 const { getSessionSecret } = require("./utils/secrets");
+const { corsOptionsDelegate } = require("./utils/corsPolicy");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -85,29 +86,8 @@ app.use(helmet({
 app.set("view engine", "ejs");
 app.set("trust proxy", 1);
 
-const corsOptions = {
-    origin: (origin, cb) => {
-        // [DEV MODE]
-        if (process.env.NODE_ENV !== 'production') {
-            return cb(null, true); 
-        }
-
-        const allowed = ['https://hoctapthuduc.onrender.com'];
-        
-        // CẬP NHẬT LOGIC TẠI ĐÂY:
-        // 1. !origin: Cho phép request không có origin (Postman, Server-to-Server)
-        // 2. origin === 'null': Cho phép origin là chuỗi "null" (thường gặp khi redirect, local file, hoặc sandbox iframe)
-        // 3. allowed.includes(origin): Domain nằm trong whitelist
-        if (!origin || allowed.includes(origin)) {
-            return cb(null, true);
-        }
-        
-        console.log(`🚫 Blocked CORS Origin: ${origin}`);
-        cb(new Error('CORS blocked this request'));
-    },
-    credentials: true
-};
-app.use(cors(corsOptions));
+app.use(cors(corsOptionsDelegate));
+app.options('*', cors(corsOptionsDelegate));
 app.use(cookieParser());
 
 // [OPTIMIZE] Dùng Express Native thay vì body-parser
