@@ -1,22 +1,16 @@
-// routes/quizGenerator.js
 const express = require("express");
-const router = express.Router();
 const multer = require("multer");
 const mammoth = require("mammoth");
-const anyText = require("any-text"); // Alternative extraction for huge DOCX files or if Mammoth fails
-const pdfParse = require("pdf-parse"); // For PDF extraction
-const fs = require("fs");
-const tmp = require("tmp");
+const pdfParse = require("pdf-parse");
+const { JSDOM } = require("jsdom");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { isPro } = require("../middlewares/auth");
 
-// Import the Google Generative AI library (used solely for quiz generation)
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const router = express.Router();
 
-// Use environment variable or fallback secret key
 const apiKey = process.env.GEMINI_API_KEY_2;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Get the Gemini model
 const geminiModel = genAI.getGenerativeModel({
   model: "gemini-2.0-flash-thinking-exp-01-21"
 });
@@ -29,60 +23,93 @@ const generationConfig = {
   responseMimeType: "text/plain"
 };
 
-// Use Multer with memory storage for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 20 * 1024 * 1024 } // Limit 20 MB per file
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-// Helper function to clean and parse JSON from AI responses
 function parseAIResponse(responseText) {
   let cleaned = responseText.trim();
-  // Remove markdown code block if present
+
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(\w+)?/, "").trim();
     if (cleaned.endsWith("```")) {
       cleaned = cleaned.slice(0, -3).trim();
     }
   }
+
   return JSON.parse(cleaned);
 }
 
-// Function to generate quiz from text using Gemini AI
+function normalizeExtractedText(text) {
+  return String(text || "")
+    .replace(/\r/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function extractPlainTextFromHtml(html) {
+  const dom = new JSDOM(`<body>${html || ""}</body>`);
+  const text = dom.window.document.body.textContent || "";
+  dom.window.close();
+  return normalizeExtractedText(text);
+}
+
+async function extractTextFromDocx(file) {
+  try {
+    const rawResult = await mammoth.extractRawText({ buffer: file.buffer });
+    const rawText = normalizeExtractedText(rawResult.value);
+    if (rawText) {
+      return rawText;
+    }
+  } catch (rawError) {
+    console.error("Mammoth raw DOCX extraction failed:", rawError);
+  }
+
+  try {
+    const htmlResult = await mammoth.convertToHtml({ buffer: file.buffer });
+    const htmlText = extractPlainTextFromHtml(htmlResult.value);
+    if (htmlText) {
+      return htmlText;
+    }
+  } catch (htmlError) {
+    console.error("Mammoth HTML DOCX extraction failed:", htmlError);
+  }
+
+  throw new Error("Khong the trich xuat noi dung tu file DOCX.");
+}
+
 async function generateQuizFromText(text) {
   try {
     const chatSession = geminiModel.startChat({
       generationConfig,
       history: []
     });
-    // Create prompt for generating a quiz
-   const prompt = `Dựa trên văn bản sau, hãy tạo ra một bộ câu hỏi trắc nghiệm.  
-- Mỗi câu có thể là nhiều lựa chọn hoặc dạng Đúng/Sai.  
-- **Tất cả các đáp án trong "options" phải lấy nguyên văn từ văn bản** (không tự sinh đáp án mới).  
-- Trả về kết quả ở định dạng JSON, trong đó mỗi phần tử có cấu trúc:
+
+    const prompt = `Dua tren van ban sau, hay tao ra mot bo cau hoi trac nghiem.
+- Moi cau co the la nhieu lua chon hoac dang Dung/Sai.
+- Tat ca dap an trong "options" phai lay tu van ban, khong tu sinh dap an moi.
+- Tra ve ket qua o dinh dang JSON, moi phan tu co cau truc:
 
 {
-  "question": "Câu hỏi",
+  "question": "Cau hoi",
   "options": [
-    {"text": "Đáp án A (nguyên văn)", "isCorrect": false},
-    {"text": "Đáp án B (nguyên văn)", "isCorrect": true},
-    ...
-    // với dạng Đúng/Sai, sẽ có đúng 2 phần tử: "Đúng" và "Sai"
+    { "text": "Dap an A", "isCorrect": false },
+    { "text": "Dap an B", "isCorrect": true }
   ],
-  "correctAnswer": "Đáp án đúng (text)"
+  "correctAnswer": "Dap an dung"
 }
 
-Văn bản: "${text}"`;
+Van ban: "${text}"`;
 
     const result = await chatSession.sendMessage(prompt);
-    let responseText = result.response.text().trim();
-    // Clean markdown code block formatting if present
-    const quiz = parseAIResponse(responseText);
-    return quiz;
+    const responseText = result.response.text().trim();
+    return parseAIResponse(responseText);
   } catch (err) {
     console.error("Gemini error:", err);
-    // Return a sample quiz if an error occurs during quiz generation
     return [
       {
         question: "What is the main idea of the document?",
@@ -98,76 +125,40 @@ Văn bản: "${text}"`;
   }
 }
 
-// Function to generate quiz from file by extracting text then generating quiz.
-// For DOCX files, we try Mammoth first and fall back to any-text when necessary.
 async function generateQuizFromFile(file) {
   let text = "";
 
-  // Handle PDF files
   if (file.mimetype === "application/pdf") {
     const pdfData = await pdfParse(file.buffer);
-    text = pdfData.text;
-  }
-  // Handle DOCX files
-  else if (
-    file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    text = normalizeExtractedText(pdfData.text);
+  } else if (
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     file.originalname.toLowerCase().endsWith(".docx")
   ) {
-    // Attempt extraction using Mammoth first
-    try {
-      const result = await mammoth.extractRawText({ buffer: file.buffer });
-      text = result.value;
-    } catch (mammothError) {
-      console.error("Mammoth extraction failed:", mammothError);
-    }
-
-    // If Mammoth returned no text or the file is large, fallback to any-text extraction
-    if (!text || text.trim() === "" || file.size > 10 * 1024 * 1024) {
-      try {
-        // Create a temporary file to store the buffer since any-text expects a file path.
-        const tempFile = tmp.fileSync({ postfix: '.docx' });
-        fs.writeFileSync(tempFile.name, file.buffer);
-
-        // Use any-text.getText with the temporary file path
-        text = await anyText.getText(tempFile.name);
-
-        // Remove the temporary file
-        tempFile.removeCallback();
-
-        if (!text || text.trim() === "") {
-          throw new Error("Any-text extraction returned empty text");
-        }
-      } catch (anyTextError) {
-        console.error("Any-text extraction failed:", anyTextError);
-        throw new Error("Không thể trích xuất nội dung từ file DOCX.");
-      }
-    }
+    text = await extractTextFromDocx(file);
   } else {
-    throw new Error("Loại file không được hỗ trợ. Vui lòng upload file PDF hoặc DOCX.");
+    throw new Error("Loai file khong duoc ho tro. Vui long upload file PDF hoac DOCX.");
   }
 
-  if (!text || text.trim() === "") {
-    throw new Error("File trống hoặc không thể đọc được nội dung.");
+  if (!text) {
+    throw new Error("File trong hoac khong the doc duoc noi dung.");
   }
 
-  // Generate quiz from the extracted text
-  return await generateQuizFromText(text);
+  return generateQuizFromText(text);
 }
 
-// POST /api/quiz-generator
-// Uses the "file" field to upload PDF or DOCX
 router.post("/", isPro, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "Không có file được upload!" });
+      return res.status(400).json({ error: "Khong co file duoc upload." });
     }
-    
-    // Process the file and create quiz
+
     const quiz = await generateQuizFromFile(req.file);
-    res.json({ quiz });
+    return res.json({ quiz });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Lỗi khi xử lý file và tạo quiz." });
+    return res.status(500).json({ error: "Loi khi xu ly file va tao quiz." });
   }
 });
 
