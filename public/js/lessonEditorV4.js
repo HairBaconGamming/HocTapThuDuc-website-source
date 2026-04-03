@@ -339,7 +339,7 @@
         const activePanel = $("#studioRightDock .studio-dock-panel.is-active");
         if (!activePanel) return;
 
-        activePanel.querySelectorAll(".control-item, .studio-help-card, .studio-smart-group, .studio-smart-item").forEach((item) => {
+        activePanel.querySelectorAll(".control-item, .studio-help-card, .studio-smart-group, .studio-smart-item, .studio-inspector-command").forEach((item) => {
             const matched = !query || normalizeText(item.textContent).includes(query);
             item.style.display = matched ? "" : "none";
         });
@@ -579,6 +579,7 @@
         const body = $("#studioInspectorBody");
         const contextBadge = $("#v4InspectorContextBadge");
         const stateBadge = $("#v4InspectorStateBadge");
+        const recommendation = $("#v4InspectorRecommendationBody");
         if (!title || !body) return;
 
         if (contextBadge) {
@@ -600,17 +601,28 @@
             body.textContent = issues.length
                 ? `Canvas đang có ${issues.length} lưu ý cần rà. Bạn có thể chuyển nhanh sang tab Chất lượng hoặc Xuất bản.`
                 : "Bài học đang sạch hơn. Bạn có thể tiếp tục biên tập hoặc xuất bản ngay từ thanh bên phải.";
+            if (recommendation) {
+                recommendation.textContent = snapshot.studioState.lessonDirty
+                    ? "Gợi ý tiếp theo: lưu nháp trước, rồi dùng tab Chất lượng để rà nốt các điểm chưa ổn."
+                    : "Gợi ý tiếp theo: kiểm tra quyền truy cập, mở revision nếu cần, rồi xuất bản ngay từ cụm hành động bên dưới.";
+            }
             return;
         }
 
         if (snapshot.activeContext === "unit") {
             title.textContent = "Điều khiển chương";
             body.textContent = "Dùng inspector để đổi tên chương, cập nhật trạng thái hàng loạt và xóa chương khi cần.";
+            if (recommendation) {
+                recommendation.textContent = "Gợi ý tiếp theo: chuẩn hóa tên chương, rồi dùng thao tác hàng loạt để đồng bộ trạng thái cho toàn bộ bài học.";
+            }
             return;
         }
 
         title.textContent = "Điều khiển khóa học";
         body.textContent = "Cập nhật metadata khóa học, thumbnail, PRO/public và các thao tác lưu nhanh trong cùng một chỗ.";
+        if (recommendation) {
+            recommendation.textContent = "Gợi ý tiếp theo: chốt thumbnail, mô tả ngắn và trạng thái công khai trước khi đi tiếp vào từng bài học.";
+        }
     }
 
     function createEmpty(icon, text) {

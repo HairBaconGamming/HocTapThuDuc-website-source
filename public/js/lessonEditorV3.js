@@ -431,6 +431,113 @@ function refreshStudioUI(mode = activeContext) {
     notifyStudioBridge('ui-refresh');
 }
 
+function getCanvasScrollContainer() {
+    return document.querySelector('.studio-editor-body')
+        || document.querySelector('.center-panel .panel-body')
+        || document.scrollingElement
+        || document.documentElement;
+}
+
+function captureFocusedFieldState(activeElement, activeBlock) {
+    if (!activeElement || !(activeElement instanceof HTMLElement)) return null;
+
+    const state = {
+        id: activeElement.id || '',
+        tagName: activeElement.tagName,
+        blockIndex: activeBlock?.dataset?.index ?? null,
+        blockField: activeElement.dataset?.blockField || '',
+        isLessonTitle: activeElement.classList.contains('lesson-title-input'),
+        isUnitTitle: activeElement.classList.contains('unit-title-input'),
+        selectionStart: typeof activeElement.selectionStart === 'number' ? activeElement.selectionStart : null,
+        selectionEnd: typeof activeElement.selectionEnd === 'number' ? activeElement.selectionEnd : null
+    };
+
+    if (!state.id && !state.blockField && !state.isLessonTitle && !state.isUnitTitle) {
+        return null;
+    }
+
+    return state;
+}
+
+function restoreFocusedFieldState(state) {
+    if (!state) return;
+
+    let target = null;
+
+    if (state.id) {
+        target = document.getElementById(state.id);
+    }
+
+    if (!target && state.blockIndex != null && state.blockField) {
+        target = document.querySelector(`[data-block-index="${state.blockIndex}"][data-block-field="${state.blockField}"]`);
+    }
+
+    if (!target && state.blockIndex != null && state.isLessonTitle) {
+        target = document.querySelector(`.tree-lesson[data-lesson-id="${activeLessonId}"] .lesson-title-input`);
+    }
+
+    if (!target && state.isUnitTitle && activeUnitId) {
+        target = document.querySelector(`.tree-unit[data-unit-id="${activeUnitId}"] .unit-title-input`);
+    }
+
+    if (!target || typeof target.focus !== 'function') return;
+
+    try {
+        target.focus({ preventScroll: true });
+    } catch (error) {
+        target.focus();
+    }
+
+    if (typeof state.selectionStart === 'number' && typeof target.setSelectionRange === 'function') {
+        try {
+            target.setSelectionRange(state.selectionStart, state.selectionEnd ?? state.selectionStart);
+        } catch (error) {
+            // Ignore selection restore issues on non-textual inputs.
+        }
+    }
+}
+
+function captureCanvasViewportState() {
+    const scroller = getCanvasScrollContainer();
+    const activeElement = document.activeElement;
+    const activeBlock = activeElement?.closest?.('.content-block');
+    const scrollerRect = scroller === document.scrollingElement || scroller === document.documentElement || scroller === document.body
+        ? { top: 0 }
+        : scroller.getBoundingClientRect();
+    const activeRect = activeBlock ? activeBlock.getBoundingClientRect() : null;
+
+    return {
+        scroller,
+        scrollTop: scroller?.scrollTop || 0,
+        scrollLeft: scroller?.scrollLeft || 0,
+        activeBlockIndex: activeBlock?.dataset?.index ?? null,
+        activeBlockOffset: activeRect ? activeRect.top - scrollerRect.top : null,
+        focusedField: captureFocusedFieldState(activeElement, activeBlock)
+    };
+}
+
+function restoreCanvasViewportState(viewState) {
+    if (!viewState || !viewState.scroller) return;
+
+    const scroller = viewState.scroller;
+    let nextTop = viewState.scrollTop || 0;
+
+    if (viewState.activeBlockIndex != null && viewState.activeBlockOffset != null) {
+        const activeBlock = document.querySelector(`.content-block[data-index="${viewState.activeBlockIndex}"]`);
+        if (activeBlock) {
+            const scrollerRect = scroller === document.scrollingElement || scroller === document.documentElement || scroller === document.body
+                ? { top: 0 }
+                : scroller.getBoundingClientRect();
+            const activeRect = activeBlock.getBoundingClientRect();
+            nextTop = (viewState.scrollTop || 0) + (activeRect.top - scrollerRect.top - viewState.activeBlockOffset);
+        }
+    }
+
+    scroller.scrollTop = Math.max(0, nextTop);
+    scroller.scrollLeft = viewState.scrollLeft || 0;
+    restoreFocusedFieldState(viewState.focusedField);
+}
+
 function filterBlockMenu(query) {
     const normalized = (query || '').trim().toLowerCase();
     document.querySelectorAll('#blockMenu .menu-item').forEach((item) => {
@@ -1749,12 +1856,7 @@ function toggleVideoSettings(idx) {
 
 // RENDER ALL BLOCKS (FIX SCROLL JUMP)
 function renderBlocks() {
-    // 1. [FIX] Lưu vị trí cuộn hiện tại của Editor Panel (hoặc window)
-    // Nếu thanh cuộn nằm ở body chính:
-    const scrollPos = window.scrollY || document.documentElement.scrollTop;
-    // Nếu thanh cuộn nằm trong panel editor (id="editorMainPanel" hoặc class="studio-workspace"):
-    const editorPanel = document.querySelector('.center-panel') || document.body;
-    const panelScroll = editorPanel.scrollTop;
+    const viewportState = captureCanvasViewportState();
 
     cleanupEditors(); // Dọn dẹp editor cũ
 
@@ -1927,13 +2029,10 @@ function renderBlocks() {
     initMarkdownEditors(); // Hàm này cần được viết lại để không re-focus linh tinh
     refreshStudioUI(activeContext);
 
-    // 2. [FIX] Khôi phục vị trí cuộn sau khi render xong
-    // Dùng setTimeout để đảm bảo DOM đã vẽ xong
-    setTimeout(() => {
-        window.scrollTo(0, scrollPos);
-        if(editorPanel) editorPanel.scrollTop = panelScroll;
+    requestAnimationFrame(() => {
+        restoreCanvasViewportState(viewportState);
         notifyStudioBridge('blocks-rendered');
-    }, 0);
+    });
 }
 
 // --- 3. BLOCK HELPERS ---

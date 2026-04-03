@@ -348,23 +348,6 @@
                         </div>
                     </div>
 
-                    <div class="studio-utility-tray" id="studioUtilityTray">
-                        <div class="studio-utility-card">
-                            <span>Canvas</span>
-                            <strong id="v4CanvasModeLabel">Desktop</strong>
-                            <p>Chuyển khung nhìn và focus mode để rà bố cục.</p>
-                        </div>
-                        <div class="studio-utility-card">
-                            <span>Dàn ý</span>
-                            <strong id="v4OutlineSummary">0 mục</strong>
-                            <p>Tự động cập nhật theo block, heading và các mốc điều hướng.</p>
-                        </div>
-                        <div class="studio-utility-card">
-                            <span>Chất lượng</span>
-                            <strong id="v4QualitySummary">Đang chờ phân tích</strong>
-                            <p>Checklist thông minh sẽ cảnh báo thiếu nội dung và rủi ro publish.</p>
-                        </div>
-                    </div>
                 </section>
 
                 <div class="studio-dock-resizer" data-resizer="right" aria-hidden="true"></div>
@@ -427,12 +410,30 @@
                                 </div>
 
                                 <div class="panel-body">
-                                    <div class="studio-inspector-intro">
-                                        <span class="studio-inspector-kicker">Inspector</span>
-                                        <h3 id="studioInspectorTitle">Điều khiển theo ngữ cảnh</h3>
-                                        <p id="studioInspectorBody">Chọn course, unit hoặc lesson để mở đúng bộ thuộc tính, action và thông tin cần thiết.</p>
+                                    <div class="studio-inspector-command">
+                                        <div class="studio-inspector-intro">
+                                            <span class="studio-inspector-kicker">Inspector</span>
+                                            <h3 id="studioInspectorTitle">Điều khiển theo ngữ cảnh</h3>
+                                            <p id="studioInspectorBody">Chọn course, unit hoặc lesson để mở đúng bộ thuộc tính, action và thông tin cần thiết.</p>
+                                            <p id="v4InspectorRecommendationBody" class="studio-inspector-recommendation">Inspector sẽ gom trạng thái, hành động và điểm cần rà ngay trong một cụm.</p>
+                                        </div>
+                                        <div class="studio-inspector-command-grid">
+                                            <div class="studio-inspector-metric">
+                                                <span>Canvas</span>
+                                                <strong id="v4CanvasModeLabel">Desktop</strong>
+                                            </div>
+                                            <div class="studio-inspector-metric">
+                                                <span>Dàn ý</span>
+                                                <strong id="v4OutlineSummary">0 mục</strong>
+                                            </div>
+                                            <div class="studio-inspector-metric">
+                                                <span>Chất lượng</span>
+                                                <strong id="v4QualitySummary">Đang chờ phân tích</strong>
+                                            </div>
+                                        </div>
                                     </div>
 
+                                    <div class="studio-property-stack">
                                     <div id="panel-course" class="context-panel" style="display:none;">
                                         <div class="panel-section-title" style="color:#2563eb; background:#eff6ff; border:1px solid #dbeafe;">
                                             <i class="fas fa-book"></i> THÔNG TIN KHÓA HỌC
@@ -546,6 +547,7 @@
                                             <span><kbd>Ctrl</kbd> + <kbd>S</kbd> lưu nháp</span>
                                             <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> đăng bài</span>
                                         </div>
+                                    </div>
                                     </div>
                                 </div>
                             </aside>
