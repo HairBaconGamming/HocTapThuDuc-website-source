@@ -391,13 +391,20 @@ body.studio-v4-page {
     display: flex;
     flex: 1;
     min-height: 0;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .studio-dock-panel {
     display: none;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 12px;
     height: 100%;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .studio-dock-panel.is-active {
@@ -411,6 +418,27 @@ body.studio-v4-page {
 
 .studio-panel .panel-body {
     min-height: 0;
+}
+
+.studio-dock-panel .panel-body,
+.studio-dock-panel .studio-smart-list {
+    scrollbar-gutter: stable;
+}
+
+.studio-dock-panel .panel-header,
+.studio-dock-panel .panel-body,
+.studio-v4-sidecard,
+.studio-utility-card,
+.studio-smart-actions,
+.studio-smart-list,
+.studio-smart-group,
+.studio-inspector-command,
+.studio-property-stack,
+.context-panel,
+.studio-help-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .studio-v4-sidecard,
@@ -488,6 +516,7 @@ body.studio-v4-page {
     flex-direction: column;
     gap: 0;
     padding: 0 2px;
+    overflow: hidden;
 }
 
 .studio-workspace-v4 {
@@ -495,6 +524,7 @@ body.studio-v4-page {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 #editorMainPanel,
@@ -509,6 +539,7 @@ body.studio-v4-page {
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .studio-empty-panel {
@@ -776,6 +807,7 @@ body.studio-v4-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    overflow-x: hidden;
 }
 
 .context-panel {
@@ -806,6 +838,29 @@ body.studio-v4-page {
     border-radius: 18px;
     background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.96));
     border: 1px solid rgba(226, 232, 240, 0.95);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.control-item input,
+.control-item textarea,
+.control-item select,
+.context-panel img,
+.studio-dock-search input {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.studio-dock-chip,
+.studio-dock-chip strong,
+.studio-v4-sidecard h3,
+.studio-v4-sidecard p,
+.studio-inspector-intro h3,
+.studio-inspector-intro p,
+.studio-inspector-metric strong,
+.studio-overview-card h3,
+.studio-overview-card p {
+    overflow-wrap: anywhere;
 }
 
 .control-label {
