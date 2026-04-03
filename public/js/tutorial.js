@@ -5,7 +5,7 @@
  */
 
 const Tutorial = {
-    NPC_IMAGE: 'http://localhost:3000/api/pro-images/1767292174351-vww00c.png',
+    NPC_IMAGE: '/api/pro-images/1767292174351-vww00c.png',
     NPC_NAME: 'Linh Nhi Sư Tỷ',
     FINISHED_STEP: 999,
 
