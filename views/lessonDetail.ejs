@@ -326,7 +326,8 @@
         courseId: <%- JSON.stringify(course ? String(course._id) : '') %>,
         isCompleted: <%- JSON.stringify(!!isCompleted) %>,
         progressPercent: <%- JSON.stringify(courseProgress.percent || 0) %>,
-        lessonPosition: <%- JSON.stringify(lessonPosition) %>
+        lessonPosition: <%- JSON.stringify(lessonPosition) %>,
+        revisionKey: <%- JSON.stringify(lesson.updatedAt ? String(new Date(lesson.updatedAt).getTime()) : '') %>
     };
 
     <%
@@ -341,5 +342,6 @@
 
 <script src="/js/lessonDetail.js"></script>
 <script src="/js/lessonDetailComments.js"></script>
+<script src="/js/lessonActiveLearning.js"></script>
 
 <%- include('partials/footer') %>

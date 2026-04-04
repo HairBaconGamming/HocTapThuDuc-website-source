@@ -14,6 +14,7 @@ const LessonWorkspace = {
     notesSavedTimer: null,
     activeInteractiveBlock: null,
     activeFullscreenPreview: null,
+    renderedBlocks: [],
 
     init() {
         document.body.classList.add('lesson-detail-mode');
@@ -359,6 +360,7 @@ const LessonWorkspace = {
         }
 
         contentArea.innerHTML = '';
+        this.renderedBlocks = blocks;
         if (Array.isArray(blocks) && blocks.length > 0) {
             blocks.forEach((block, index) => {
                 const blockNode = this.renderSingleBlock(block, index);
@@ -380,14 +382,54 @@ const LessonWorkspace = {
 
         if (window.Prism) Prism.highlightAllUnder(contentArea);
 
+        contentArea.querySelectorAll('.content-block-render[data-annotation-enabled="true"]').forEach((blockNode) => {
+            blockNode.__lessonOriginalHtml = blockNode.innerHTML;
+        });
+
         this.generateTableOfContents();
         this.renderSectionStrip();
         this.updateReadingProgress();
         this.updateLessonInsights(blocks);
+        document.dispatchEvent(new CustomEvent('lesson:content-ready', {
+            detail: {
+                lessonId: this.lessonId,
+                blocks: blocks.map((block, index) => ({
+                    blockKey: this.getBlockKey(block, index),
+                    blockType: block?.type || '',
+                    index
+                }))
+            }
+        }));
     },
 
     decodeBase64(str) {
         return decodeURIComponent(atob(str).split('').map((char) => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`).join(''));
+    },
+
+    hashSeed(value) {
+        let hash = 0;
+        const source = String(value || '');
+        for (let index = 0; index < source.length; index += 1) {
+            hash = ((hash << 5) - hash) + source.charCodeAt(index);
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(36);
+    },
+
+    getBlockKey(block, index) {
+        const directId = block?.id || block?.blockId || block?._id || block?.data?.id || block?.data?.blockId;
+        if (directId) return String(directId);
+
+        const seed = [
+            block?.type || 'unknown',
+            block?.data?.text || block?.data?.title || block?.data?.question || block?.data?.html || block?.data?.code || block?.data?.url || ''
+        ].join('|');
+
+        return `block-${index}-${this.hashSeed(seed.slice(0, 160))}`;
+    },
+
+    isAnnotationEnabledType(type) {
+        return ['header', 'text', 'callout', 'code'].includes(type);
     },
 
     buildSandboxedPreviewSrcdoc(htmlCode, includeBootstrap) {
@@ -427,6 +469,11 @@ const LessonWorkspace = {
         const wrapper = document.createElement('div');
         wrapper.className = `content-block-render block-type-${block.type}`;
         wrapper.dataset.id = index;
+        wrapper.dataset.blockKey = this.getBlockKey(block, index);
+        wrapper.dataset.blockType = block.type || '';
+        if (this.isAnnotationEnabledType(block.type)) {
+            wrapper.dataset.annotationEnabled = 'true';
+        }
 
         switch (block.type) {
             case 'header': {
@@ -583,6 +630,10 @@ const LessonWorkspace = {
                     wrapper.appendChild(this.renderQuizBlock(block.data, index));
                 }
                 break;
+        }
+
+        if (wrapper.dataset.annotationEnabled === 'true') {
+            wrapper.__lessonOriginalHtml = wrapper.innerHTML;
         }
 
         return wrapper;
@@ -797,6 +848,18 @@ const LessonWorkspace = {
             this.setMobileRailState('left', false);
             this.syncOverlay();
         }
+    },
+
+    scrollToBlockKey(blockKey) {
+        if (!blockKey) return null;
+        const safeSelector = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+            ? `.content-block-render[data-block-key="${CSS.escape(blockKey)}"]`
+            : `.content-block-render[data-block-key="${String(blockKey).replace(/"/g, '\\"')}"]`;
+        const block = document.querySelector(safeSelector);
+        if (block) {
+            block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return block || null;
     },
 
     toggleHtmlTab(button) {

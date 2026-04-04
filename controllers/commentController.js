@@ -1,23 +1,62 @@
-// controllers/commentController.js
 const Comment = require('../models/Comment');
 const Lesson = require('../models/Lesson');
-const User = require('../models/User');
+const { getLessonAccessState } = require('../utils/contentAccess');
+const {
+    normalizeAnchorInput,
+    sanitizePlainText,
+    validateAnchorAgainstLesson
+} = require('../utils/lessonAnchorUtils');
 
-// Get all comments for a lesson
+async function loadAccessibleLesson(lessonId, user) {
+    const lesson = await Lesson.findById(lessonId)
+        .select('_id courseId createdBy isPublished isPro isProOnly content')
+        .lean();
+
+    if (!lesson) {
+        return { error: { status: 404, message: 'Bài học không tồn tại' } };
+    }
+
+    const access = await getLessonAccessState(user || null, lesson);
+    if (!access.allowed) {
+        return {
+            error: {
+                status: access.needsPro ? 403 : 404,
+                message: access.needsPro
+                    ? 'Bạn cần PRO để truy cập thảo luận của bài học này'
+                    : 'Bài học hiện không khả dụng'
+            }
+        };
+    }
+
+    return { lesson, access };
+}
+
+async function loadCommentScope(commentId, user) {
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        return { error: { status: 404, message: 'Bình luận không tồn tại' } };
+    }
+
+    const lessonContext = await loadAccessibleLesson(comment.lesson, user);
+    if (lessonContext.error) {
+        return { error: lessonContext.error };
+    }
+
+    return { comment, lesson: lessonContext.lesson, access: lessonContext.access };
+}
+
 exports.getComments = async (req, res) => {
     try {
         const { lessonId } = req.params;
-        const page = req.query.page || 1;
-        const limit = req.query.limit || 10;
+        const page = Math.max(1, parseInt(req.query.page || 1, 10));
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || 10, 10)));
         const skip = (page - 1) * limit;
 
-        // Verify lesson exists
-        const lesson = await Lesson.findById(lessonId);
-        if (!lesson) {
-            return res.status(404).json({ success: false, message: 'Bài học không tồn tại' });
+        const context = await loadAccessibleLesson(lessonId, req.user || null);
+        if (context.error) {
+            return res.status(context.error.status).json({ success: false, message: context.error.message });
         }
 
-        // Get comments with user details
         const comments = await Comment.find({ lesson: lessonId, isDeleted: false })
             .populate('user', 'username avatar')
             .populate('replies.user', 'username avatar')
@@ -34,8 +73,8 @@ exports.getComments = async (req, res) => {
             comments,
             pagination: {
                 total,
-                page: parseInt(page),
-                limit: parseInt(limit),
+                page,
+                limit,
                 pages: Math.ceil(total / limit)
             }
         });
@@ -45,33 +84,33 @@ exports.getComments = async (req, res) => {
     }
 };
 
-// Create a new comment
 exports.createComment = async (req, res) => {
     try {
         const { lessonId } = req.params;
-        const { content } = req.body;
-        const userId = req.user._id;
+        const cleanContent = sanitizePlainText(req.body.content, { maxLength: 5000 });
 
-        // Validation
-        if (!content || content.trim().length === 0) {
+        if (!cleanContent) {
             return res.status(400).json({ success: false, message: 'Nội dung bình luận không được trống' });
         }
 
-        if (content.length > 5000) {
-            return res.status(400).json({ success: false, message: 'Nội dung bình luận tối đa 5000 ký tự' });
+        const context = await loadAccessibleLesson(lessonId, req.user);
+        if (context.error) {
+            return res.status(context.error.status).json({ success: false, message: context.error.message });
         }
 
-        // Verify lesson exists
-        const lesson = await Lesson.findById(lessonId);
-        if (!lesson) {
-            return res.status(404).json({ success: false, message: 'Bài học không tồn tại' });
+        let contextAnchor = null;
+        if (req.body.contextAnchor) {
+            contextAnchor = normalizeAnchorInput(req.body.contextAnchor);
+            if (!validateAnchorAgainstLesson(contextAnchor, context.lesson)) {
+                return res.status(400).json({ success: false, message: 'Đoạn trích không còn khớp với bài học hiện tại' });
+            }
         }
 
-        // Create comment
         const comment = new Comment({
             lesson: lessonId,
-            user: userId,
-            content: content.trim()
+            user: req.user._id,
+            content: cleanContent,
+            contextAnchor
         });
 
         await comment.save();
@@ -88,30 +127,24 @@ exports.createComment = async (req, res) => {
     }
 };
 
-// Edit a comment
 exports.editComment = async (req, res) => {
     try {
-        const { commentId } = req.params;
-        const { content } = req.body;
-        const userId = req.user._id;
-
-        // Validation
-        if (!content || content.trim().length === 0) {
+        const cleanContent = sanitizePlainText(req.body.content, { maxLength: 5000 });
+        if (!cleanContent) {
             return res.status(400).json({ success: false, message: 'Nội dung bình luận không được trống' });
         }
 
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        // Check authorization
-        if (comment.user.toString() !== userId.toString()) {
+        const { comment } = scope;
+        if (String(comment.user) !== String(req.user._id)) {
             return res.status(403).json({ success: false, message: 'Bạn không có quyền chỉnh sửa bình luận này' });
         }
 
-        // Update comment
-        comment.content = content.trim();
+        comment.content = cleanContent;
         comment.isEdited = true;
         comment.editedAt = new Date();
         await comment.save();
@@ -127,23 +160,18 @@ exports.editComment = async (req, res) => {
     }
 };
 
-// Delete a comment
 exports.deleteComment = async (req, res) => {
     try {
-        const { commentId } = req.params;
-        const userId = req.user._id;
-
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        // Check authorization
-        if (comment.user.toString() !== userId.toString()) {
+        const { comment } = scope;
+        if (String(comment.user) !== String(req.user._id)) {
             return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa bình luận này' });
         }
 
-        // Soft delete
         comment.isDeleted = true;
         comment.deletedAt = new Date();
         await comment.save();
@@ -158,27 +186,21 @@ exports.deleteComment = async (req, res) => {
     }
 };
 
-// Like a comment
 exports.likeComment = async (req, res) => {
     try {
-        const { commentId } = req.params;
-        const userId = req.user._id;
-
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        // Check if already liked
-        const alreadyLiked = comment.likedBy.some(id => id.toString() === userId.toString());
+        const { comment } = scope;
+        const alreadyLiked = comment.likedBy.some((id) => String(id) === String(req.user._id));
 
         if (alreadyLiked) {
-            // Remove like
-            comment.likedBy = comment.likedBy.filter(id => id.toString() !== userId.toString());
+            comment.likedBy = comment.likedBy.filter((id) => String(id) !== String(req.user._id));
             comment.likes = Math.max(0, comment.likes - 1);
         } else {
-            // Add like
-            comment.likedBy.push(userId);
+            comment.likedBy.push(req.user._id);
             comment.likes += 1;
         }
 
@@ -196,36 +218,29 @@ exports.likeComment = async (req, res) => {
     }
 };
 
-// Add reply to comment
 exports.addReply = async (req, res) => {
     try {
-        const { commentId } = req.params;
-        const { content } = req.body;
-        const userId = req.user._id;
-
-        // Validation
-        if (!content || content.trim().length === 0) {
+        const cleanContent = sanitizePlainText(req.body.content, { maxLength: 5000 });
+        if (!cleanContent) {
             return res.status(400).json({ success: false, message: 'Nội dung trả lời không được trống' });
         }
 
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        // Add reply
-        const reply = {
-            user: userId,
-            content: content.trim(),
+        const { comment } = scope;
+        comment.replies.push({
+            user: req.user._id,
+            content: cleanContent,
             likes: 0,
             likedBy: [],
-            createdAt: new Date()
-        };
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-        comment.replies.push(reply);
         await comment.save();
-
-        // Populate reply user details
         await comment.populate('replies.user', 'username avatar');
 
         res.status(201).json({
@@ -239,35 +254,29 @@ exports.addReply = async (req, res) => {
     }
 };
 
-// Edit reply
 exports.editReply = async (req, res) => {
     try {
-        const { commentId, replyId } = req.params;
-        const { content } = req.body;
-        const userId = req.user._id;
-
-        // Validation
-        if (!content || content.trim().length === 0) {
+        const cleanContent = sanitizePlainText(req.body.content, { maxLength: 5000 });
+        if (!cleanContent) {
             return res.status(400).json({ success: false, message: 'Nội dung trả lời không được trống' });
         }
 
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        const reply = comment.replies.id(replyId);
+        const { comment } = scope;
+        const reply = comment.replies.id(req.params.replyId);
         if (!reply) {
             return res.status(404).json({ success: false, message: 'Trả lời không tồn tại' });
         }
 
-        // Check authorization
-        if (reply.user.toString() !== userId.toString()) {
+        if (String(reply.user) !== String(req.user._id)) {
             return res.status(403).json({ success: false, message: 'Bạn không có quyền chỉnh sửa trả lời này' });
         }
 
-        // Update reply
-        reply.content = content.trim();
+        reply.content = cleanContent;
         reply.updatedAt = new Date();
         await comment.save();
 
@@ -282,29 +291,24 @@ exports.editReply = async (req, res) => {
     }
 };
 
-// Delete reply
 exports.deleteReply = async (req, res) => {
     try {
-        const { commentId, replyId } = req.params;
-        const userId = req.user._id;
-
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        const reply = comment.replies.id(replyId);
+        const { comment } = scope;
+        const reply = comment.replies.id(req.params.replyId);
         if (!reply) {
             return res.status(404).json({ success: false, message: 'Trả lời không tồn tại' });
         }
 
-        // Check authorization
-        if (reply.user.toString() !== userId.toString()) {
+        if (String(reply.user) !== String(req.user._id)) {
             return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa trả lời này' });
         }
 
-        // Remove reply
-        comment.replies.id(replyId).remove();
+        comment.replies.pull({ _id: req.params.replyId });
         await comment.save();
 
         res.json({
@@ -317,32 +321,25 @@ exports.deleteReply = async (req, res) => {
     }
 };
 
-// Like reply
 exports.likeReply = async (req, res) => {
     try {
-        const { commentId, replyId } = req.params;
-        const userId = req.user._id;
-
-        const comment = await Comment.findById(commentId);
-        if (!comment) {
-            return res.status(404).json({ success: false, message: 'Bình luận không tồn tại' });
+        const scope = await loadCommentScope(req.params.commentId, req.user);
+        if (scope.error) {
+            return res.status(scope.error.status).json({ success: false, message: scope.error.message });
         }
 
-        const reply = comment.replies.id(replyId);
+        const { comment } = scope;
+        const reply = comment.replies.id(req.params.replyId);
         if (!reply) {
             return res.status(404).json({ success: false, message: 'Trả lời không tồn tại' });
         }
 
-        // Check if already liked
-        const alreadyLiked = reply.likedBy.some(id => id.toString() === userId.toString());
-
+        const alreadyLiked = reply.likedBy.some((id) => String(id) === String(req.user._id));
         if (alreadyLiked) {
-            // Remove like
-            reply.likedBy = reply.likedBy.filter(id => id.toString() !== userId.toString());
+            reply.likedBy = reply.likedBy.filter((id) => String(id) !== String(req.user._id));
             reply.likes = Math.max(0, reply.likes - 1);
         } else {
-            // Add like
-            reply.likedBy.push(userId);
+            reply.likedBy.push(req.user._id);
             reply.likes += 1;
         }
 
