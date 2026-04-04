@@ -1,0 +1,97 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleGuild.css">
+
+<main class="guild-page-shell">
+    <section class="guild-hero">
+        <div class="guild-hero-copy">
+            <span class="guild-kicker">Tong Mon / Bang Hoi</span>
+            <h1>Khai Tong va hop suc nuoi Linh Thu.</h1>
+            <p>
+                Gia nhap mot cong dong tu hoc, quy cong tai nguyen cho Linh Thu va nhan buff
+                chung cho ca Tong Mon.
+            </p>
+            <div class="guild-hero-badges">
+                <span class="guild-chip">Can Level <%= minCreateLevel %> de lap Tong Mon</span>
+                <span class="guild-chip"><%= realmInfo.fullName %></span>
+                <span class="guild-chip">Buff XP + Bao tro Vuon</span>
+            </div>
+        </div>
+
+        <div class="guild-create-card">
+            <div class="guild-card-head">
+                <span class="guild-mini-kicker">Bat dau</span>
+                <h2>Lap Tong Mon moi</h2>
+            </div>
+            <form action="/guilds" method="POST" class="guild-form">
+                <label>
+                    <span>Ten Tong Mon</span>
+                    <input type="text" name="name" maxlength="60" minlength="3" placeholder="Vi du: Thien Moc Tong" required>
+                </label>
+                <label>
+                    <span>Mo ta ngan</span>
+                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh than, muc tieu, loi hua cua Tong Mon"></textarea>
+                </label>
+                <button type="submit" class="guild-primary-btn" <%= canCreateGuild ? '' : 'disabled' %>>Khai Tong ngay</button>
+                <% if (!canCreateGuild) { %>
+                    <small class="guild-helper-note">Ban can dat level <%= minCreateLevel %> de lap Tong Mon rieng.</small>
+                <% } %>
+            </form>
+        </div>
+    </section>
+
+    <section class="guild-list-section">
+        <div class="guild-section-head">
+            <div>
+                <span class="guild-kicker">Tong Mon dang mo</span>
+                <h2>Chon mot noi de cung nhau thang cap.</h2>
+            </div>
+            <p><%= guilds.length %> Tong Mon dang san sang chao don thanh vien moi.</p>
+        </div>
+
+        <div class="guild-grid">
+            <% guilds.forEach((entry) => { %>
+                <article class="guild-list-card">
+                    <div class="guild-list-top">
+                        <div>
+                            <span class="guild-stage-pill">Stage <%= entry.treeProgress.current.stage %></span>
+                            <h3><%= entry.name %></h3>
+                        </div>
+                        <div class="guild-members-pill"><%= entry.memberCount %>/<%= entry.memberLimit %></div>
+                    </div>
+
+                    <p class="guild-list-description"><%= entry.description || 'Tong Mon nay dang tim kiem nhung nguoi hoc co tam va co chi.' %></p>
+
+                    <div class="guild-list-meta">
+                        <span>Truong mon: <strong><%= entry.leader?.username || 'An danh' %></strong></span>
+                        <span>Linh Thu: <strong><%= entry.treeProgress.current.name %></strong></span>
+                    </div>
+
+                    <div class="guild-list-buffs">
+                        <span>+<%= entry.buffSnapshot.lessonXpPct %>% XP hoc bai</span>
+                        <span>+<%= entry.buffSnapshot.witherTimeBonusPct %>% do ben cay</span>
+                    </div>
+
+                    <div class="guild-list-progress">
+                        <div class="guild-progress-bar">
+                            <span style="width: <%= entry.treeProgress.percent %>%"></span>
+                        </div>
+                        <% if (entry.treeProgress.next) { %>
+                            <small>Con <%= entry.treeProgress.xpForNextStage %> Linh Luc de dat <%= entry.treeProgress.next.name %>.</small>
+                        <% } else { %>
+                            <small>Linh Thu da dat canh gioi toi thuong hien tai.</small>
+                        <% } %>
+                    </div>
+
+                    <div class="guild-list-actions">
+                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem Tong Mon</a>
+                        <form action="/guilds/<%= entry.slug %>/join" method="POST">
+                            <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhap</button>
+                        </form>
+                    </div>
+                </article>
+            <% }) %>
+        </div>
+    </section>
+</main>
+
+<%- include('partials/footer') %>

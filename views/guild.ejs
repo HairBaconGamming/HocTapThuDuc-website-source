@@ -1,0 +1,193 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleGuild.css">
+
+<%
+    const guild = guildDetail.guild;
+    const tree = guildDetail.treeProgress;
+    const buffSnapshot = guild.buffSnapshot || { lessonXpPct: 0, witherTimeBonusPct: 0 };
+    const treeAsset = Array.isArray(guildTreeAssets)
+        ? guildTreeAssets.find((entry) => entry.stage === tree.current.stage)
+        : null;
+%>
+
+<main class="guild-page-shell">
+    <section class="guild-detail-hero">
+        <div class="guild-tree-showcase <%= 'guild-tree-stage-' + tree.current.stage %>">
+            <div class="guild-tree-orbit"></div>
+            <% if (treeAsset && treeAsset.imageUrl) { %>
+                <img
+                    src="<%= treeAsset.imageUrl %>"
+                    alt="<%= treeAsset.name %>"
+                    class="guild-tree-image"
+                    loading="lazy"
+                    decoding="async"
+                >
+            <% } %>
+            <div class="guild-tree-core">
+                <span class="guild-tree-stage-label">Stage <%= tree.current.stage %></span>
+                <h2><%= tree.current.name %></h2>
+                <p><%= tree.current.motto %></p>
+            </div>
+        </div>
+
+        <div class="guild-detail-copy">
+            <span class="guild-kicker">Tong Mon hien tai</span>
+            <h1><%= guild.name %></h1>
+            <p><%= guild.description || 'Tong Mon nay dang cung nhau nuoi duong Linh Thu va truy cau canh gioi cao hon.' %></p>
+
+            <div class="guild-hero-badges">
+                <span class="guild-chip">Truong mon: <%= guild.leader?.username || 'An danh' %></span>
+                <span class="guild-chip"><%= guild.memberCount %> thanh vien</span>
+                <span class="guild-chip">Tong Linh Luc: <%= guild.treeXp %></span>
+            </div>
+
+            <div class="guild-list-buffs">
+                <span>+<%= buffSnapshot.lessonXpPct %>% XP hoc bai</span>
+                <span>+<%= buffSnapshot.witherTimeBonusPct %>% do ben cay</span>
+            </div>
+
+            <div class="guild-list-actions">
+                <% if (!viewerContext.guild && canJoin) { %>
+                    <form action="/guilds/<%= guild.slug %>/join" method="POST">
+                        <button type="submit" class="guild-primary-btn">Gia nhap Tong Mon</button>
+                    </form>
+                <% } else if (!viewerContext.guild) { %>
+                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Can them level de gia nhap</span>
+                <% } else if (isMember) { %>
+                    <form action="/guilds/<%= guild.slug %>/leave" method="POST">
+                        <button type="submit" class="guild-secondary-btn"><%= isLeader ? 'Giai tan / Roi Tong' : 'Roi Tong Mon' %></button>
+                    </form>
+                <% } else { %>
+                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Ban dang thuoc Tong Mon khac</span>
+                <% } %>
+                <a href="/my-garden" class="guild-secondary-btn">Ve Vuon Ca Nhan</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="guild-dashboard-grid">
+        <article class="guild-panel">
+            <div class="guild-panel-head">
+                <div>
+                    <span class="guild-kicker">Tien do Linh Thu</span>
+                    <h3><%= tree.current.name %></h3>
+                </div>
+                <div class="guild-members-pill"><%= tree.percent %>%</div>
+            </div>
+            <div class="guild-progress-bar large">
+                <span style="width: <%= tree.percent %>%"></span>
+            </div>
+            <% if (tree.next) { %>
+                <p class="guild-panel-copy">Can them <strong><%= tree.xpForNextStage %> Linh Luc</strong> de dat <strong><%= tree.next.name %></strong>.</p>
+            <% } else { %>
+                <p class="guild-panel-copy">Linh Thu da dat den canh gioi cao nhat hien tai.</p>
+            <% } %>
+
+            <div class="guild-vault-grid">
+                <div><span>Nuoc</span><strong><%= guild.vault.water || 0 %></strong></div>
+                <div><span>Phan bon</span><strong><%= guild.vault.fertilizer || 0 %></strong></div>
+                <div><span>Vang</span><strong><%= guild.vault.gold || 0 %></strong></div>
+                <div><span>Ca chua</span><strong><%= guild.vault.tomato || 0 %></strong></div>
+                <div><span>Lua mi</span><strong><%= guild.vault.wheat || 0 %></strong></div>
+                <div><span>Ca rot</span><strong><%= guild.vault.carrot || 0 %></strong></div>
+            </div>
+        </article>
+
+        <article class="guild-panel">
+            <div class="guild-panel-head">
+                <div>
+                    <span class="guild-kicker">Quy cong</span>
+                    <h3>Nuoi duong Linh Thu</h3>
+                </div>
+                <div class="guild-members-pill">Kho cua ban</div>
+            </div>
+
+            <% if (isMember) { %>
+                <form class="guild-donation-form" action="/guilds/<%= guild.slug %>/contribute" method="POST">
+                    <label>
+                        <span>Tai nguyen</span>
+                        <select name="resourceType">
+                            <option value="water">Nuoc (con <%= viewerResources.water %>)</option>
+                            <option value="fertilizer">Phan bon (con <%= viewerResources.fertilizer %>)</option>
+                            <option value="gold">Vang (con <%= viewerResources.gold %>)</option>
+                            <option value="tomato">Ca chua (con <%= viewerResources.inventory.tomato %>)</option>
+                            <option value="wheat">Lua mi (con <%= viewerResources.inventory.wheat %>)</option>
+                            <option value="carrot">Ca rot (con <%= viewerResources.inventory.carrot %>)</option>
+                            <option value="sunflower">Huong duong (con <%= viewerResources.inventory.sunflower %>)</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>So luong</span>
+                        <input type="number" name="amount" min="1" step="1" value="1" required>
+                    </label>
+                    <button type="submit" class="guild-primary-btn">Quy cong ngay</button>
+                </form>
+            <% } else { %>
+                <p class="guild-panel-copy">Gia nhap Tong Mon truoc khi quy cong tai nguyen cho Linh Thu.</p>
+            <% } %>
+        </article>
+
+        <article class="guild-panel">
+            <div class="guild-panel-head">
+                <div>
+                    <span class="guild-kicker">Thanh vien</span>
+                    <h3>Noi luc Tong Mon</h3>
+                </div>
+            </div>
+            <div class="guild-member-list">
+                <% guildDetail.members.forEach((member) => { %>
+                    <div class="guild-member-item">
+                        <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.username %>">
+                        <div>
+                            <strong><%= member.username %></strong>
+                            <small>Level <%= member.level || 0 %> · <%= member.guildRole || 'member' %></small>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </article>
+
+        <article class="guild-panel">
+            <div class="guild-panel-head">
+                <div>
+                    <span class="guild-kicker">Bang vang cong hien</span>
+                    <h3>Top linh luc</h3>
+                </div>
+            </div>
+            <div class="guild-contribution-list">
+                <% guildDetail.topContributors.forEach((entry) => { %>
+                    <div class="guild-contribution-row">
+                        <div>
+                            <strong><%= entry.username %></strong>
+                            <small><%= entry.totalAmount %> vat pham</small>
+                        </div>
+                        <span>+<%= entry.totalContributionValue %> luc</span>
+                    </div>
+                <% }) %>
+            </div>
+        </article>
+
+        <article class="guild-panel guild-panel-wide">
+            <div class="guild-panel-head">
+                <div>
+                    <span class="guild-kicker">Dong gop gan day</span>
+                    <h3>Nhip song Tong Mon</h3>
+                </div>
+            </div>
+            <div class="guild-feed-list">
+                <% guildDetail.recentContributions.forEach((entry) => { %>
+                    <div class="guild-feed-item">
+                        <img src="<%= entry.user?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.user?.username || 'Thanh vien' %>">
+                        <div>
+                            <strong><%= entry.user?.username || 'Thanh vien' %></strong>
+                            <p>da quy cong <%= entry.amount %> <%= entry.resourceType %> cho Linh Thu.</p>
+                        </div>
+                        <span>+<%= entry.contributionValue %></span>
+                    </div>
+                <% }) %>
+            </div>
+        </article>
+    </section>
+</main>
+
+<%- include('partials/footer') %>

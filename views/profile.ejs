@@ -65,6 +65,16 @@
             <div class="garden-arrow">➔</div>
         </a>
 
+        <% if (guildProfile) { %>
+        <a href="/guilds/<%= guildProfile.slug %>" class="bento-card garden-link-card" style="background: linear-gradient(135deg, #ede9fe, #eff6ff);">
+            <div class="garden-content">
+                <div>Tông Môn: <strong><%= guildProfile.name %></strong></div>
+                <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">Linh Thụ Stage <%= guildProfile.treeStage || 0 %> · +<%= guildProfile.buffSnapshot?.lessonXpPct || 0 %>% XP</div>
+            </div>
+            <div class="garden-arrow">✦</div>
+        </a>
+        <% } %>
+
         <div class="bento-card achievement-card">
             <div class="achievement-header">
                 <span>🏆 Thành tích</span>

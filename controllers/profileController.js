@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Garden = require('../models/Garden');
+const Guild = require('../models/Guild');
 const LessonCompletion = require('../models/LessonCompletion');
 const { UserAchievement } = require('../models/Achievement');
 const { achievementChecker } = require('../utils/achievementUtils');
@@ -23,6 +24,7 @@ exports.getProfile = async (req, res) => {
         // 2. Lấy thông tin Vườn
         const garden = await Garden.findOne({ user: userId });
         const gold = garden ? garden.gold : 0;
+        const guild = user.guild ? await Guild.findById(user.guild).select('name slug treeStage buffSnapshot').lean() : null;
 
         // 3. Đếm số bài đã học
         const completedCount = await LessonCompletion.countDocuments({ user: userId });
@@ -90,6 +92,7 @@ exports.getProfile = async (req, res) => {
             streak: streakInfo.streak,
             lastStudyDate: streakInfo.lastStudyDate,
             nextResetTime: streakInfo.nextResetTime,
+            guildProfile: guild,
             
             moment: moment
         });

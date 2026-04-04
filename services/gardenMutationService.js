@@ -10,7 +10,9 @@ const {
     parseDuration,
     syncGardenState
 } = require('./gardenStateService');
+const { getGuildBuffSnapshotForUser, getWitherTimeMultiplier } = require('./guildService');
 const { ensureGarden } = require('./gardenRewardService');
+const { addInventoryItem } = require('./gardenInventoryService');
 const {
     buildDailyQuests,
     ensureDailyQuestState
@@ -71,7 +73,11 @@ function findNonPlotOccupant(garden, x, y, excludedId = null) {
 
 async function loadGardenForMutation(userId) {
     const garden = await ensureGarden(userId);
-    await syncGardenState(garden, { persist: true });
+    const guildBuffs = await getGuildBuffSnapshotForUser(userId);
+    await syncGardenState(garden, {
+        persist: true,
+        witherTimeMultiplier: getWitherTimeMultiplier(guildBuffs)
+    });
     await ensureDailyQuestState(garden, { persist: true });
     return garden;
 }
@@ -293,10 +299,12 @@ async function interactItem({ userId, uniqueId, action }) {
 
     const rewardGold = Math.floor(Math.random() * ((config.rewardGold.max - config.rewardGold.min) + 1)) + config.rewardGold.min;
     const rewardXP = config.rewardXP || 10;
+    const harvestYield = Math.max(1, Number(config.harvestYield || 1));
 
     garden.gold += rewardGold;
     garden.harvestCount = (garden.harvestCount || 0) + 1;
     garden.totalGoldCollected = (garden.totalGoldCollected || 0) + rewardGold;
+    const inventory = addInventoryItem(garden, item.itemId, harvestYield);
 
     const user = await User.findById(userId);
     assertAction(user, 'Khong tim thay nguoi choi.', 404);
@@ -306,8 +314,9 @@ async function interactItem({ userId, uniqueId, action }) {
     user.xp = levelResult.newXP;
 
     if (config.isMultiHarvest) {
+        const timePerStage = parseDuration(config.growthTime);
         item.stage = Number.isInteger(config.afterharvestStage) ? config.afterharvestStage : 0;
-        item.growthProgress = 0;
+        item.growthProgress = item.stage * timePerStage;
         item.witherProgress = 0;
         item.isDead = false;
         item.lastUpdated = new Date();
@@ -325,6 +334,8 @@ async function interactItem({ userId, uniqueId, action }) {
         newGold: garden.gold,
         goldReward: rewardGold,
         xpReward: rewardXP,
+        harvestYield,
+        inventory,
         achievements,
         levelData: {
             level: user.level,

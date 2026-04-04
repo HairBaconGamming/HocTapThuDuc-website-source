@@ -6,6 +6,12 @@ const GardenSchema = new mongoose.Schema({
     tutorialStep: { type: Number, default: 0 },
     water: { type: Number, default: 1 },
     fertilizer: { type: Number, default: 0 },
+    inventory: {
+        sunflower: { type: Number, default: 0 },
+        wheat: { type: Number, default: 0 },
+        carrot: { type: Number, default: 0 },
+        tomato: { type: Number, default: 0 }
+    },
 
     camera: {
         x: { type: Number, default: 2048 },

@@ -18,6 +18,7 @@ const LevelUtils = require("../utils/level");
 const { achievementChecker } = require("../utils/achievementUtils");
 const streakHelper = require("../utils/streakHelper");
 const { grantRewardBundle } = require("../services/gardenRewardService");
+const { applyLessonXpBuff, getGuildBuffSnapshotForUser } = require("../services/guildService");
 const {
     buildCompletionGardenBundle,
     buildCompletionCelebrationPayload
@@ -362,7 +363,9 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
         const currentLevel = Math.max(1, user.level || 1);
         const POINTS = 10;
         const gardenRewards = buildCompletionGardenBundle(currentLevel);
-        const XP_REWARD = Math.max(10, Math.floor(LevelUtils.getRequiredXP(currentLevel) * 0.05));
+        const guildBuffs = await getGuildBuffSnapshotForUser(userId);
+        const baseXpReward = Math.max(10, Math.floor(LevelUtils.getRequiredXP(currentLevel) * 0.05));
+        const XP_REWARD = applyLessonXpBuff(baseXpReward, guildBuffs);
 
         // Cập nhật Level User
         const levelRes = LevelUtils.calculateLevelUp(user.level, user.xp, XP_REWARD);

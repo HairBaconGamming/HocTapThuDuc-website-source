@@ -52,6 +52,16 @@
                 <i class="fas fa-arrow-left"></i>
             </a>
 
+            <% if (guildContext && guildContext.guild) { %>
+                <a href="/guilds/<%= guildContext.guild.slug %>" class="pixel-btn btn-back" title="Tong Mon" style="margin-left: 8px; background: rgba(124,58,237,0.85);">
+                    <i class="fas fa-people-group"></i>
+                </a>
+            <% } else if (isOwner) { %>
+                <a href="/guilds" class="pixel-btn btn-back" title="Tong Mon" style="margin-left: 8px; background: rgba(124,58,237,0.85);">
+                    <i class="fas fa-people-group"></i>
+                </a>
+            <% } %>
+
             <% if (!isOwner) { %>
                 <div class="visitor-badge" style="background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; border: 2px solid #ff9800; font-family: 'VT323'; margin-right: 10px;">
                     👀 Vườn của: <strong style="color: #ffb74d;"><%= garden.user ? garden.user.username : 'Hàng Xóm' %></strong>

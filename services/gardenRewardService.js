@@ -1,4 +1,5 @@
 const Garden = require('../models/Garden');
+const { ensureInventoryShape } = require('./gardenInventoryService');
 const RESOURCE_FIELDS = new Set(['water', 'fertilizer', 'gold']);
 
 async function ensureGarden(userId) {
@@ -6,6 +7,8 @@ async function ensureGarden(userId) {
 
     if (!garden) {
         garden = await new Garden({ user: userId }).save();
+    } else {
+        ensureInventoryShape(garden);
     }
 
     return garden;

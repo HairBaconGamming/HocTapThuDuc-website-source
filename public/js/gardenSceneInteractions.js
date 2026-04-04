@@ -218,6 +218,7 @@
                 updateHUD(res);
                 if (res.xpReward) this.showFloatingText(gx + 32, gy, `+${res.xpReward} XP`, 'green');
                 if (res.goldReward) this.showFloatingText(gx + 32, gy - 20, `+${res.goldReward} Gold`, 'gold');
+                if (res.harvestYield) this.showFloatingText(gx + 32, gy - 40, `+${res.harvestYield} ${plantConfig?.name || plant.itemData.itemId}`, 'blue');
 
                 if (plant.ui) {
                     plant.ui.destroy();
@@ -226,11 +227,15 @@
 
                 if (plantConfig?.isMultiHarvest) {
                     const nextStage = Number.isInteger(plantConfig.afterharvestStage) ? plantConfig.afterharvestStage : 0;
+                    const timePerStage = GardenShared.parseDuration
+                        ? GardenShared.parseDuration(plantConfig.growthTime)
+                        : 5 * 60 * 1000;
                     plant.itemData.stage = nextStage;
-                    plant.itemData.growthProgress = 0;
+                    plant.itemData.growthProgress = nextStage * timePerStage;
                     plant.itemData.witherProgress = 0;
                     plant.itemData.isDead = false;
                     plant.itemData.lastUpdated = new Date();
+                    plant.itemData.clientRefTime = Date.now();
                     plant.setTexture(`plant_${plant.itemData.itemId}_${nextStage}`);
                     plant.setDisplaySize((plantConfig.size?.w || 1) * GRID_SIZE, (plantConfig.size?.h || 1) * GRID_SIZE).setOrigin(0.5, 1);
                     this.updatePlantUI(plant);

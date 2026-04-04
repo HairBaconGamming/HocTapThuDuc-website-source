@@ -26,6 +26,13 @@
     function applyGardenDefaults(data = gardenData) {
         if (!data.items || !Array.isArray(data.items)) data.items = [];
         if (!data.dailyQuests || !Array.isArray(data.dailyQuests)) data.dailyQuests = [];
+        if (!data.inventory || typeof data.inventory !== 'object') {
+            data.inventory = {};
+        }
+        ['sunflower', 'wheat', 'carrot', 'tomato'].forEach((key) => {
+            const value = Number(data.inventory[key] || 0);
+            data.inventory[key] = Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+        });
         if (!data.userLevel) data.userLevel = 1;
         if (!data.currentXP) data.currentXP = 0;
         if (!data.nextLevelXP) data.nextLevelXP = 100;
@@ -94,6 +101,13 @@
 
         if (Array.isArray(response.dailyQuests)) {
             gardenData.dailyQuests = response.dailyQuests;
+        }
+
+        if (response.inventory && typeof response.inventory === 'object') {
+            gardenData.inventory = {
+                ...(gardenData.inventory || {}),
+                ...response.inventory
+            };
         }
 
         if (response.levelData) {

@@ -6,6 +6,11 @@ const {
 } = require('../services/gardenStateService');
 const { ensureGarden } = require('../services/gardenRewardService');
 const {
+    getGuildBuffSnapshotForUser,
+    getUserGuildContext,
+    getWitherTimeMultiplier
+} = require('../services/guildService');
+const {
     GardenActionError,
     buyItem,
     moveItem,
@@ -34,14 +39,20 @@ function handleGardenError(res, error) {
 exports.getGarden = async (req, res) => {
     try {
         const garden = await ensureGarden(req.user._id);
-        await syncGardenState(garden, { persist: false });
+        const guildBuffs = await getGuildBuffSnapshotForUser(req.user._id);
+        const guildContext = await getUserGuildContext(req.user._id);
+        await syncGardenState(garden, {
+            persist: false,
+            witherTimeMultiplier: getWitherTimeMultiplier(guildBuffs)
+        });
 
         res.render('garden', {
             title: 'Nông Trại Vui Vẻ',
             user: req.user,
             garden: buildGardenViewData(garden, req.user),
             isOwner: true,
-            assets: ASSETS
+            assets: ASSETS,
+            guildContext
         });
     } catch (error) {
         console.error(error);
@@ -134,14 +145,20 @@ exports.visitGarden = async (req, res) => {
             return res.render('error', { message: 'Vườn không tồn tại!' });
         }
 
-        await syncGardenState(garden, { persist: false });
+        const guildBuffs = await getGuildBuffSnapshotForUser(targetUserId);
+        const guildContext = await getUserGuildContext(targetUserId);
+        await syncGardenState(garden, {
+            persist: false,
+            witherTimeMultiplier: getWitherTimeMultiplier(guildBuffs)
+        });
 
         res.render('garden', {
             title: `Vườn của ${garden.user.username}`,
             user: req.user,
             garden: buildGardenViewData(garden, garden.user),
             isOwner: false,
-            assets: ASSETS
+            assets: ASSETS,
+            guildContext
         });
     } catch (error) {
         console.error(error);

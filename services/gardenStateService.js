@@ -68,12 +68,15 @@ function buildGardenViewData(garden, ownerUser) {
     };
 }
 
-function applyGardenState(garden, now = new Date()) {
+function applyGardenState(garden, now = new Date(), options = {}) {
     if (!garden) return false;
 
     let changed = false;
     const currentTime = now.getTime();
     const plotMap = new Map();
+    const witherTimeMultiplier = Number(options.witherTimeMultiplier || 1) > 0
+        ? Number(options.witherTimeMultiplier || 1)
+        : 1;
 
     garden.items.forEach((item) => {
         if (item.type === 'plot') {
@@ -121,7 +124,7 @@ function applyGardenState(garden, now = new Date()) {
                     item.witherProgress = (item.witherProgress || 0) + deltaTime;
                     changed = true;
 
-                    const maxWither = parseDuration(config.witherTime || '30 phut');
+                    const maxWither = parseDuration(config.witherTime || '30 phut') * witherTimeMultiplier;
                     if (item.witherProgress >= maxWither && !item.isDead) {
                         item.isDead = true;
                     }
@@ -140,7 +143,7 @@ function applyGardenState(garden, now = new Date()) {
 
 async function syncGardenState(garden, options = {}) {
     const { persist = false, now = new Date() } = options;
-    const changed = applyGardenState(garden, now);
+    const changed = applyGardenState(garden, now, options);
 
     if (persist && changed) {
         await garden.save();
