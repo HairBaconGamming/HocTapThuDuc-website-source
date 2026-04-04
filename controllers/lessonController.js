@@ -5,7 +5,7 @@ const Course = require('../models/Course');
 const LessonRevision = require('../models/LessonRevision');
 const User = require('../models/User');
 const mongoose = require('mongoose');
-const { grantWater } = require('../services/gardenRewardService');
+const { grantTypedReward } = require('../services/gardenRewardService');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -322,7 +322,7 @@ exports.claimStudyReward = async (req, res) => {
         const reward = 1 + bonus;
 
         // 3. Cập nhật Dữ liệu
-        const garden = await grantWater(userId, reward);
+        const garden = await grantTypedReward(userId, 'water', reward);
 
         // Cập nhật thời gian nhận thưởng vào User
         user.lastStudyRewardAt = now;
@@ -332,6 +332,15 @@ exports.claimStudyReward = async (req, res) => {
             success: true, 
             reward: reward, 
             newWater: garden.water, // Trả về số nước mới trong Garden
+            gardenReward: {
+                rewardType: 'water',
+                rewardAmount: reward
+            },
+            balances: {
+                water: Number(garden.water || 0),
+                fertilizer: Number(garden.fertilizer || 0),
+                gold: Number(garden.gold || 0)
+            },
             msg: `Bạn đã học chăm chỉ! Nhận +${reward} Nước 💧` 
         });
 

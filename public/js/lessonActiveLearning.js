@@ -501,6 +501,7 @@
             const cardEl = document.createElement('article');
             cardEl.className = 'lesson-inline-flashcard';
             cardEl.dataset.cardId = card._id;
+            cardEl.dataset.blockKey = card.anchor?.blockKey || '';
 
             const front = document.createElement('div');
             front.className = 'lesson-inline-flashcard-face is-front';
@@ -554,6 +555,23 @@
                         ${action === 'easy' ? 'Đã nhớ tốt. Hẹn ôn lại sau.' : 'Đã ghi nhận là còn khó. Hệ thống sẽ nhắc lại sớm.'}
                     </span>
                 `;
+
+                document.dispatchEvent(new CustomEvent('lesson:flashcard-reviewed', {
+                    detail: {
+                        cardId,
+                        blockKey: cardEl.dataset.blockKey || '',
+                        quality,
+                        bonusFertilizer: Number(data.bonusFertilizer || 0)
+                    }
+                }));
+
+                if (Number(data.bonusFertilizer || 0) > 0 && window.lessonGamification?.showPassiveRewardToast) {
+                    window.lessonGamification.showPassiveRewardToast({
+                        rewardType: 'fertilizer',
+                        rewardAmount: Number(data.bonusFertilizer || 0),
+                        sourceLabel: 'Thưởng nhớ thẻ tốt'
+                    });
+                }
             } catch (error) {
                 window.Swal?.fire('Chưa ghi nhận được', error.message || 'Không thể cập nhật flashcard.', 'error');
             }

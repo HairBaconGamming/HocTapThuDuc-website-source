@@ -168,6 +168,7 @@ app.use('/api/flashcards', require('./routes/flashcard'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/annotations', require('./routes/annotations'));
+app.use('/api/lesson-rewards', require('./routes/lessonRewards'));
 
 // 404 Handler
 app.use((req, res) => res.status(404).render("404", { 

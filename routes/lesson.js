@@ -13,10 +13,15 @@ const Unit = require("../models/Unit");
 const Course = require("../models/Course");
 const LessonCompletion = require("../models/LessonCompletion");
 const User = require("../models/User");
-const Garden = require('../models/Garden');
+const LessonRewardEvent = require('../models/LessonRewardEvent');
 const LevelUtils = require("../utils/level");
 const { achievementChecker } = require("../utils/achievementUtils");
 const streakHelper = require("../utils/streakHelper");
+const { grantRewardBundle } = require("../services/gardenRewardService");
+const {
+    buildCompletionGardenBundle,
+    buildCompletionCelebrationPayload
+} = require("../utils/lessonGamificationUtils");
 const {
     getLessonAccessState,
     buildLessonVisibilityFilter
@@ -296,6 +301,33 @@ router.post("/:id/delete", isLoggedIn, async (req, res) => {
     res.redirect("/dashboard");
 });
 
+async function resolveNextLessonSuggestion(user, lesson, access) {
+    try {
+        const listFilter = access?.canManage ? {} : buildLessonVisibilityFilter(user);
+        if (lesson.unitId) listFilter.unitId = lesson.unitId;
+        else if (lesson.courseId) listFilter.courseId = lesson.courseId;
+        else if (lesson.subject || lesson.subjectId) listFilter.subject = lesson.subject || lesson.subjectId;
+        else return null;
+
+        const siblings = await Lesson.find(listFilter)
+            .sort({ order: 1, _id: 1 })
+            .select("_id title")
+            .lean();
+
+        const currentIndex = siblings.findIndex((item) => String(item._id) === String(lesson._id));
+        const nextLesson = currentIndex >= 0 ? siblings[currentIndex + 1] : null;
+        if (!nextLesson) return null;
+
+        return {
+            id: String(nextLesson._id),
+            title: nextLesson.title,
+            url: `/lesson/${nextLesson._id}`
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
 router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
     try {
         const lessonId = req.params.id;
@@ -305,7 +337,9 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
         const exists = await LessonCompletion.findOne({ user: userId, lesson: lessonId });
         if (exists) return res.status(400).json({ error: "Bạn đã hoàn thành bài này rồi.", message: "Bạn đã hoàn thành bài này rồi." });
 
-        const lesson = await Lesson.findById(lessonId).select('_id courseId createdBy isPublished isPro isProOnly').lean();
+        const lesson = await Lesson.findById(lessonId)
+            .select('_id title courseId unitId subject subjectId createdBy isPublished isPro isProOnly')
+            .lean();
         if (!lesson) {
             return res.status(404).json({ error: "Bai hoc khong ton tai.", message: "Bai hoc khong ton tai." });
         }
@@ -319,12 +353,14 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
         }
 
         const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "Khong tim thay nguoi dung.", message: "Khong tim thay nguoi dung." });
+        }
         
         // 2. Tính thưởng (Logic cũ)
-        const currentLevel = user.level || 1;
+        const currentLevel = Math.max(1, user.level || 1);
         const POINTS = 10;
-        const WATER = currentLevel;
-        const GOLD = Math.floor(50 * Math.pow(currentLevel, 1.5));
+        const gardenRewards = buildCompletionGardenBundle(currentLevel);
         const XP_REWARD = Math.max(10, Math.floor(LevelUtils.getRequiredXP(currentLevel) * 0.05));
 
         // Cập nhật Level User
@@ -348,14 +384,50 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
         await user.save(); // Save lần cuối cùng cập nhật tất cả (Level, Points, Streak)
 
         // Cập nhật Garden
-        await Garden.findOneAndUpdate(
-            { user: userId },
-            { $inc: { water: WATER, gold: GOLD } }, 
-            { upsert: true, new: true }
-        );
+        const garden = await grantRewardBundle(userId, gardenRewards);
 
         // Check Achievements
         const unlocked = await achievementChecker.onLessonCompleted(userId);
+        const nextLesson = await resolveNextLessonSuggestion(req.user, lesson, access);
+
+        await LessonRewardEvent.findOneAndUpdate(
+            {
+                user: userId,
+                lesson: lessonId,
+                eventType: 'lesson_completed',
+                checkpointKey: 'lesson-complete'
+            },
+            {
+                $setOnInsert: {
+                    rewardType: 'bundle',
+                    rewardAmount: 0,
+                    rewardBundle: {
+                        ...gardenRewards,
+                        points: POINTS,
+                        xp: XP_REWARD
+                    },
+                    status: 'claimed',
+                    claimedAt: new Date(),
+                    meta: {
+                        lessonTitle: lesson.title,
+                        streak: user.currentStreak || 0,
+                        isLevelUp: levelRes.hasLeveledUp
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        const celebration = buildCompletionCelebrationPayload({
+            lessonTitle: lesson.title,
+            points: POINTS,
+            xp: XP_REWARD,
+            streak: user.currentStreak || 0,
+            isLevelUp: levelRes.hasLeveledUp,
+            achievements: unlocked,
+            nextLesson,
+            gardenRewards
+        });
         
         res.json({ 
             success: true, 
@@ -364,7 +436,17 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
             xp: XP_REWARD,
             streak: user.currentStreak || 0, // Trả về streak mới để frontend hiển thị
             isLevelUp: levelRes.hasLeveledUp,
-            achievements: unlocked
+            achievements: unlocked,
+            water: gardenRewards.water,
+            gold: gardenRewards.gold,
+            gardenRewards,
+            gardenBalances: {
+                water: Number(garden.water || 0),
+                fertilizer: Number(garden.fertilizer || 0),
+                gold: Number(garden.gold || 0)
+            },
+            nextLesson,
+            celebration
         });
 
     } catch (e) { 

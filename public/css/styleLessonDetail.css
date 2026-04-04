@@ -2444,3 +2444,383 @@ body.lesson-fab-open .lesson-fab-main i {
         flex-direction: column;
     }
 }
+
+/* ==========================================================================
+   LESSON DETAIL V6 - GAMIFICATION
+   ========================================================================== */
+
+.lesson-reward-stack {
+    position: fixed;
+    right: 24px;
+    bottom: 106px;
+    z-index: 1310;
+    display: grid;
+    gap: 12px;
+    width: min(320px, calc(100vw - 32px));
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.lesson-reward-stack.is-empty,
+body.lesson-completion-open .lesson-reward-stack,
+body.lesson-comments-open .lesson-reward-stack,
+body.lesson-tools-open .lesson-reward-stack {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+}
+
+.lesson-drop-pill {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.14);
+    color: var(--lesson-secondary);
+    cursor: pointer;
+    text-align: left;
+    transform: translateX(26px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lesson-drop-pill.is-revealed {
+    transform: none;
+    opacity: 1;
+}
+
+.lesson-drop-pill:hover {
+    box-shadow: 0 26px 44px rgba(37, 99, 235, 0.18);
+    transform: translateY(-2px);
+}
+
+.lesson-drop-pill[disabled] {
+    cursor: wait;
+    opacity: 0.72;
+}
+
+.lesson-drop-pill-icon {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    font-size: 1.3rem;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.12));
+}
+
+.lesson-drop-pill-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.lesson-drop-pill-copy strong,
+.lesson-drop-pill-copy small {
+    display: block;
+}
+
+.lesson-drop-pill-copy strong {
+    font-size: 0.98rem;
+    color: var(--lesson-secondary);
+}
+
+.lesson-drop-pill-copy small {
+    color: var(--lesson-muted);
+    line-height: 1.45;
+}
+
+.lesson-drop-pill-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--lesson-primary), #4f46e5);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.82rem;
+}
+
+.lesson-reward-toast-rack {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 1325;
+    display: grid;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.lesson-reward-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: min(340px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+    box-shadow: 0 20px 34px rgba(15, 23, 42, 0.22);
+    animation: lessonRewardToastIn 0.22s ease;
+}
+
+.lesson-reward-toast.is-leaving {
+    animation: lessonRewardToastOut 0.24s ease forwards;
+}
+
+.lesson-reward-toast-icon {
+    font-size: 1.28rem;
+}
+
+.lesson-reward-toast-copy {
+    display: grid;
+    gap: 2px;
+}
+
+.lesson-reward-toast-copy small {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.lesson-completion-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at top, rgba(37, 99, 235, 0.18), transparent 35%),
+        rgba(15, 23, 42, 0.62);
+    backdrop-filter: blur(10px);
+}
+
+body.lesson-completion-open {
+    overflow: hidden;
+}
+
+.lesson-completion-card {
+    width: min(760px, 100%);
+    display: grid;
+    gap: 22px;
+    padding: clamp(24px, 4vw, 36px);
+    border-radius: 34px;
+    background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 26%),
+        rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: 0 34px 70px rgba(15, 23, 42, 0.22);
+}
+
+.lesson-completion-head {
+    display: grid;
+    gap: 10px;
+}
+
+.lesson-completion-kicker,
+.lesson-completion-subtitle {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lesson-primary);
+}
+
+.lesson-completion-head h2 {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    line-height: 0.96;
+    letter-spacing: -0.05em;
+}
+
+.lesson-completion-head p,
+.lesson-completion-meta span,
+.lesson-completion-achievement small {
+    margin: 0;
+    color: var(--lesson-muted);
+}
+
+.lesson-completion-rewards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.lesson-completion-metric {
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 24px;
+    background: rgba(248, 250, 252, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.lesson-completion-metric-icon {
+    font-size: 1.3rem;
+}
+
+.lesson-completion-metric strong {
+    font-size: 1.12rem;
+    color: var(--lesson-secondary);
+}
+
+.lesson-completion-metric small {
+    color: var(--lesson-muted);
+}
+
+.lesson-completion-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.lesson-completion-meta .is-highlight {
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.lesson-completion-achievements {
+    display: grid;
+    gap: 14px;
+}
+
+.lesson-completion-achievement-list {
+    display: grid;
+    gap: 12px;
+}
+
+.lesson-completion-achievement {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 14px 16px;
+    border-radius: 22px;
+    background: rgba(239, 246, 255, 0.82);
+    border: 1px solid rgba(191, 219, 254, 0.9);
+}
+
+.lesson-completion-achievement > span {
+    font-size: 1.3rem;
+}
+
+.lesson-completion-achievement strong {
+    display: block;
+    color: var(--lesson-secondary);
+}
+
+.lesson-completion-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.lesson-completion-button {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 18px;
+    text-decoration: none;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.lesson-completion-button:hover {
+    transform: translateY(-1px);
+}
+
+.lesson-completion-button.is-primary {
+    background: linear-gradient(135deg, var(--lesson-primary), #4f46e5);
+    color: #fff;
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.28);
+}
+
+.lesson-completion-button.is-secondary {
+    background: #e2e8f0;
+    color: var(--lesson-secondary);
+}
+
+.lesson-completion-button.is-ghost {
+    background: transparent;
+    color: var(--lesson-primary);
+    border: 1px solid rgba(37, 99, 235, 0.16);
+}
+
+@keyframes lessonRewardToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes lessonRewardToastOut {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+}
+
+@media (max-width: 980px) {
+    .lesson-completion-rewards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .lesson-reward-stack {
+        right: 12px;
+        left: 12px;
+        width: auto;
+        bottom: 88px;
+    }
+
+    .lesson-reward-toast-rack {
+        top: auto;
+        right: 12px;
+        left: 12px;
+        bottom: 92px;
+    }
+
+    .lesson-reward-toast {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .lesson-completion-overlay {
+        padding: 12px;
+    }
+
+    .lesson-completion-card {
+        border-radius: 26px;
+        gap: 18px;
+    }
+
+    .lesson-completion-rewards {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .lesson-completion-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}

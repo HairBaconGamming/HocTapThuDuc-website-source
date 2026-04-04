@@ -517,12 +517,29 @@ const LessonWorkspace = {
                 const videoWrapper = document.createElement('div');
                 videoWrapper.className = 'video-block-wrapper';
                 const videoInfo = getEmbedUrl(block.data.url, block.data.autoplay);
+                const safeVideoId = `lesson-video-${String(wrapper.dataset.blockKey || index).replace(/[^a-z0-9_-]/gi, '-')}`;
                 if (videoInfo?.url) {
                     if (videoInfo.type === 'iframe') {
                         videoWrapper.innerHTML = `<iframe src="${videoInfo.url}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write" allowfullscreen referrerpolicy="origin" title="Video bài học"></iframe>`;
+                        const iframe = videoWrapper.querySelector('iframe');
+                        if (iframe) {
+                            iframe.id = safeVideoId;
+                            iframe.classList.add('lesson-video-iframe');
+                            iframe.dataset.blockKey = wrapper.dataset.blockKey || '';
+                            iframe.dataset.videoProvider = videoInfo.provider || 'iframe';
+                        }
                     } else {
                         const safeVideoUrl = this.getSafeHref(videoInfo.url);
-                        if (safeVideoUrl) videoWrapper.innerHTML = `<video src="${safeVideoUrl}" controls ${block.data.autoplay ? 'autoplay muted' : ''}></video>`;
+                        if (safeVideoUrl) {
+                            videoWrapper.innerHTML = `<video src="${safeVideoUrl}" controls ${block.data.autoplay ? 'autoplay muted' : ''}></video>`;
+                            const video = videoWrapper.querySelector('video');
+                            if (video) {
+                                video.id = safeVideoId;
+                                video.classList.add('lesson-video-player');
+                                video.dataset.blockKey = wrapper.dataset.blockKey || '';
+                                video.dataset.videoProvider = videoInfo.provider || 'native';
+                            }
+                        }
                     }
                 } else {
                     videoWrapper.innerHTML = '<div class="lesson-empty-inline">Video không khả dụng.</div>';
@@ -751,7 +768,16 @@ const LessonWorkspace = {
             const percent = questions.length ? Math.round((correctCount / questions.length) * 100) : 0;
             const passed = percent >= settings.passingScore;
             Swal.fire({ title: passed ? 'Tuyệt vời!' : 'Hoàn thành!', text: `Kết quả: ${correctCount}/${questions.length} câu đúng.`, icon: passed ? 'success' : 'info', confirmButtonText: 'Đóng' });
-            if (passed) triggerConfetti();
+            if (passed) {
+                triggerConfetti();
+                document.dispatchEvent(new CustomEvent('lesson:quiz-passed', {
+                    detail: {
+                        blockKey: container.closest('.content-block-render')?.dataset.blockKey || '',
+                        percent,
+                        questionCount: questions.length
+                    }
+                }));
+            }
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = `Đã chấm (${percent}%)`;
         });
@@ -1024,8 +1050,19 @@ const LessonWorkspace = {
             const response = await fetch(`/lesson/${id}/complete`, { method: 'POST' });
             const data = await response.json();
             if (response.ok) {
-                triggerConfetti();
-                Swal.fire({ title: 'Tuyệt vời!', text: `+${data.points || 10} điểm`, icon: 'success', confirmButtonText: 'Tiếp tục' }).then(() => window.location.reload());
+                button.classList.add('is-completed');
+                if (text) text.textContent = 'Đã hoàn thành bài học';
+                window.LESSON_VIEW_STATE = {
+                    ...(window.LESSON_VIEW_STATE || {}),
+                    isCompleted: true
+                };
+
+                if (window.lessonGamification?.showCompletionCelebration) {
+                    window.lessonGamification.showCompletionCelebration(data);
+                } else {
+                    triggerConfetti();
+                    Swal.fire({ title: 'Tuyệt vời!', text: `+${data.points || 10} điểm`, icon: 'success', confirmButtonText: 'Tiếp tục' });
+                }
                 return;
             }
             throw new Error(data.message || data.error || 'Không thể hoàn thành bài học.');
@@ -1042,15 +1079,19 @@ function getEmbedUrl(url, autoplay) {
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?/\s]{11})/);
     if (ytMatch && ytMatch[1]) {
         const origin = window.location.origin;
-        return { type: 'iframe', url: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}` };
+        return {
+            type: 'iframe',
+            provider: 'youtube',
+            url: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&origin=${origin}&modestbranding=1&rel=0${autoplay ? '&autoplay=1&mute=1' : ''}`
+        };
     }
 
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)\//);
     if (driveMatch && driveMatch[1]) {
-        return { type: 'iframe', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+        return { type: 'iframe', provider: 'drive', url: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
     }
 
-    return { type: 'video', url };
+    return { type: 'video', provider: 'native', url };
 }
 
 function triggerConfetti() {
@@ -1119,7 +1160,15 @@ const StudyManager = {
 
     async claimReward() {
         try {
-            await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
+            const response = await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data?.gardenReward && window.lessonGamification?.showPassiveRewardToast) {
+                window.lessonGamification.showPassiveRewardToast({
+                    rewardType: data.gardenReward.rewardType,
+                    rewardAmount: data.gardenReward.rewardAmount,
+                    sourceLabel: 'Thưởng học bền bỉ'
+                });
+            }
         } catch (error) {}
     },
 
