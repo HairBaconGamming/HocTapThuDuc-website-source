@@ -214,7 +214,8 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             recommendedNextLesson,
             marked: req.app.locals.marked,
             breadcrumbs,
-            activePage: "subjects"
+            activePage: "subjects",
+            disableHeaderOffset: true
         });
     } catch (e) { res.redirect("/subjects"); }
 });

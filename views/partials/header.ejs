@@ -260,4 +260,4 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 <% } %>
 
-<main class="main-content" style="padding-top: 100px;">
+<main class="main-content"<% if (!(typeof disableHeaderOffset !== 'undefined' && disableHeaderOffset)) { %> style="padding-top: 100px;"<% } %>>
