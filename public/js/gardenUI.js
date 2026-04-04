@@ -116,9 +116,9 @@
     function formatQuestReward(rewards = {}) {
         const rewardParts = [];
         if (rewards.gold) rewardParts.push(`+${rewards.gold}G`);
-        if (rewards.water) rewardParts.push(`+${rewards.water} nuoc`);
-        if (rewards.fertilizer) rewardParts.push(`+${rewards.fertilizer} phan`);
-        return rewardParts.join(' | ') || 'Khong co';
+        if (rewards.water) rewardParts.push(`+${rewards.water} nước`);
+        if (rewards.fertilizer) rewardParts.push(`+${rewards.fertilizer} phân`);
+        return rewardParts.join(' | ') || 'Không có';
     }
 
     function renderDailyQuests(quests = gardenData.dailyQuests || []) {
@@ -128,7 +128,7 @@
         gardenData.dailyQuests = Array.isArray(quests) ? quests : [];
 
         if (!gardenData.dailyQuests.length) {
-            list.innerHTML = '<div class="quest-empty">Hom nay chua co nhiem vu.</div>';
+            list.innerHTML = '<div class="quest-empty">Hôm nay chưa có nhiệm vụ.</div>';
             return;
         }
 
@@ -140,9 +140,9 @@
                 (!quest.claimed && quest.complete) ? 'complete' : ''
             ].filter(Boolean).join(' ');
 
-            let buttonLabel = 'Dang lam';
-            if (quest.claimed) buttonLabel = 'Da nhan';
-            else if (quest.complete) buttonLabel = 'Nhan thuong';
+            let buttonLabel = 'Đang làm';
+            if (quest.claimed) buttonLabel = 'Đã nhận';
+            else if (quest.complete) buttonLabel = 'Nhận thưởng';
 
             return `
                 <div class="${cardClass}">

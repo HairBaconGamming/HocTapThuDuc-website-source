@@ -21,7 +21,7 @@ function handleGuildError(req, res, error, fallbackRedirect = '/guilds') {
     }
 
     console.error(error);
-    req.flash('error', 'Da co loi xay ra voi Tong Mon.');
+    req.flash('error', 'Đã có lỗi xảy ra với Tông Môn.');
     return res.redirect(fallbackRedirect);
 }
 
@@ -36,7 +36,7 @@ exports.getGuildHub = async (req, res) => {
         const realmInfo = realmHelper.getRealmData(req.user.level || 0);
 
         res.render('guilds', {
-            title: 'Tong Mon',
+            title: 'Tông Môn',
             user: req.user,
             guilds,
             realmInfo,
@@ -46,7 +46,7 @@ exports.getGuildHub = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        req.flash('error', 'Khong the tai Tong Mon luc nay.');
+        req.flash('error', 'Không thể tải Tông Môn lúc này.');
         res.redirect('/dashboard');
     }
 };
@@ -59,7 +59,7 @@ exports.createGuild = async (req, res) => {
             description: req.body.description
         });
 
-        req.flash('success', `Da khai tong ${guild.name}!`);
+        req.flash('success', `Đã khai tông ${guild.name}!`);
         res.redirect(`/guilds/${guild.slug}`);
     } catch (error) {
         handleGuildError(req, res, error);
@@ -73,7 +73,7 @@ exports.joinGuild = async (req, res) => {
             guildIdOrSlug: req.params.slug
         });
 
-        req.flash('success', `Da gia nhap ${guild.name}.`);
+        req.flash('success', `Đã gia nhập ${guild.name}.`);
         res.redirect(`/guilds/${guild.slug}`);
     } catch (error) {
         handleGuildError(req, res, error);
@@ -83,7 +83,7 @@ exports.joinGuild = async (req, res) => {
 exports.leaveGuild = async (req, res) => {
     try {
         await leaveGuild({ userId: req.user._id });
-        req.flash('success', 'Ban da roi Tong Mon.');
+        req.flash('success', 'Bạn đã rời Tông Môn.');
         res.redirect('/guilds');
     } catch (error) {
         handleGuildError(req, res, error, req.get('referer') || '/guilds');
@@ -94,7 +94,7 @@ exports.getGuildDetail = async (req, res) => {
     try {
         const guildDetail = await getGuildBySlug(req.params.slug);
         if (!guildDetail) {
-            req.flash('error', 'Tong Mon khong ton tai.');
+            req.flash('error', 'Tông Môn không tồn tại.');
             return res.redirect('/guilds');
         }
 
@@ -124,7 +124,7 @@ exports.getGuildDetail = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        req.flash('error', 'Khong the mo Tong Mon nay.');
+        req.flash('error', 'Không thể mở Tông Môn này.');
         res.redirect('/guilds');
     }
 };

@@ -5,8 +5,8 @@ const QUEST_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const QUEST_DEFINITIONS = [
     {
         id: 'water-3',
-        title: 'Tuoi Cay',
-        description: 'Tuoi 3 lan de giu vuon am trong ngay.',
+        title: 'Tưới cây',
+        description: 'Tưới 3 lần để giữ vườn ẩm trong ngày.',
         metric: 'waterCount',
         baselineKey: 'waterCount',
         target: 3,
@@ -14,8 +14,8 @@ const QUEST_DEFINITIONS = [
     },
     {
         id: 'plant-2',
-        title: 'Trong Moi',
-        description: 'Trong 2 cay moi de mo rong khu vuon.',
+        title: 'Trồng mới',
+        description: 'Trồng 2 cây mới để mở rộng khu vườn.',
         metric: 'plantCount',
         baselineKey: 'plantCount',
         target: 2,
@@ -23,8 +23,8 @@ const QUEST_DEFINITIONS = [
     },
     {
         id: 'harvest-2',
-        title: 'Thu Hoach',
-        description: 'Thu hoach 2 cay chin de nhan thuong them.',
+        title: 'Thu hoạch',
+        description: 'Thu hoạch 2 cây chín để nhận thưởng thêm.',
         metric: 'harvestCount',
         baselineKey: 'harvestCount',
         target: 2,
@@ -126,15 +126,15 @@ async function claimDailyQuest(userId, questId) {
     const quest = buildDailyQuests(garden).find((entry) => entry.id === questId);
 
     if (!quest) {
-        return { success: false, msg: 'Nhiem vu khong ton tai.' };
+        return { success: false, msg: 'Nhiệm vụ không tồn tại.' };
     }
 
     if (state.claimedQuestIds.includes(questId)) {
-        return { success: false, msg: 'Ban da nhan thuong nhiem vu nay roi.' };
+        return { success: false, msg: 'Bạn đã nhận thưởng nhiệm vụ này rồi.' };
     }
 
     if (!quest.complete) {
-        return { success: false, msg: 'Nhiem vu chua hoan thanh.' };
+        return { success: false, msg: 'Nhiệm vụ chưa hoàn thành.' };
     }
 
     const reward = quest.rewards || {};
@@ -147,7 +147,7 @@ async function claimDailyQuest(userId, questId) {
 
     return {
         success: true,
-        msg: 'Da nhan thuong nhiem vu hom nay!',
+        msg: 'Đã nhận thưởng nhiệm vụ hôm nay!',
         newGold: garden.gold,
         newWater: garden.water,
         newFertilizer: garden.fertilizer,

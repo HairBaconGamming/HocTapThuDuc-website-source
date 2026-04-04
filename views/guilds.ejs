@@ -4,36 +4,36 @@
 <main class="guild-page-shell">
     <section class="guild-hero">
         <div class="guild-hero-copy">
-            <span class="guild-kicker">Tong Mon / Bang Hoi</span>
-            <h1>Khai Tong va hop suc nuoi Linh Thu.</h1>
+            <span class="guild-kicker">Tông Môn / Bang Hội</span>
+            <h1>Khai tông và hợp sức nuôi Linh Thụ.</h1>
             <p>
-                Gia nhap mot cong dong tu hoc, quy cong tai nguyen cho Linh Thu va nhan buff
-                chung cho ca Tong Mon.
+                Gia nhập một cộng đồng tự học, quyên góp tài nguyên cho Linh Thụ và nhận buff
+                chung cho cả Tông Môn.
             </p>
             <div class="guild-hero-badges">
-                <span class="guild-chip">Can Level <%= minCreateLevel %> de lap Tong Mon</span>
+                <span class="guild-chip">Cần Level <%= minCreateLevel %> để lập Tông Môn</span>
                 <span class="guild-chip"><%= realmInfo.fullName %></span>
-                <span class="guild-chip">Buff XP + Bao tro Vuon</span>
+                <span class="guild-chip">Buff XP + Bảo trợ Vườn</span>
             </div>
         </div>
 
         <div class="guild-create-card">
             <div class="guild-card-head">
-                <span class="guild-mini-kicker">Bat dau</span>
-                <h2>Lap Tong Mon moi</h2>
+                <span class="guild-mini-kicker">Bắt đầu</span>
+                <h2>Lập Tông Môn mới</h2>
             </div>
             <form action="/guilds" method="POST" class="guild-form">
                 <label>
-                    <span>Ten Tong Mon</span>
-                    <input type="text" name="name" maxlength="60" minlength="3" placeholder="Vi du: Thien Moc Tong" required>
+                    <span>Tên Tông Môn</span>
+                    <input type="text" name="name" maxlength="60" minlength="3" placeholder="Ví dụ: Thiên Mộc Tông" required>
                 </label>
                 <label>
-                    <span>Mo ta ngan</span>
-                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh than, muc tieu, loi hua cua Tong Mon"></textarea>
+                    <span>Mô tả ngắn</span>
+                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh thần, mục tiêu, lời hứa của Tông Môn"></textarea>
                 </label>
-                <button type="submit" class="guild-primary-btn" <%= canCreateGuild ? '' : 'disabled' %>>Khai Tong ngay</button>
+                <button type="submit" class="guild-primary-btn" <%= canCreateGuild ? '' : 'disabled' %>>Khai tông ngay</button>
                 <% if (!canCreateGuild) { %>
-                    <small class="guild-helper-note">Ban can dat level <%= minCreateLevel %> de lap Tong Mon rieng.</small>
+                    <small class="guild-helper-note">Bạn cần đạt level <%= minCreateLevel %> để lập Tông Môn riêng.</small>
                 <% } %>
             </form>
         </div>
@@ -42,10 +42,10 @@
     <section class="guild-list-section">
         <div class="guild-section-head">
             <div>
-                <span class="guild-kicker">Tong Mon dang mo</span>
-                <h2>Chon mot noi de cung nhau thang cap.</h2>
+                <span class="guild-kicker">Tông Môn đang mở</span>
+                <h2>Chọn một nơi để cùng nhau thăng cấp.</h2>
             </div>
-            <p><%= guilds.length %> Tong Mon dang san sang chao don thanh vien moi.</p>
+            <p><%= guilds.length %> Tông Môn đang sẵn sàng chào đón thành viên mới.</p>
         </div>
 
         <div class="guild-grid">
@@ -59,16 +59,16 @@
                         <div class="guild-members-pill"><%= entry.memberCount %>/<%= entry.memberLimit %></div>
                     </div>
 
-                    <p class="guild-list-description"><%= entry.description || 'Tong Mon nay dang tim kiem nhung nguoi hoc co tam va co chi.' %></p>
+                    <p class="guild-list-description"><%= entry.description || 'Tông Môn này đang tìm kiếm những người học có tâm và có chí.' %></p>
 
                     <div class="guild-list-meta">
-                        <span>Truong mon: <strong><%= entry.leader?.username || 'An danh' %></strong></span>
-                        <span>Linh Thu: <strong><%= entry.treeProgress.current.name %></strong></span>
+                        <span>Trưởng môn: <strong><%= entry.leader?.username || 'Ẩn danh' %></strong></span>
+                        <span>Linh Thụ: <strong><%= entry.treeProgress.current.name %></strong></span>
                     </div>
 
                     <div class="guild-list-buffs">
-                        <span>+<%= entry.buffSnapshot.lessonXpPct %>% XP hoc bai</span>
-                        <span>+<%= entry.buffSnapshot.witherTimeBonusPct %>% do ben cay</span>
+                        <span>+<%= entry.buffSnapshot.lessonXpPct %>% XP học bài</span>
+                        <span>+<%= entry.buffSnapshot.witherTimeBonusPct %>% độ bền cây</span>
                     </div>
 
                     <div class="guild-list-progress">
@@ -76,16 +76,16 @@
                             <span style="width: <%= entry.treeProgress.percent %>%"></span>
                         </div>
                         <% if (entry.treeProgress.next) { %>
-                            <small>Con <%= entry.treeProgress.xpForNextStage %> Linh Luc de dat <%= entry.treeProgress.next.name %>.</small>
+                            <small>Còn <%= entry.treeProgress.xpForNextStage %> Linh Lực để đạt <%= entry.treeProgress.next.name %>.</small>
                         <% } else { %>
-                            <small>Linh Thu da dat canh gioi toi thuong hien tai.</small>
+                            <small>Linh Thụ đã đạt cảnh giới tối thượng hiện tại.</small>
                         <% } %>
                     </div>
 
                     <div class="guild-list-actions">
-                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem Tong Mon</a>
+                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem Tông Môn</a>
                         <form action="/guilds/<%= entry.slug %>/join" method="POST">
-                            <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhap</button>
+                            <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhập</button>
                         </form>
                     </div>
                 </article>

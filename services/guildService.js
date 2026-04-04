@@ -176,18 +176,18 @@ async function listGuilds() {
 async function createGuild({ userId, name, description }) {
     const safeName = normalizeGuildName(name);
     if (safeName.length < 3) {
-        throw new GuildServiceError('Ten Tong Mon can it nhat 3 ky tu.');
+        throw new GuildServiceError('Tên Tông Môn cần ít nhất 3 ký tự.');
     }
 
     const user = await User.findById(userId);
     if (!user) {
-        throw new GuildServiceError('Khong tim thay nguoi choi.', 404);
+        throw new GuildServiceError('Không tìm thấy người chơi.', 404);
     }
     if (user.guild) {
-        throw new GuildServiceError('Ban da o trong mot Tong Mon roi.');
+        throw new GuildServiceError('Bạn đã ở trong một Tông Môn rồi.');
     }
     if ((user.level || 0) < MIN_CREATE_LEVEL) {
-        throw new GuildServiceError(`Can dat Level ${MIN_CREATE_LEVEL} moi co the lap Tong Mon.`);
+        throw new GuildServiceError(`Cần đạt Level ${MIN_CREATE_LEVEL} mới có thể lập Tông Môn.`);
     }
 
     const slug = await buildUniqueGuildSlug(safeName);
@@ -214,10 +214,10 @@ async function createGuild({ userId, name, description }) {
 async function joinGuild({ userId, guildIdOrSlug }) {
     const user = await User.findById(userId);
     if (!user) {
-        throw new GuildServiceError('Khong tim thay nguoi choi.', 404);
+        throw new GuildServiceError('Không tìm thấy người chơi.', 404);
     }
     if (user.guild) {
-        throw new GuildServiceError('Ban da gia nhap Tong Mon khac.');
+        throw new GuildServiceError('Bạn đã gia nhập Tông Môn khác.');
     }
 
     const query = mongoose.Types.ObjectId.isValid(guildIdOrSlug)
@@ -225,16 +225,16 @@ async function joinGuild({ userId, guildIdOrSlug }) {
         : { slug: guildIdOrSlug };
     const guild = await Guild.findOne(query);
     if (!guild) {
-        throw new GuildServiceError('Tong Mon khong ton tai.', 404);
+        throw new GuildServiceError('Tông Môn không tồn tại.', 404);
     }
     if ((user.level || 0) < (guild.levelRequirement || MIN_JOIN_LEVEL)) {
-        throw new GuildServiceError(`Can dat Level ${guild.levelRequirement || MIN_JOIN_LEVEL} de gia nhap Tong Mon nay.`);
+        throw new GuildServiceError(`Cần đạt Level ${guild.levelRequirement || MIN_JOIN_LEVEL} để gia nhập Tông Môn này.`);
     }
     if ((guild.memberCount || 0) >= (guild.memberLimit || 30)) {
-        throw new GuildServiceError('Tong Mon da dat toi da thanh vien.');
+        throw new GuildServiceError('Tông Môn đã đạt tối đa thành viên.');
     }
     if (guild.settings?.joinMode === 'invite') {
-        throw new GuildServiceError('Tong Mon nay hien chi nhan qua loi moi.');
+        throw new GuildServiceError('Tông Môn này hiện chỉ nhận qua lời mời.');
     }
 
     user.guild = guild._id;
@@ -249,7 +249,7 @@ async function joinGuild({ userId, guildIdOrSlug }) {
 async function leaveGuild({ userId }) {
     const user = await User.findById(userId);
     if (!user?.guild) {
-        throw new GuildServiceError('Ban chua tham gia Tong Mon nao.');
+        throw new GuildServiceError('Bạn chưa tham gia Tông Môn nào.');
     }
 
     const guild = await Guild.findById(user.guild);
@@ -263,7 +263,7 @@ async function leaveGuild({ userId }) {
 
     const isLeader = String(guild.leader) === String(user._id);
     if (isLeader && (guild.memberCount || 1) > 1) {
-        throw new GuildServiceError('Tong chu khong the roi Tong Mon khi van con thanh vien. Hay chuyen giao hoac giai tan sau.');
+        throw new GuildServiceError('Tông chủ không thể rời Tông Môn khi vẫn còn thành viên. Hãy chuyển giao hoặc giải tán sau.');
     }
 
     if (isLeader) {

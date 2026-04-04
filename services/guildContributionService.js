@@ -15,22 +15,22 @@ const DONATION_ITEMS = new Set(['sunflower', 'wheat', 'carrot', 'tomato']);
 async function contributeToGuild({ userId, resourceType, amount }) {
     const safeAmount = clampPositiveInteger(amount);
     if (!safeAmount) {
-        throw new GuildServiceError('So luong quy cong phai lon hon 0.');
+        throw new GuildServiceError('Số lượng quyên góp phải lớn hơn 0.');
     }
 
     const user = await User.findById(userId).select('_id guild guildRole');
     if (!user?.guild) {
-        throw new GuildServiceError('Ban chua gia nhap Tong Mon nao.');
+        throw new GuildServiceError('Bạn chưa gia nhập Tông Môn nào.');
     }
 
     const guild = await Guild.findById(user.guild).populate('leader', 'username avatar level');
     if (!guild) {
-        throw new GuildServiceError('Tong Mon khong ton tai.', 404);
+        throw new GuildServiceError('Tông Môn không tồn tại.', 404);
     }
 
     const contributionValue = getContributionValue(resourceType, safeAmount);
     if (!contributionValue) {
-        throw new GuildServiceError('Tai nguyen quy cong khong hop le.');
+        throw new GuildServiceError('Tài nguyên quyên góp không hợp lệ.');
     }
 
     const garden = await ensureGarden(userId);
@@ -39,16 +39,16 @@ async function contributeToGuild({ userId, resourceType, amount }) {
     if (DONATION_FIELDS.has(resourceType)) {
         remainingAmount = Number(garden[resourceType] || 0);
         if (remainingAmount < safeAmount) {
-            throw new GuildServiceError('Ban khong du tai nguyen de quy cong.');
+            throw new GuildServiceError('Bạn không đủ tài nguyên để quyên góp.');
         }
         garden[resourceType] = remainingAmount - safeAmount;
     } else if (DONATION_ITEMS.has(resourceType)) {
         const removed = removeInventoryItem(garden, resourceType, safeAmount);
         if (!removed) {
-            throw new GuildServiceError('Kho nong san cua ban khong du.');
+            throw new GuildServiceError('Kho nông sản của bạn không đủ.');
         }
     } else {
-        throw new GuildServiceError('Tai nguyen quy cong khong duoc ho tro.');
+        throw new GuildServiceError('Tài nguyên quyên góp không được hỗ trợ.');
     }
 
     guild.vault[resourceType] = (guild.vault[resourceType] || 0) + safeAmount;
@@ -79,7 +79,7 @@ async function contributeToGuild({ userId, resourceType, amount }) {
             fertilizer: garden.fertilizer || 0,
             gold: garden.gold || 0
         },
-        message: `Da quy cong ${safeAmount} ${resourceType} cho Linh Thu.`
+        message: `Đã quyên góp ${safeAmount} ${resourceType} cho Linh Thụ.`
     };
 }
 

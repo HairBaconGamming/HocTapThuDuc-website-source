@@ -31,36 +31,36 @@
         </div>
 
         <div class="guild-detail-copy">
-            <span class="guild-kicker">Tong Mon hien tai</span>
+            <span class="guild-kicker">Tông Môn hiện tại</span>
             <h1><%= guild.name %></h1>
-            <p><%= guild.description || 'Tong Mon nay dang cung nhau nuoi duong Linh Thu va truy cau canh gioi cao hon.' %></p>
+            <p><%= guild.description || 'Tông Môn này đang cùng nhau nuôi dưỡng Linh Thụ và truy cầu cảnh giới cao hơn.' %></p>
 
             <div class="guild-hero-badges">
-                <span class="guild-chip">Truong mon: <%= guild.leader?.username || 'An danh' %></span>
-                <span class="guild-chip"><%= guild.memberCount %> thanh vien</span>
-                <span class="guild-chip">Tong Linh Luc: <%= guild.treeXp %></span>
+                <span class="guild-chip">Trưởng môn: <%= guild.leader?.username || 'Ẩn danh' %></span>
+                <span class="guild-chip"><%= guild.memberCount %> thành viên</span>
+                <span class="guild-chip">Tổng Linh Lực: <%= guild.treeXp %></span>
             </div>
 
             <div class="guild-list-buffs">
-                <span>+<%= buffSnapshot.lessonXpPct %>% XP hoc bai</span>
-                <span>+<%= buffSnapshot.witherTimeBonusPct %>% do ben cay</span>
+                <span>+<%= buffSnapshot.lessonXpPct %>% XP học bài</span>
+                <span>+<%= buffSnapshot.witherTimeBonusPct %>% độ bền cây</span>
             </div>
 
             <div class="guild-list-actions">
                 <% if (!viewerContext.guild && canJoin) { %>
                     <form action="/guilds/<%= guild.slug %>/join" method="POST">
-                        <button type="submit" class="guild-primary-btn">Gia nhap Tong Mon</button>
+                        <button type="submit" class="guild-primary-btn">Gia nhập Tông Môn</button>
                     </form>
                 <% } else if (!viewerContext.guild) { %>
-                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Can them level de gia nhap</span>
+                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Cần thêm level để gia nhập</span>
                 <% } else if (isMember) { %>
                     <form action="/guilds/<%= guild.slug %>/leave" method="POST">
-                        <button type="submit" class="guild-secondary-btn"><%= isLeader ? 'Giai tan / Roi Tong' : 'Roi Tong Mon' %></button>
+                        <button type="submit" class="guild-secondary-btn"><%= isLeader ? 'Giải tán / Rời Tông' : 'Rời Tông Môn' %></button>
                     </form>
                 <% } else { %>
-                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Ban dang thuoc Tong Mon khac</span>
+                    <span class="guild-secondary-btn" style="opacity: 0.7; cursor: default;">Bạn đang thuộc Tông Môn khác</span>
                 <% } %>
-                <a href="/my-garden" class="guild-secondary-btn">Ve Vuon Ca Nhan</a>
+                <a href="/my-garden" class="guild-secondary-btn">Về Vườn Cá Nhân</a>
             </div>
         </div>
     </section>
@@ -69,7 +69,7 @@
         <article class="guild-panel">
             <div class="guild-panel-head">
                 <div>
-                    <span class="guild-kicker">Tien do Linh Thu</span>
+                    <span class="guild-kicker">Tiến độ Linh Thụ</span>
                     <h3><%= tree.current.name %></h3>
                 </div>
                 <div class="guild-members-pill"><%= tree.percent %>%</div>
@@ -78,60 +78,60 @@
                 <span style="width: <%= tree.percent %>%"></span>
             </div>
             <% if (tree.next) { %>
-                <p class="guild-panel-copy">Can them <strong><%= tree.xpForNextStage %> Linh Luc</strong> de dat <strong><%= tree.next.name %></strong>.</p>
+                <p class="guild-panel-copy">Cần thêm <strong><%= tree.xpForNextStage %> Linh Lực</strong> để đạt <strong><%= tree.next.name %></strong>.</p>
             <% } else { %>
-                <p class="guild-panel-copy">Linh Thu da dat den canh gioi cao nhat hien tai.</p>
+                <p class="guild-panel-copy">Linh Thụ đã đạt đến cảnh giới cao nhất hiện tại.</p>
             <% } %>
 
             <div class="guild-vault-grid">
-                <div><span>Nuoc</span><strong><%= guild.vault.water || 0 %></strong></div>
-                <div><span>Phan bon</span><strong><%= guild.vault.fertilizer || 0 %></strong></div>
-                <div><span>Vang</span><strong><%= guild.vault.gold || 0 %></strong></div>
-                <div><span>Ca chua</span><strong><%= guild.vault.tomato || 0 %></strong></div>
-                <div><span>Lua mi</span><strong><%= guild.vault.wheat || 0 %></strong></div>
-                <div><span>Ca rot</span><strong><%= guild.vault.carrot || 0 %></strong></div>
+                <div><span>Nước</span><strong><%= guild.vault.water || 0 %></strong></div>
+                <div><span>Phân bón</span><strong><%= guild.vault.fertilizer || 0 %></strong></div>
+                <div><span>Vàng</span><strong><%= guild.vault.gold || 0 %></strong></div>
+                <div><span>Cà chua</span><strong><%= guild.vault.tomato || 0 %></strong></div>
+                <div><span>Lúa mì</span><strong><%= guild.vault.wheat || 0 %></strong></div>
+                <div><span>Cà rốt</span><strong><%= guild.vault.carrot || 0 %></strong></div>
             </div>
         </article>
 
         <article class="guild-panel">
             <div class="guild-panel-head">
                 <div>
-                    <span class="guild-kicker">Quy cong</span>
-                    <h3>Nuoi duong Linh Thu</h3>
+                    <span class="guild-kicker">Quyên góp</span>
+                    <h3>Nuôi dưỡng Linh Thụ</h3>
                 </div>
-                <div class="guild-members-pill">Kho cua ban</div>
+                <div class="guild-members-pill">Kho của bạn</div>
             </div>
 
             <% if (isMember) { %>
                 <form class="guild-donation-form" action="/guilds/<%= guild.slug %>/contribute" method="POST">
                     <label>
-                        <span>Tai nguyen</span>
+                        <span>Tài nguyên</span>
                         <select name="resourceType">
-                            <option value="water">Nuoc (con <%= viewerResources.water %>)</option>
-                            <option value="fertilizer">Phan bon (con <%= viewerResources.fertilizer %>)</option>
-                            <option value="gold">Vang (con <%= viewerResources.gold %>)</option>
-                            <option value="tomato">Ca chua (con <%= viewerResources.inventory.tomato %>)</option>
-                            <option value="wheat">Lua mi (con <%= viewerResources.inventory.wheat %>)</option>
-                            <option value="carrot">Ca rot (con <%= viewerResources.inventory.carrot %>)</option>
-                            <option value="sunflower">Huong duong (con <%= viewerResources.inventory.sunflower %>)</option>
+                            <option value="water">Nước (còn <%= viewerResources.water %>)</option>
+                            <option value="fertilizer">Phân bón (còn <%= viewerResources.fertilizer %>)</option>
+                            <option value="gold">Vàng (còn <%= viewerResources.gold %>)</option>
+                            <option value="tomato">Cà chua (còn <%= viewerResources.inventory.tomato %>)</option>
+                            <option value="wheat">Lúa mì (còn <%= viewerResources.inventory.wheat %>)</option>
+                            <option value="carrot">Cà rốt (còn <%= viewerResources.inventory.carrot %>)</option>
+                            <option value="sunflower">Hướng dương (còn <%= viewerResources.inventory.sunflower %>)</option>
                         </select>
                     </label>
                     <label>
-                        <span>So luong</span>
+                        <span>Số lượng</span>
                         <input type="number" name="amount" min="1" step="1" value="1" required>
                     </label>
-                    <button type="submit" class="guild-primary-btn">Quy cong ngay</button>
+                    <button type="submit" class="guild-primary-btn">Quyên góp ngay</button>
                 </form>
             <% } else { %>
-                <p class="guild-panel-copy">Gia nhap Tong Mon truoc khi quy cong tai nguyen cho Linh Thu.</p>
+                <p class="guild-panel-copy">Gia nhập Tông Môn trước khi quyên góp tài nguyên cho Linh Thụ.</p>
             <% } %>
         </article>
 
         <article class="guild-panel">
             <div class="guild-panel-head">
                 <div>
-                    <span class="guild-kicker">Thanh vien</span>
-                    <h3>Noi luc Tong Mon</h3>
+                    <span class="guild-kicker">Thành viên</span>
+                    <h3>Nội lực Tông Môn</h3>
                 </div>
             </div>
             <div class="guild-member-list">
@@ -150,8 +150,8 @@
         <article class="guild-panel">
             <div class="guild-panel-head">
                 <div>
-                    <span class="guild-kicker">Bang vang cong hien</span>
-                    <h3>Top linh luc</h3>
+                    <span class="guild-kicker">Bảng vàng cống hiến</span>
+                    <h3>Top Linh Lực</h3>
                 </div>
             </div>
             <div class="guild-contribution-list">
@@ -159,9 +159,9 @@
                     <div class="guild-contribution-row">
                         <div>
                             <strong><%= entry.username %></strong>
-                            <small><%= entry.totalAmount %> vat pham</small>
+                            <small><%= entry.totalAmount %> vật phẩm</small>
                         </div>
-                        <span>+<%= entry.totalContributionValue %> luc</span>
+                        <span>+<%= entry.totalContributionValue %> lực</span>
                     </div>
                 <% }) %>
             </div>
@@ -170,17 +170,17 @@
         <article class="guild-panel guild-panel-wide">
             <div class="guild-panel-head">
                 <div>
-                    <span class="guild-kicker">Dong gop gan day</span>
-                    <h3>Nhip song Tong Mon</h3>
+                    <span class="guild-kicker">Đóng góp gần đây</span>
+                    <h3>Nhịp sống Tông Môn</h3>
                 </div>
             </div>
             <div class="guild-feed-list">
                 <% guildDetail.recentContributions.forEach((entry) => { %>
                     <div class="guild-feed-item">
-                        <img src="<%= entry.user?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.user?.username || 'Thanh vien' %>">
+                        <img src="<%= entry.user?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.user?.username || 'Thành viên' %>">
                         <div>
-                            <strong><%= entry.user?.username || 'Thanh vien' %></strong>
-                            <p>da quy cong <%= entry.amount %> <%= entry.resourceType %> cho Linh Thu.</p>
+                            <strong><%= entry.user?.username || 'Thành viên' %></strong>
+                            <p>đã quyên góp <%= entry.amount %> <%= entry.resourceType %> cho Linh Thụ.</p>
                         </div>
                         <span>+<%= entry.contributionValue %></span>
                     </div>

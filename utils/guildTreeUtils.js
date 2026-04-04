@@ -12,71 +12,71 @@ const GUILD_TREE_STAGES = Object.freeze([
     {
         stage: 0,
         minXp: 0,
-        name: 'Mam Linh Thu',
-        motto: 'Khoi dau cho mot tong mon non tre.',
+        name: 'Mầm Linh Thụ',
+        motto: 'Khởi đầu cho một tông môn non trẻ.',
         buffs: { lessonXpPct: 0, witherTimeBonusPct: 0 }
     },
     {
         stage: 1,
         minXp: 120,
-        name: 'Nhat Diep',
-        motto: 'Linh thu da cham re vao dat troi.',
+        name: 'Nhất Diệp',
+        motto: 'Linh thụ đã chạm rễ vào đất trời.',
         buffs: { lessonXpPct: 2, witherTimeBonusPct: 0 }
     },
     {
         stage: 2,
         minXp: 320,
-        name: 'Sinh Truong',
-        motto: 'Sinh khi bat dau hoi tu quanh than cay.',
+        name: 'Sinh Trưởng',
+        motto: 'Sinh khí bắt đầu hội tụ quanh thân cây.',
         buffs: { lessonXpPct: 4, witherTimeBonusPct: 0 }
     },
     {
         stage: 3,
         minXp: 650,
         name: 'Khai Hoa',
-        motto: 'Linh thu mo rong tan la va phan hoi nang luong.',
+        motto: 'Linh thụ mở rộng tán lá và phản hồi năng lượng.',
         buffs: { lessonXpPct: 6, witherTimeBonusPct: 4 }
     },
     {
         stage: 4,
         minXp: 1100,
-        name: 'Toa Quang',
-        motto: 'Tong mon bat dau nhan duoc bao tro ro net hon.',
+        name: 'Tỏa Quang',
+        motto: 'Tông môn bắt đầu nhận được bảo trợ rõ nét hơn.',
         buffs: { lessonXpPct: 8, witherTimeBonusPct: 6 }
     },
     {
         stage: 5,
         minXp: 1750,
-        name: 'Ket Tinh',
-        motto: 'Canh gioi cua tong mon dan ket lai trong linh thu.',
+        name: 'Kết Tinh',
+        motto: 'Cảnh giới của tông môn dần kết lại trong linh thụ.',
         buffs: { lessonXpPct: 10, witherTimeBonusPct: 10 }
     },
     {
         stage: 6,
         minXp: 2550,
-        name: 'Thien Quang',
-        motto: 'Moi lan hoc tap deu duoc linh thu tiep suc.',
+        name: 'Thiên Quang',
+        motto: 'Mỗi lần học tập đều được linh thụ tiếp sức.',
         buffs: { lessonXpPct: 12, witherTimeBonusPct: 12 }
     },
     {
         stage: 7,
         minXp: 3600,
-        name: 'Ngu Sac',
-        motto: 'Linh thu toa ra ngu sac bao phu tong mon.',
+        name: 'Ngũ Sắc',
+        motto: 'Linh thụ tỏa ra ngũ sắc bao phủ tông môn.',
         buffs: { lessonXpPct: 15, witherTimeBonusPct: 15 }
     },
     {
         stage: 8,
         minXp: 5000,
-        name: 'Tinh Van',
-        motto: 'Canh gioi cao hon giup moi thanh vien thang hoa nhanh hon.',
+        name: 'Tinh Vân',
+        motto: 'Cảnh giới cao hơn giúp mọi thành viên thăng hoa nhanh hơn.',
         buffs: { lessonXpPct: 18, witherTimeBonusPct: 20 }
     },
     {
         stage: 9,
         minXp: 6800,
-        name: 'Than Moc',
-        motto: 'Linh thu da tro thanh trai tim cua ca tong mon.',
+        name: 'Thần Mộc',
+        motto: 'Linh thụ đã trở thành trái tim của cả tông môn.',
         buffs: { lessonXpPct: 25, witherTimeBonusPct: 25 }
     }
 ]);
