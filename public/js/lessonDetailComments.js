@@ -58,6 +58,12 @@ class LessonDetailsCommentsSystem {
     openCommentsModal() {
         const modal = document.getElementById('comments-modal');
         if (modal) {
+            if (window.LessonWorkspace && typeof window.LessonWorkspace.setToolsDrawerState === 'function') {
+                window.LessonWorkspace.setToolsDrawerState(false);
+            }
+            if (window.LessonWorkspace && typeof window.LessonWorkspace.closePreviewFullscreen === 'function') {
+                window.LessonWorkspace.closePreviewFullscreen();
+            }
             modal.classList.remove('hidden');
             this.isModalOpen = true;
             document.body.classList.add('lesson-comments-open');

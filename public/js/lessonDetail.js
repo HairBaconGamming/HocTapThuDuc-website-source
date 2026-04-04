@@ -11,6 +11,9 @@ const LessonWorkspace = {
     headings: [],
     activeHeadingIndex: -1,
     scrollSaveTimer: null,
+    notesSavedTimer: null,
+    activeInteractiveBlock: null,
+    activeFullscreenPreview: null,
 
     init() {
         this.bindGlobalEvents();
@@ -28,6 +31,14 @@ const LessonWorkspace = {
         return document.getElementById('lessonOverlay');
     },
 
+    getToolsDrawer() {
+        return document.getElementById('lessonToolsDrawer');
+    },
+
+    getReadingSurface() {
+        return document.getElementById('lessonReadingSurface');
+    },
+
     isMobileLayout() {
         return window.matchMedia('(max-width: 1180px)').matches;
     },
@@ -42,14 +53,14 @@ const LessonWorkspace = {
 
         if (this.isMobileLayout()) {
             this.setMobileRailState('left', false);
-            this.setMobileRailState('right', false);
+            this.setToolsDrawerState(false);
             return;
         }
 
         const savedLeft = window.localStorage.getItem(this.getLayoutStorageKey('leftRail'));
-        const savedRight = window.localStorage.getItem(this.getLayoutStorageKey('rightRail'));
+        const savedTools = window.localStorage.getItem(this.getLayoutStorageKey('toolsDrawer'));
         document.body.classList.toggle('lesson-left-collapsed', savedLeft === 'collapsed');
-        document.body.classList.toggle('lesson-right-collapsed', savedRight === 'collapsed');
+        this.setToolsDrawerState(savedTools === 'open', false);
     },
 
     bindGlobalEvents() {
@@ -79,6 +90,18 @@ const LessonWorkspace = {
                 return;
             }
 
+            const toggleCodeButton = event.target.closest('[data-toggle-code]');
+            if (toggleCodeButton) {
+                this.toggleCodeExpansion(toggleCodeButton);
+                return;
+            }
+
+            const previewButton = event.target.closest('[data-toggle-preview-fullscreen]');
+            if (previewButton) {
+                this.togglePreviewFullscreen(previewButton);
+                return;
+            }
+
             const copyButton = event.target.closest('[data-copy-code]');
             if (copyButton) {
                 this.copyCode(copyButton);
@@ -88,7 +111,16 @@ const LessonWorkspace = {
             const completeButton = event.target.closest('[data-lesson-complete]');
             if (completeButton) {
                 this.completeLesson(completeButton.dataset.lessonComplete);
+                return;
             }
+
+            const quizWrapper = event.target.closest('.quiz-wrapper');
+            if (quizWrapper) {
+                this.setInteractiveFocus(quizWrapper.closest('.content-block-render'));
+                return;
+            }
+
+            this.clearInteractiveFocus();
         });
 
         const scrollContainer = this.getScrollContainer();
@@ -113,21 +145,34 @@ const LessonWorkspace = {
             overlay.addEventListener('click', () => {
                 if (this.isMobileLayout()) {
                     this.setMobileRailState('left', false);
-                    this.setMobileRailState('right', false);
                 }
+                this.setToolsDrawerState(false);
                 if (typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
                     window.lessonCommentsSystem.closeCommentsModal();
                 }
+                this.closePreviewFullscreen();
                 this.syncOverlay();
             });
         }
 
-        window.addEventListener('resize', () => this.syncOverlay());
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                this.closePreviewFullscreen();
+                this.setToolsDrawerState(false);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (this.isMobileLayout()) {
+                this.setMobileRailState('left', false);
+            }
+            this.syncOverlay();
+        });
     },
 
     handleAction(action) {
         if (action === 'toggle-left-rail') this.toggleRail('left');
-        if (action === 'toggle-right-rail') this.toggleRail('right');
+        if (action === 'toggle-tools') this.toggleToolsDrawer();
     },
 
     applyLayoutMode(mode, persist = true) {
@@ -139,9 +184,10 @@ const LessonWorkspace = {
         document.body.classList.toggle('lesson-wide-mode', mode === 'wide');
 
         if (mode === 'focus' || mode === 'wide') {
-            document.body.classList.add('lesson-left-collapsed', 'lesson-right-collapsed');
+            document.body.classList.add('lesson-left-collapsed');
+            this.setToolsDrawerState(false, false);
         } else if (!this.isMobileLayout()) {
-            document.body.classList.remove('lesson-left-collapsed', 'lesson-right-collapsed');
+            document.body.classList.remove('lesson-left-collapsed');
         }
 
         if (persist) {
@@ -150,31 +196,63 @@ const LessonWorkspace = {
     },
 
     toggleRail(side) {
+        if (side !== 'left') return;
         if (this.isMobileLayout()) {
-            const rail = document.getElementById(side === 'left' ? 'lessonSidebar' : 'lessonAssistRail');
-            this.setMobileRailState(side, rail?.dataset.railState !== 'open');
+            const rail = document.getElementById('lessonSidebar');
+            this.setMobileRailState('left', rail?.dataset.railState !== 'open');
+            this.setToolsDrawerState(false);
             this.syncOverlay();
             return;
         }
 
-        const className = side === 'left' ? 'lesson-left-collapsed' : 'lesson-right-collapsed';
+        const className = 'lesson-left-collapsed';
         const collapsed = !document.body.classList.contains(className);
         document.body.classList.toggle(className, collapsed);
-        window.localStorage.setItem(this.getLayoutStorageKey(`${side}Rail`), collapsed ? 'collapsed' : 'open');
+        window.localStorage.setItem(this.getLayoutStorageKey('leftRail'), collapsed ? 'collapsed' : 'open');
     },
 
     setMobileRailState(side, isOpen) {
-        const rail = document.getElementById(side === 'left' ? 'lessonSidebar' : 'lessonAssistRail');
+        const rail = document.getElementById('lessonSidebar');
         if (rail) rail.dataset.railState = isOpen ? 'open' : 'closed';
+    },
+
+    toggleToolsDrawer() {
+        const drawer = this.getToolsDrawer();
+        const shouldOpen = drawer?.dataset.drawerState !== 'open';
+        this.setToolsDrawerState(shouldOpen);
+    },
+
+    setToolsDrawerState(isOpen, persist = true) {
+        const drawer = this.getToolsDrawer();
+        if (!drawer) return;
+
+        if (isOpen && typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
+            window.lessonCommentsSystem.closeCommentsModal();
+        }
+        if (isOpen && this.isMobileLayout()) {
+            this.setMobileRailState('left', false);
+        }
+
+        drawer.dataset.drawerState = isOpen ? 'open' : 'closed';
+        drawer.classList.toggle('hidden', !isOpen);
+        document.body.classList.toggle('lesson-tools-open', isOpen);
+
+        if (persist) {
+            window.localStorage.setItem(this.getLayoutStorageKey('toolsDrawer'), isOpen ? 'open' : 'closed');
+        }
+
+        this.syncOverlay();
     },
 
     syncOverlay() {
         const overlay = this.getOverlay();
         if (!overlay) return;
         const leftOpen = document.getElementById('lessonSidebar')?.dataset.railState === 'open';
-        const rightOpen = document.getElementById('lessonAssistRail')?.dataset.railState === 'open';
+        const toolsOpen = this.getToolsDrawer()?.dataset.drawerState === 'open';
         const commentsOpen = document.body.classList.contains('lesson-comments-open');
-        overlay.classList.toggle('hidden', !(leftOpen || rightOpen || commentsOpen));
+        const previewOpen = !!this.activeFullscreenPreview;
+        const shouldShow = commentsOpen || previewOpen || (this.isMobileLayout() && (leftOpen || toolsOpen));
+        overlay.classList.toggle('hidden', !shouldShow);
     },
 
     initNotes() {
@@ -290,6 +368,7 @@ const LessonWorkspace = {
         if (window.Prism) Prism.highlightAllUnder(contentArea);
 
         this.generateTableOfContents();
+        this.renderSectionStrip();
         this.updateReadingProgress();
         this.updateLessonInsights(blocks);
     },
@@ -419,12 +498,21 @@ const LessonWorkspace = {
                 const settings = block.data?.settings || { showSource: true, defaultTab: 'result', height: 420 };
                 const htmlCode = block.data?.html || '';
                 const sourceCodeDisplay = this.escapeHtml(htmlCode);
+                const sourceLineCount = htmlCode ? htmlCode.split('\n').length : 0;
+                const shouldCollapseSource = sourceLineCount > 14;
                 const isCodeActive = settings.defaultTab === 'code' && settings.showSource;
                 const isResultActive = !isCodeActive;
 
                 wrapper.innerHTML = `
-                    <div class="quiz-wrapper">
+                    <div class="quiz-wrapper html-preview-card" data-html-preview-root>
                         ${settings.showSource ? `<div class="code-header"><span><i class="fab fa-html5"></i> HTML preview</span><div class="lesson-mode-switch"><button type="button" class="${isResultActive ? 'is-active' : ''}" data-html-tab="preview-${uniqueId}">Kết quả</button><button type="button" class="${isCodeActive ? 'is-active' : ''}" data-html-tab="code-${uniqueId}">Mã nguồn</button></div></div>` : ''}
+                        <div class="html-preview-toolbar">
+                            <span><i class="fab fa-html5"></i> HTML preview</span>
+                            <div class="lesson-mode-switch">
+                                ${settings.showSource ? `<button type="button" class="${isResultActive ? 'is-active' : ''}" data-html-tab="preview-${uniqueId}">Kết quả</button><button type="button" class="${isCodeActive ? 'is-active' : ''}" data-html-tab="code-${uniqueId}">Mã nguồn</button>` : ''}
+                                <button type="button" class="html-preview-action is-ghost" data-toggle-preview-fullscreen><i class="fas fa-expand"></i><span>Phóng to</span></button>
+                            </div>
+                        </div>
                         <div class="tab-content">
                             <div class="tab-pane ${isResultActive ? 'is-visible' : 'hidden'}" id="preview-${uniqueId}">
                                 <iframe id="iframe-${uniqueId}" style="height:${settings.height}px;width:100%;border:0;" title="HTML Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe>
@@ -435,15 +523,40 @@ const LessonWorkspace = {
                 `;
 
                 window.setTimeout(() => {
+                    const previewRoot = wrapper.querySelector('[data-html-preview-root]');
+                    const legacyHeader = previewRoot?.querySelector(':scope > .code-header');
                     const iframe = wrapper.querySelector(`#iframe-${uniqueId}`);
                     if (iframe) iframe.srcdoc = this.buildSandboxedPreviewSrcdoc(htmlCode, settings.includeBootstrap);
+                    if (legacyHeader) legacyHeader.remove();
+
+                    const codePane = wrapper.querySelector(`#code-${uniqueId}`);
+                    if (codePane) {
+                        codePane.classList.add('html-source-pane');
+                        if (shouldCollapseSource) {
+                            codePane.classList.add('is-collapsed');
+                            if (!codePane.querySelector('.code-block-fade')) {
+                                const fade = document.createElement('div');
+                                fade.className = 'code-block-fade';
+                                codePane.appendChild(fade);
+                            }
+                            if (!codePane.querySelector('.code-block-actions')) {
+                                const actions = document.createElement('div');
+                                actions.className = 'code-block-actions';
+                                actions.innerHTML = '<span>Xem 15 dòng đầu để giữ nhịp đọc.</span><button type="button" class="code-expand-button" data-toggle-code aria-expanded="false"><i class="fas fa-chevron-down"></i><span>Xem thêm</span></button>';
+                                codePane.appendChild(actions);
+                            }
+                        }
+                    }
                 }, 20);
                 break;
             }
             case 'code': {
                 const lang = block.data?.language || 'javascript';
-                const codeText = this.escapeHtml(block.data?.code || '');
-                wrapper.innerHTML = `<div class="code-viewer-container"><div class="code-header"><span>${lang.toUpperCase()}</span><button type="button" class="btn-copy-code" data-copy-code>Copy</button></div><pre class="line-numbers"><code class="language-${lang}">${codeText}</code></pre></div>`;
+                const rawCode = block.data?.code || '';
+                const codeText = this.escapeHtml(rawCode);
+                const lineCount = rawCode ? rawCode.split('\n').length : 0;
+                const shouldCollapse = lineCount > 14;
+                wrapper.innerHTML = `<div class="code-viewer-container"><div class="code-header"><span>${lang.toUpperCase()}</span><button type="button" class="btn-copy-code" data-copy-code>Copy</button></div><div class="code-block-frame ${shouldCollapse ? 'is-collapsed' : ''}"><pre class="line-numbers"><code class="language-${lang}">${codeText}</code></pre><div class="code-block-fade"></div></div>${shouldCollapse ? `<div class="code-block-actions"><span>Đã rút gọn để không cắt nhịp bài học.</span><button type="button" class="code-expand-button" data-toggle-code aria-expanded="false"><i class="fas fa-chevron-down"></i><span>Xem thêm</span></button></div>` : ''}</div>`;
                 break;
             }
             case 'callout': {
@@ -467,6 +580,7 @@ const LessonWorkspace = {
         const questions = data.questions || [];
         const container = document.createElement('div');
         container.className = 'quiz-wrapper';
+        container.tabIndex = 0;
         const feedbackMode = settings.showFeedback || 'submit';
 
         container.innerHTML = `<div class="code-header"><span><i class="fas fa-puzzle-piece"></i> Bài tập thực hành</span><span>Điểm đạt: ${settings.passingScore}%</span></div><div class="quiz-body p-4"></div><div class="comments-modal-footer"><button type="button" class="lesson-complete-button" data-submit-quiz="${blockIndex}"><i class="fas fa-paper-plane"></i><span>Nộp bài</span></button></div>`;
@@ -609,6 +723,21 @@ const LessonWorkspace = {
         this.filterToc();
     },
 
+    renderSectionStrip() {
+        const strip = document.getElementById('lessonSectionStrip');
+        if (!strip) return;
+
+        const primarySections = this.headings.filter((heading) => /H[12]/.test(heading.tagName));
+        if (primarySections.length === 0) {
+            strip.innerHTML = '<span class="lesson-empty-inline">Bài học đang ở dạng cuộn liền mạch, chưa có checkpoint theo heading lớn.</span>';
+            return;
+        }
+
+        strip.innerHTML = primarySections.map((heading, index) => (
+            `<a href="#${heading.id}" class="lesson-section-chip" data-scroll-target="${heading.id}" data-section-chip><span>Phần ${index + 1}</span><strong>${this.escapeHtml(heading.innerText)}</strong></a>`
+        )).join('');
+    },
+
     initScrollSpy() {
         if (tocObserver) tocObserver.disconnect();
         const scrollContainer = this.getScrollContainer();
@@ -635,6 +764,15 @@ const LessonWorkspace = {
         const nextHeading = this.headings[this.activeHeadingIndex + 1] || null;
         const currentLabel = document.getElementById('currentSectionLabel');
         const nextLabel = document.getElementById('nextSectionLabel');
+        const inlineCurrent = document.getElementById('currentSectionInline');
+        document.querySelectorAll('[data-section-chip]').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.dataset.scrollTarget === currentHeading?.id);
+        });
+        if (inlineCurrent && currentHeading) {
+            inlineCurrent.textContent = `Đang đọc: ${currentHeading.innerText}`;
+        } else if (inlineCurrent) {
+            inlineCurrent.textContent = 'Đang ở phần mở đầu';
+        }
         if (currentLabel) currentLabel.textContent = currentHeading ? currentHeading.innerText : 'Đang ở phần mở đầu';
         if (nextLabel) nextLabel.textContent = nextHeading ? nextHeading.innerText : 'Không còn section tiếp theo';
     },
@@ -642,6 +780,10 @@ const LessonWorkspace = {
     scrollToHeading(id) {
         const heading = document.getElementById(id);
         if (heading) heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (this.isMobileLayout()) {
+            this.setMobileRailState('left', false);
+            this.syncOverlay();
+        }
     },
 
     toggleHtmlTab(button) {
@@ -653,6 +795,77 @@ const LessonWorkspace = {
             pane.classList.toggle('hidden', pane.id !== targetId);
             pane.classList.toggle('is-visible', pane.id === targetId);
         });
+    },
+
+    toggleCodeExpansion(button) {
+        const sourcePane = button.closest('.html-source-pane');
+        const codeFrame = button.closest('.code-viewer-container')?.querySelector('.code-block-frame');
+        const target = sourcePane || codeFrame;
+        if (!target) return;
+
+        const collapsed = target.classList.contains('is-collapsed');
+        target.classList.toggle('is-collapsed', !collapsed);
+        button.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+        button.innerHTML = collapsed
+            ? '<i class="fas fa-chevron-up"></i><span>Thu gọn</span>'
+            : '<i class="fas fa-chevron-down"></i><span>Xem thêm</span>';
+    },
+
+    togglePreviewFullscreen(button) {
+        const previewRoot = button.closest('[data-html-preview-root]');
+        if (!previewRoot) return;
+
+        const shouldOpen = !previewRoot.classList.contains('is-fullscreen');
+        this.closePreviewFullscreen();
+
+        if (shouldOpen) {
+            previewRoot.classList.add('is-fullscreen');
+            document.body.classList.add('lesson-preview-open');
+            this.activeFullscreenPreview = previewRoot;
+            button.innerHTML = '<i class="fas fa-compress"></i><span>Thu nhỏ</span>';
+        } else {
+            button.innerHTML = '<i class="fas fa-expand"></i><span>Phóng to</span>';
+        }
+
+        this.syncOverlay();
+    },
+
+    closePreviewFullscreen() {
+        if (!this.activeFullscreenPreview) return;
+
+        const button = this.activeFullscreenPreview.querySelector('[data-toggle-preview-fullscreen]');
+        this.activeFullscreenPreview.classList.remove('is-fullscreen');
+        document.body.classList.remove('lesson-preview-open');
+        if (button) {
+            button.innerHTML = '<i class="fas fa-expand"></i><span>Phóng to</span>';
+        }
+        this.activeFullscreenPreview = null;
+        this.syncOverlay();
+    },
+
+    setInteractiveFocus(blockNode) {
+        const readingSurface = this.getReadingSurface();
+        if (!readingSurface || !blockNode) return;
+
+        if (this.activeInteractiveBlock && this.activeInteractiveBlock !== blockNode) {
+            this.activeInteractiveBlock.classList.remove('is-quiz-focus');
+            this.activeInteractiveBlock.querySelector('.quiz-wrapper')?.classList.remove('is-engaged');
+        }
+
+        this.activeInteractiveBlock = blockNode;
+        readingSurface.classList.add('has-quiz-focus');
+        blockNode.classList.add('is-quiz-focus');
+        blockNode.querySelector('.quiz-wrapper')?.classList.add('is-engaged');
+    },
+
+    clearInteractiveFocus() {
+        const readingSurface = this.getReadingSurface();
+        if (!readingSurface || !this.activeInteractiveBlock) return;
+
+        this.activeInteractiveBlock.classList.remove('is-quiz-focus');
+        this.activeInteractiveBlock.querySelector('.quiz-wrapper')?.classList.remove('is-engaged');
+        this.activeInteractiveBlock = null;
+        readingSurface.classList.remove('has-quiz-focus');
     },
 
     updateReadingProgress() {
@@ -669,6 +882,11 @@ const LessonWorkspace = {
         const maxScroll = Math.max(container.scrollHeight - container.clientHeight, 1);
         const percent = Math.min(100, Math.max(0, (container.scrollTop / maxScroll) * 100));
         progressBar.style.width = `${percent}%`;
+
+        const inlineBar = document.getElementById('readingProgressInline');
+        const inlineLabel = document.getElementById('readingProgressLabel');
+        if (inlineBar) inlineBar.style.width = `${percent}%`;
+        if (inlineLabel) inlineLabel.textContent = `${Math.round(percent)}%`;
     },
 
     updateLessonInsights(blocks) {
