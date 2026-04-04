@@ -232,6 +232,38 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
 });
 
 // --- CÁC ROUTE KHÁC GIỮ NGUYÊN ---
+router.get("/flashcards/review", isLoggedIn, async (req, res) => {
+    try {
+        const courseId = String(req.query.courseId || '').trim();
+        let course = null;
+
+        if (courseId) {
+            course = await Course.findById(courseId)
+                .select('_id title subjectId')
+                .populate('subjectId', 'name')
+                .lean();
+        }
+
+        const breadcrumbs = [
+            { label: 'Trang chủ', url: '/' },
+            ...(course ? [{ label: course.title, url: `/course/${course._id}` }] : []),
+            { label: 'Ôn tập flashcard', url: null }
+        ];
+
+        res.render("flashcardReview", {
+            user: req.user,
+            course,
+            courseId: course ? String(course._id) : '',
+            breadcrumbs,
+            activePage: "subjects",
+            title: course ? `Ôn tập | ${course.title}` : 'Ôn tập flashcard'
+        });
+    } catch (error) {
+        console.error("Flashcard review page error:", error);
+        res.redirect("/dashboard");
+    }
+});
+
 router.get("/subjects", async (req, res) => {
     try {
         const subjects = await Subject.find().sort({ name: 1 }).lean();

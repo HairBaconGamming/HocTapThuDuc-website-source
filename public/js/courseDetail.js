@@ -1,71 +1,76 @@
 (function () {
-    const STORAGE_PREFIX = 'course-detail-open-units:';
-
     function normalizeText(value) {
         return String(value || '').trim().toLowerCase();
     }
 
-    function getCourseId() {
-        return window.COURSE_DETAIL_STATE?.courseId || '';
+    function getStickyCard() {
+        return document.getElementById('courseStickyCard');
     }
 
-    function getStorageKey() {
-        return `${STORAGE_PREFIX}${getCourseId() || 'default'}`;
+    function getDefaultPreview() {
+        const card = getStickyCard();
+        if (!card) return null;
+
+        return {
+            state: card.dataset.defaultState || '',
+            title: card.dataset.defaultTitle || '',
+            meta: card.dataset.defaultMeta || '',
+            href: card.dataset.defaultHref || '#',
+            cta: card.dataset.defaultCta || 'Vào học'
+        };
     }
 
-    function readOpenUnits() {
-        try {
-            const raw = window.localStorage.getItem(getStorageKey());
-            const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? new Set(parsed) : new Set();
-        } catch (error) {
-            return new Set();
-        }
+    function setStickyPreview(preview) {
+        if (!preview) return;
+
+        const stateEl = document.getElementById('courseStickyState');
+        const titleEl = document.getElementById('courseStickyTitle');
+        const metaEl = document.getElementById('courseStickyMeta');
+        const primaryEl = document.getElementById('courseStickyPrimary');
+        const primaryLabelEl = document.getElementById('courseStickyPrimaryLabel');
+        const mobileTitleEl = document.getElementById('courseMobileTitle');
+        const mobilePrimaryEl = document.getElementById('courseMobilePrimary');
+        const mobilePrimaryLabelEl = document.getElementById('courseMobilePrimaryLabel');
+
+        if (stateEl) stateEl.textContent = preview.state || '';
+        if (titleEl) titleEl.textContent = preview.title || '';
+        if (metaEl) metaEl.textContent = preview.meta || '';
+
+        if (primaryEl) primaryEl.href = preview.href || '#';
+        if (primaryLabelEl) primaryLabelEl.textContent = preview.cta || 'Vào học';
+
+        if (mobileTitleEl) mobileTitleEl.textContent = preview.title || '';
+        if (mobilePrimaryEl) mobilePrimaryEl.href = preview.href || '#';
+        if (mobilePrimaryLabelEl) mobilePrimaryLabelEl.textContent = preview.cta || 'Vào học';
     }
 
-    function persistOpenUnits() {
-        const openIndexes = Array.from(document.querySelectorAll('[data-unit-card]'))
-            .filter((card) => card.querySelector('[data-unit-toggle]')?.classList.contains('is-open'))
-            .map((card, index) => index);
-
-        try {
-            window.localStorage.setItem(getStorageKey(), JSON.stringify(openIndexes));
-        } catch (error) {
-            // ignore storage errors
-        }
+    function extractPreview(node) {
+        if (!node) return null;
+        return {
+            state: node.dataset.previewState || '',
+            title: node.dataset.previewTitle || '',
+            meta: node.dataset.previewMeta || '',
+            href: node.dataset.previewHref || node.getAttribute('href') || '#',
+            cta: node.dataset.previewCta || 'Vào học'
+        };
     }
 
-    function applyUnitState(card, isOpen) {
-        const toggle = card.querySelector('[data-unit-toggle]');
-        const body = card.querySelector('[data-unit-body]');
-        if (!toggle || !body) return;
-
-        toggle.classList.toggle('is-open', isOpen);
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        body.classList.toggle('is-open', isOpen);
-    }
-
-    function restoreUnitsFromStorage() {
-        const openUnits = readOpenUnits();
-        document.querySelectorAll('[data-unit-card]').forEach((card, index) => {
-            if (openUnits.has(index)) {
-                applyUnitState(card, true);
-            }
+    function clearPreviewState() {
+        document.querySelectorAll('.course-roadmap-lesson.is-previewed').forEach((node) => {
+            node.classList.remove('is-previewed');
         });
     }
 
-    function bindUnitToggles() {
-        document.addEventListener('click', (event) => {
-            const toggle = event.target.closest('[data-unit-toggle]');
-            if (!toggle) return;
+    function setPreviewFromNode(node) {
+        if (!node) {
+            setStickyPreview(getDefaultPreview());
+            clearPreviewState();
+            return;
+        }
 
-            const card = toggle.closest('[data-unit-card]');
-            if (!card) return;
-
-            const shouldOpen = !toggle.classList.contains('is-open');
-            applyUnitState(card, shouldOpen);
-            persistOpenUnits();
-        });
+        clearPreviewState();
+        node.classList.add('is-previewed');
+        setStickyPreview(extractPreview(node));
     }
 
     function applyFilters() {
@@ -110,22 +115,27 @@
         const unitCountEl = document.getElementById('courseVisibleUnitCount');
         if (lessonCountEl) lessonCountEl.textContent = String(visibleLessonCount);
         if (unitCountEl) unitCountEl.textContent = String(visibleUnitCount);
+
+        const activePreview = document.querySelector('.course-roadmap-lesson.is-previewed');
+        if (activePreview && activePreview.style.display === 'none') {
+            setPreviewFromNode(null);
+        }
     }
 
     function bindFilters() {
         const pills = document.getElementById('courseFilterPills');
-        if (!pills) return;
+        if (pills) {
+            pills.addEventListener('click', (event) => {
+                const button = event.target.closest('button[data-course-filter]');
+                if (!button) return;
 
-        pills.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-course-filter]');
-            if (!button) return;
+                pills.querySelectorAll('button[data-course-filter]').forEach((item) => {
+                    item.classList.toggle('is-active', item === button);
+                });
 
-            pills.querySelectorAll('button[data-course-filter]').forEach((item) => {
-                item.classList.toggle('is-active', item === button);
+                applyFilters();
             });
-
-            applyFilters();
-        });
+        }
 
         const search = document.getElementById('courseLessonSearch');
         if (search) {
@@ -133,28 +143,24 @@
         }
     }
 
-    function bindExpandCollapseActions() {
-        document.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-course-action]');
-            if (!button) return;
+    function bindRoadmapPreview() {
+        document.addEventListener('mouseenter', (event) => {
+            const lessonRow = event.target.closest('.course-roadmap-lesson[data-lesson-row]');
+            if (!lessonRow) return;
+            setPreviewFromNode(lessonRow);
+        }, true);
 
-            const action = button.dataset.courseAction;
-            if (action === 'expand-all' || action === 'collapse-all') {
-                const shouldOpen = action === 'expand-all';
-                document.querySelectorAll('[data-unit-card]').forEach((card) => {
-                    if (card.style.display === 'none') return;
-                    applyUnitState(card, shouldOpen);
-                });
-                persistOpenUnits();
-            }
+        document.addEventListener('focusin', (event) => {
+            const lessonRow = event.target.closest('.course-roadmap-lesson[data-lesson-row]');
+            if (!lessonRow) return;
+            setPreviewFromNode(lessonRow);
         });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        restoreUnitsFromStorage();
-        bindUnitToggles();
+        setStickyPreview(getDefaultPreview());
         bindFilters();
-        bindExpandCollapseActions();
+        bindRoadmapPreview();
         applyFilters();
     });
 })();

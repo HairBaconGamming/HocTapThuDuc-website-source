@@ -3,6 +3,7 @@ const Unit = require('../models/Unit');
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const LessonCompletion = require('../models/LessonCompletion');
+const Flashcard = require('../models/Flashcard');
 const {
     buildLessonVisibilityFilter,
     hasProContentAccess,
@@ -67,6 +68,73 @@ function getLessonTypeMeta(type) {
         default:
             return { label: 'Bài học', icon: 'fa-book-open' };
     }
+}
+
+function stripHtml(value = '') {
+    return String(value || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getHeroDescription(description) {
+    const clean = stripHtml(description);
+    if (!clean) {
+        return 'Khóa học được biên soạn như một hành trình học gọn, rõ nhịp và dễ quay lại đúng chỗ đang học.';
+    }
+
+    const firstSentence = clean.split(/(?<=[.!?])\s+/)[0] || clean;
+    return firstSentence.length <= 180 ? firstSentence : `${firstSentence.slice(0, 177).trim()}...`;
+}
+
+function buildCourseRewardPreview({ course, progress, stats }) {
+    const accessibleCount = Math.max(1, Number(progress?.accessibleCount || 0));
+    const totalVideos = Math.max(0, Number(stats?.totalVideos || 0));
+    const totalQuiz = Math.max(0, Number(stats?.totalQuiz || 0));
+
+    return {
+        badge: `Huy hiệu ${course?.subjectId?.name || 'Chặng mới'}`,
+        headline: `Khi đi hết ${accessibleCount} bài đang mở`,
+        summary: [
+            `${accessibleCount * 10} điểm`,
+            `${accessibleCount * 12} XP`,
+            `+${Math.max(3, Math.ceil(accessibleCount * 1.5))} nước`,
+            `+${Math.max(1, Math.ceil((totalVideos + totalQuiz) / 4))} phân bón`
+        ],
+        water: Math.max(3, Math.ceil(accessibleCount * 1.5)),
+        fertilizer: Math.max(1, Math.ceil((totalVideos + totalQuiz) / 4)),
+        gold: Math.max(80, totalVideos * 24 + totalQuiz * 30 + accessibleCount * 10),
+        xp: accessibleCount * 12
+    };
+}
+
+function buildCourseLearningPromise({ progress, stats }) {
+    return [
+        {
+            label: 'Bài đang mở',
+            value: `${progress.accessibleCount} bài`,
+            copy: 'Đi theo nhịp đã mở để không bị loãng mạch học và vẫn giữ được cảm giác tiến lên.',
+            icon: 'fa-route'
+        },
+        {
+            label: 'Video trực quan',
+            value: `${stats.totalVideos} video`,
+            copy: 'Những phần cần nhìn tận mắt sẽ được giữ lại ở video thay vì dồn hết vào chữ.',
+            icon: 'fa-circle-play'
+        },
+        {
+            label: 'Checkpoint luyện tập',
+            value: `${stats.totalQuiz} bài`,
+            copy: 'Mỗi chặng đều có điểm dừng để kiểm tra hiểu bài, không chỉ đọc rồi lướt qua.',
+            icon: 'fa-circle-question'
+        },
+        {
+            label: 'Tài liệu quay lại',
+            value: `${stats.totalDocuments} mục`,
+            copy: 'Giữ tài nguyên quan trọng gần tay để quay lại đúng chỗ mỗi khi cần ôn tập.',
+            icon: 'fa-file-lines'
+        }
+    ];
 }
 
 function buildCourseCtaState({ course, user, progress, firstAccessibleLessonId, resumeLessonId, hasPremiumLocked }) {
@@ -706,13 +774,26 @@ exports.getCourseDetail = async (req, res) => {
             hasPremiumLocked: flatLessons.some((lesson) => lesson.isLocked)
         });
 
-        const insightChips = [
-            `${stats.unitCount} chương`,
-            `${stats.totalLessons} bài học`,
-            `${stats.totalDuration} phút`,
-            `${stats.totalVideos} video`,
-            `${stats.totalQuiz} bài luyện tập`
-        ];
+        const nextLessonCard = accessibleLessons.find((lesson) => String(lesson._id) === String(resumeLessonId))
+            || accessibleLessons.find((lesson) => !lesson.isCompleted)
+            || accessibleLessons[0]
+            || null;
+
+        const rewardPreview = buildCourseRewardPreview({ course, progress, stats });
+        const learningPromise = buildCourseLearningPromise({ progress, stats });
+
+        let flashcardDeck = {
+            count: 0,
+            href: `/flashcards/review?courseId=${course._id}`,
+            label: 'Ôn tập thẻ ghi nhớ của khóa này'
+        };
+
+        if (req.user && lessonIds.length > 0) {
+            flashcardDeck.count = await Flashcard.countDocuments({
+                user: req.user._id,
+                lesson: { $in: lessonIds }
+            });
+        }
 
         res.render('courseDetail', {
             title: course.title,
@@ -721,9 +802,13 @@ exports.getCourseDetail = async (req, res) => {
             stats,
             progress,
             cta,
+            heroDescription: getHeroDescription(course.description),
             firstLessonId,
             resumeLessonId,
-            insightChips,
+            nextLessonCard,
+            rewardPreview,
+            learningPromise,
+            flashcardDeck,
             canViewDraft,
             userHasPremiumAccess: canUsePremium,
             breadcrumbs: [

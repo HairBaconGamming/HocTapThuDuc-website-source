@@ -34,11 +34,25 @@ exports.getReviewSession = async (req, res) => {
     try {
         const today = new Date();
         const limitPerSession = 30;
-
-        const cards = await Flashcard.find({
+        const courseId = String(req.query.courseId || '').trim();
+        const query = {
             user: req.user._id,
             nextReviewDate: { $lte: today }
-        })
+        };
+
+        if (courseId) {
+            const lessonIds = await Lesson.find({ courseId }).distinct('_id');
+            if (lessonIds.length === 0) {
+                return res.json({
+                    success: true,
+                    cards: [],
+                    remaining: 0
+                });
+            }
+            query.lesson = { $in: lessonIds };
+        }
+
+        const cards = await Flashcard.find(query)
             .sort({ nextReviewDate: 1 })
             .limit(limitPerSession)
             .populate({

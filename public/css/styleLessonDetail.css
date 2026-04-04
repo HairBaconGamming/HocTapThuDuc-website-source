@@ -2691,6 +2691,21 @@ body.lesson-completion-open {
     gap: 14px;
 }
 
+.lesson-completion-autonext {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 22px;
+    background: rgba(239, 246, 255, 0.92);
+    border: 1px solid rgba(191, 219, 254, 0.96);
+}
+
+.lesson-completion-autonext strong {
+    color: var(--lesson-secondary);
+}
+
 .lesson-completion-achievement-list {
     display: grid;
     gap: 12px;
@@ -2750,6 +2765,12 @@ body.lesson-completion-open {
 .lesson-completion-button.is-secondary {
     background: #e2e8f0;
     color: var(--lesson-secondary);
+}
+
+.lesson-completion-button.is-compact {
+    min-height: 44px;
+    padding: 0 14px;
+    flex-shrink: 0;
 }
 
 .lesson-completion-button.is-ghost {
@@ -2813,6 +2834,10 @@ body.lesson-completion-open {
     .lesson-completion-card {
         border-radius: 26px;
         gap: 18px;
+    }
+
+    .lesson-completion-autonext {
+        display: grid;
     }
 
     .lesson-completion-rewards {

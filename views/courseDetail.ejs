@@ -8,119 +8,85 @@
     const authorName = course.author ? course.author.username : 'HTTD Team';
     const authorAvatar = course.author ? (course.author.avatar || '/img/default-avatar.png') : '/img/default-avatar.png';
     const authorBio = course.author && course.author.bio ? course.author.bio : 'Đồng hành biên soạn lộ trình học theo nhịp dễ theo dõi và dễ quay lại.';
-    const heroDescription = course.description || 'Khóa học được biên soạn theo dạng hành trình có nhịp, giúp bạn vào đúng bài, biết mình đang ở đâu và học tiếp theo cách gọn hơn.';
     const totalLocked = units.reduce((sum, unit) => sum + (unit.summary?.lockedCount || 0), 0);
-    const hasStarted = progress.completedCount > 0;
+    const stickyLesson = nextLessonCard || null;
+    const stickyHref = stickyLesson ? stickyLesson.link : (cta.primary ? cta.primary.href : '#');
+    const stickyTitle = stickyLesson ? stickyLesson.title : cta.title;
+    const stickyMeta = stickyLesson
+        ? `${stickyLesson.durationLabel} • ${stickyLesson.typeLabel}`
+        : `${progress.completedCount}/${progress.accessibleCount} bài đã chạm`;
+    const stickyState = stickyLesson
+        ? (stickyLesson._id.toString() === resumeLessonId ? 'Bài nên học tiếp' : (stickyLesson.isCompleted ? 'Đã hoàn thành' : 'Sẵn sàng mở'))
+        : cta.eyebrow;
+    const stickyCtaLabel = stickyLesson
+        ? (stickyLesson._id.toString() === resumeLessonId ? 'Học bài tiếp theo' : 'Mở bài này')
+        : (cta.primary ? cta.primary.label : 'Vào học ngay');
+    const canReviewFlashcards = !!(user && flashcardDeck && flashcardDeck.count > 0);
 %>
 
 <main class="course-detail-page">
-    <section class="course-hero">
-        <div class="course-hero-copy">
-            <div class="course-hero-kicker-row">
-                <span class="course-hero-kicker">Khóa học trực tuyến</span>
-                <% if (course.subjectId?.name) { %>
-                    <span class="course-hero-subject"><i class="fas fa-book-open"></i><%= course.subjectId.name %></span>
-                <% } %>
-                <% if (course.isPro) { %>
-                    <span class="course-status-badge is-pro"><i class="fas fa-crown"></i> PRO</span>
-                <% } %>
-                <% if (!course.isPublished && canViewDraft) { %>
-                    <span class="course-status-badge is-draft"><i class="fas fa-flask"></i> Nháp</span>
-                <% } %>
-            </div>
+    <section class="course-poster">
+        <img
+            src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>"
+            class="course-poster-backdrop"
+            alt="<%= course.title %>">
+        <div class="course-poster-shade"></div>
 
-            <h1 class="course-hero-title"><%= course.title %></h1>
-            <p class="course-hero-description"><%= heroDescription %></p>
+        <div class="course-poster-grid">
+            <div class="course-poster-copy">
+                <div class="course-poster-kicker-row">
+                    <span class="course-hero-kicker">Lộ trình học</span>
+                    <% if (course.subjectId?.name) { %>
+                        <span class="course-hero-subject"><i class="fas fa-book-open"></i><%= course.subjectId.name %></span>
+                    <% } %>
+                    <% if (course.isPro) { %>
+                        <span class="course-status-badge is-pro"><i class="fas fa-crown"></i> PRO</span>
+                    <% } %>
+                    <% if (!course.isPublished && canViewDraft) { %>
+                        <span class="course-status-badge is-draft"><i class="fas fa-flask"></i> Nháp</span>
+                    <% } %>
+                </div>
 
-            <div class="course-meta-row">
-                <div class="course-meta-item">
-                    <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="course-author-avatar">
-                    <div>
-                        <span class="course-meta-label">Biên soạn bởi</span>
-                        <strong><%= authorName %></strong>
+                <div class="course-poster-text">
+                    <h1 class="course-hero-title"><%= course.title %></h1>
+                    <p class="course-hero-description"><%= heroDescription %></p>
+                </div>
+
+                <div class="course-hero-actions">
+                    <% if (cta.primary) { %>
+                        <a href="<%= cta.primary.href %>" class="course-btn course-btn-primary">
+                            <i class="fas fa-play-circle"></i>
+                            <span><%= cta.primary.label %></span>
+                        </a>
+                    <% } %>
+                    <% if (cta.secondary) { %>
+                        <a href="<%= cta.secondary.href %>" class="course-btn course-btn-secondary">
+                            <i class="fas fa-compass"></i>
+                            <span><%= cta.secondary.label %></span>
+                        </a>
+                    <% } %>
+                </div>
+
+                <div class="course-hero-loot">
+                    <span class="course-hero-loot-kicker">Đi hết chặng đang mở sẽ mở ra</span>
+                    <div class="course-loot-preview">
+                        <span><i class="fas fa-trophy"></i><%= rewardPreview.badge %></span>
+                        <span><i class="fas fa-droplet"></i>+<%= rewardPreview.water %> nước</span>
+                        <span><i class="fas fa-bolt"></i>+<%= rewardPreview.xp %> XP</span>
+                        <span><i class="fas fa-coins"></i>+<%= rewardPreview.gold %> vàng</span>
                     </div>
                 </div>
-                <div class="course-meta-item">
-                    <i class="far fa-clock"></i>
-                    <div>
-                        <span class="course-meta-label">Cập nhật</span>
-                        <strong><%= new Date(course.updatedAt).toLocaleDateString('vi-VN') %></strong>
-                    </div>
-                </div>
-                <div class="course-meta-item">
-                    <i class="fas fa-user-graduate"></i>
-                    <div>
-                        <span class="course-meta-label">Người học</span>
-                        <strong><%= stats.studentCount %></strong>
-                    </div>
-                </div>
             </div>
 
-            <div class="course-insight-row">
-                <% insightChips.forEach((chip) => { %>
-                    <span class="course-insight-chip"><%= chip %></span>
-                <% }) %>
-                <% if (totalLocked > 0) { %>
-                    <span class="course-insight-chip is-warm"><i class="fas fa-lock"></i><%= totalLocked %> bài nâng cao</span>
-                <% } %>
-            </div>
+            <div class="course-poster-visual">
+                <figure class="course-poster-cover">
+                    <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" alt="<%= course.title %>">
+                </figure>
 
-            <div class="course-hero-actions">
-                <% if (cta.primary) { %>
-                    <a href="<%= cta.primary.href %>" class="course-btn course-btn-primary">
-                        <i class="fas fa-play-circle"></i>
-                        <span><%= cta.primary.label %></span>
-                    </a>
-                <% } %>
-                <% if (cta.secondary) { %>
-                    <a href="<%= cta.secondary.href %>" class="course-btn course-btn-secondary">
-                        <i class="fas fa-compass"></i>
-                        <span><%= cta.secondary.label %></span>
-                    </a>
-                <% } %>
-            </div>
-        </div>
-
-        <div class="course-hero-visual">
-            <div class="course-cover-card">
-                <div class="course-cover-frame">
-                    <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-cover-image" alt="<%= course.title %>">
-                    <div class="course-cover-glow"></div>
-                </div>
-
-                <div class="course-cover-panel">
+                <div class="course-poster-caption">
                     <span class="course-cover-eyebrow"><%= cta.eyebrow %></span>
-                    <h2><%= cta.title %></h2>
+                    <strong><%= cta.title %></strong>
                     <p><%= cta.body %></p>
-
-                    <div class="course-progress-card">
-                        <div class="course-progress-head">
-                            <span>Tiến độ đang mở</span>
-                            <strong><%= progress.percent %>%</strong>
-                        </div>
-                        <div class="course-progress-bar">
-                            <span style="width:<%= progress.percent %>%"></span>
-                        </div>
-                        <div class="course-progress-meta">
-                            <span><%= progress.completedCount %>/<%= progress.accessibleCount %> bài đã hoàn thành</span>
-                            <span><%= progress.remainingCount %> bài còn lại</span>
-                        </div>
-                    </div>
-
-                    <div class="course-cover-stats">
-                        <div>
-                            <span>Chương</span>
-                            <strong><%= stats.unitCount %></strong>
-                        </div>
-                        <div>
-                            <span>Bài học</span>
-                            <strong><%= stats.totalLessons %></strong>
-                        </div>
-                        <div>
-                            <span>Thời lượng</span>
-                            <strong><%= stats.totalDuration %> phút</strong>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -128,55 +94,34 @@
 
     <div class="course-detail-layout">
         <div class="course-main-column">
-            <section class="course-section course-summary-section">
+            <section class="course-section course-promise-section">
                 <div class="course-section-heading">
                     <div>
-                        <span class="course-section-kicker">Tổng quan</span>
-                        <h2>Toàn cảnh lộ trình</h2>
+                        <span class="course-section-kicker">Bạn sẽ học được gì?</span>
+                        <h2>Đi vào khóa học bằng nhịp rõ ràng, không phải một đống con số</h2>
                     </div>
-                    <p>Khóa học giữ nhịp rõ ràng giữa lý thuyết, video và bài luyện tập để bạn biết mình đang ở đâu trong hành trình học.</p>
+                    <p>Phần này gom lại những tín hiệu quan trọng nhất để bạn biết cách khóa học sẽ dẫn mình đi tiếp, thay vì ném mọi thống kê lên đầu trang.</p>
                 </div>
 
-                <div class="course-summary-grid">
-                    <article class="course-summary-card">
-                        <span>Lộ trình đang mở</span>
-                        <strong><%= progress.accessibleCount %> bài</strong>
-                        <p>Các bài đang có thể học ngay theo quyền truy cập hiện tại.</p>
-                    </article>
-                    <article class="course-summary-card">
-                        <span>Nội dung video</span>
-                        <strong><%= stats.totalVideos %> bài</strong>
-                        <p>Những phần cần trực quan hóa và đi theo nhịp chậm hơn.</p>
-                    </article>
-                    <article class="course-summary-card">
-                        <span>Luyện tập</span>
-                        <strong><%= stats.totalQuiz %> bài</strong>
-                        <p>Checkpoint để kiểm tra hiểu bài thay vì chỉ đọc liên tục.</p>
-                    </article>
-                    <article class="course-summary-card">
-                        <span>Tài liệu</span>
-                        <strong><%= stats.totalDocuments %> mục</strong>
-                        <p>Tài nguyên đi kèm giúp bạn quay lại đúng chỗ khi cần ôn tập.</p>
-                    </article>
+                <div class="course-promise-grid">
+                    <% learningPromise.forEach((item) => { %>
+                        <article class="course-promise-card">
+                            <span class="course-promise-icon"><i class="fas <%= item.icon %>"></i></span>
+                            <span class="course-promise-label"><%= item.label %></span>
+                            <strong><%= item.value %></strong>
+                            <p><%= item.copy %></p>
+                        </article>
+                    <% }) %>
                 </div>
             </section>
 
-            <section class="course-section course-curriculum-section">
-                <div class="course-section-heading course-section-heading-split">
+            <section class="course-section course-roadmap-section">
+                <div class="course-section-heading">
                     <div>
-                        <span class="course-section-kicker">Navigator</span>
-                        <h2>Nội dung khóa học</h2>
+                        <span class="course-section-kicker">Roadmap học tập</span>
+                        <h2>Thấy rõ mình đang ở đâu trong cả hành trình</h2>
                     </div>
-                    <div class="course-section-actions">
-                        <button type="button" class="course-ghost-btn" data-course-action="expand-all">
-                            <i class="fas fa-angle-double-down"></i>
-                            <span>Mở hết</span>
-                        </button>
-                        <button type="button" class="course-ghost-btn" data-course-action="collapse-all">
-                            <i class="fas fa-angle-double-up"></i>
-                            <span>Thu gọn</span>
-                        </button>
-                    </div>
+                    <p>Thay vì accordion cũ, mỗi chặng giờ đi theo một trục dọc liên tục. Bài đã học sáng lên, bài nên mở tiếp có nhịp pulse, bài khóa thì mềm lại để bạn nhìn được con đường phía trước.</p>
                 </div>
 
                 <div class="course-curriculum-toolbar">
@@ -198,94 +143,113 @@
 
                 <div class="course-results-meta" id="courseResultsMeta">
                     <span><strong id="courseVisibleLessonCount"><%= progress.accessibleCount %></strong> bài đang hiện</span>
-                    <span><strong id="courseVisibleUnitCount"><%= units.length %></strong> chương còn khớp bộ lọc</span>
+                    <span><strong id="courseVisibleUnitCount"><%= units.length %></strong> chặng còn khớp bộ lọc</span>
+                    <% if (totalLocked > 0) { %>
+                        <span><strong><%= totalLocked %></strong> bài nâng cao đang chờ mở</span>
+                    <% } %>
                 </div>
 
-                <div class="course-curriculum-stack" id="courseCurriculumStack">
+                <div class="course-roadmap" id="courseRoadmap">
                     <% if (units.length > 0) { %>
-                        <% units.forEach((unit, unitIndex) => { %>
-                            <article class="course-unit-card" data-unit-card data-unit-title="<%= (unit.title || '').toLowerCase() %>">
-                                <button
-                                    type="button"
-                                    class="course-unit-toggle <%= unitIndex === 0 ? 'is-open' : '' %>"
-                                    data-unit-toggle
-                                    aria-expanded="<%= unitIndex === 0 ? 'true' : 'false' %>">
-                                    <div class="course-unit-copy">
-                                        <span class="course-unit-index">Chương <%= unit.index %></span>
-                                        <h3><%= unit.title %></h3>
-                                        <p>
-                                            <span><%= unit.summary.totalCount %> bài</span>
-                                            <span>•</span>
-                                            <span><%= unit.summary.durationLabel %></span>
-                                            <% if (unit.summary.lockedCount > 0) { %>
+                        <% units.forEach((unit) => { %>
+                            <section class="course-roadmap-unit" data-unit-card data-unit-title="<%= (unit.title || '').toLowerCase() %>">
+                                <div class="course-roadmap-unit-rail" aria-hidden="true">
+                                    <span class="course-roadmap-unit-step"><%= unit.index %></span>
+                                    <span class="course-roadmap-unit-line"></span>
+                                </div>
+
+                                <div class="course-roadmap-unit-body">
+                                    <header class="course-roadmap-unit-head">
+                                        <div>
+                                            <span class="course-unit-index">Chặng <%= unit.index %></span>
+                                            <h3><%= unit.title %></h3>
+                                            <p>
+                                                <span><%= unit.summary.totalCount %> bài</span>
                                                 <span>•</span>
-                                                <span><%= unit.summary.lockedCount %> bài khóa</span>
-                                            <% } %>
-                                        </p>
-                                    </div>
+                                                <span><%= unit.summary.durationLabel %></span>
+                                                <% if (unit.summary.lockedCount > 0) { %>
+                                                    <span>•</span>
+                                                    <span><%= unit.summary.lockedCount %> bài khóa</span>
+                                                <% } %>
+                                            </p>
+                                        </div>
 
-                                    <div class="course-unit-meta">
-                                        <% if (unit.summary.completedCount > 0) { %>
-                                            <span class="course-mini-progress"><%= unit.summary.completedCount %>/<%= unit.summary.accessibleCount %></span>
-                                        <% } %>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                </button>
+                                        <div class="course-roadmap-unit-progress">
+                                            <span><%= unit.summary.completedCount %>/<%= unit.summary.accessibleCount %></span>
+                                            <small>đã chạm</small>
+                                        </div>
+                                    </header>
 
-                                <div class="course-unit-body <%= unitIndex === 0 ? 'is-open' : '' %>" data-unit-body>
                                     <% if (unit.lessons.length > 0) { %>
-                                        <% unit.lessons.forEach((lesson) => { %>
-                                            <% const lessonClasses = [
-                                                'course-lesson-row',
-                                                lesson.isLocked ? 'is-locked' : 'is-open',
-                                                lesson.isCompleted ? 'is-completed' : '',
-                                                lesson._id.toString() === resumeLessonId ? 'is-resume-target' : ''
-                                            ].filter(Boolean).join(' '); %>
-                                            <a
-                                                href="<%= lesson.link %>"
-                                                class="<%= lessonClasses %>"
-                                                data-lesson-row
-                                                data-lesson-title="<%= (lesson.title || '').toLowerCase() %>"
-                                                data-lesson-type="<%= lesson.type %>"
-                                                data-lesson-locked="<%= lesson.isLocked ? 'true' : 'false' %>"
-                                                data-lesson-completed="<%= lesson.isCompleted ? 'true' : 'false' %>">
-                                                <div class="course-lesson-main">
-                                                    <span class="course-lesson-icon"><i class="fas <%= lesson.typeIcon %>"></i></span>
-                                                    <div class="course-lesson-copy">
-                                                        <div class="course-lesson-title-row">
-                                                            <strong><%= lesson.title %></strong>
-                                                            <% if (!lesson.isPublished && canViewDraft) { %>
-                                                                <span class="course-pill is-draft">Nháp</span>
-                                                            <% } %>
-                                                            <% if (lesson.isCompleted) { %>
-                                                                <span class="course-pill is-success"><i class="fas fa-check"></i> Đã học</span>
-                                                            <% } %>
+                                        <div class="course-roadmap-lesson-stack">
+                                            <% unit.lessons.forEach((lesson) => { %>
+                                                <%
+                                                    const lessonStateClass = lesson.isLocked
+                                                        ? 'is-locked'
+                                                        : lesson.isCompleted
+                                                            ? 'is-completed'
+                                                            : (lesson._id.toString() === resumeLessonId ? 'is-current' : 'is-open');
+                                                    const lessonStateLabel = lesson.isLocked
+                                                        ? 'Cần mở khóa'
+                                                        : lesson.isCompleted
+                                                            ? 'Đã hoàn thành'
+                                                            : (lesson._id.toString() === resumeLessonId ? 'Đang nên học tiếp' : 'Sẵn sàng mở');
+                                                    const lessonCtaLabel = lesson.isLocked
+                                                        ? 'Mở khóa'
+                                                        : (lesson._id.toString() === resumeLessonId ? 'Tiếp tục học' : 'Vào bài');
+                                                %>
+                                                <a
+                                                    href="<%= lesson.link %>"
+                                                    class="course-roadmap-lesson <%= lessonStateClass %>"
+                                                    data-lesson-row
+                                                    data-lesson-title="<%= (lesson.title || '').toLowerCase() %>"
+                                                    data-lesson-type="<%= lesson.type %>"
+                                                    data-lesson-locked="<%= lesson.isLocked ? 'true' : 'false' %>"
+                                                    data-lesson-completed="<%= lesson.isCompleted ? 'true' : 'false' %>"
+                                                    data-preview-title="<%= lesson.title %>"
+                                                    data-preview-meta="<%= `${lesson.durationLabel} • ${lesson.typeLabel}` %>"
+                                                    data-preview-state="<%= lessonStateLabel %>"
+                                                    data-preview-href="<%= lesson.link %>"
+                                                    data-preview-cta="<%= lessonCtaLabel %>">
+                                                    <span class="course-roadmap-lesson-node" aria-hidden="true"></span>
+
+                                                    <div class="course-roadmap-lesson-main">
+                                                        <div class="course-roadmap-lesson-copy">
+                                                            <div class="course-roadmap-lesson-title-row">
+                                                                <strong><%= lesson.title %></strong>
+                                                                <% if (!lesson.isPublished && canViewDraft) { %>
+                                                                    <span class="course-pill is-draft">Nháp</span>
+                                                                <% } %>
+                                                            </div>
+
+                                                            <div class="course-roadmap-lesson-meta">
+                                                                <span><i class="far fa-clock"></i><%= lesson.durationLabel %></span>
+                                                                <span><i class="fas <%= lesson.typeIcon %>"></i><%= lesson.typeLabel %></span>
+                                                            </div>
                                                         </div>
-                                                        <div class="course-lesson-meta">
-                                                            <span><i class="far fa-clock"></i><%= lesson.durationLabel %></span>
-                                                            <span><i class="fas <%= lesson.typeIcon %>"></i><%= lesson.typeLabel %></span>
+
+                                                        <div class="course-roadmap-lesson-side">
+                                                            <span class="course-roadmap-state"><%= lessonStateLabel %></span>
+                                                            <% if (lesson.isLocked) { %>
+                                                                <i class="fas fa-lock"></i>
+                                                            <% } else if (lesson.isCompleted) { %>
+                                                                <i class="fas fa-check-circle"></i>
+                                                            <% } else { %>
+                                                                <i class="fas fa-arrow-right"></i>
+                                                            <% } %>
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                <div class="course-lesson-side">
-                                                    <% if (lesson.isLocked) { %>
-                                                        <span class="course-pill is-warm"><i class="fas fa-lock"></i> VIP</span>
-                                                    <% } else { %>
-                                                        <span class="course-pill is-soft">Mở</span>
-                                                    <% } %>
-                                                    <i class="fas fa-arrow-right"></i>
-                                                </div>
-                                            </a>
-                                        <% }) %>
+                                                </a>
+                                            <% }) %>
+                                        </div>
                                     <% } else { %>
                                         <div class="course-empty-inline">
                                             <i class="fas fa-hourglass-half"></i>
-                                            <span>Chương này đang được cập nhật nội dung.</span>
+                                            <span>Chặng này đang được biên soạn nội dung.</span>
                                         </div>
                                     <% } %>
                                 </div>
-                            </article>
+                            </section>
                         <% }) %>
                     <% } else { %>
                         <div class="course-empty-state">
@@ -297,81 +261,133 @@
                 </div>
             </section>
 
-            <section class="course-section course-author-section">
+            <section class="course-section course-ecosystem-section">
                 <div class="course-section-heading">
                     <div>
-                        <span class="course-section-kicker">Tác giả & phong cách học</span>
-                        <h2>Học theo nhịp dễ quay lại</h2>
+                        <span class="course-section-kicker">Hệ sinh thái HTTD</span>
+                        <h2>Không chỉ học xong rồi rời đi</h2>
                     </div>
-                    <p>Bố cục khóa học được ưu tiên để bạn nhìn thấy lộ trình, biết bài nào đang mở, bài nào cần PRO và quay lại đúng điểm đang học.</p>
+                    <p>Khi khóa học nối được với khu vườn, flashcard và thành tích, mỗi lần quay lại đều có lý do rõ ràng hơn là chỉ “đọc tiếp cho xong”.</p>
                 </div>
 
-                <div class="course-author-card">
-                    <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="course-author-card-avatar">
-                    <div class="course-author-card-copy">
-                        <h3><%= authorName %></h3>
-                        <p><%= authorBio %></p>
-                    </div>
+                <div class="course-ecosystem-grid">
+                    <article class="course-ecosystem-card">
+                        <span class="course-ecosystem-kicker">Loot preview</span>
+                        <h3><%= rewardPreview.headline %></h3>
+                        <p>Phần thưởng được gom theo đúng nhịp bài đang mở, để cảm giác tiến bộ luôn nhìn thấy được ngay từ trước khi bắt đầu.</p>
+                        <div class="course-loot-preview is-grid">
+                            <% rewardPreview.summary.forEach((item) => { %>
+                                <span><%= item %></span>
+                            <% }) %>
+                        </div>
+                    </article>
+
+                    <article class="course-ecosystem-card">
+                        <span class="course-ecosystem-kicker">Flashcard</span>
+                        <h3><%= canReviewFlashcards ? 'Ôn lại đúng bộ thẻ gắn với khóa này' : 'Bộ thẻ sẽ mở ra khi bạn bắt đầu học' %></h3>
+                        <p>
+                            <% if (canReviewFlashcards) { %>
+                                Bạn đang có <strong><%= flashcardDeck.count %></strong> thẻ gắn với khóa học này. Có thể vào ôn ngay thay vì phải lục lại từng bài.
+                            <% } else { %>
+                                Khi bạn tạo checkpoint flashcard ngay trong bài, bộ thẻ sẽ gom lại đúng theo khóa học để quay lại ôn tập liền mạch hơn.
+                            <% } %>
+                        </p>
+                        <% if (canReviewFlashcards) { %>
+                            <a href="<%= flashcardDeck.href %>" class="course-btn course-btn-secondary">
+                                <i class="fas fa-layer-group"></i>
+                                <span><%= flashcardDeck.label %></span>
+                            </a>
+                        <% } else if (resumeLessonId) { %>
+                            <a href="/lesson/<%= resumeLessonId %>" class="course-btn course-btn-secondary">
+                                <i class="fas fa-bolt"></i>
+                                <span>Tạo thẻ ngay trong bài đang học</span>
+                            </a>
+                        <% } %>
+                    </article>
+
+                    <article class="course-ecosystem-card course-author-panel">
+                        <span class="course-ecosystem-kicker">Biên soạn</span>
+                        <div class="course-author-card">
+                            <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="course-author-card-avatar">
+                            <div class="course-author-card-copy">
+                                <h3><%= authorName %></h3>
+                                <p><%= authorBio %></p>
+                            </div>
+                        </div>
+                    </article>
                 </div>
             </section>
         </div>
 
         <aside class="course-side-column">
-            <div class="course-side-card course-action-card" data-tone="<%= cta.tone %>">
-                <span class="course-side-kicker"><%= cta.eyebrow %></span>
-                <h2><%= cta.title %></h2>
-                <p><%= cta.body %></p>
-
-                <div class="course-side-actions">
-                    <% if (cta.primary) { %>
-                        <a href="<%= cta.primary.href %>" class="course-btn course-btn-primary course-btn-block">
-                            <i class="fas fa-play-circle"></i>
-                            <span><%= cta.primary.label %></span>
-                        </a>
-                    <% } %>
-                    <% if (cta.secondary) { %>
-                        <a href="<%= cta.secondary.href %>" class="course-btn course-btn-secondary course-btn-block">
-                            <i class="fas fa-compass"></i>
-                            <span><%= cta.secondary.label %></span>
-                        </a>
-                    <% } %>
+            <div
+                class="course-sticky-card"
+                id="courseStickyCard"
+                data-default-state="<%= stickyState %>"
+                data-default-title="<%= stickyTitle %>"
+                data-default-meta="<%= stickyMeta %>"
+                data-default-href="<%= stickyHref %>"
+                data-default-cta="<%= stickyCtaLabel %>">
+                <div class="course-sticky-media">
+                    <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" alt="<%= course.title %>">
                 </div>
 
-                <div class="course-rail-progress">
-                    <div>
-                        <span>Tiến độ</span>
+                <div class="course-sticky-copy">
+                    <span class="course-side-kicker">Tiếp tục học</span>
+                    <strong id="courseStickyState"><%= stickyState %></strong>
+                    <h2 id="courseStickyTitle"><%= stickyTitle %></h2>
+                    <p id="courseStickyMeta"><%= stickyMeta %></p>
+                </div>
+
+                <div class="course-sticky-progress">
+                    <div class="course-progress-head">
+                        <span>Tiến độ khóa</span>
                         <strong><%= progress.percent %>%</strong>
                     </div>
-                    <div>
-                        <span>Còn lại</span>
-                        <strong><%= progress.remainingCount %> bài</strong>
+                    <div class="course-progress-bar">
+                        <span style="width:<%= progress.percent %>%"></span>
+                    </div>
+                    <div class="course-progress-meta">
+                        <span><%= progress.completedCount %>/<%= progress.accessibleCount %> bài đã hoàn thành</span>
+                        <span><%= progress.remainingCount %> bài còn lại</span>
+                    </div>
+                </div>
+
+                <div class="course-sticky-actions">
+                    <a href="<%= stickyHref %>" class="course-btn course-btn-primary course-btn-block" id="courseStickyPrimary">
+                        <i class="fas fa-play-circle"></i>
+                        <span id="courseStickyPrimaryLabel"><%= stickyCtaLabel %></span>
+                    </a>
+
+                    <% if (canReviewFlashcards) { %>
+                        <a href="<%= flashcardDeck.href %>" class="course-btn course-btn-secondary course-btn-block">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Ôn <%= flashcardDeck.count %> flashcard</span>
+                        </a>
+                    <% } %>
+                </div>
+
+                <div class="course-sticky-loot">
+                    <span class="course-sticky-loot-label">Khi đi hết chặng đang mở</span>
+                    <div class="course-loot-preview is-grid compact">
+                        <span>+<%= rewardPreview.water %> nước</span>
+                        <span>+<%= rewardPreview.fertilizer %> phân bón</span>
+                        <span>+<%= rewardPreview.xp %> XP</span>
+                        <span>+<%= rewardPreview.gold %> vàng</span>
                     </div>
                 </div>
             </div>
-
-            <div class="course-side-card">
-                <span class="course-side-kicker">Snapshot</span>
-                <h3>Điểm neo nhanh</h3>
-                <ul class="course-side-list">
-                    <li><span>Khóa đang mở</span><strong><%= progress.accessibleCount %> bài</strong></li>
-                    <li><span>Bài nâng cao</span><strong><%= stats.premiumLessons %></strong></li>
-                    <li><span>Tài liệu đính kèm</span><strong><%= stats.totalDocuments %></strong></li>
-                    <li><span>Người học</span><strong><%= stats.studentCount %></strong></li>
-                </ul>
-            </div>
-
-            <div class="course-side-card">
-                <span class="course-side-kicker">Nhịp học</span>
-                <h3><%= hasStarted ? 'Bạn đã vào guồng' : 'Đề xuất bắt đầu gọn' %></h3>
-                <p>
-                    <% if (hasStarted) { %>
-                        Tiếp tục từ bài chưa hoàn thành để hệ thống giữ đúng nhịp đang học thay vì bắt đầu lại từ đầu.
-                    <% } else { %>
-                        Mở từ bài đầu và đi lần lượt theo từng chương để nhận đủ phần lý thuyết, video và luyện tập.
-                    <% } %>
-                </p>
-            </div>
         </aside>
+    </div>
+
+    <div class="course-mobile-continue-bar" id="courseMobileBar">
+        <div class="course-mobile-continue-copy">
+            <span><%= stickyState %></span>
+            <strong id="courseMobileTitle"><%= stickyTitle %></strong>
+        </div>
+        <a href="<%= stickyHref %>" class="course-btn course-btn-primary" id="courseMobilePrimary">
+            <span id="courseMobilePrimaryLabel"><%= stickyCtaLabel %></span>
+        </a>
     </div>
 </main>
 

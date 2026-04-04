@@ -34,7 +34,13 @@
 <div class="container" style="padding: 40px 20px;">
     <div style="text-align: center; margin-bottom: 30px;">
         <h2>🧠 Ôn Tập Kiến Thức</h2>
-        <p>Kiếm <b>Phân Bón</b> để chăm sóc khu vườn của bạn!</p>
+        <p>
+            <% if (course) { %>
+                Đang ôn lại bộ thẻ gắn với <b><%= course.title %></b> để giữ mạch học không bị đứt.
+            <% } else { %>
+                Kiếm <b>Phân Bón</b> để chăm sóc khu vườn của bạn!
+            <% } %>
+        </p>
     </div>
 
     <div id="loading" style="text-align: center;">Đang tải bộ thẻ...</div>
@@ -42,7 +48,7 @@
         <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 20px;"></i>
         <h3>Hoàn thành xuất sắc!</h3>
         <p>Bạn đã ôn hết thẻ bài hôm nay.</p>
-        <a href="/my-tree" class="btn btn-primary" style="margin-top: 10px;">Về Vườn Dùng Phân Bón 🌱</a>
+        <a href="/my-garden" class="btn btn-primary" style="margin-top: 10px;">Về Vườn Dùng Phân Bón 🌱</a>
     </div>
 
     <div id="reviewArea" style="display:none;">
@@ -70,6 +76,7 @@
 </div>
 
 <script>
+    const courseId = <%- JSON.stringify(courseId || '') %>;
     let cards = [];
     let currentIndex = 0;
     const cardEl = document.getElementById('currentCard');
@@ -77,7 +84,8 @@
 
     // 1. Tải thẻ
     async function loadCards() {
-        const res = await fetch('/api/flashcards/review');
+        const query = courseId ? `?courseId=${encodeURIComponent(courseId)}` : '';
+        const res = await fetch(`/api/flashcards/review${query}`);
         const data = await res.json();
         if(data.cards && data.cards.length > 0) {
             cards = data.cards;

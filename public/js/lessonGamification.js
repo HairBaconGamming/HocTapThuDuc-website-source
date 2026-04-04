@@ -9,6 +9,7 @@
             this.youtubeApiPromise = null;
             this.youtubePlayers = new Map();
             this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            this.autoNextCountdown = null;
             this.init();
         }
 
@@ -368,6 +369,7 @@
             const rewards = celebration.rewards || {};
             const nextLesson = celebration.nextLesson || payload?.nextLesson || null;
             const achievements = Array.isArray(celebration.achievements) ? celebration.achievements.slice(0, 3) : [];
+            const shouldAutoNext = !!(nextLesson?.url);
 
             if (!this.isReducedMotion) {
                 triggerConfetti();
@@ -413,6 +415,16 @@
                         </div>
                     ` : ''}
 
+                    ${shouldAutoNext ? `
+                        <div class="lesson-completion-autonext" id="lessonCompletionAutonext">
+                            <div>
+                                <span class="lesson-completion-subtitle">Binge-learning</span>
+                                <strong>Tự chuyển sang "${nextLesson.title}" sau <span id="lessonCompletionCountdown">5</span> giây</strong>
+                            </div>
+                            <button type="button" class="lesson-completion-button is-secondary is-compact" data-completion-action="cancel-next">Dừng tự chuyển</button>
+                        </div>
+                    ` : ''}
+
                     <div class="lesson-completion-actions">
                         <button type="button" class="lesson-completion-button is-secondary" data-completion-action="stay">Ở lại ôn tiếp</button>
                         <a class="lesson-completion-button is-ghost" data-completion-action="garden" href="/my-garden">Vào khu vườn</a>
@@ -423,6 +435,7 @@
 
             this.completionOverlay.classList.remove('hidden');
             document.body.classList.add('lesson-completion-open');
+            this.startAutoNextCountdown(nextLesson);
         }
 
         renderCompletionMetric(icon, value, label) {
@@ -435,13 +448,44 @@
             `;
         }
 
+        startAutoNextCountdown(nextLesson) {
+            this.clearAutoNextCountdown();
+            if (!nextLesson?.url) return;
+
+            let remaining = 5;
+            const countdownEl = document.getElementById('lessonCompletionCountdown');
+            if (countdownEl) countdownEl.textContent = String(remaining);
+
+            this.autoNextCountdown = window.setInterval(() => {
+                remaining -= 1;
+                if (countdownEl) countdownEl.textContent = String(Math.max(0, remaining));
+                if (remaining <= 0) {
+                    this.clearAutoNextCountdown();
+                    window.location.href = nextLesson.url;
+                }
+            }, 1000);
+        }
+
+        clearAutoNextCountdown() {
+            if (this.autoNextCountdown) {
+                window.clearInterval(this.autoNextCountdown);
+                this.autoNextCountdown = null;
+            }
+        }
+
         handleCompletionAction(action, href) {
+            if (action === 'cancel-next' || action === 'stay' || action === 'close') {
+                this.clearAutoNextCountdown();
+            }
+
             if (action === 'next' && href) {
+                this.clearAutoNextCountdown();
                 window.location.href = href;
                 return;
             }
 
             if (action === 'garden') {
+                this.clearAutoNextCountdown();
                 window.location.href = '/my-garden';
                 return;
             }
