@@ -24,7 +24,7 @@ const LessonWorkspace = {
     },
 
     getScrollContainer() {
-        return document.querySelector('.lesson-reading-shell');
+        return document.querySelector('.lesson-stage');
     },
 
     getOverlay() {

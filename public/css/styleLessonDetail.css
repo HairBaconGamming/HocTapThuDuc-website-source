@@ -1470,3 +1470,58 @@ body.lesson-focus-mode .lesson-reading-surface {
         border-radius: 22px;
     }
 }
+
+/* ==========================================================================
+   LESSON DETAIL V4.3 - Reading density refinements
+   ========================================================================== */
+
+.lesson-stage {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+}
+
+.lesson-reading-shell {
+    overflow-y: visible !important;
+    flex-grow: 1;
+    padding-right: 0;
+}
+
+.lesson-hero-description {
+    display: none;
+}
+
+.lesson-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.lesson-hero-stat {
+    min-width: auto;
+    padding: 6px 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lesson-hero-stat span {
+    margin-bottom: 0;
+    font-size: 0.75rem;
+}
+
+.lesson-hero-stat strong {
+    font-size: 0.9rem;
+}
+
+.lesson-progress-shell {
+    padding: 8px 18px;
+    gap: 5px;
+}
+
+.lesson-progress-copy {
+    font-size: 0.85rem;
+}
