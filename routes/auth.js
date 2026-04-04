@@ -8,6 +8,13 @@ const { isLoggedIn, hasProAccess } = require("../middlewares/auth");
 const { getJwtSecret } = require("../utils/secrets");
 const { achievementChecker } = require("../utils/achievementUtils");
 const { getGoogleOAuthConfig } = require("../utils/googleOAuth");
+const {
+    sanitizeInternalRedirect,
+    getSafeRefererPath,
+    rememberReturnTo,
+    getRememberedReturnTo,
+    consumeReturnTo
+} = require("../utils/authRedirect");
 
 const JWT_SECRET = getJwtSecret();
 const googleOAuthConfig = getGoogleOAuthConfig();
@@ -24,7 +31,29 @@ function buildAuthViewModel(req, activePage) {
         user: req.user || null,
         activePage,
         googleAuthEnabled: googleOAuthConfig.enabled,
+        authRedirect: getRememberedReturnTo(req) || '',
     };
+}
+
+function captureAuthReturnTo(req) {
+    const candidates = [
+        req.query.redirect,
+        req.query.returnTo,
+        req.body?.redirect,
+        req.body?.returnTo,
+        getRememberedReturnTo(req),
+        getSafeRefererPath(req)
+    ];
+
+    for (const candidate of candidates) {
+        const safe = sanitizeInternalRedirect(candidate);
+        if (safe) {
+            rememberReturnTo(req, safe);
+            return safe;
+        }
+    }
+
+    return null;
 }
 
 async function finalizeLogin(req, res, user, options = {}) {
@@ -70,13 +99,21 @@ async function finalizeLogin(req, res, user, options = {}) {
     }
 
     req.flash("success", options.successMessage || "ÄÄƒng nháº­p thÃ nh cÃ´ng!");
-    return res.redirect(options.redirectTo || "/");
+    const safeRedirect =
+        sanitizeInternalRedirect(options.redirectTo) ||
+        consumeReturnTo(req) ||
+        "/";
+    return res.redirect(safeRedirect);
 }
 
 // Login
-router.get("/login", (req, res) => res.render("login", buildAuthViewModel(req, "login")));
+router.get("/login", (req, res) => {
+    captureAuthReturnTo(req);
+    return res.render("login", buildAuthViewModel(req, "login"));
+});
 
 router.post("/login", (req, res, next) => {
+    captureAuthReturnTo(req);
     passport.authenticate("local", (err, user, info) => {
         if (err) return next(err);
         if (!user) {
@@ -100,6 +137,7 @@ router.get("/auth/google", (req, res, next) => {
         return res.redirect("/login");
     }
 
+    captureAuthReturnTo(req);
     req.session.oauthRedirectToForum = req.query.redirect_to_forum === "true";
 
     return passport.authenticate("google", {
@@ -140,9 +178,13 @@ router.get("/auth/google/callback", (req, res, next) => {
 });
 
 // Register
-router.get("/register", (req, res) => res.render("register", buildAuthViewModel(req, "register")));
+router.get("/register", (req, res) => {
+    captureAuthReturnTo(req);
+    return res.render("register", buildAuthViewModel(req, "register"));
+});
 
 router.post("/register", async (req, res) => {
+    captureAuthReturnTo(req);
     const { username, password, class: userClass, school } = req.body;
 
     // Validation

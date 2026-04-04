@@ -1,4 +1,5 @@
 // middlewares/auth.js
+const { rememberReturnTo } = require('../utils/authRedirect');
 
 function wantsJsonResponse(req) {
   const accept = String(req.get('accept') || '');
@@ -22,6 +23,7 @@ module.exports.isLoggedIn = function (req, res, next) {
     // Người dùng chưa đăng nhập
     if (!wantsJsonResponse(req) && req.accepts('html')) {
       // Trả về trang đăng nhập nếu là HTML request
+      rememberReturnTo(req, req.originalUrl);
       return res.redirect('/login');
     } else {
       // Trả về lỗi JSON với mã 401 cho API hoặc AJAX
@@ -39,6 +41,7 @@ module.exports.isPro = function (req, res, next) {
   // 1. Kiểm tra đăng nhập trước
   if (!req.user) {
     if (!wantsJsonResponse(req) && req.accepts('html')) {
+      rememberReturnTo(req, req.originalUrl);
       return res.redirect('/login');
     } else {
       return res.status(401).json({ error: "Bạn cần đăng nhập để truy cập tính năng này" });
