@@ -64,6 +64,9 @@ class LessonDetailsCommentsSystem {
             if (window.LessonWorkspace && typeof window.LessonWorkspace.closePreviewFullscreen === 'function') {
                 window.LessonWorkspace.closePreviewFullscreen();
             }
+            if (window.LessonWorkspace && typeof window.LessonWorkspace.closeFabMenu === 'function') {
+                window.LessonWorkspace.closeFabMenu();
+            }
             modal.classList.remove('hidden');
             this.isModalOpen = true;
             document.body.classList.add('lesson-comments-open');
@@ -110,15 +113,19 @@ class LessonDetailsCommentsSystem {
     updateCommentBadge() {
         const badge = document.getElementById('comment-badge');
         const inlineBadge = document.getElementById('comment-badge-inline');
+        const desktopBadge = document.getElementById('comment-badge-desktop');
         
         if (this.commentCount > 0) {
             if (badge) badge.style.display = 'flex';
             if (badge) badge.textContent = this.commentCount > 9 ? '9+' : this.commentCount;
             if (inlineBadge) inlineBadge.style.display = 'inline-flex';
             if (inlineBadge) inlineBadge.textContent = this.commentCount > 9 ? '9+' : this.commentCount;
+            if (desktopBadge) desktopBadge.style.display = 'inline-flex';
+            if (desktopBadge) desktopBadge.textContent = this.commentCount > 9 ? '9+' : this.commentCount;
         } else {
             if (badge) badge.style.display = 'none';
             if (inlineBadge) inlineBadge.style.display = 'none';
+            if (desktopBadge) desktopBadge.style.display = 'none';
         }
     }
 

@@ -14,8 +14,10 @@ const LessonWorkspace = {
     notesSavedTimer: null,
     activeInteractiveBlock: null,
     activeFullscreenPreview: null,
+    lastScrollTop: 0,
 
     init() {
+        document.body.classList.add('lesson-detail-mode');
         this.bindGlobalEvents();
         this.applySavedLayout();
         this.initLessonContent();
@@ -128,6 +130,7 @@ const LessonWorkspace = {
             scrollContainer.addEventListener('scroll', () => {
                 this.updateReadingProgress();
                 this.queueSaveScrollPosition();
+                this.updateTopbarVisibility();
             });
         }
 
@@ -151,6 +154,7 @@ const LessonWorkspace = {
                     window.lessonCommentsSystem.closeCommentsModal();
                 }
                 this.closePreviewFullscreen();
+                this.closeFabMenu();
                 this.syncOverlay();
             });
         }
@@ -159,6 +163,7 @@ const LessonWorkspace = {
             if (event.key === 'Escape') {
                 this.closePreviewFullscreen();
                 this.setToolsDrawerState(false);
+                this.closeFabMenu();
             }
         });
 
@@ -173,6 +178,7 @@ const LessonWorkspace = {
     handleAction(action) {
         if (action === 'toggle-left-rail') this.toggleRail('left');
         if (action === 'toggle-tools') this.toggleToolsDrawer();
+        if (action === 'toggle-fab-menu') this.toggleFabMenu();
     },
 
     applyLayoutMode(mode, persist = true) {
@@ -220,6 +226,7 @@ const LessonWorkspace = {
         const drawer = this.getToolsDrawer();
         const shouldOpen = drawer?.dataset.drawerState !== 'open';
         this.setToolsDrawerState(shouldOpen);
+        this.closeFabMenu();
     },
 
     setToolsDrawerState(isOpen, persist = true) {
@@ -251,8 +258,35 @@ const LessonWorkspace = {
         const toolsOpen = this.getToolsDrawer()?.dataset.drawerState === 'open';
         const commentsOpen = document.body.classList.contains('lesson-comments-open');
         const previewOpen = !!this.activeFullscreenPreview;
-        const shouldShow = commentsOpen || previewOpen || (this.isMobileLayout() && (leftOpen || toolsOpen));
+        const shouldShow = commentsOpen || previewOpen || toolsOpen || (this.isMobileLayout() && leftOpen);
         overlay.classList.toggle('hidden', !shouldShow);
+    },
+
+    toggleFabMenu() {
+        document.body.classList.toggle('lesson-fab-open');
+    },
+
+    closeFabMenu() {
+        document.body.classList.remove('lesson-fab-open');
+    },
+
+    updateTopbarVisibility() {
+        const container = this.getScrollContainer();
+        if (!container || this.isMobileLayout()) {
+            document.body.classList.remove('lesson-topbar-hidden');
+            return;
+        }
+
+        const currentTop = container.scrollTop;
+        const delta = currentTop - this.lastScrollTop;
+
+        if (currentTop <= 24 || delta < -10) {
+            document.body.classList.remove('lesson-topbar-hidden');
+        } else if (delta > 10) {
+            document.body.classList.add('lesson-topbar-hidden');
+        }
+
+        this.lastScrollTop = currentTop;
     },
 
     initNotes() {
