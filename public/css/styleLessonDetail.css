@@ -673,6 +673,30 @@ body.lesson-right-collapsed .lesson-rail-right {
     border-bottom: 1px solid var(--lesson-border);
 }
 
+.comments-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.1);
+    color: #1d4ed8;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.comments-modal-close:hover {
+    background: rgba(37, 99, 235, 0.16);
+    color: #1e3a8a;
+}
+
+.comments-modal-close:active {
+    transform: scale(0.96);
+}
+
 .comments-modal-footer {
     border-bottom: 0;
     border-top: 1px solid var(--lesson-border);
@@ -1746,6 +1770,18 @@ body.lesson-focus-mode .lesson-reading-surface {
     transition: transform 0.28s ease, opacity 0.22s ease;
 }
 
+.lesson-course-card {
+    flex: 0 0 auto;
+}
+
+.lesson-toc-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 body.lesson-left-collapsed .lesson-rail-left {
     display: flex !important;
     transform: translateX(calc(-100% - 20px));
@@ -1804,6 +1840,18 @@ body.lesson-left-collapsed .lesson-sidebar-reveal {
     bottom: 18px;
 }
 
+.lesson-toc-card .lesson-rail-section-head,
+.lesson-toc-card .lesson-search-field {
+    flex: 0 0 auto;
+}
+
+.toc-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .lesson-fab-stack {
     position: fixed;
     right: 24px;
@@ -1813,6 +1861,14 @@ body.lesson-left-collapsed .lesson-sidebar-reveal {
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+body.lesson-comments-open .lesson-fab-stack,
+body.lesson-tools-open .lesson-fab-stack {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
 }
 
 .lesson-fab-actions {
