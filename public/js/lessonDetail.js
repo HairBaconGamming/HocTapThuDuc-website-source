@@ -14,7 +14,6 @@ const LessonWorkspace = {
     notesSavedTimer: null,
     activeInteractiveBlock: null,
     activeFullscreenPreview: null,
-    lastScrollTop: 0,
 
     init() {
         document.body.classList.add('lesson-detail-mode');
@@ -130,7 +129,6 @@ const LessonWorkspace = {
             scrollContainer.addEventListener('scroll', () => {
                 this.updateReadingProgress();
                 this.queueSaveScrollPosition();
-                this.updateTopbarVisibility();
             });
         }
 
@@ -268,25 +266,6 @@ const LessonWorkspace = {
 
     closeFabMenu() {
         document.body.classList.remove('lesson-fab-open');
-    },
-
-    updateTopbarVisibility() {
-        const container = this.getScrollContainer();
-        if (!container || this.isMobileLayout()) {
-            document.body.classList.remove('lesson-topbar-hidden');
-            return;
-        }
-
-        const currentTop = container.scrollTop;
-        const delta = currentTop - this.lastScrollTop;
-
-        if (currentTop <= 24 || delta < -10) {
-            document.body.classList.remove('lesson-topbar-hidden');
-        } else if (delta > 10) {
-            document.body.classList.add('lesson-topbar-hidden');
-        }
-
-        this.lastScrollTop = currentTop;
     },
 
     initNotes() {
