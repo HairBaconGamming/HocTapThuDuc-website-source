@@ -19,6 +19,7 @@ const { achievementChecker } = require("../utils/achievementUtils");
 const streakHelper = require("../utils/streakHelper");
 const { grantRewardBundle } = require("../services/gardenRewardService");
 const { applyLessonXpBuff, getGuildBuffSnapshotForUser } = require("../services/guildService");
+const { upsertStandingDelta } = require("../services/guildCompetitionService");
 const {
     buildCompletionGardenBundle,
     buildCompletionCelebrationPayload
@@ -421,6 +422,14 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
             },
             { upsert: true }
         );
+
+        if (user.guild) {
+            await upsertStandingDelta({
+                guildId: user.guild,
+                xp: XP_REWARD,
+                points: POINTS
+            });
+        }
 
         const celebration = buildCompletionCelebrationPayload({
             lessonTitle: lesson.title,

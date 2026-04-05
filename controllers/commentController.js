@@ -6,6 +6,29 @@ const {
     sanitizePlainText,
     validateAnchorAgainstLesson
 } = require('../utils/lessonAnchorUtils');
+const { getWeeklyAuraMap } = require('../services/guildCompetitionService');
+
+function decorateUserWithGuildAura(user, auraMap) {
+    if (!user) return user;
+    const aura = user.guild ? auraMap.get(String(user.guild)) : null;
+    return {
+        ...user,
+        guildAura: aura || null
+    };
+}
+
+function decorateCommentsWithGuildAura(comments, auraMap) {
+    return comments.map((comment) => ({
+        ...comment,
+        user: decorateUserWithGuildAura(comment.user, auraMap),
+        replies: Array.isArray(comment.replies)
+            ? comment.replies.map((reply) => ({
+                ...reply,
+                user: decorateUserWithGuildAura(reply.user, auraMap)
+            }))
+            : []
+    }));
+}
 
 async function loadAccessibleLesson(lessonId, user) {
     const lesson = await Lesson.findById(lessonId)
@@ -58,8 +81,8 @@ exports.getComments = async (req, res) => {
         }
 
         const comments = await Comment.find({ lesson: lessonId, isDeleted: false })
-            .populate('user', 'username avatar')
-            .populate('replies.user', 'username avatar')
+            .populate('user', 'username avatar guild')
+            .populate('replies.user', 'username avatar guild')
             .populate('likedBy', 'username')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -67,10 +90,12 @@ exports.getComments = async (req, res) => {
             .lean();
 
         const total = await Comment.countDocuments({ lesson: lessonId, isDeleted: false });
+        const auraMap = await getWeeklyAuraMap();
+        const decoratedComments = decorateCommentsWithGuildAura(comments, auraMap);
 
         res.json({
             success: true,
-            comments,
+            comments: decoratedComments,
             pagination: {
                 total,
                 page,
@@ -114,12 +139,16 @@ exports.createComment = async (req, res) => {
         });
 
         await comment.save();
-        await comment.populate('user', 'username avatar');
+        await comment.populate('user', 'username avatar guild');
+        const auraMap = await getWeeklyAuraMap();
 
         res.status(201).json({
             success: true,
             message: 'Bình luận thành công',
-            comment
+            comment: {
+                ...comment.toObject(),
+                user: decorateUserWithGuildAura(comment.user.toObject ? comment.user.toObject() : comment.user, auraMap)
+            }
         });
     } catch (err) {
         console.error('Create comment error:', err);
@@ -241,12 +270,17 @@ exports.addReply = async (req, res) => {
         });
 
         await comment.save();
-        await comment.populate('replies.user', 'username avatar');
+        await comment.populate('replies.user', 'username avatar guild');
+        const auraMap = await getWeeklyAuraMap();
+        const latestReply = comment.replies[comment.replies.length - 1];
 
         res.status(201).json({
             success: true,
             message: 'Trả lời thành công',
-            reply: comment.replies[comment.replies.length - 1]
+            reply: {
+                ...latestReply.toObject(),
+                user: decorateUserWithGuildAura(latestReply.user.toObject ? latestReply.user.toObject() : latestReply.user, auraMap)
+            }
         });
     } catch (err) {
         console.error('Add reply error:', err);

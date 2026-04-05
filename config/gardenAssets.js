@@ -63,7 +63,7 @@ module.exports = {
             type: 'plant',
             price: 2500,
             maxStage: 7,
-            afterharvestStage: 5,
+            afterharvestStage: 4,
             rewardGold: { min: 500, max: 600 },
             unlockLevel: 15,
             rewardXP: 2500,

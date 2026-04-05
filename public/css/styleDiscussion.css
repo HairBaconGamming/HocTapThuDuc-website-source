@@ -38,6 +38,18 @@ textarea:focus { outline: none; border-color: #8b7f7f; }
 .comment-content { flex: 1; }
 .comment-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
 .comment-author { font-weight: 600; color: #2c2c2c; }
+.comment-guild-aura-inline,
+.comment-guild-aura-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: #f4f4f5;
+    color: #44403c;
+}
 .comment-badge { background: #f0ebe5; color: #8b7f7f; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .comment-time { font-size: 0.85rem; color: #999; }
 .comment-text { color: #4a4a4a; margin-bottom: 10px; line-height: 1.6; text-align: left; word-break: break-word; }
@@ -52,12 +64,27 @@ textarea:focus { outline: none; border-color: #8b7f7f; }
 /* Replies */
 .replies-section { margin-top: 15px; padding-left: 15px; border-left: 2px solid #e8e6e1; }
 .reply { display: flex; gap: 12px; padding: 12px 0; }
-.reply-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e8e6e1; }
+.reply-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e8e6e1; border: 2px solid transparent; }
 .reply-content { flex: 1; }
 .reply-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.85rem; }
 .reply-author { font-weight: 600; color: #2c2c2c; }
 .reply-time { color: #999; }
 .reply-text { color: #4a4a4a; font-size: 0.95rem; line-height: 1.5; word-break: break-word; }
+
+.guild-aura-gold {
+    border-color: rgba(245, 158, 11, 0.9);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.14), 0 0 24px rgba(245, 158, 11, 0.22);
+}
+
+.guild-aura-silver {
+    border-color: rgba(148, 163, 184, 0.9);
+    box-shadow: 0 0 0 4px rgba(203, 213, 225, 0.14), 0 0 20px rgba(148, 163, 184, 0.2);
+}
+
+.guild-aura-bronze {
+    border-color: rgba(180, 83, 9, 0.9);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1), 0 0 18px rgba(180, 83, 9, 0.18);
+}
 
 /* Reply Form (Hidden by default) */
 .reply-form-container { margin-top: 15px; display: none; animation: fadeIn 0.3s ease; }

@@ -24,9 +24,52 @@ const GuildSchema = new mongoose.Schema({
         tomato: { type: Number, default: 0 }
     },
     totalContributionValue: { type: Number, default: 0 },
+    announcement: {
+        content: { type: String, default: '', trim: true, maxlength: 700 },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        updatedAt: { type: Date, default: null }
+    },
+    weeklyGoalSnapshot: {
+        goalId: { type: mongoose.Schema.Types.ObjectId, ref: 'GuildWeeklyGoal', default: null },
+        weekKey: { type: String, default: '' },
+        title: { type: String, default: '' },
+        targetType: { type: String, default: 'spirit_power' },
+        targetResource: { type: String, default: null },
+        targetAmount: { type: Number, default: 0 },
+        currentAmount: { type: Number, default: 0 },
+        rewardPreview: { type: String, default: '' },
+        status: { type: String, default: 'idle' }
+    },
+    seasonBadge: {
+        title: { type: String, default: '' },
+        icon: { type: String, default: '' },
+        aura: { type: String, default: '' }
+    },
     settings: {
-        joinMode: { type: String, enum: ['open', 'invite'], default: 'open' },
-        isPublic: { type: Boolean, default: true }
+        joinMode: { type: String, enum: ['open', 'approval', 'invite'], default: 'open' },
+        isPublic: { type: Boolean, default: true },
+        inviteCode: { type: String, default: '' },
+        joinThresholds: {
+            minLevel: { type: Number, default: 0 },
+            minStreak: { type: Number, default: 0 },
+            minTotalPoints: { type: Number, default: 0 },
+            minWeeklyMinutes: { type: Number, default: 0 }
+        },
+        permissions: {
+            leader: { type: mongoose.Schema.Types.Mixed, default: {} },
+            co_leader: { type: mongoose.Schema.Types.Mixed, default: {} },
+            elder: { type: mongoose.Schema.Types.Mixed, default: {} },
+            member: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        autoModeration: {
+            enabled: { type: Boolean, default: false },
+            kickAfterInactiveDays: { type: Number, default: 0 },
+            kickIfWeeklyContributionBelow: { type: Number, default: 0 },
+            excludeRoles: {
+                type: [String],
+                default: ['leader', 'co_leader']
+            }
+        }
     },
     lastContributionAt: { type: Date, default: null }
 }, { timestamps: true });

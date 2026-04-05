@@ -186,7 +186,7 @@ class LessonDetailsCommentsSystem {
         author.className = 'comment-author';
 
         const avatar = document.createElement('img');
-        avatar.className = 'comment-avatar';
+        avatar.className = `comment-avatar ${this.getGuildAuraClass(comment.user?.guildAura)}`.trim();
         avatar.src = this.getSafeAssetUrl(comment.user?.avatar, '/uploads/default-avatar.png');
         avatar.alt = comment.user?.username || 'Người dùng';
         author.appendChild(avatar);
@@ -199,6 +199,12 @@ class LessonDetailsCommentsSystem {
         meta.className = 'comment-meta';
         meta.textContent = this.getTimeAgo(new Date(comment.createdAt));
         info.appendChild(username);
+        if (comment.user?.guildAura?.title) {
+            const aura = document.createElement('small');
+            aura.className = `comment-guild-aura-badge ${this.getGuildAuraClass(comment.user.guildAura)}`.trim();
+            aura.textContent = `${comment.user.guildAura.icon || '✨'} ${comment.user.guildAura.title}`;
+            info.appendChild(aura);
+        }
         info.appendChild(meta);
         author.appendChild(info);
         header.appendChild(author);
@@ -231,6 +237,7 @@ class LessonDetailsCommentsSystem {
         top.className = 'reply-meta';
 
         const avatar = document.createElement('img');
+        avatar.className = this.getGuildAuraClass(reply.user?.guildAura);
         avatar.src = this.getSafeAssetUrl(reply.user?.avatar, '/uploads/default-avatar.png');
         avatar.alt = reply.user?.username || 'Người dùng';
         top.appendChild(avatar);
@@ -238,6 +245,13 @@ class LessonDetailsCommentsSystem {
         const name = document.createElement('strong');
         name.textContent = reply.user?.username || 'Anonymous';
         top.appendChild(name);
+
+        if (reply.user?.guildAura?.icon) {
+            const aura = document.createElement('em');
+            aura.className = `comment-guild-aura-chip ${this.getGuildAuraClass(reply.user.guildAura)}`.trim();
+            aura.textContent = reply.user.guildAura.icon;
+            top.appendChild(aura);
+        }
 
         const time = document.createElement('span');
         time.textContent = this.getTimeAgo(new Date(reply.createdAt));
@@ -434,6 +448,11 @@ class LessonDetailsCommentsSystem {
             }
         } catch (error) {}
         return fallback;
+    }
+
+    getGuildAuraClass(guildAura) {
+        if (!guildAura?.aura) return '';
+        return `guild-aura-${guildAura.aura}`;
     }
 }
 

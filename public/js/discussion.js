@@ -216,6 +216,10 @@ class DiscussionSystem {
 
     buildCommentHTML(comment) {
         const timeAgo = this.getTimeAgo(comment.createdAt);
+        const commentAuraClass = this.getGuildAuraClass(comment.user?.guildAura);
+        const commentAuraBadge = comment.user?.guildAura?.title
+            ? `<span class="comment-guild-aura-inline ${commentAuraClass}">${comment.user.guildAura.icon || '✨'} ${this.escapeHtml(comment.user.guildAura.title)}</span>`
+            : '';
         
         // [FIXED] Dùng hàm checkIsLiked thay vì .includes()
         const isLiked = this.checkIsLiked(comment.likedBy);
@@ -235,13 +239,18 @@ class DiscussionSystem {
                 const rLiked = this.checkIsLiked(r.likedBy);
                 const rLikeClass = rLiked ? 'liked' : '';
                 const rLikeIcon = rLiked ? 'fas' : 'far';
+                const replyAuraClass = this.getGuildAuraClass(r.user?.guildAura);
+                const replyAuraIcon = r.user?.guildAura?.icon
+                    ? `<span class="comment-guild-aura-icon ${replyAuraClass}">${this.escapeHtml(r.user.guildAura.icon)}</span>`
+                    : '';
 
                 repliesHtml += `
                     <div class="reply">
-                        <img src="${r.user?.avatar || '/uploads/default-avatar.png'}" class="reply-avatar">
+                        <img src="${r.user?.avatar || '/uploads/default-avatar.png'}" class="reply-avatar ${replyAuraClass}">
                         <div class="reply-content">
                             <div class="reply-header">
                                 <span class="reply-author">${this.escapeHtml(r.user?.username || 'Ẩn danh')}</span>
+                                ${replyAuraIcon}
                                 ${r.user?.username === this.authorUsername ? '<span class="comment-badge" style="font-size:0.6rem">Tác giả</span>' : ''}
                                 <span class="reply-time">${this.getTimeAgo(r.createdAt)}</span>
                             </div>
@@ -259,10 +268,11 @@ class DiscussionSystem {
 
         return `
             <div class="comment" id="comment-${comment._id}">
-                <img src="${comment.user?.avatar || '/uploads/default-avatar.png'}" class="comment-avatar">
+                <img src="${comment.user?.avatar || '/uploads/default-avatar.png'}" class="comment-avatar ${commentAuraClass}">
                 <div class="comment-content">
                     <div class="comment-header">
                         <span class="comment-author">${this.escapeHtml(comment.user?.username || 'Ẩn danh')}</span>
+                        ${commentAuraBadge}
                         ${authorBadge}
                         <span class="comment-time">${timeAgo}</span>
                     </div>
@@ -341,6 +351,11 @@ class DiscussionSystem {
                    .replace(/>/g, "&gt;")
                    .replace(/"/g, "&quot;")
                    .replace(/'/g, "&#039;");
+    }
+
+    getGuildAuraClass(guildAura) {
+        if (!guildAura?.aura) return '';
+        return `guild-aura-${guildAura.aura}`;
     }
 }
 

@@ -2296,6 +2296,44 @@ body.lesson-fab-open .lesson-fab-main i {
     height: 36px;
     border-radius: 999px;
     object-fit: cover;
+    border: 2px solid transparent;
+    box-shadow: 0 0 0 0 transparent;
+}
+
+.comment-guild-aura-badge,
+.comment-guild-aura-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(226, 232, 240, 0.9);
+    color: #334155;
+}
+
+.comment-guild-aura-chip {
+    padding: 2px 7px;
+    font-style: normal;
+    letter-spacing: normal;
+}
+
+.guild-aura-gold {
+    border-color: rgba(245, 158, 11, 0.9);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.16), 0 0 24px rgba(245, 158, 11, 0.28);
+}
+
+.guild-aura-silver {
+    border-color: rgba(148, 163, 184, 0.9);
+    box-shadow: 0 0 0 4px rgba(203, 213, 225, 0.18), 0 0 20px rgba(148, 163, 184, 0.24);
+}
+
+.guild-aura-bronze {
+    border-color: rgba(217, 119, 6, 0.9);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.12), 0 0 20px rgba(180, 83, 9, 0.24);
 }
 
 .comment-info strong,

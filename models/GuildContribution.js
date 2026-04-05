@@ -9,7 +9,9 @@ const GuildContributionSchema = new mongoose.Schema({
         required: true
     },
     amount: { type: Number, required: true, min: 1 },
-    contributionValue: { type: Number, required: true, min: 1 }
+    contributionValue: { type: Number, required: true, min: 0.1 },
+    applauseCount: { type: Number, default: 0, min: 0 },
+    applaudedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('GuildContribution', GuildContributionSchema);

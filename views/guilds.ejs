@@ -1,35 +1,45 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleGuild.css">
 
-<main class="guild-page-shell">
-    <section class="guild-hero">
-        <div class="guild-hero-copy">
+<%
+    const joinModeLabelMap = {
+        open: 'Vào tự do',
+        approval: 'Cần phê duyệt',
+        invite: 'Chỉ qua mật lệnh'
+    };
+%>
+
+<main class="guild-page-shell guild-page-shell--hub">
+    <section class="guild-hub-hero">
+        <div class="guild-hub-copy">
             <span class="guild-kicker">Tông Môn / Bang Hội</span>
-            <h1>Khai tông và hợp sức nuôi Linh Thụ.</h1>
+            <h1>Khai tông, kết minh và nuôi dưỡng Linh Thụ chung.</h1>
             <p>
-                Gia nhập một cộng đồng tự học, quyên góp tài nguyên cho Linh Thụ và nhận buff
-                chung cho cả Tông Môn.
+                Gia nhập một cộng đồng tự học, quyên góp tài nguyên từ khu vườn cá nhân và cùng nhau mở khóa buff
+                cho cả Tông Môn.
             </p>
-            <div class="guild-hero-badges">
+            <div class="guild-identity-row">
                 <span class="guild-chip">Cần Level <%= minCreateLevel %> để lập Tông Môn</span>
                 <span class="guild-chip"><%= realmInfo.fullName %></span>
-                <span class="guild-chip">Buff XP + Bảo trợ Vườn</span>
+                <span class="guild-chip">XP học bài + Buff khu vườn</span>
             </div>
         </div>
 
-        <div class="guild-create-card">
+        <div class="guild-create-panel">
             <div class="guild-card-head">
-                <span class="guild-mini-kicker">Bắt đầu</span>
-                <h2>Lập Tông Môn mới</h2>
+                <div>
+                    <span class="guild-mini-kicker">Bắt đầu</span>
+                    <h2>Lập Tông Môn mới</h2>
+                </div>
             </div>
-            <form action="/guilds" method="POST" class="guild-form">
+            <form action="/guilds" method="POST" class="guild-create-form">
                 <label>
                     <span>Tên Tông Môn</span>
                     <input type="text" name="name" maxlength="60" minlength="3" placeholder="Ví dụ: Thiên Mộc Tông" required>
                 </label>
                 <label>
                     <span>Mô tả ngắn</span>
-                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh thần, mục tiêu, lời hứa của Tông Môn"></textarea>
+                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh thần, mục tiêu và lời hứa của Tông Môn"></textarea>
                 </label>
                 <button type="submit" class="guild-primary-btn" <%= canCreateGuild ? '' : 'disabled' %>>Khai tông ngay</button>
                 <% if (!canCreateGuild) { %>
@@ -39,19 +49,19 @@
         </div>
     </section>
 
-    <section class="guild-list-section">
-        <div class="guild-section-head">
+    <section class="guild-directory">
+        <div class="guild-card-head">
             <div>
-                <span class="guild-kicker">Tông Môn đang mở</span>
+                <span class="guild-mini-kicker">Tông Môn đang mở</span>
                 <h2>Chọn một nơi để cùng nhau thăng cấp.</h2>
             </div>
-            <p><%= guilds.length %> Tông Môn đang sẵn sàng chào đón thành viên mới.</p>
+            <span class="guild-card-meta"><%= guilds.length %> tông môn đang chờ thành viên mới</span>
         </div>
 
-        <div class="guild-grid">
+        <div class="guild-directory-grid">
             <% guilds.forEach((entry) => { %>
-                <article class="guild-list-card">
-                    <div class="guild-list-top">
+                <article class="guild-directory-card">
+                    <div class="guild-directory-top">
                         <div>
                             <span class="guild-stage-pill">Stage <%= entry.treeProgress.current.stage %></span>
                             <h3><%= entry.name %></h3>
@@ -59,34 +69,33 @@
                         <div class="guild-members-pill"><%= entry.memberCount %>/<%= entry.memberLimit %></div>
                     </div>
 
-                    <p class="guild-list-description"><%= entry.description || 'Tông Môn này đang tìm kiếm những người học có tâm và có chí.' %></p>
+                    <p><%= entry.description || 'Tông Môn này đang chiêu mộ những đồng môn muốn vừa học giỏi vừa nuôi Linh Thụ thật mạnh.' %></p>
 
-                    <div class="guild-list-meta">
-                        <span>Trưởng môn: <strong><%= entry.leader?.username || 'Ẩn danh' %></strong></span>
-                        <span>Linh Thụ: <strong><%= entry.treeProgress.current.name %></strong></span>
+                    <div class="guild-identity-row">
+                        <span class="guild-chip"><%= joinModeLabelMap[entry.settings?.joinMode || 'open'] %></span>
+                        <span class="guild-chip">Level tối thiểu <%= entry.settings?.joinThresholds?.minLevel || entry.levelRequirement || 0 %></span>
                     </div>
 
-                    <div class="guild-list-buffs">
-                        <span>+<%= entry.buffSnapshot.lessonXpPct %>% XP học bài</span>
-                        <span>+<%= entry.buffSnapshot.witherTimeBonusPct %>% độ bền cây</span>
+                    <div class="guild-buff-ribbons guild-buff-ribbons--compact">
+                        <span class="guild-buff-ribbon guild-buff-ribbon--xp"><small>XP học bài</small><strong>+<%= entry.buffSnapshot.lessonXpPct %>%</strong></span>
+                        <span class="guild-buff-ribbon guild-buff-ribbon--garden"><small>Độ bền cây</small><strong>+<%= entry.buffSnapshot.witherTimeBonusPct %>%</strong></span>
                     </div>
 
-                    <div class="guild-list-progress">
-                        <div class="guild-progress-bar">
-                            <span style="width: <%= entry.treeProgress.percent %>%"></span>
-                        </div>
-                        <% if (entry.treeProgress.next) { %>
-                            <small>Còn <%= entry.treeProgress.xpForNextStage %> Linh Lực để đạt <%= entry.treeProgress.next.name %>.</small>
+                    <div class="guild-progress-bar">
+                        <span style="width: <%= entry.treeProgress.percent %>%"></span>
+                    </div>
+
+                    <div class="guild-directory-actions">
+                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem chi tiết</a>
+                        <% if (entry.settings?.joinMode === 'open') { %>
+                            <form action="/guilds/<%= entry.slug %>/join" method="POST">
+                                <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.settings?.joinThresholds?.minLevel || entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhập</button>
+                            </form>
+                        <% } else if (entry.settings?.joinMode === 'approval') { %>
+                            <a href="/guilds/<%= entry.slug %>" class="guild-primary-btn">Nộp đơn</a>
                         <% } else { %>
-                            <small>Linh Thụ đã đạt cảnh giới tối thượng hiện tại.</small>
+                            <a href="/guilds/<%= entry.slug %>" class="guild-primary-btn">Nhập mật lệnh</a>
                         <% } %>
-                    </div>
-
-                    <div class="guild-list-actions">
-                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem Tông Môn</a>
-                        <form action="/guilds/<%= entry.slug %>/join" method="POST">
-                            <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhập</button>
-                        </form>
                     </div>
                 </article>
             <% }) %>

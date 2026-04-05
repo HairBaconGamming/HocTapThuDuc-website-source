@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema(
     // --- NEW FIELD ---
     avatar: { type: String, default: "https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191" }, // Default avatar
     guild: { type: mongoose.Schema.Types.ObjectId, ref: 'Guild', default: null, index: true },
-    guildRole: { type: String, enum: ['leader', 'officer', 'member'], default: 'member' },
+    guildRole: { type: String, enum: ['leader', 'co_leader', 'elder', 'member', 'officer'], default: 'member' },
     joinedGuildAt: { type: Date, default: null },
     points: { type: Number, default: 0 },
     totalPoints: { type: Number, default: 0 },

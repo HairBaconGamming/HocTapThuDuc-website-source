@@ -1,24 +1,28 @@
+const crypto = require('crypto');
 const slugify = require('slugify');
 const mongoose = require('mongoose');
 const Guild = require('../models/Guild');
 const User = require('../models/User');
+const UserActivityLog = require('../models/UserActivityLog');
 const GuildContribution = require('../models/GuildContribution');
+const GuildApplication = require('../models/GuildApplication');
+const GuildAuditLog = require('../models/GuildAuditLog');
+const GuildWeeklyGoal = require('../models/GuildWeeklyGoal');
 const {
+    RESOURCE_META,
     buildGuildBuffSnapshot,
     buildGuildTreeProgress,
     getGuildTreeStageData
 } = require('../utils/guildTreeUtils');
+const { getWeekRange } = require('../utils/guildPeriodUtils');
+const { GuildServiceError } = require('./guildErrors');
+const { getGuildRoleLabel, normalizeGuildRole } = require('./guildAccessService');
+const { createAuditLog, buildJoinThresholdFeedback } = require('./guildGovernanceService');
+const { getGuildCompetitionSnapshot } = require('./guildCompetitionService');
 
 const MIN_JOIN_LEVEL = 3;
 const MIN_CREATE_LEVEL = 10;
-
-class GuildServiceError extends Error {
-    constructor(message, status = 400) {
-        super(message);
-        this.name = 'GuildServiceError';
-        this.status = status;
-    }
-}
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 function normalizeGuildName(name) {
     return String(name || '').trim().replace(/\s+/g, ' ');
@@ -41,26 +45,123 @@ function syncGuildDerivedState(guild) {
     const stageData = getGuildTreeStageData(guild.treeXp || 0);
     guild.treeStage = stageData.stage;
     guild.buffSnapshot = buildGuildBuffSnapshot(guild.treeXp || 0);
+    if (!guild.settings?.inviteCode) {
+        guild.settings = guild.settings || {};
+        guild.settings.inviteCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+    }
     return guild;
 }
 
+async function buildMemberActivityMap(userIds) {
+    if (!userIds.length) return new Map();
+
+    const weekRange = getWeekRange();
+    const todayRange = {
+        start: weekRange.start.toISOString().slice(0, 10),
+        end: weekRange.end.toISOString().slice(0, 10)
+    };
+
+    const rows = await UserActivityLog.aggregate([
+        { $match: { user: { $in: userIds }, dateStr: { $gte: todayRange.start, $lte: todayRange.end } } },
+        {
+            $group: {
+                _id: '$user',
+                weeklyMinutes: { $sum: '$minutes' },
+                lastActive: { $max: '$lastActive' }
+            }
+        }
+    ]);
+
+    return new Map(rows.map((row) => [String(row._id), row]));
+}
+
+async function buildWeeklyContributionMap(userIds, guildId) {
+    if (!userIds.length) return new Map();
+    const weekRange = getWeekRange();
+    const rows = await GuildContribution.aggregate([
+        {
+            $match: {
+                guild: guildId,
+                user: { $in: userIds },
+                createdAt: { $gte: weekRange.start, $lte: weekRange.end }
+            }
+        },
+        {
+            $group: {
+                _id: '$user',
+                weeklyContributionValue: { $sum: '$contributionValue' }
+            }
+        }
+    ]);
+
+    return new Map(rows.map((row) => [String(row._id), Number(row.weeklyContributionValue || 0)]));
+}
+
+function getContributionDrama(contributionValue) {
+    const safeValue = Number(contributionValue || 0);
+    if (safeValue >= 2500) {
+        return { tone: 'legendary', label: 'Bạo kích', highlight: true };
+    }
+    if (safeValue >= 700) {
+        return { tone: 'epic', label: 'Rực sáng', highlight: true };
+    }
+    return { tone: 'calm', label: 'Bền bỉ', highlight: false };
+}
+
 async function getGuildMemberPreview(guildId) {
-    return User.find({ guild: guildId })
+    const members = await User.find({ guild: guildId })
         .select('username avatar level guildRole joinedGuildAt')
-        .sort({ guildRole: 1, level: -1, username: 1 })
+        .sort({ level: -1, username: 1 })
         .lean();
+
+    const memberIds = members.map((member) => member._id);
+    const [activityMap, contributionMap] = await Promise.all([
+        buildMemberActivityMap(memberIds),
+        buildWeeklyContributionMap(memberIds, guildId)
+    ]);
+
+    const onlineThreshold = new Date(Date.now() - ONLINE_WINDOW_MS);
+
+    return members.map((member) => {
+        const activity = activityMap.get(String(member._id));
+        const lastActive = activity?.lastActive ? new Date(activity.lastActive) : null;
+        return {
+            ...member,
+            roleKey: normalizeGuildRole(member.guildRole),
+            roleLabel: getGuildRoleLabel(member.guildRole),
+            weeklyStudyMinutes: Number(activity?.weeklyMinutes || 0),
+            weeklyContributionValue: Number(contributionMap.get(String(member._id)) || 0),
+            lastActive,
+            isOnline: Boolean(lastActive && lastActive >= onlineThreshold)
+        };
+    });
 }
 
 async function getGuildContributionPreview(guildId) {
-    return GuildContribution.find({ guild: guildId })
+    const entries = await GuildContribution.find({ guild: guildId })
         .sort({ createdAt: -1 })
-        .limit(12)
+        .limit(16)
         .populate('user', 'username avatar')
         .lean();
+
+    return entries.map((entry) => {
+        const meta = RESOURCE_META[entry.resourceType] || { label: entry.resourceType, icon: '✨', tone: 'neutral' };
+        const drama = getContributionDrama(entry.contributionValue);
+        return {
+            ...entry,
+            resourceLabel: meta.label,
+            resourceIcon: meta.icon,
+            resourceTone: meta.tone,
+            dramaTone: drama.tone,
+            dramaLabel: drama.label,
+            isLegendary: drama.tone === 'legendary',
+            isHighlight: drama.highlight
+        };
+    });
 }
 
 async function getGuildTopContributors(guildId) {
-    return GuildContribution.aggregate([
+    const rows = await GuildContribution.aggregate([
         { $match: { guild: guildId } },
         {
             $group: {
@@ -87,31 +188,60 @@ async function getGuildTopContributors(guildId) {
                 username: '$user.username',
                 avatar: '$user.avatar',
                 level: '$user.level',
+                guildRole: '$user.guildRole',
                 totalContributionValue: 1,
                 totalAmount: 1
             }
         }
     ]);
+
+    return rows.map((row, index) => ({
+        ...row,
+        rank: index + 1
+    }));
 }
 
-async function hydrateGuildDetail(guild) {
+async function hydrateGuildDetail(guild, viewerUserId = null) {
     if (!guild) return null;
     syncGuildDerivedState(guild);
 
-    const [members, recentContributions, topContributors] = await Promise.all([
+    const [members, recentContributions, topContributors, competition, applications, auditLogs, weeklyGoal] = await Promise.all([
         getGuildMemberPreview(guild._id),
         getGuildContributionPreview(guild._id),
-        getGuildTopContributors(guild._id)
+        getGuildTopContributors(guild._id),
+        getGuildCompetitionSnapshot(guild._id),
+        GuildApplication.find({ guild: guild._id, status: 'pending' })
+            .sort({ createdAt: 1 })
+            .limit(12)
+            .populate('applicant', 'username avatar level currentStreak totalPoints')
+            .lean(),
+        GuildAuditLog.find({ guild: guild._id })
+            .sort({ createdAt: -1 })
+            .limit(18)
+            .populate('actor', 'username avatar')
+            .populate('targetUser', 'username avatar')
+            .lean(),
+        guild.weeklyGoalSnapshot?.goalId
+            ? GuildWeeklyGoal.findById(guild.weeklyGoalSnapshot.goalId).lean()
+            : GuildWeeklyGoal.findOne({ guild: guild._id, weekKey: guild.weeklyGoalSnapshot?.weekKey || '', status: { $in: ['active', 'completed'] } }).lean()
     ]);
 
     const treeProgress = buildGuildTreeProgress(guild.treeXp || 0);
+    const viewerMember = viewerUserId
+        ? members.find((member) => String(member._id) === String(viewerUserId))
+        : null;
 
     return {
         guild,
         members,
         recentContributions,
         topContributors,
-        treeProgress
+        treeProgress,
+        competition,
+        applications,
+        auditLogs,
+        weeklyGoal,
+        viewerMember
     };
 }
 
@@ -136,7 +266,7 @@ async function getUserGuildContext(userId) {
 
     const treeProgress = buildGuildTreeProgress(guild.treeXp || 0);
     return {
-        user,
+        user: { ...user, guildRole: normalizeGuildRole(user.guildRole) },
         guild,
         buffs: buildGuildBuffSnapshot(guild.treeXp || 0),
         treeProgress
@@ -197,7 +327,23 @@ async function createGuild({ userId, name, description }) {
         description: String(description || '').trim().slice(0, 260),
         leader: user._id,
         memberCount: 1,
-        levelRequirement: MIN_JOIN_LEVEL
+        levelRequirement: MIN_JOIN_LEVEL,
+        announcement: {
+            content: 'Tông Môn vừa khai sơn. Hãy cùng nhau nuôi lớn Linh Thụ và dựng nên khí thế đầu tiên.',
+            updatedBy: user._id,
+            updatedAt: new Date()
+        },
+        settings: {
+            joinMode: 'open',
+            isPublic: true,
+            inviteCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+            joinThresholds: {
+                minLevel: MIN_JOIN_LEVEL,
+                minStreak: 0,
+                minTotalPoints: 0,
+                minWeeklyMinutes: 0
+            }
+        }
     });
 
     syncGuildDerivedState(guild);
@@ -208,10 +354,18 @@ async function createGuild({ userId, name, description }) {
     user.joinedGuildAt = new Date();
     await user.save();
 
+    await createAuditLog({
+        guildId: guild._id,
+        actorId: user._id,
+        targetUserId: user._id,
+        actionType: 'guild_created',
+        message: `${user.username} đã khai sơn ${guild.name}.`
+    });
+
     return guild;
 }
 
-async function joinGuild({ userId, guildIdOrSlug }) {
+async function joinGuild({ userId, guildIdOrSlug, inviteCode = '' }) {
     const user = await User.findById(userId);
     if (!user) {
         throw new GuildServiceError('Không tìm thấy người chơi.', 404);
@@ -227,14 +381,24 @@ async function joinGuild({ userId, guildIdOrSlug }) {
     if (!guild) {
         throw new GuildServiceError('Tông Môn không tồn tại.', 404);
     }
-    if ((user.level || 0) < (guild.levelRequirement || MIN_JOIN_LEVEL)) {
-        throw new GuildServiceError(`Cần đạt Level ${guild.levelRequirement || MIN_JOIN_LEVEL} để gia nhập Tông Môn này.`);
+
+    const thresholdFailures = await buildJoinThresholdFeedback(user, guild);
+    if (thresholdFailures.length) {
+        throw new GuildServiceError(thresholdFailures[0]);
     }
     if ((guild.memberCount || 0) >= (guild.memberLimit || 30)) {
         throw new GuildServiceError('Tông Môn đã đạt tối đa thành viên.');
     }
-    if (guild.settings?.joinMode === 'invite') {
-        throw new GuildServiceError('Tông Môn này hiện chỉ nhận qua lời mời.');
+
+    const joinMode = guild.settings?.joinMode || 'open';
+    if (joinMode === 'approval') {
+        throw new GuildServiceError('Tông Môn này cần nộp đơn chờ phê duyệt trước khi gia nhập.');
+    }
+    if (joinMode === 'invite') {
+        const safeInviteCode = String(inviteCode || '').trim().toUpperCase();
+        if (!safeInviteCode || safeInviteCode !== String(guild.settings?.inviteCode || '').trim().toUpperCase()) {
+            throw new GuildServiceError('Mật lệnh chiêu mộ không hợp lệ.');
+        }
     }
 
     user.guild = guild._id;
@@ -243,6 +407,15 @@ async function joinGuild({ userId, guildIdOrSlug }) {
     guild.memberCount = Math.max(1, (guild.memberCount || 0) + 1);
 
     await Promise.all([user.save(), guild.save()]);
+
+    await createAuditLog({
+        guildId: guild._id,
+        actorId: user._id,
+        targetUserId: user._id,
+        actionType: 'member_joined',
+        message: `${user.username} đã gia nhập Tông Môn.`
+    });
+
     return guild;
 }
 
@@ -261,17 +434,21 @@ async function leaveGuild({ userId }) {
         return null;
     }
 
-    const isLeader = String(guild.leader) === String(user._id);
+    const userRole = normalizeGuildRole(user.guildRole);
+    const isLeader = String(guild.leader) === String(user._id) || userRole === 'leader';
     if (isLeader && (guild.memberCount || 1) > 1) {
-        throw new GuildServiceError('Tông chủ không thể rời Tông Môn khi vẫn còn thành viên. Hãy chuyển giao hoặc giải tán sau.');
+        throw new GuildServiceError('Trưởng môn không thể rời Tông Môn khi vẫn còn thành viên. Hãy chuyển giao hoặc giải tán sau.');
     }
 
     if (isLeader) {
-        await User.updateMany({ guild: guild._id }, {
-            $set: { guild: null, guildRole: 'member', joinedGuildAt: null }
-        });
-        await GuildContribution.deleteMany({ guild: guild._id });
-        await guild.deleteOne();
+        await Promise.all([
+            User.updateMany({ guild: guild._id }, { $set: { guild: null, guildRole: 'member', joinedGuildAt: null } }),
+            GuildContribution.deleteMany({ guild: guild._id }),
+            GuildApplication.deleteMany({ guild: guild._id }),
+            GuildAuditLog.deleteMany({ guild: guild._id }),
+            GuildWeeklyGoal.deleteMany({ guild: guild._id }),
+            guild.deleteOne()
+        ]);
         return null;
     }
 
@@ -281,13 +458,22 @@ async function leaveGuild({ userId }) {
     guild.memberCount = Math.max(1, (guild.memberCount || 1) - 1);
 
     await Promise.all([user.save(), guild.save()]);
+
+    await createAuditLog({
+        guildId: guild._id,
+        actorId: user._id,
+        targetUserId: user._id,
+        actionType: 'member_left',
+        message: `${user.username} đã rời Tông Môn.`
+    });
+
     return guild;
 }
 
-async function getGuildBySlug(slug) {
+async function getGuildBySlug(slug, viewerUserId = null) {
     const guild = await Guild.findOne({ slug }).populate('leader', 'username avatar level');
     if (!guild) return null;
-    return hydrateGuildDetail(guild);
+    return hydrateGuildDetail(guild, viewerUserId);
 }
 
 module.exports = {

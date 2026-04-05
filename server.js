@@ -20,6 +20,7 @@ const { banCheck } = require("./middlewares/banCheck");
 const { getSessionSecret } = require("./utils/secrets");
 const { corsOptionsDelegate } = require("./utils/corsPolicy");
 const { setIo } = require("./utils/realtime");
+const { startGuildJobs } = require("./jobs/guildJobs");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -201,6 +202,7 @@ app.use((err, req, res, next) => {
    ====================================================== */
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log(`🚀 Server on port ${port}`));
+startGuildJobs();
 
 // [OPTIMIZE] Slug Fixer - Chạy sau 5s để server khởi động nhanh hơn
 setTimeout(async () => {
