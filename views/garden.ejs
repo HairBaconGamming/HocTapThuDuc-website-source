@@ -199,6 +199,30 @@
             </div>
         </aside>
 
+        <!-- Quest Side Drawer (Phase 2) -->
+        <aside class="quest-side-drawer" id="questSideDrawer" aria-hidden="true" role="complementary">
+            <div class="quest-drawer-header">
+                <div>
+                    <h2>📋 Nhiệm vụ hằng ngày</h2>
+                </div>
+                <button id="questDrawerCloseBtn" class="quest-drawer-close" type="button" aria-label="Đóng nhiệm vụ">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="quest-drawer-body">
+                <% if (isOwner) { %>
+                    <div class="quest-drawer-content" id="questDrawerContent">
+                        <div class="quest-list" id="questDrawerList"></div>
+                    </div>
+                <% } else { %>
+                    <div class="quest-drawer-empty">
+                        <i class="fas fa-seedling"></i>
+                        <p>Chỉ chủ vườn mới có thể nhận nhiệm vụ hằng ngày.</p>
+                    </div>
+                <% } %>
+            </div>
+        </aside>
+
         <div class="hud-top garden-topbar">
             <div class="garden-topbar-left">
                 <button id="gardenTopMenuBtn" class="pixel-btn garden-compact-btn mobile-only" type="button" aria-controls="gardenSidebar" aria-expanded="false">
@@ -218,6 +242,45 @@
                         <i class="fas fa-people-group"></i>
                     </a>
                 <% } %>
+
+                <div class="garden-status-dropdown-container">
+                    <button id="gardenStatusDropdownBtn" class="pixel-btn garden-compact-btn garden-dropdown-btn" type="button" title="Thông tin khu vườn" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-leaf"></i>
+                        <span class="garden-dropdown-indicator">🌳</span>
+                    </button>
+                    <div id="gardenStatusDropdownMenu" class="garden-dropdown-menu pixel-panel" aria-hidden="true" role="menu">
+                        <div class="dropdown-section">
+                            <div class="dropdown-item-header">Khu vườn</div>
+                            <div class="dropdown-item-main">
+                                <span id="dropdownGardenName" class="dropdown-garden-name"><%= isOwner ? 'My Garden' : (garden.user ? garden.user.username + "'s Garden" : 'Neighbor Garden') %></span>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section">
+                            <div class="dropdown-item-header">Trạng thái</div>
+                            <% if (!isOwner) { %>
+                                <div class="dropdown-item">
+                                    <span class="dropdown-label">👤 Chủ vườn:</span>
+                                    <span id="dropdownOwnerName" class="dropdown-value"><%= garden.user ? garden.user.username : 'Hàng xóm' %></span>
+                                </div>
+                            <% } else { %>
+                                <div class="dropdown-item">
+                                    <span class="dropdown-label">👥 Khách:</span>
+                                    <span id="dropdownVisitorCount" class="dropdown-value">0</span>
+                                </div>
+                            <% } %>
+                        </div>
+                        <% if (guildContext && guildContext.guild) { %>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section">
+                                <div class="dropdown-item-header">Tông môn</div>
+                                <div class="dropdown-item">
+                                    <span id="dropdownGuildName" class="dropdown-value"><%= guildContext.guild.name %></span>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
 
                 <div class="garden-title-block">
                     <div class="garden-kicker"><%= isOwner ? 'Khu vườn tri thức' : 'Đang ghé thăm' %></div>
