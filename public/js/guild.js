@@ -152,13 +152,13 @@
 
         const amount = syncAmount(nextValue || amountInput?.value || 10);
         const label = selected.dataset.resourceLabel || 'Tài nguyên';
-        const icon = selected.dataset.resourceIcon || '✨';
+        const symbol = selected.dataset.resourceIcon || '✨';
         const available = getAvailableAmount(selected);
 
         if (resourceInput) resourceInput.value = selected.dataset.resourceKey || 'water';
         if (selectedResourceLabel) selectedResourceLabel.textContent = label;
         if (selectedResourceAmount) selectedResourceAmount.textContent = available.toLocaleString('vi-VN');
-        if (donateSummary) donateSummary.textContent = amount > 0 ? `${icon} ${amount} ${label}` : `${icon} Hết ${label}`;
+        if (donateSummary) donateSummary.textContent = amount > 0 ? `${symbol} ${amount} ${label}` : `${symbol} Hết ${label}`;
         if (donateCta) donateCta.textContent = amount > 0 ? `Dâng ${amount.toLocaleString('vi-VN')} ${label}` : 'Kho hiện đã cạn';
         if (donateSubmit) donateSubmit.disabled = amount <= 0;
     }
@@ -180,13 +180,22 @@
 
         const sourceRect = sourceNode.getBoundingClientRect();
         const targetRect = treeSanctuary.getBoundingClientRect();
-        const icon = getSelectedResourceButton()?.dataset.resourceIcon || '✨';
+        const selected = getSelectedResourceButton();
+        const icon = selected?.dataset.resourceIcon || '✨';
+        const iconUrl = selected?.dataset.resourceIconUrl || '';
         const tokenCount = Math.max(4, Math.min(12, Math.ceil(amount / 20)));
 
         for (let index = 0; index < tokenCount; index += 1) {
             const token = document.createElement('span');
             token.className = 'guild-token-burst__token';
-            token.textContent = icon;
+            if (iconUrl) {
+                const image = document.createElement('img');
+                image.src = iconUrl;
+                image.alt = selected?.dataset.resourceLabel || 'Tài nguyên';
+                token.appendChild(image);
+            } else {
+                token.textContent = icon;
+            }
             token.style.setProperty('--token-start-x', `${sourceRect.left + (sourceRect.width / 2) + ((index % 3) * 8)}px`);
             token.style.setProperty('--token-start-y', `${sourceRect.top + (sourceRect.height / 2)}px`);
             token.style.setProperty(
@@ -359,9 +368,10 @@
         closeDrawers();
     });
 
-    const initialTab = new URL(window.location.href).searchParams.get('tab') || 'overview';
+    const initialTab = new URL(window.location.href).searchParams.get('tab') || page.dataset.activeTab || 'overview';
+    const defaultSegment = page.dataset.defaultSegment || 'leaderboard';
     setActiveTab(initialTab);
-    setActiveSegment('leaderboard');
+    setActiveSegment(defaultSegment);
 
     if (resourceButtons.length) {
         selectResource(resourceButtons[0]);

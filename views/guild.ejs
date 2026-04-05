@@ -2,145 +2,124 @@
 <link rel="stylesheet" href="/css/styleGuild.css">
 <%
 const guild = guildDetail.guild;
-const tree = guildDetail.treeProgress;
-const buffSnapshot = guild.buffSnapshot || { lessonXpPct: 0, witherTimeBonusPct: 0 };
-const treeAsset = Array.isArray(guildTreeAssets) ? guildTreeAssets.find((entry) => entry.stage === tree.current.stage) : null;
-const competition = guildDetail.competition || { weekly: { top: [], self: null }, monthly: { top: [], self: null } };
-const weeklyGoal = guildDetail.weeklyGoal || guild.weeklyGoalSnapshot || null;
-const weeklyGoalPercent = weeklyGoal && Number(weeklyGoal.targetAmount || 0) > 0
-    ? Math.min(100, Math.round((Number(weeklyGoal.currentAmount || 0) / Number(weeklyGoal.targetAmount || 0)) * 100))
-    : 0;
-const donationCatalog = [
-    { key: 'water', label: 'Nước', icon: '💧', amount: viewerResources.water || 0 },
-    { key: 'fertilizer', label: 'Phân bón', icon: '🌿', amount: viewerResources.fertilizer || 0 },
-    { key: 'gold', label: 'Tiền vàng', icon: '🪙', amount: viewerResources.gold || 0 },
-    { key: 'tomato', label: 'Cà chua', icon: '🍅', amount: viewerResources.inventory.tomato || 0 },
-    { key: 'wheat', label: 'Lúa mì', icon: '🌾', amount: viewerResources.inventory.wheat || 0 },
-    { key: 'carrot', label: 'Cà rốt', icon: '🥕', amount: viewerResources.inventory.carrot || 0 },
-    { key: 'sunflower', label: 'Hướng dương', icon: '🌻', amount: viewerResources.inventory.sunflower || 0 }
-];
-const donationLookup = donationCatalog.reduce((acc, item) => {
-    acc[item.key] = item;
-    return acc;
-}, {});
-const currentBuffBadges = [
-    { label: 'XP học bài', value: `+${buffSnapshot.lessonXpPct}%`, tone: 'xp' },
-    { label: 'Độ bền cây', value: `+${buffSnapshot.witherTimeBonusPct}%`, tone: 'garden' }
-];
-const joinModeLabelMap = { open: 'Vào tự do', approval: 'Cần phê duyệt', invite: 'Chỉ qua mật lệnh' };
-const roleLabelMap = { leader: 'Trưởng môn', co_leader: 'Phó tông chủ', elder: 'Trưởng lão', member: 'Đệ tử' };
-const showAdminTab = Boolean(
-    permissions.approveApplications
-    || permissions.editAnnouncement
-    || permissions.manageWeeklyGoal
-    || permissions.setAutoKickRules
-    || permissions.promoteMembers
-    || permissions.kickMembers
-    || permissions.refreshInviteCode
-);
-const topContributors = guildDetail.topContributors || [];
-const topThreeContributors = topContributors.slice(0, 3);
-const weeklyGoalTarget = weeklyGoal && weeklyGoal.targetType === 'resource'
-    ? (donationLookup[weeklyGoal.targetResource]?.label || weeklyGoal.targetResource || 'Tài nguyên')
-    : 'Linh Lực';
-const weeklyGoalTargetIcon = weeklyGoal && weeklyGoal.targetType === 'resource'
-    ? (donationLookup[weeklyGoal.targetResource]?.icon || '✨')
-    : '✨';
-const nextUnlockCopy = tree.next
-    ? `Còn ${(tree.xpForNextStage || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Linh Lực để mở khóa ${tree.next.name}.`
-    : 'Linh Thụ đã đạt đỉnh cảnh giới và đang che chở toàn bộ Tông Môn.';
-const selfWeeklyStanding = competition.weekly?.self;
-const announcementCopy = guild.announcement?.content || '';
+const ui = guildUi;
+const tree = ui.tree;
+const treeAsset = ui.treeAsset;
+const competition = ui.competition;
+const weeklyGoal = ui.weeklyGoal;
+const weeklyGoalPercent = ui.weeklyGoalPercent;
+const donationCatalog = ui.donationCatalog;
+const currentBuffBadges = ui.currentBuffBadges;
+const showAdminTab = ui.showAdminTab;
+const roleLabelMap = ui.roleLabelMap;
+const topContributors = ui.topContributors;
+const topThreeContributors = ui.topThreeContributors;
+const activeTab = ui.activeTab;
+const announcementCopy = ui.announcementCopy;
 %>
 <main
-    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2"
+    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2 guild-workspace-v3"
     data-guild-page
     data-guild-slug="<%= guild.slug %>"
     data-viewer-id="<%= viewerUserId %>"
+    data-active-tab="<%= activeTab %>"
+    data-default-segment="<%= ui.rightRail.defaultSegment %>"
 >
-    <section class="guild-v2-hero">
-        <div class="guild-v2-hero__copy">
+    <section class="guild-v2-hero guild-v3-hero">
+        <div class="guild-v2-hero__copy guild-v3-hero__copy">
             <span class="guild-kicker">Không gian Tông Môn</span>
             <h1><%= guild.name %></h1>
             <p class="guild-v2-hero__lead">
                 <%= guild.description || 'Một nơi cùng nhau học, vun trồng Linh Thụ và cộng hưởng buff cho cả môn phái.' %>
             </p>
-            <div class="guild-v2-hero__chips">
-                <span class="guild-chip">Trưởng môn: <%= guild.leader?.username || 'Ẩn danh' %></span>
-                <span class="guild-chip"><%= guild.memberCount %>/<%= guild.memberLimit %> thành viên</span>
-                <span class="guild-chip"><%= joinModeLabelMap[guild.settings?.joinMode || 'open'] %></span>
+            <div class="guild-v2-hero__chips guild-v3-hero__chips">
+                <% ui.heroMetaChips.forEach((chip) => { %>
+                    <span class="guild-chip"><%= chip.text %></span>
+                <% }) %>
             </div>
         </div>
-        <div class="guild-v2-hero__actions">
-            <% if (isMember) { %>
-                <span class="guild-v2-status">Bạn đang đồng tu trong tông này</span>
-                <form action="/guilds/<%= guild.slug %>/leave" method="POST">
-                    <button type="submit" class="guild-secondary-btn">
-                        <%= viewerRole === 'leader' ? 'Giải tán / Rời tông' : 'Rời Tông Môn' %>
-                    </button>
-                </form>
-            <% } else if (pendingApplication) { %>
-                <span class="guild-v2-status">Đơn gia nhập đang chờ duyệt</span>
-            <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'open') { %>
-                <form action="/guilds/<%= guild.slug %>/join" method="POST">
-                    <button type="submit" class="guild-primary-btn">Gia nhập Tông Môn</button>
-                </form>
-            <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'approval') { %>
-                <button type="button" class="guild-primary-btn" data-guild-drawer-target="apply">Nộp đơn gia nhập</button>
-            <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'invite') { %>
-                <button type="button" class="guild-primary-btn" data-guild-drawer-target="invite">Nhập mật lệnh</button>
-            <% } else if (!viewerContext.guild) { %>
-                <span class="guild-v2-status">Bạn chưa đủ điều kiện gia nhập</span>
-            <% } else { %>
-                <span class="guild-v2-status">Bạn đang thuộc Tông Môn khác</span>
-            <% } %>
-            <a href="/my-garden" class="guild-tertiary-link">Về khu vườn cá nhân</a>
+
+        <div class="guild-v2-hero__actions guild-v3-hero__actions">
+            <div class="guild-v3-hero__status">
+                <% if (isMember) { %>
+                    <span class="guild-v2-status">Bạn đang đồng tu trong tông này</span>
+                <% } else if (pendingApplication) { %>
+                    <span class="guild-v2-status">Đơn gia nhập đang chờ duyệt</span>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'open') { %>
+                    <span class="guild-v2-status">Cổng tuyển sinh đang mở tự do</span>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'approval') { %>
+                    <span class="guild-v2-status">Gia nhập qua xét duyệt</span>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'invite') { %>
+                    <span class="guild-v2-status">Gia nhập qua mật lệnh chiêu mộ</span>
+                <% } else if (!viewerContext.guild) { %>
+                    <span class="guild-v2-status">Bạn chưa đủ điều kiện gia nhập</span>
+                <% } else { %>
+                    <span class="guild-v2-status">Bạn đang thuộc Tông Môn khác</span>
+                <% } %>
+            </div>
+
+            <div class="guild-v3-hero__buttons">
+                <% if (isMember) { %>
+                    <form action="/guilds/<%= guild.slug %>/leave" method="POST">
+                        <button type="submit" class="guild-secondary-btn">
+                            <%= viewerRole === 'leader' ? 'Giải tán / Rời tông' : 'Rời Tông Môn' %>
+                        </button>
+                    </form>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'open') { %>
+                    <form action="/guilds/<%= guild.slug %>/join" method="POST">
+                        <button type="submit" class="guild-primary-btn">Gia nhập Tông Môn</button>
+                    </form>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'approval') { %>
+                    <button type="button" class="guild-primary-btn" data-guild-drawer-target="apply">Nộp đơn gia nhập</button>
+                <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'invite') { %>
+                    <button type="button" class="guild-primary-btn" data-guild-drawer-target="invite">Nhập mật lệnh</button>
+                <% } %>
+
+                <a href="/my-garden" class="guild-tertiary-link">Về khu vườn cá nhân</a>
+            </div>
         </div>
     </section>
 
-    <nav class="guild-v2-tabbar" aria-label="Điều hướng guild">
-        <button type="button" class="guild-v2-tab is-active" data-guild-tab="overview">🌳 Tổng Quan</button>
-        <button type="button" class="guild-v2-tab" data-guild-tab="goal">🎯 Mục Tiêu Tuần</button>
-        <button type="button" class="guild-v2-tab" data-guild-tab="members">👥 Thành Viên</button>
+    <nav class="guild-v2-tabbar guild-v3-tabbar" aria-label="Điều hướng guild">
+        <button type="button" class="guild-v2-tab <%= activeTab === 'overview' ? 'is-active' : '' %>" data-guild-tab="overview">🌳 Tổng Quan</button>
+        <button type="button" class="guild-v2-tab <%= activeTab === 'goal' ? 'is-active' : '' %>" data-guild-tab="goal">🎯 Mục Tiêu Tuần</button>
+        <button type="button" class="guild-v2-tab <%= activeTab === 'members' ? 'is-active' : '' %>" data-guild-tab="members">👥 Thành Viên</button>
         <% if (showAdminTab) { %>
-            <button type="button" class="guild-v2-tab" data-guild-tab="admin">⚙️ Quản Trị</button>
+            <button type="button" class="guild-v2-tab <%= activeTab === 'admin' ? 'is-active' : '' %>" data-guild-tab="admin">⚙️ Quản Trị</button>
         <% } %>
     </nav>
 
-    <section class="guild-tab-panel is-active" data-guild-panel="overview">
-        <div class="guild-v2-layout">
-            <div class="guild-v2-main">
+    <section class="guild-tab-panel <%= activeTab === 'overview' ? 'is-active' : '' %>" data-guild-panel="overview" <%= activeTab === 'overview' ? '' : 'hidden' %>>
+        <div class="guild-v3-overview">
+            <div class="guild-v3-main">
                 <% if (announcementCopy) { %>
-                    <section class="guild-v2-brief guild-v2-brief--announcement">
+                    <section class="guild-v2-brief guild-v2-brief--announcement guild-v3-ribbon">
                         <span class="guild-mini-kicker">Tông Môn Lệnh</span>
                         <p><%= announcementCopy %></p>
                     </section>
                 <% } %>
 
-                <% if (weeklyGoal) { %>
-                    <button type="button" class="guild-v2-goal-banner" data-guild-modal-open="goal">
+                <% if (ui.goalBanner) { %>
+                    <button type="button" class="guild-v2-goal-banner guild-v3-goal-banner" data-guild-modal-open="goal">
                         <div class="guild-v2-goal-banner__copy">
-                            <strong>🔥 Chiến dịch tuần: <%= weeklyGoal.title || 'Tích lũy linh lực tuần này' %></strong>
-                            <span>
-                                <%= weeklyGoalTargetIcon %>
-                                Đạt <%= Number(weeklyGoal.currentAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %>/<%= Number(weeklyGoal.targetAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %> <%= weeklyGoalTarget %>
-                            </span>
+                            <strong>🔥 <%= ui.goalBanner.title %></strong>
+                            <span><%= ui.goalBanner.progressText %></span>
                         </div>
-                        <span class="guild-v2-goal-banner__cta">Xem chi tiết →</span>
-                        <span class="guild-v2-goal-banner__bar"><i style="width: <%= weeklyGoalPercent %>%"></i></span>
+                        <span class="guild-v2-goal-banner__cta"><%= ui.goalBanner.cta %> →</span>
+                        <span class="guild-v2-goal-banner__bar"><i style="width: <%= ui.goalBanner.percent %>%"></i></span>
                     </button>
                 <% } else if (permissions.manageWeeklyGoal) { %>
-                    <button type="button" class="guild-v2-goal-banner guild-v2-goal-banner--empty" data-guild-drawer-target="goal-settings">
+                    <button type="button" class="guild-v2-goal-banner guild-v2-goal-banner--empty guild-v3-goal-banner" data-guild-drawer-target="goal-settings">
                         <div class="guild-v2-goal-banner__copy">
                             <strong>🔥 Chưa có chiến dịch tuần</strong>
-                            <span>Tạo một chiến dịch mỏng gọn để cả Tông Môn cùng kéo tiến độ.</span>
+                            <span>Tạo một campaign ngắn gọn để cả Tông Môn cùng kéo tiến độ.</span>
                         </div>
                         <span class="guild-v2-goal-banner__cta">+ Tạo chiến dịch</span>
                     </button>
                 <% } %>
 
-                <section class="guild-v2-altar">
-                    <div class="guild-v2-altar__visual" id="guildTreeSanctuary">
+                <section class="guild-v2-altar guild-v3-altar">
+                    <div class="guild-v2-altar__visual guild-v3-altar__visual" id="guildTreeSanctuary">
                         <div class="guild-v2-cosmos"></div>
                         <div class="guild-v2-cosmos guild-v2-cosmos--grid"></div>
                         <div class="guild-v2-altar__glow"></div>
@@ -149,42 +128,47 @@ const announcementCopy = guild.announcement?.content || '';
                         <div class="guild-v2-altar__spark guild-v2-altar__spark--one"></div>
                         <div class="guild-v2-altar__spark guild-v2-altar__spark--two"></div>
                         <div class="guild-v2-altar__spark guild-v2-altar__spark--three"></div>
+
                         <% if (treeAsset && treeAsset.imageUrl) { %>
                             <img
                                 src="<%= treeAsset.imageUrl %>"
                                 alt="<%= treeAsset.name %>"
-                                class="guild-v2-tree"
+                                class="guild-v2-tree guild-v3-tree"
                                 loading="lazy"
                                 decoding="async"
                             >
                         <% } %>
-                        <div class="guild-v2-tree-card">
+
+                        <div class="guild-v2-tree-card guild-v3-tree-card">
                             <span class="guild-mini-kicker">Bệ tế đàn Linh Thụ</span>
                             <h2><%= tree.current.name %></h2>
                             <p><%= tree.current.motto %></p>
                         </div>
                     </div>
 
-                    <div class="guild-v2-altar__dock">
-                        <div class="guild-v2-progress">
+                    <div class="guild-v2-altar__dock guild-v3-altar__dock">
+                        <div class="guild-v2-progress guild-v3-progress">
                             <div class="guild-v2-progress__head">
                                 <div>
                                     <span class="guild-mini-kicker">Cộng hưởng hiện tại</span>
-                                    <h3>Tiến độ cộng hưởng <%= tree.percent %>%</h3>
+                                    <h3><%= tree.percent %>% cộng hưởng</h3>
                                 </div>
                                 <span class="guild-v2-progress__pill">Giai đoạn <%= tree.current.stage %></span>
                             </div>
+
                             <div class="guild-progress-bar guild-progress-bar--hero">
                                 <span style="width: <%= tree.percent %>%"></span>
                             </div>
-                            <div class="guild-v2-unlock">
+
+                            <div class="guild-v2-unlock guild-v3-unlock">
                                 <span class="guild-v2-unlock__badge">🔓 Kế tiếp</span>
                                 <div>
                                     <strong><%= tree.next ? tree.next.name : 'Đỉnh cảnh giới' %></strong>
-                                    <p><%= tree.next ? tree.next.unlockText : nextUnlockCopy %></p>
+                                    <p><%= tree.next ? tree.next.unlockText : ui.nextUnlockCopy %></p>
                                 </div>
                             </div>
-                            <div class="guild-v2-buffs">
+
+                            <div class="guild-v2-buffs guild-v3-buffs">
                                 <% currentBuffBadges.forEach((badge) => { %>
                                     <span class="guild-v2-buff guild-v2-buff--<%= badge.tone %>">
                                         <small><%= badge.label %></small>
@@ -195,17 +179,19 @@ const announcementCopy = guild.announcement?.content || '';
                         </div>
 
                         <% if (isMember) { %>
-                            <form class="guild-v2-donate" id="guildDonationForm" action="/guilds/<%= guild.slug %>/contribute" method="POST">
+                            <form class="guild-v2-donate guild-v3-donate" id="guildDonationForm" action="/guilds/<%= guild.slug %>/contribute" method="POST">
                                 <input type="hidden" name="resourceType" value="<%= donationCatalog[0].key %>">
                                 <input type="hidden" name="amount" value="10">
-                                <div class="guild-v2-donate__head">
+
+                                <div class="guild-v2-donate__head guild-v3-donate__head">
                                     <div>
                                         <span class="guild-mini-kicker">Smart Dock</span>
                                         <h3>Hiến linh ngay</h3>
                                     </div>
-                                    <strong id="guildDonateSummary">💧 10 Nước</strong>
+                                    <strong id="guildDonateSummary"><%= donationCatalog[0].symbol %> 10 <%= donationCatalog[0].label %></strong>
                                 </div>
-                                <div class="guild-v2-resource-grid" role="list">
+
+                                <div class="guild-v2-resource-grid guild-v3-resource-grid" role="list">
                                     <% donationCatalog.forEach((resource, index) => { %>
                                         <button
                                             type="button"
@@ -213,27 +199,38 @@ const announcementCopy = guild.announcement?.content || '';
                                             data-resource-button
                                             data-resource-key="<%= resource.key %>"
                                             data-resource-label="<%= resource.label %>"
-                                            data-resource-icon="<%= resource.icon %>"
+                                            data-resource-icon="<%= resource.symbol %>"
+                                            data-resource-icon-url="<%= resource.iconUrl || '' %>"
                                             data-resource-amount="<%= resource.amount %>"
                                         >
-                                            <span class="guild-v2-resource__orb"><%= resource.icon %></span>
+                                            <span class="guild-v2-resource__orb guild-v3-resource__orb">
+                                                <% if (resource.iconUrl) { %>
+                                                    <img src="<%= resource.iconUrl %>" alt="<%= resource.label %>">
+                                                <% } else { %>
+                                                    <span><%= resource.symbol %></span>
+                                                <% } %>
+                                            </span>
                                             <span class="guild-v2-resource__label"><%= resource.label %></span>
                                             <small><%= resource.amount.toLocaleString('vi-VN') %></small>
                                         </button>
                                     <% }) %>
                                 </div>
-                                <div class="guild-v2-slider-card">
+
+                                <div class="guild-v2-slider-card guild-v3-slider-card">
                                     <div class="guild-v2-slider-card__top">
-                                        <span id="guildSelectedResourceLabel">Nước</span>
+                                        <span id="guildSelectedResourceLabel"><%= donationCatalog[0].label %></span>
                                         <small>Tồn kho: <b id="guildSelectedResourceAmount"><%= donationCatalog[0].amount.toLocaleString('vi-VN') %></b></small>
                                     </div>
+
                                     <input type="range" min="0" max="<%= Math.max(1, donationCatalog[0].amount) %>" value="10" class="guild-donation-slider" id="guildDonationSlider">
+
                                     <div class="guild-v2-quick-grid">
                                         <button type="button" class="guild-quick-btn" data-quick-amount="10">+10</button>
                                         <button type="button" class="guild-quick-btn" data-quick-amount="100">+100</button>
                                         <button type="button" class="guild-quick-btn guild-quick-btn--allin" data-quick-amount="all">MAX</button>
                                     </div>
-                                    <div class="guild-v2-slider-card__footer">
+
+                                    <div class="guild-v2-slider-card__footer guild-v3-slider-card__footer">
                                         <label class="guild-custom-amount">
                                             <span>Số lượng</span>
                                             <input type="number" min="0" step="1" value="10" id="guildCustomAmount">
@@ -246,22 +243,22 @@ const announcementCopy = guild.announcement?.content || '';
                                 </div>
                             </form>
                         <% } else if (!viewerContext.guild && guild.settings?.joinMode === 'approval' && !pendingApplication) { %>
-                            <div class="guild-v2-callout">
+                            <div class="guild-v2-callout guild-v3-callout">
                                 <p>Gia nhập Tông Môn để mở nghi thức quyên góp, góp sức vào chiến dịch tuần và nhận buff cộng hưởng.</p>
                                 <button type="button" class="guild-primary-btn" data-guild-drawer-target="apply">Nộp đơn gia nhập</button>
                             </div>
                         <% } else if (!viewerContext.guild && guild.settings?.joinMode === 'invite') { %>
-                            <div class="guild-v2-callout">
+                            <div class="guild-v2-callout guild-v3-callout">
                                 <p>Tông Môn này chỉ nhận qua mật lệnh chiêu mộ. Nhập mã để đồng tu cùng môn phái.</p>
                                 <button type="button" class="guild-primary-btn" data-guild-drawer-target="invite">Nhập mật lệnh</button>
                             </div>
                         <% } else if (!viewerContext.guild && guild.settings?.joinMode === 'open') { %>
-                            <form action="/guilds/<%= guild.slug %>/join" method="POST" class="guild-v2-callout guild-v2-callout--form">
+                            <form action="/guilds/<%= guild.slug %>/join" method="POST" class="guild-v2-callout guild-v2-callout--form guild-v3-callout">
                                 <p>Tông Môn đang mở cổng. Gia nhập ngay để bắt đầu hiến linh và nhận buff chung.</p>
                                 <button type="submit" class="guild-primary-btn">Gia nhập ngay</button>
                             </form>
                         <% } else { %>
-                            <div class="guild-v2-callout">
+                            <div class="guild-v2-callout guild-v3-callout">
                                 <p>Khóa đồng tu này hiện chưa khả dụng với trạng thái tài khoản hiện tại của bạn.</p>
                             </div>
                         <% } %>
@@ -269,9 +266,9 @@ const announcementCopy = guild.announcement?.content || '';
                 </section>
             </div>
 
-            <aside class="guild-v2-side">
-                <section class="guild-v2-sidecard">
-                    <div class="guild-v2-sidecard__head">
+            <aside class="guild-v3-side">
+                <section class="guild-v2-sidecard guild-v3-sidecard">
+                    <div class="guild-v2-sidecard__head guild-v3-sidecard__head">
                         <div>
                             <span class="guild-mini-kicker">Cột động</span>
                             <h3>Nhịp đập của Tông Môn</h3>
@@ -283,8 +280,8 @@ const announcementCopy = guild.announcement?.content || '';
                     </div>
 
                     <div class="guild-v2-segment-panel is-active" data-guild-segment-panel="leaderboard">
-                        <div class="guild-v2-leaderboard">
-                            <% topContributors.forEach((entry) => { %>
+                        <div class="guild-v2-leaderboard guild-v3-leaderboard">
+                            <% ui.rightRail.leaderboard.forEach((entry) => { %>
                                 <article class="guild-v2-leaderboard-row guild-v2-leaderboard-row--rank-<%= entry.rank <= 3 ? entry.rank : 4 %>">
                                     <div class="guild-v2-leaderboard-row__identity">
                                         <span class="guild-v2-rank">#<%= entry.rank %></span>
@@ -297,15 +294,15 @@ const announcementCopy = guild.announcement?.content || '';
                                     <span class="guild-v2-leaderboard-row__value"><%= Number(entry.totalContributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></span>
                                 </article>
                             <% }) %>
-                            <% if (!topContributors.length) { %>
+                            <% if (!ui.rightRail.leaderboard.length) { %>
                                 <p class="guild-empty-copy">Chưa có bảng vàng vì Tông Môn vẫn đang chờ những hiến lễ đầu tiên.</p>
                             <% } %>
                         </div>
                     </div>
 
                     <div class="guild-v2-segment-panel" data-guild-segment-panel="activity" hidden>
-                        <div class="guild-v2-timeline">
-                            <% guildDetail.recentContributions.forEach((entry) => { %>
+                        <div class="guild-v2-timeline guild-v3-timeline">
+                            <% ui.rightRail.activity.forEach((entry) => { %>
                                 <% const userHasApplauded = Array.isArray(entry.applaudedBy) && entry.applaudedBy.some((memberId) => String(memberId) === String(viewerUserId)); %>
                                 <article class="guild-v2-timeline-row guild-v2-timeline-row--<%= entry.dramaTone %>">
                                     <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
@@ -323,7 +320,7 @@ const announcementCopy = guild.announcement?.content || '';
                                     </button>
                                 </article>
                             <% }) %>
-                            <% if (!guildDetail.recentContributions.length) { %>
+                            <% if (!ui.rightRail.activity.length) { %>
                                 <p class="guild-empty-copy">Dòng linh lực sẽ sáng lên khi các đồng môn bắt đầu hiến lễ.</p>
                             <% } %>
                         </div>
@@ -332,9 +329,10 @@ const announcementCopy = guild.announcement?.content || '';
             </aside>
         </div>
     </section>
-    <section class="guild-tab-panel" data-guild-panel="goal" hidden>
-        <div class="guild-v2-goal-tab">
-            <section class="guild-v2-sectioncard">
+
+    <section class="guild-tab-panel <%= activeTab === 'goal' ? 'is-active' : '' %>" data-guild-panel="goal" <%= activeTab === 'goal' ? '' : 'hidden' %>>
+        <div class="guild-v3-goal-tab">
+            <section class="guild-v2-sectioncard guild-v3-sectioncard">
                 <div class="guild-v2-sectioncard__head">
                     <div>
                         <span class="guild-mini-kicker">Chiến dịch tuần này</span>
@@ -349,40 +347,39 @@ const announcementCopy = guild.announcement?.content || '';
 
                 <% if (weeklyGoal) { %>
                     <p class="guild-v2-copy">
-                        Tông Môn đang dồn lực vào <strong><%= weeklyGoalTarget %></strong>. Khi chiến dịch hoàn tất, cả đội sẽ nhận:
+                        Tông Môn đang dồn lực vào <strong><%= ui.weeklyGoalTarget %></strong>. Khi chiến dịch hoàn tất, cả đội sẽ nhận:
                         <strong><%= weeklyGoal.rewardPreview || 'thưởng cộng hưởng đặc biệt' %></strong>.
                     </p>
                     <div class="guild-progress-bar guild-progress-bar--hero">
                         <span style="width: <%= weeklyGoalPercent %>%"></span>
                     </div>
-                    <div class="guild-v2-goal-metrics">
-                        <div class="guild-v2-metric">
-                            <small>Đã góp</small>
-                            <strong><%= Number(weeklyGoal.currentAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></strong>
-                        </div>
-                        <div class="guild-v2-metric">
-                            <small>Mục tiêu</small>
-                            <strong><%= Number(weeklyGoal.targetAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></strong>
-                        </div>
-                        <div class="guild-v2-metric">
-                            <small>Tiến độ</small>
-                            <strong><%= weeklyGoalPercent %>%</strong>
-                        </div>
+                    <div class="guild-v2-goal-metrics guild-v3-goal-metrics">
+                        <% ui.goalModalSummary.metrics.forEach((metric) => { %>
+                            <div class="guild-v2-metric">
+                                <small><%= metric.label %></small>
+                                <strong><%= metric.value %></strong>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else if (permissions.manageWeeklyGoal) { %>
+                    <div class="guild-v3-empty-state">
+                        <p class="guild-v2-copy">Chưa có chiến dịch tuần nào đang chạy. Hãy tạo một chiến dịch ngắn, rõ và có phần thưởng đủ hấp dẫn để cả Tông Môn cùng bám mục tiêu.</p>
+                        <button type="button" class="guild-primary-btn" data-guild-drawer-target="goal-settings">+ Tạo chiến dịch</button>
                     </div>
                 <% } else { %>
                     <p class="guild-v2-copy">Trưởng môn chưa khởi tạo chiến dịch tuần. Khi chiến dịch được mở, tiến độ và bảng đóng góp sẽ hiện ở đây.</p>
                 <% } %>
             </section>
 
-            <div class="guild-v2-goal-grid">
-                <section class="guild-v2-sectioncard">
+            <div class="guild-v2-goal-grid guild-v3-goal-grid">
+                <section class="guild-v2-sectioncard guild-v3-sectioncard">
                     <div class="guild-v2-sectioncard__head">
                         <div>
                             <span class="guild-mini-kicker">Người dẫn đầu</span>
                             <h3>Top đóng góp chiến dịch</h3>
                         </div>
                     </div>
-                    <div class="guild-v2-leaderboard guild-v2-leaderboard--compact">
+                    <div class="guild-v2-leaderboard guild-v2-leaderboard--compact guild-v3-leaderboard">
                         <% topThreeContributors.forEach((entry) => { %>
                             <article class="guild-v2-leaderboard-row guild-v2-leaderboard-row--rank-<%= entry.rank %>">
                                 <div class="guild-v2-leaderboard-row__identity">
@@ -402,14 +399,14 @@ const announcementCopy = guild.announcement?.content || '';
                     </div>
                 </section>
 
-                <section class="guild-v2-sectioncard">
+                <section class="guild-v2-sectioncard guild-v3-sectioncard">
                     <div class="guild-v2-sectioncard__head">
                         <div>
                             <span class="guild-mini-kicker">Dòng linh lực</span>
                             <h3>Ai đang kéo tiến độ đi lên</h3>
                         </div>
                     </div>
-                    <div class="guild-v2-timeline guild-v2-timeline--compact">
+                    <div class="guild-v2-timeline guild-v2-timeline--compact guild-v3-timeline">
                         <% guildDetail.recentContributions.slice(0, 8).forEach((entry) => { %>
                             <article class="guild-v2-timeline-row guild-v2-timeline-row--<%= entry.dramaTone %>">
                                 <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
@@ -424,8 +421,9 @@ const announcementCopy = guild.announcement?.content || '';
             </div>
         </div>
     </section>
-    <section class="guild-tab-panel" data-guild-panel="members" hidden>
-        <section class="guild-v2-sectioncard">
+
+    <section class="guild-tab-panel <%= activeTab === 'members' ? 'is-active' : '' %>" data-guild-panel="members" <%= activeTab === 'members' ? '' : 'hidden' %>>
+        <section class="guild-v2-sectioncard guild-v3-sectioncard">
             <div class="guild-v2-sectioncard__head">
                 <div>
                     <span class="guild-mini-kicker">Nhân sự Tông Môn</span>
@@ -433,43 +431,53 @@ const announcementCopy = guild.announcement?.content || '';
                 </div>
                 <span class="guild-card-meta"><%= guild.memberCount %> người</span>
             </div>
-            <div class="guild-v2-members-grid">
-                <% guildDetail.members.forEach((member) => { %>
-                    <article class="guild-v2-member-card">
-                        <div class="guild-v2-member-card__identity">
+
+            <div class="guild-v3-member-list">
+                <% ui.memberRows.forEach((member) => { %>
+                    <article class="guild-v3-member-row">
+                        <div class="guild-v3-member-row__identity">
                             <div class="guild-member-avatar-wrap">
                                 <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.username %>">
                                 <span class="guild-online-dot <%= member.isOnline ? 'is-online' : '' %>"></span>
                             </div>
-                            <div class="guild-member-copy guild-v2-member-copy">
-                                <strong><%= member.username %></strong>
-                                <small><%= roleLabelMap[member.roleKey] || member.roleLabel %> · Level <%= member.level || 0 %></small>
-                                <small>Hoạt động cuối: <%= member.lastActive ? new Date(member.lastActive).toLocaleString('vi-VN') : 'Chưa ghi nhận' %></small>
+                            <div class="guild-v3-member-copy">
+                                <div class="guild-v3-member-copy__head">
+                                    <strong><%= member.username %></strong>
+                                    <span class="guild-v3-role-pill"><%= member.roleText %></span>
+                                </div>
+                                <small>Level <%= member.level || 0 %> · Hoạt động cuối: <%= member.lastActiveText %></small>
                             </div>
                         </div>
-                        <div class="guild-v2-member-card__stats">
-                            <span>Cống hiến tuần: <strong><%= Number(member.weeklyContributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></strong></span>
-                            <span>Phút học tuần: <strong><%= Number(member.weeklyStudyMinutes || 0).toLocaleString('vi-VN') %></strong></span>
+
+                        <div class="guild-v3-member-row__stats">
+                            <span>Cống hiến tuần <strong><%= member.weeklyContributionText %></strong></span>
+                            <span>Phút học tuần <strong><%= member.weeklyStudyMinutesText %></strong></span>
                         </div>
-                        <% if (isMember && permissions.promoteMembers && String(member._id) !== String(viewerUserId) && roleOptions.length) { %>
-                            <div class="guild-v2-member-card__actions">
-                                <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/role" method="POST" class="guild-inline-form">
-                                    <input type="hidden" name="guildId" value="<%= guild._id %>">
-                                    <select name="nextRole">
-                                        <% roleOptions.forEach((role) => { %>
-                                            <option value="<%= role %>"><%= roleLabelMap[role] %></option>
-                                        <% }) %>
-                                    </select>
-                                    <button type="submit" class="guild-inline-btn">Đổi chức</button>
-                                </form>
-                                <% if (permissions.kickMembers && member.roleKey !== 'leader') { %>
-                                    <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/kick" method="POST" class="guild-inline-form">
-                                        <input type="hidden" name="guildId" value="<%= guild._id %>">
-                                        <input type="hidden" name="reason" value="Kỷ luật nội bộ">
-                                        <button type="submit" class="guild-inline-btn guild-inline-btn--danger">Kick</button>
-                                    </form>
-                                <% } %>
-                            </div>
+
+                        <% if (member.canEditRole || member.canKick) { %>
+                            <details class="guild-v3-member-menu">
+                                <summary class="guild-inline-btn guild-inline-btn--ghost">Quản trị</summary>
+                                <div class="guild-v3-member-menu__panel">
+                                    <% if (member.canEditRole) { %>
+                                        <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/role" method="POST" class="guild-inline-form">
+                                            <input type="hidden" name="guildId" value="<%= guild._id %>">
+                                            <select name="nextRole">
+                                                <% roleOptions.forEach((role) => { %>
+                                                    <option value="<%= role %>"><%= roleLabelMap[role] %></option>
+                                                <% }) %>
+                                            </select>
+                                            <button type="submit" class="guild-inline-btn">Đổi chức</button>
+                                        </form>
+                                    <% } %>
+                                    <% if (member.canKick) { %>
+                                        <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/kick" method="POST" class="guild-inline-form">
+                                            <input type="hidden" name="guildId" value="<%= guild._id %>">
+                                            <input type="hidden" name="reason" value="Kỷ luật nội bộ">
+                                            <button type="submit" class="guild-inline-btn guild-inline-btn--danger">Kick</button>
+                                        </form>
+                                    <% } %>
+                                </div>
+                            </details>
                         <% } %>
                     </article>
                 <% }) %>
@@ -478,66 +486,31 @@ const announcementCopy = guild.announcement?.content || '';
     </section>
 
     <% if (showAdminTab) { %>
-        <section class="guild-tab-panel" data-guild-panel="admin" hidden>
-            <div class="guild-v2-admin">
-                <section class="guild-v2-sectioncard guild-v2-sectioncard--admin">
+        <section class="guild-tab-panel <%= activeTab === 'admin' ? 'is-active' : '' %>" data-guild-panel="admin" <%= activeTab === 'admin' ? '' : 'hidden' %>>
+            <div class="guild-v3-admin-shell">
+                <section class="guild-v2-sectioncard guild-v2-sectioncard--admin guild-v3-sectioncard guild-v3-admin-card">
                     <div class="guild-v2-sectioncard__head">
                         <div>
                             <span class="guild-mini-kicker">Bảng điều phối nội bộ</span>
                             <h2>Quản trị Tông Môn</h2>
                         </div>
                     </div>
-                    <div class="guild-v2-admin-rows">
-                        <% if (permissions.editAnnouncement) { %>
-                            <article class="guild-v2-admin-row">
+
+                    <div class="guild-v2-admin-rows guild-v3-admin-rows">
+                        <% ui.adminRows.forEach((row) => { %>
+                            <article class="guild-v2-admin-row guild-v3-admin-row">
                                 <div>
-                                    <strong>Tông Môn Lệnh</strong>
-                                    <p><%= announcementCopy || 'Chưa có thông báo chung. Hãy ghim mục tiêu hoặc lời kêu gọi cho tuần này.' %></p>
+                                    <strong><%= row.title %></strong>
+                                    <p><%= row.description %></p>
                                 </div>
-                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="announcement">Chỉnh sửa</button>
+                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="<%= row.drawerTarget %>"><%= row.actionLabel %></button>
                             </article>
-                        <% } %>
-                        <% if (permissions.approveApplications) { %>
-                            <article class="guild-v2-admin-row">
-                                <div>
-                                    <strong>Chế độ tuyển sinh</strong>
-                                    <p><%= joinModeLabelMap[guild.settings?.joinMode || 'open'] %> · Level tối thiểu <%= guild.settings?.joinThresholds?.minLevel || 0 %> · Streak tối thiểu <%= guild.settings?.joinThresholds?.minStreak || 0 %></p>
-                                </div>
-                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="recruitment">Đổi</button>
-                            </article>
-                        <% } %>
-                        <% if (permissions.manageWeeklyGoal) { %>
-                            <article class="guild-v2-admin-row">
-                                <div>
-                                    <strong>Thiết lập mục tiêu tuần</strong>
-                                    <p><%= weeklyGoal?.title || 'Chưa khởi tạo chiến dịch tuần' %></p>
-                                </div>
-                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="goal-settings">+ Tạo chiến dịch</button>
-                            </article>
-                        <% } %>
-                        <% if (permissions.setAutoKickRules) { %>
-                            <article class="guild-v2-admin-row">
-                                <div>
-                                    <strong>Thiết quân luật</strong>
-                                    <p><%= guild.settings?.autoModeration?.enabled ? 'Đang bật auto-kick' : 'Đang tắt auto-kick' %> · Offline quá <%= guild.settings?.autoModeration?.kickAfterInactiveDays || 0 %> ngày · Cống hiến tuần ≤ <%= guild.settings?.autoModeration?.kickIfWeeklyContributionBelow || 0 %></p>
-                                </div>
-                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="moderation">Chỉnh sửa</button>
-                            </article>
-                        <% } %>
-                        <% if (permissions.refreshInviteCode) { %>
-                            <article class="guild-v2-admin-row">
-                                <div>
-                                    <strong>Mật lệnh chiêu mộ</strong>
-                                    <p><%= guild.settings?.inviteCode ? 'Đang có mật lệnh hoạt động để chiêu mộ đệ tử mới.' : 'Chưa có mật lệnh chiêu mộ.' %></p>
-                                </div>
-                                <button type="button" class="guild-inline-btn" data-guild-drawer-target="invite-tools">Quản lý</button>
-                            </article>
-                        <% } %>
+                        <% }) %>
                     </div>
                 </section>
 
                 <% if (permissions.approveApplications) { %>
-                    <section class="guild-v2-sectioncard">
+                    <section class="guild-v2-sectioncard guild-v3-sectioncard">
                         <div class="guild-v2-sectioncard__head">
                             <div>
                                 <span class="guild-mini-kicker">Cổng tuyển sinh</span>
@@ -545,7 +518,7 @@ const announcementCopy = guild.announcement?.content || '';
                             </div>
                             <span class="guild-card-meta"><%= guildDetail.applications.length %> đơn</span>
                         </div>
-                        <div class="guild-application-list">
+                        <div class="guild-application-list guild-v3-application-list">
                             <% if (!guildDetail.applications.length) { %>
                                 <p class="guild-empty-copy">Hiện chưa có đơn mới trong cổng tuyển sinh.</p>
                             <% } %>
@@ -575,14 +548,14 @@ const announcementCopy = guild.announcement?.content || '';
                     </section>
                 <% } %>
 
-                <section class="guild-v2-sectioncard">
+                <section class="guild-v2-sectioncard guild-v3-sectioncard">
                     <div class="guild-v2-sectioncard__head">
                         <div>
                             <span class="guild-mini-kicker">Tàng Kinh Các</span>
                             <h3>Sổ kỷ lục quản trị</h3>
                         </div>
                     </div>
-                    <div class="guild-audit-list">
+                    <div class="guild-audit-list guild-v3-audit-list">
                         <% guildDetail.auditLogs.forEach((entry) => { %>
                             <article class="guild-audit-item">
                                 <strong><%= entry.message %></strong>
@@ -599,31 +572,23 @@ const announcementCopy = guild.announcement?.content || '';
     <% } %>
 
     <div class="guild-modal-backdrop" data-guild-modal-backdrop hidden></div>
-    <section class="guild-modal guild-v2-modal" data-guild-modal="goal" hidden>
-        <div class="guild-modal__card guild-v2-modal__card">
+    <section class="guild-modal guild-v2-modal guild-v3-modal" data-guild-modal="goal" hidden>
+        <div class="guild-modal__card guild-v2-modal__card guild-v3-modal__card">
             <button type="button" class="guild-modal__close" data-guild-modal-close aria-label="Đóng">×</button>
             <span class="guild-mini-kicker">Chi tiết chiến dịch</span>
-            <h3><%= weeklyGoal?.title || 'Chiến dịch tuần' %></h3>
-            <% if (weeklyGoal) { %>
-                <p class="guild-v2-copy">
-                    <%= weeklyGoal.rewardPreview || 'Hoàn thành chiến dịch để nhận phần thưởng cộng hưởng cho cả Tông Môn.' %>
-                </p>
+            <h3><%= ui.goalModalSummary?.title || 'Chiến dịch tuần' %></h3>
+            <% if (ui.goalModalSummary) { %>
+                <p class="guild-v2-copy"><%= ui.goalModalSummary.description %></p>
                 <div class="guild-progress-bar guild-progress-bar--hero">
                     <span style="width: <%= weeklyGoalPercent %>%"></span>
                 </div>
-                <div class="guild-v2-goal-metrics guild-v2-goal-metrics--modal">
-                    <div class="guild-v2-metric">
-                        <small>Đã góp</small>
-                        <strong><%= Number(weeklyGoal.currentAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></strong>
-                    </div>
-                    <div class="guild-v2-metric">
-                        <small>Mục tiêu</small>
-                        <strong><%= Number(weeklyGoal.targetAmount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></strong>
-                    </div>
-                    <div class="guild-v2-metric">
-                        <small>Tiến độ</small>
-                        <strong><%= weeklyGoalPercent %>%</strong>
-                    </div>
+                <div class="guild-v2-goal-metrics guild-v2-goal-metrics--modal guild-v3-goal-metrics">
+                    <% ui.goalModalSummary.metrics.forEach((metric) => { %>
+                        <div class="guild-v2-metric">
+                            <small><%= metric.label %></small>
+                            <strong><%= metric.value %></strong>
+                        </div>
+                    <% }) %>
                 </div>
             <% } else { %>
                 <p class="guild-v2-copy">Chiến dịch tuần chưa được mở. Hãy chờ Trưởng môn khởi tạo để toàn đội cùng lao vào cày mục tiêu.</p>
@@ -633,7 +598,7 @@ const announcementCopy = guild.announcement?.content || '';
 
     <div class="guild-drawer-backdrop" data-guild-drawer-backdrop hidden></div>
     <aside class="guild-drawer" data-guild-drawer="apply" hidden>
-        <div class="guild-drawer__card">
+        <div class="guild-drawer__card guild-v3-drawer__card">
             <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
             <span class="guild-mini-kicker">Nộp đơn</span>
             <h3>Gia nhập <%= guild.name %></h3>
@@ -649,7 +614,7 @@ const announcementCopy = guild.announcement?.content || '';
     </aside>
 
     <aside class="guild-drawer" data-guild-drawer="invite" hidden>
-        <div class="guild-drawer__card">
+        <div class="guild-drawer__card guild-v3-drawer__card">
             <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
             <span class="guild-mini-kicker">Mật lệnh</span>
             <h3>Gia nhập qua lời mời</h3>
@@ -666,7 +631,7 @@ const announcementCopy = guild.announcement?.content || '';
     <% if (showAdminTab) { %>
         <% if (permissions.editAnnouncement) { %>
             <aside class="guild-drawer" data-guild-drawer="announcement" hidden>
-                <div class="guild-drawer__card">
+                <div class="guild-drawer__card guild-v3-drawer__card">
                     <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
                     <span class="guild-mini-kicker">Tông Môn Lệnh</span>
                     <h3>Chỉnh sửa thông báo chung</h3>
@@ -684,7 +649,7 @@ const announcementCopy = guild.announcement?.content || '';
 
         <% if (permissions.approveApplications) { %>
             <aside class="guild-drawer" data-guild-drawer="recruitment" hidden>
-                <div class="guild-drawer__card">
+                <div class="guild-drawer__card guild-v3-drawer__card">
                     <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
                     <span class="guild-mini-kicker">Tuyển sinh</span>
                     <h3>Điều chỉnh cổng tuyển sinh</h3>
@@ -724,7 +689,7 @@ const announcementCopy = guild.announcement?.content || '';
 
         <% if (permissions.manageWeeklyGoal) { %>
             <aside class="guild-drawer" data-guild-drawer="goal-settings" hidden>
-                <div class="guild-drawer__card">
+                <div class="guild-drawer__card guild-v3-drawer__card">
                     <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
                     <span class="guild-mini-kicker">Chiến dịch tuần</span>
                     <h3>Tạo hoặc cập nhật mục tiêu</h3>
@@ -767,7 +732,7 @@ const announcementCopy = guild.announcement?.content || '';
 
         <% if (permissions.setAutoKickRules) { %>
             <aside class="guild-drawer" data-guild-drawer="moderation" hidden>
-                <div class="guild-drawer__card">
+                <div class="guild-drawer__card guild-v3-drawer__card">
                     <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
                     <span class="guild-mini-kicker">Thiết quân luật</span>
                     <h3>Tự động dọn chỗ cho người nhiệt huyết</h3>
@@ -795,7 +760,7 @@ const announcementCopy = guild.announcement?.content || '';
 
         <% if (permissions.refreshInviteCode) { %>
             <aside class="guild-drawer" data-guild-drawer="invite-tools" hidden>
-                <div class="guild-drawer__card">
+                <div class="guild-drawer__card guild-v3-drawer__card">
                     <button type="button" class="guild-drawer__close" data-guild-drawer-close aria-label="Đóng">×</button>
                     <span class="guild-mini-kicker">Mật lệnh</span>
                     <h3>Quản lý mã chiêu mộ</h3>

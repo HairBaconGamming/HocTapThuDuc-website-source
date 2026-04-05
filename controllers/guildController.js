@@ -1,4 +1,5 @@
 const realmHelper = require('../utils/realmHelper');
+const gardenAssets = require('../config/gardenAssets');
 const guildTreeAssets = require('../config/guildTreeAssets');
 const GuildApplication = require('../models/GuildApplication');
 const { ensureGarden } = require('../services/gardenRewardService');
@@ -53,6 +54,261 @@ function handleGuildError(req, res, error, fallbackRedirect = '/guilds') {
 
     req.flash('error', message);
     return res.redirect(fallbackRedirect);
+}
+
+const TAB_WHITELIST = new Set(['overview', 'goal', 'members', 'admin']);
+const JOIN_MODE_LABELS = {
+    open: 'Vào tự do',
+    approval: 'Cần phê duyệt',
+    invite: 'Chỉ qua mật lệnh'
+};
+const ROLE_LABELS = {
+    leader: 'Trưởng môn',
+    co_leader: 'Phó tông chủ',
+    elder: 'Trưởng lão',
+    member: 'Đệ tử'
+};
+const DONATION_SYMBOLS = {
+    water: '💧',
+    fertilizer: '🌿',
+    gold: '🪙',
+    tomato: '🍅',
+    wheat: '🌾',
+    carrot: '🥕',
+    sunflower: '🌻'
+};
+
+function formatCompactNumber(value) {
+    return Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+}
+
+function getTreeAsset(stage) {
+    return Array.isArray(guildTreeAssets)
+        ? guildTreeAssets.find((entry) => entry.stage === stage) || null
+        : null;
+}
+
+function normalizeGuildTab(tab, showAdminTab) {
+    if (!TAB_WHITELIST.has(tab)) return 'overview';
+    if (tab === 'admin' && !showAdminTab) return 'overview';
+    return tab;
+}
+
+function buildDonationCatalog(viewerResources) {
+    const inventory = viewerResources.inventory || {};
+    const resourceIcons = gardenAssets.UI?.resourceIcons || {};
+    const harvestIcons = gardenAssets.UI?.harvestIcons || {};
+
+    return [
+        {
+            key: 'water',
+            label: 'Nước',
+            symbol: DONATION_SYMBOLS.water,
+            iconUrl: resourceIcons.water || '',
+            amount: viewerResources.water || 0
+        },
+        {
+            key: 'fertilizer',
+            label: 'Phân bón',
+            symbol: DONATION_SYMBOLS.fertilizer,
+            iconUrl: resourceIcons.fertilizer || '',
+            amount: viewerResources.fertilizer || 0
+        },
+        {
+            key: 'gold',
+            label: 'Tiền vàng',
+            symbol: DONATION_SYMBOLS.gold,
+            iconUrl: resourceIcons.gold || '',
+            amount: viewerResources.gold || 0
+        },
+        {
+            key: 'tomato',
+            label: 'Cà chua',
+            symbol: DONATION_SYMBOLS.tomato,
+            iconUrl: harvestIcons.tomato || '',
+            amount: inventory.tomato || 0
+        },
+        {
+            key: 'wheat',
+            label: 'Lúa mì',
+            symbol: DONATION_SYMBOLS.wheat,
+            iconUrl: harvestIcons.wheat || '',
+            amount: inventory.wheat || 0
+        },
+        {
+            key: 'carrot',
+            label: 'Cà rốt',
+            symbol: DONATION_SYMBOLS.carrot,
+            iconUrl: harvestIcons.carrot || '',
+            amount: inventory.carrot || 0
+        },
+        {
+            key: 'sunflower',
+            label: 'Hướng dương',
+            symbol: DONATION_SYMBOLS.sunflower,
+            iconUrl: harvestIcons.sunflower || '',
+            amount: inventory.sunflower || 0
+        }
+    ];
+}
+
+function buildHeroMetaChips(guild) {
+    return [
+        {
+            key: 'leader',
+            text: `Trưởng môn: ${guild.leader?.username || 'Ẩn danh'}`
+        },
+        {
+            key: 'members',
+            text: `${guild.memberCount}/${guild.memberLimit} thành viên`
+        },
+        {
+            key: 'joinMode',
+            text: JOIN_MODE_LABELS[guild.settings?.joinMode || 'open'] || 'Vào tự do'
+        }
+    ];
+}
+
+function buildCurrentBuffBadges(buffSnapshot) {
+    return [
+        {
+            label: 'XP học bài',
+            value: `+${buffSnapshot.lessonXpPct || 0}%`,
+            tone: 'xp'
+        },
+        {
+            label: 'Độ bền cây',
+            value: `+${buffSnapshot.witherTimeBonusPct || 0}%`,
+            tone: 'garden'
+        }
+    ];
+}
+
+function buildGoalArtifacts(weeklyGoal, donationLookup) {
+    const targetLabel = weeklyGoal && weeklyGoal.targetType === 'resource'
+        ? (donationLookup[weeklyGoal.targetResource]?.label || weeklyGoal.targetResource || 'Tài nguyên')
+        : 'Linh Lực';
+    const targetSymbol = weeklyGoal && weeklyGoal.targetType === 'resource'
+        ? (donationLookup[weeklyGoal.targetResource]?.symbol || '✨')
+        : '✨';
+    const percent = weeklyGoal && Number(weeklyGoal.targetAmount || 0) > 0
+        ? Math.min(100, Math.round((Number(weeklyGoal.currentAmount || 0) / Number(weeklyGoal.targetAmount || 0)) * 100))
+        : 0;
+
+    return {
+        weeklyGoal,
+        weeklyGoalPercent: percent,
+        weeklyGoalTarget: targetLabel,
+        weeklyGoalTargetSymbol: targetSymbol,
+        goalBanner: weeklyGoal
+            ? {
+                title: weeklyGoal.title || 'Tích lũy linh lực tuần này',
+                progressText: `${targetSymbol} Đạt ${formatCompactNumber(weeklyGoal.currentAmount)} / ${formatCompactNumber(weeklyGoal.targetAmount)} ${targetLabel}`,
+                cta: 'Xem chi tiết',
+                percent
+            }
+            : null,
+        goalModalSummary: weeklyGoal
+            ? {
+                title: weeklyGoal.title || 'Chiến dịch tuần',
+                description: weeklyGoal.rewardPreview || 'Hoàn thành chiến dịch để nhận phần thưởng cộng hưởng cho cả Tông Môn.',
+                metrics: [
+                    { label: 'Đã góp', value: formatCompactNumber(weeklyGoal.currentAmount) },
+                    { label: 'Mục tiêu', value: formatCompactNumber(weeklyGoal.targetAmount) },
+                    { label: 'Tiến độ', value: `${percent}%` }
+                ]
+            }
+            : null
+    };
+}
+
+function buildMemberRows({ members, viewerUserId, isMember, permissions, roleOptions }) {
+    return (members || []).map((member) => {
+        const canEditRole = isMember
+            && permissions.promoteMembers
+            && String(member._id) !== String(viewerUserId)
+            && Array.isArray(roleOptions)
+            && roleOptions.length > 0;
+        const canKick = canEditRole && permissions.kickMembers && member.roleKey !== 'leader';
+
+        return {
+            ...member,
+            roleText: ROLE_LABELS[member.roleKey] || member.roleLabel,
+            lastActiveText: member.lastActive
+                ? new Date(member.lastActive).toLocaleString('vi-VN')
+                : 'Chưa ghi nhận',
+            weeklyContributionText: formatCompactNumber(member.weeklyContributionValue),
+            weeklyStudyMinutesText: Number(member.weeklyStudyMinutes || 0).toLocaleString('vi-VN'),
+            canEditRole,
+            canKick
+        };
+    });
+}
+
+function buildAdminRows({ guild, permissions, weeklyGoal, announcementCopy }) {
+    const rows = [];
+
+    if (permissions.editAnnouncement) {
+        rows.push({
+            key: 'announcement',
+            title: 'Tông Môn Lệnh',
+            description: announcementCopy || 'Chưa có thông báo chung. Hãy ghim mục tiêu hoặc nhịp học của tuần này.',
+            actionLabel: 'Chỉnh sửa',
+            drawerTarget: 'announcement'
+        });
+    }
+
+    if (permissions.approveApplications) {
+        rows.push({
+            key: 'recruitment',
+            title: 'Chế độ tuyển sinh',
+            description: `${JOIN_MODE_LABELS[guild.settings?.joinMode || 'open']} · Level tối thiểu ${guild.settings?.joinThresholds?.minLevel || 0} · Streak tối thiểu ${guild.settings?.joinThresholds?.minStreak || 0}`,
+            actionLabel: 'Đổi',
+            drawerTarget: 'recruitment'
+        });
+    }
+
+    if (permissions.manageWeeklyGoal) {
+        rows.push({
+            key: 'goal-settings',
+            title: 'Mục tiêu tuần',
+            description: weeklyGoal?.title || 'Chưa khởi tạo chiến dịch tuần.',
+            actionLabel: '+ Tạo chiến dịch',
+            drawerTarget: 'goal-settings'
+        });
+    }
+
+    if (permissions.setAutoKickRules) {
+        rows.push({
+            key: 'moderation',
+            title: 'Thiết quân luật',
+            description: `${guild.settings?.autoModeration?.enabled ? 'Đang bật auto-kick' : 'Đang tắt auto-kick'} · Offline quá ${guild.settings?.autoModeration?.kickAfterInactiveDays || 0} ngày · Cống hiến tuần ≤ ${guild.settings?.autoModeration?.kickIfWeeklyContributionBelow || 0}`,
+            actionLabel: 'Chỉnh sửa',
+            drawerTarget: 'moderation'
+        });
+    }
+
+    if (permissions.refreshInviteCode) {
+        rows.push({
+            key: 'invite-tools',
+            title: 'Mật lệnh chiêu mộ',
+            description: guild.settings?.inviteCode
+                ? 'Đang có mật lệnh hoạt động để chiêu mộ đệ tử mới.'
+                : 'Chưa có mật lệnh chiêu mộ.',
+            actionLabel: 'Quản lý',
+            drawerTarget: 'invite-tools'
+        });
+    }
+
+    return rows;
+}
+
+function buildRightRail({ topContributors, recentContributions }) {
+    return {
+        defaultSegment: 'leaderboard',
+        leaderboard: topContributors || [],
+        activity: recentContributions || []
+    };
 }
 
 exports.getGuildHub = async (req, res) => {
@@ -167,25 +423,98 @@ exports.getGuildDetail = async (req, res) => {
             refreshInviteCode: isMember && hasGuildPermission(guildDetail.guild, viewerRole, 'refreshInviteCode')
         };
 
+        const viewerResources = {
+            water: viewerGarden.water || 0,
+            fertilizer: viewerGarden.fertilizer || 0,
+            gold: viewerGarden.gold || 0,
+            inventory
+        };
+        const roleOptions = getAssignableRoles(viewerRole);
+        const showAdminTab = Boolean(
+            permissions.approveApplications
+            || permissions.editAnnouncement
+            || permissions.manageWeeklyGoal
+            || permissions.setAutoKickRules
+            || permissions.promoteMembers
+            || permissions.kickMembers
+            || permissions.refreshInviteCode
+        );
+        const activeTab = normalizeGuildTab(req.query.tab, showAdminTab);
+        const donationCatalog = buildDonationCatalog(viewerResources);
+        const donationLookup = donationCatalog.reduce((acc, item) => {
+            acc[item.key] = item;
+            return acc;
+        }, {});
+        const weeklyGoal = guildDetail.weeklyGoal || guildDetail.guild.weeklyGoalSnapshot || null;
+        const goalArtifacts = buildGoalArtifacts(weeklyGoal, donationLookup);
+        const tree = guildDetail.treeProgress;
+        const buffSnapshot = guildDetail.guild.buffSnapshot || { lessonXpPct: 0, witherTimeBonusPct: 0 };
+        const treeAsset = getTreeAsset(tree.current.stage);
+        const nextUnlockCopy = tree.next
+            ? `Còn ${formatCompactNumber(tree.xpForNextStage)} Linh Lực để mở khóa ${tree.next.name}.`
+            : 'Linh Thụ đã đạt đỉnh cảnh giới và đang che chở toàn bộ Tông Môn.';
+        const currentBuffBadges = buildCurrentBuffBadges(buffSnapshot);
+        const announcementCopy = guildDetail.guild.announcement?.content || '';
+        const memberRows = buildMemberRows({
+            members: guildDetail.members,
+            viewerUserId: req.user._id,
+            isMember,
+            permissions,
+            roleOptions
+        });
+        const adminRows = buildAdminRows({
+            guild: guildDetail.guild,
+            permissions,
+            weeklyGoal,
+            announcementCopy
+        });
+        const rightRail = buildRightRail({
+            topContributors: guildDetail.topContributors,
+            recentContributions: guildDetail.recentContributions
+        });
+        const guildUi = {
+            activeTab,
+            showAdminTab,
+            heroMetaChips: buildHeroMetaChips(guildDetail.guild),
+            joinModeLabelMap: JOIN_MODE_LABELS,
+            roleLabelMap: ROLE_LABELS,
+            donationCatalog,
+            donationLookup,
+            tree,
+            treeAsset,
+            nextUnlockCopy,
+            currentBuffBadges,
+            announcementCopy,
+            weeklyGoal,
+            weeklyGoalPercent: goalArtifacts.weeklyGoalPercent,
+            weeklyGoalTarget: goalArtifacts.weeklyGoalTarget,
+            weeklyGoalTargetSymbol: goalArtifacts.weeklyGoalTargetSymbol,
+            goalBanner: goalArtifacts.goalBanner,
+            goalModalSummary: goalArtifacts.goalModalSummary,
+            topContributors: guildDetail.topContributors || [],
+            topThreeContributors: (guildDetail.topContributors || []).slice(0, 3),
+            competition: guildDetail.competition || { weekly: { top: [], self: null }, monthly: { top: [], self: null } },
+            memberRows,
+            adminRows,
+            rightRail,
+            viewerResourceSummary: viewerResources
+        };
+
         res.render('guild', {
             title: guildDetail.guild.name,
             user: req.user,
             guildDetail,
             guildTreeAssets,
+            guildUi,
             viewerContext,
             viewerUserId: String(req.user._id),
-            viewerResources: {
-                water: viewerGarden.water || 0,
-                fertilizer: viewerGarden.fertilizer || 0,
-                gold: viewerGarden.gold || 0,
-                inventory
-            },
+            viewerResources,
             isMember,
             canJoin,
             pendingApplication,
             permissions,
             viewerRole,
-            roleOptions: getAssignableRoles(viewerRole),
+            roleOptions,
             activePage: 'guilds'
         });
     } catch (error) {
