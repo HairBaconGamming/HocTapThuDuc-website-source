@@ -5,6 +5,7 @@ module.exports = {
             type: 'plant',
             price: 50,
             maxStage: 3,
+            harvestIcon: 'https://i.ibb.co/8njCfQ4K/image-removebg-preview-14.png',
             rewardGold: { min: 60, max: 90 },
             unlockLevel: 1,
             rewardXP: 30,
@@ -113,7 +114,7 @@ module.exports = {
             gold: 'https://i.ibb.co/WWYTbQxD/image-removebg-preview-11.png'
         },
         harvestIcons: {
-            sunflower: '/api/pro-images/1767283174918-vvfz7i.png',
+            sunflower: 'https://i.ibb.co/8njCfQ4K/image-removebg-preview-14.png',
             wheat: 'https://i.ibb.co/S4dVNQLx/image-removebg-preview-12.png',
             carrot: 'https://i.ibb.co/v66pYDv8/Gemini-Generated-Image-puwglepuwglepuwg-removebg-preview.png',
             tomato: 'https://i.ibb.co/3yj0KTb6/image-removebg-preview-10.png'
