@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<link rel="stylesheet" href="/css/styleEditProfile.css">
+<link rel="stylesheet" href="/css/styleEditProfile-refactored.css">
 
 <style>
     .gallery-tabs {
@@ -29,19 +29,18 @@
     }
 </style>
 
-<section class="edit-profile-section">
-    <div class="container">
-        <div style="text-align: center; margin-bottom: 40px;" data-animate="fade-down">
-            <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--dark-ink);">Hồ Sơ Của Bạn 🛠️</h1>
-            <p style="color: #666;">Cập nhật thông tin để "ngầu" hơn trên bảng xếp hạng nhé!</p>
+<section class="edit-container">
+        <div class="edit-hero">
+            <h1>🛠️ Edit Profile</h1>
+            <p>Update your info to shine on the leaderboard!</p>
         </div>
 
         <form action="/profile/edit" method="POST" class="edit-grid">
             
-            <div class="profile-card avatar-zone">
-                <div class="avatar-wrapper">
+            <div class="glass-card avatar-zone">
+                <div class="avatar-display">
                     <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
-                         class="avatar-preview" id="avatarPreview">
+                         id="avatarPreview">
                 </div>
                 
                 <div class="user-display-name"><%= user.username %></div>
@@ -74,17 +73,17 @@
                 </div>
             </div>
 
-            <div class="profile-card form-zone">
-                <h3 class="card-title"><i class="fas fa-info-circle"></i> Thông Tin Cá Nhân</h3>
+            <div class="glass-card form-zone">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> Personal Info</h3>
                 
-                <div class="input-group-v3">
-                    <label class="label-v3">Email liên hệ</label>
-                    <input type="email" name="email" class="input-v3" value="<%= user.email || '' %>" placeholder="ví dụ: tenban@gmail.com">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-input" value="<%= user.email || '' %>" placeholder="your.email@example.com">
                 </div>
 
-                <div class="input-group-v3">
-                    <label class="label-v3">Tiểu sử (Bio)</label>
-                    <textarea name="bio" class="input-v3 textarea-v3" placeholder="Hãy viết gì đó thật 'chất' về bản thân..."><%= user.bio || '' %></textarea>
+                <div class="form-group">
+                    <label class="form-label">Bio</label>
+                    <textarea name="bio" class="form-textarea" placeholder="Tell us about yourself..."><%= user.bio || '' %></textarea>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -103,25 +102,24 @@
                     </div>
                 </div>
                 
-                <div class="profile-card password-toggle-card" id="passwordCard">
-                    <div class="toggle-header" id="pwToggleHeader">
-                        <div class="toggle-title">
-                            <i class="fas fa-lock-open"></i>
-                            <h4>Đổi Mật Khẩu</h4>
+                <div class="password-accordion">
+                    <div class="accordion-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-lock" style="font-size: 1.2rem; color: #ec4899;"></i>
+                            <h4>Change Password</h4>
                         </div>
-                        <div class="toggle-status-icon">
-                            <i class="fas fa-chevron-down toggle-arrow"></i>
-                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
                     </div>
                     
-                    <div id="pwFields" class="password-content">
-                        <div class="input-group-v3">
-                            <label class="label-v3">Mật khẩu hiện tại</label>
-                            <div class="password-wrapper">
-                                <input type="password" name="currentPassword" class="input-v3" placeholder="Nhập mật khẩu cũ..." disabled>
-                                <button type="button" class="eye-btn"><i class="fas fa-eye"></i></button>
+                    <div class="accordion-content">
+                        <div class="password-fields">
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <div class="password-wrapper">
+                                    <input type="password" name="currentPassword" class="form-input" placeholder="Enter current password">
+                                    <button type="button" class="password-eye" onclick="togglePassword(this)"><i class="fas fa-eye"></i></button>
+                                </div>
                             </div>
-                        </div>
                         <div class="input-group-v3">
                             <label class="label-v3">Mật khẩu mới</label>
                             <div class="password-wrapper">
@@ -138,18 +136,41 @@
                 </div>
 
                 <div class="action-bar">
-                    <a href="/profile" class="btn-cancel">Hủy</a>
-                    <button type="submit" class="btn-save">
-                        <i class="fas fa-save"></i> Lưu Thay Đổi
+                    <a href="/profile" class="btn-glass btn-secondary">Cancel</a>
+                    <button type="submit" class="btn-glass btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
                     </button>
                 </div>
             </div>
         </form>
-    </div>
-</section>
+    </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="/js/profileEditor.js"></script>
+<script>
+    // Password Accordion
+    const accordionHeader = document.querySelector('.accordion-header');
+    const accordionContent = document.querySelector('.accordion-content');
+    accordionHeader.addEventListener('click', () => {
+        const icon = accordionHeader.querySelector('.accordion-icon');
+        accordionContent.classList.toggle('active');
+        icon.style.transform = accordionContent.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+
+    // Password Toggle
+    function togglePassword(btn) {
+        const input = btn.parentElement.querySelector('input');
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
 
 <div id="avatarModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
     <div class="modal-content" style="background: white; width: 600px; max-width: 90%; border-radius: 12px; padding: 20px; position: relative; max-height: 80vh; overflow-y: auto;">

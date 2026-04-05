@@ -13,6 +13,7 @@ const Course = require('../models/Course');
 const Unit = require('../models/Unit');
 const VisitStats = require('../models/VisitStats');
 const { AchievementType, UserAchievement } = require('../models/Achievement');
+const LevelUtils = require('../utils/level');
 const Garden = require('../models/Garden');
 const LessonRevision = require('../models/LessonRevision');
 const UserActivityLog = require('../models/UserActivityLog');
@@ -205,7 +206,9 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             
         const completedLessonsCount = completions.length;
 
-        // 6. Render View
+// 6. Render View
+        const levelInfo = LevelUtils.getLevelInfo(req.user.level || 1, req.user.xp || 0);
+        
         res.render("dashboard", {
             user: req.user,
             lessons, 
@@ -217,6 +220,7 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             completedLessonsCount,
             gardenData,
             userAchievements,
+            levelInfo,  // ← NEW: Sync with garden/profile
             activePage: "dashboard",
             
             // Các biến filter giữ nguyên để không lỗi view nếu có dùng

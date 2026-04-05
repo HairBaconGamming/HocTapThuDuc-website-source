@@ -1,9 +1,18 @@
-# TODO: Update Points, Level, and XP System
+# Task: Sync "kinh nghiệm needed" (XP to next level) across garden, profile, dashboard
 
-## Completed Tasks
-- [x] Create TODO.md file
-- [x] Update views/profile.ejs: Change totalPoints to points in stats-grid
-- [x] Update views/profileView.ejs: Change totalPoints to points and add level display
-- [x] Update views/leaderboard.ejs: Replace all totalPoints with points
-- [x] Update controllers/leaderboardController.js: Change queries and sorts to use points
-- [x] Update public/js/lessonDetail.js: Modify reward popup to show points, XP, water with level-up message
+## Plan Progress
+✅ **Step 1**: Understand files - COMPLETED (read models, views, utils, controllers/services)
+
+**Remaining Steps:**
+✅ - [x] Step 2: routes/index.js /dashboard
+✅ - [x] Step 3: Read & analyzed
+✅ - [x] Step 4: Added LevelUtils import & levelInfo computation in routes/index.js
+✅ - [x] Step 5: Updated views/dashboard.ejs to use levelInfo.requiredXP / levelInfo.progress with fallback
+- [ ] Step 6: Test XP bars match across garden/profile/dashboard
+✅ - [x] Step 7: Changes complete
+
+## Current Status
+- Garden: ✅ Correct (via gardenStateService.getLevelViewData)
+- Profile: ✅ Correct (profileController.js → levelInfo)
+- Dashboard: ❌ Wrong (hardcoded level*1000)
+

@@ -14,7 +14,7 @@
 
     <link rel="stylesheet" href="/css/styleGarden.css">
 </head>
-<body>
+<body class="garden-rustic-page">
     <% 
         let backLink = '/profile';
         if (!isOwner && garden.user) { backLink = '/profile/view/' + garden.user._id; }
@@ -461,10 +461,10 @@
         </nav>
     </div>
 
-    <div id="shopOverlay" class="pixel-modal-overlay" style="display:none;"
+    <div id="shopOverlay" class="pixel-modal-overlay pixel-modal-overlay--rustic" style="display:none;"
         onwheel="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
 
-        <div class="pixel-window shop-window">
+        <div class="pixel-window shop-window shop-window--rustic">
             <div class="window-header">
                 <div class="win-title">🛒 Tạp Hóa Thôn Quê</div>
                 <button id="closeShopBtn" class="pixel-btn-close red">X</button>

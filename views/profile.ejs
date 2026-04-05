@@ -1,11 +1,158 @@
 <%- include('partials/header') %>
 
-<link rel="stylesheet" href="/css/styleProfile.css">
-<link rel="stylesheet" href="/css/styleRealm.css">
+<link rel="stylesheet" href="/css/styleProfile-refactored.css">
 
-<div class="profile-wrapper">
+<div class="profile-main">
     
-    <div class="bento-grid">
+    <!-- Hero Banner -->
+    <section class="profile-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="avatar-hero">
+                <img src="<%= profileUser.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Avatar">
+                <div class="realm-glow-ring"></div>
+                <div class="level-badge-hero">Lv.<%= levelInfo.level %></div>
+            </div>
+            <div class="hero-info">
+                <h1 class="user-name-hero"><%= profileUser.username %></h1>
+                <% if (profileUser.bio) { %>
+                    <p class="user-bio-hero"><%= profileUser.bio %></p>
+                <% } %>
+                <% if (isOwner) { %>
+                    <div class="action-buttons-hero">
+                        <a href="/profile/edit" class="btn-modern btn-primary">
+                            <i class="fas fa-pen"></i> Edit Profile
+                        </a>
+                        <a href="/logout" class="btn-modern btn-secondary">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sticky Tabs -->
+    <nav class="profile-tabs">
+        <button class="tab-btn active" data-tab="overview">📊 Overview</button>
+        <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
+        <button class="tab-btn" data-tab="activity">📈 Activity</button>
+    </nav>
+
+    <!-- Tab Contents -->
+    <div class="tab-content active" id="overview">
+        <div class="bento-grid">
+            <!-- Realm Card - Tall -->
+            <div class="bento-card realm-card learning-card" style="grid-row: span 2;">
+                <%- include('partials/realmDisplay', { realmInfo: realmInfo, user: profileUser }) %>
+            </div>
+
+            <!-- Learning Stats -->
+            <div class="bento-card learning-card">
+                <div class="stat-card">
+                    <div class="stat-emoji">📚</div>
+                    <div class="stat-value"><%= stats.lessons.toLocaleString() %></div>
+                    <div class="stat-title">Lessons</div>
+                </div>
+            </div>
+
+            <div class="bento-card learning-card">
+                <div class="stat-card">
+                    <div class="stat-emoji">🥇</div>
+                    <div class="stat-value">#<%= userRank %></div>
+                    <div class="stat-title">Global Rank</div>
+                </div>
+            </div>
+
+            <!-- Garden Stats -->
+            <div class="bento-card garden-card">
+                <div class="stat-card">
+                    <div class="stat-emoji">💰</div>
+                    <div class="stat-value"><%= stats.gold.toLocaleString() %></div>
+                    <div class="stat-title">Gold</div>
+                </div>
+            </div>
+
+            <div class="bento-card garden-card">
+                <div class="stat-card">
+                    <div class="stat-emoji">⭐</div>
+                    <div class="stat-value"><%= streak %></div>
+                    <div class="stat-title">Streak</div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="bento-card garden-card">
+                <div style="text-align: center;">
+                    <a href="<%= isOwner ? '/my-garden' : '/my-garden/visit/' + profileUser._id %>" 
+                       style="display: block; padding: 20px; font-size: 1.1rem; font-weight: 700; color: var(--garden-text); text-decoration: none;">
+                        🌱 <%= isOwner ? 'My Garden' : 'Visit Garden' %>
+                    </a>
+                </div>
+            </div>
+
+            <% if (guildProfile) { %>
+            <div class="bento-card learning-card">
+                <div style="text-align: center;">
+                    <a href="/guilds/<%= guildProfile.slug %>" 
+                       style="display: block; padding: 20px; font-size: 1.1rem; font-weight: 700; color: var(--learning-text); text-decoration: none;">
+                        👥 <%= guildProfile.name %> (Stage <%= guildProfile.treeStage || 0 %>)
+                    </a>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Achievements Tab -->
+    <div class="tab-content" id="achievements">
+        <div class="achievements-grid">
+            <% if (achievements && achievements.length > 0) { %>
+                <% achievements.forEach((achievement, index) => { %>
+                    <div class="achievement-badge" style="animation-delay: <%= index * 0.1 %>s">
+                        <div class="achievement-icon"><%= achievement.achievementId?.icon || '🎖️' %></div>
+                        <div class="achievement-name">
+                            <%= (achievement.achievementId?.name || 'Achievement').substring(0, 20) %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+                    <h3>No achievements yet</h3>
+                    <p>Keep learning to unlock epic badges!</p>
+                </div>
+            <% } %>
+            <% if (totalAchievements > 6) { %>
+                <div style="grid-column: 1/-1; text-align: center; padding: 20px;">
+                    <a href="/achievements" class="btn-modern btn-primary" style="display: inline-block;">View All Achievements</a>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div class="tab-content" id="activity">
+        <div class="activity-list">
+            <% if (activities && activities.length > 0) { %>
+                <% activities.forEach(activity => { %>
+                    <div class="activity-item">
+                        <div class="activity-icon">📚</div>
+                        <div class="activity-details">
+                            <h4>Completed: <%= activity.lessonId?.title?.substring(0, 40) || 'Lesson' %>...</h4>
+                            <div class="activity-time"><%= moment(activity.completedAt).fromNow() %></div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div style="text-align: center; padding: 80px 40px; color: #94a3b8;">
+                    <div style="font-size: 3.5rem; margin-bottom: 20px;">📈</div>
+                    <h3>No recent activity</h3>
+                    <p>Your learning journey will appear here!</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
         
         <div class="bento-card identity-card">
             <div class="avatar-wrapper">
@@ -156,6 +303,27 @@
     </div>
 </div>
 
-<script src="/js/profileAnimations.js"></script>
+        <!-- Tab Toggle JS -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const tabs = document.querySelectorAll('.tab-btn');
+                const contents = document.querySelectorAll('.tab-content');
+
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetTab = tab.dataset.tab;
+
+                        // Update active tab
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+
+                        // Show target content
+                        contents.forEach(c => c.classList.remove('active'));
+                        document.getElementById(targetTab).classList.add('active');
+                    });
+                });
+            });
+        </script>
 
 <%- include('partials/footer') %>
+

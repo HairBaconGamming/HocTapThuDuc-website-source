@@ -14,14 +14,15 @@
     const safeUser = user || {};
     const safeUsername = String(safeUser.username || 'Hoc vien').trim() || 'Hoc vien';
     const safeAvatar = safeUser.avatar || `https://ui-avatars.com/api/?name=${encodeAvatarName(safeUsername)}&background=eff6ff&color=1d4ed8`;
-    const safeLevel = Math.max(1, toNumber(safeUser.level, 1));
-    const safeXP = Math.max(0, toNumber(safeUser.xp, 0));
+    <% 
+        const safeLevel = levelInfo ? levelInfo.level : Math.max(1, toNumber(safeUser.level, 1));
+        const safeXP = levelInfo ? levelInfo.currentXP : Math.max(0, toNumber(safeUser.xp, 0));
+        const nextLevelXP = levelInfo ? levelInfo.requiredXP : Math.max(0, safeLevel * 1000);
+        const safePercent = levelInfo ? levelInfo.progress : (nextLevelXP > 0 ? Math.min(100, Math.round((safeXP / nextLevelXP) * 100)) : 0);
+    %>
     const safePoints = Math.max(0, toNumber(safeUser.points, 0));
     const safeStreak = Math.max(0, toNumber(safeUser.currentStreak, 0));
-    const safeCompletedLessons = Math.max(0, toNumber(completedLessonsCount, 0));
-
-    const nextLevelXP = Math.max(0, safeLevel * 1000);
-    const safePercent = nextLevelXP > 0 ? Math.min(100, Math.round((safeXP / nextLevelXP) * 100)) : 0;
+    const safeCompletedLessons = Math.max(0, toNumber(completedLessonsCount, 0)); 
 
     const safeRecentCourse = recentCourse && typeof recentCourse === 'object'
         ? {
@@ -107,7 +108,7 @@
                                 <span class="dashboard-xp__label">Tien do cap do</span>
                                 <span class="dashboard-xp__meta"><%= safeXP %> / <%= nextLevelXP %> XP</span>
                             </div>
-                            <div class="xp-bar-container" title="<%= safeXP %> / <%= nextLevelXP %> XP">
+                            <div class="xp-bar-container" title="<%= safeXP %> / <%= nextLevelXP %> XP ( synced with garden )">
                                 <div class="xp-bar-fill" style="width: <%= safePercent %>%;"></div>
                             </div>
                             <div class="dashboard-xp__footer">

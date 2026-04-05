@@ -4,8 +4,29 @@ const Lesson = require('../models/Lesson');
 function normalizeId(value) {
     if (!value) return '';
     if (typeof value === 'string') return value;
-    if (typeof value === 'object' && value._id) return normalizeId(value._id);
-    if (typeof value.toString === 'function') return value.toString();
+    if (typeof value === 'number') return String(value);
+
+    if (typeof value === 'object') {
+        if (typeof value.toHexString === 'function') {
+            return value.toHexString();
+        }
+
+        if (Object.prototype.hasOwnProperty.call(value, '_id')) {
+            const nestedId = value._id;
+            if (nestedId && nestedId !== value) return normalizeId(nestedId);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(value, 'id')) {
+            const nestedId = value.id;
+            if (nestedId && nestedId !== value) return normalizeId(nestedId);
+        }
+    }
+
+    if (typeof value.toString === 'function') {
+        const normalized = value.toString();
+        if (normalized && normalized !== '[object Object]') return normalized;
+    }
+
     return '';
 }
 
@@ -175,6 +196,7 @@ async function findLessonsReferencingDocument(fileId) {
 }
 
 module.exports = {
+    normalizeId,
     hasProContentAccess,
     canManageCourse,
     canManageLesson,

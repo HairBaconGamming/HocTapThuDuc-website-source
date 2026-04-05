@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "Logo HTTD" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "Logo" [ref=e5]
+        - generic [ref=e6]: HTTD
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - textbox "Tìm bài học, bạn bè... 🔍" [ref=e10]
+        - listitem [ref=e11]:
+          - link " Sân trường" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e13]: 
+            - text: Sân trường
+        - listitem [ref=e14]:
+          - link " Kho bí kíp" [ref=e15] [cursor=pointer]:
+            - /url: /subjects
+            - generic [ref=e16]: 
+            - text: Kho bí kíp
+        - listitem [ref=e17]:
+          - link " Hóng biến " [ref=e18] [cursor=pointer]:
+            - /url: /news
+            - generic [ref=e19]: 
+            - text: Hóng biến
+            - generic [ref=e20]: 
+        - listitem [ref=e21]:
+          - link " Đồ chơi " [ref=e22] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e23]: 
+            - text: Đồ chơi
+            - generic [ref=e24]: 
+        - listitem [ref=e25]:
+          - link "✨ Điểm danh" [ref=e26] [cursor=pointer]:
+            - /url: /login
+  - main [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e30]: 🤖
+      - heading "500" [level=1] [ref=e31]
+      - heading "Server đang bị \"cảm cúm\"" [level=2] [ref=e32]
+      - paragraph [ref=e33]: Hệ thống đang gặp chút trục trặc kỹ thuật. Đội ngũ kỹ sư (Admin) đang tích cực fix bug rồi. Bạn thử tải lại trang xem sao nhé?
+      - generic [ref=e34]:
+        - link "🏠 Về trang chủ" [ref=e35] [cursor=pointer]:
+          - /url: /
+        - button "🔄 Thử lại (F5)" [ref=e36]
+  - contentinfo [ref=e37]:
+    - generic [ref=e38]:
+      - heading "Học Tập Thủ Đức" [level=3] [ref=e39]
+      - paragraph [ref=e40]: Nơi kiến thức không bao giờ "ngủ gật" 😴
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: Code bằng 🍜 Mì tôm và ☕ Cafe bởi NAM và Gemini
+        - paragraph [ref=e43]: © 2026 - Chạy ổn định trên máy của Nam (máy khác hên xui)
