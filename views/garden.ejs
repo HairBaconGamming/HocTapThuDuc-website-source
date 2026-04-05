@@ -461,12 +461,12 @@
         </nav>
     </div>
 
-    <div id="shopOverlay" class="pixel-modal-overlay pixel-modal-overlay--rustic" style="display:none;"
+    <div id="shopOverlay" class="pixel-modal-overlay pixel-modal-overlay--rustic" style="display:none;" aria-hidden="true"
         onwheel="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
 
-        <div class="pixel-window shop-window shop-window--rustic">
+        <div class="pixel-window shop-window shop-window--rustic" role="dialog" aria-modal="true" aria-labelledby="gardenShopTitle">
             <div class="window-header">
-                <div class="win-title">🛒 Tạp Hóa Thôn Quê</div>
+                <div class="win-title" id="gardenShopTitle">🛒 Tạp Hóa Thôn Quê</div>
                 <button id="closeShopBtn" class="pixel-btn-close red">X</button>
             </div>
 

@@ -1,0 +1,250 @@
+#tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-tutorial, 9999);
+    pointer-events: none;
+    background: transparent;
+}
+
+.tut-dialog-container {
+    position: absolute;
+    left: 18px;
+    bottom: 118px;
+    width: min(388px, calc(100vw - 36px));
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none;
+    z-index: calc(var(--z-tutorial, 9999) + 1);
+}
+
+.tut-dialog-container.shop-mode {
+    top: 18px !important;
+    bottom: auto !important;
+}
+
+.tut-npc-portrait {
+    width: 60px;
+    height: 60px;
+    flex: 0 0 60px;
+    margin-right: -6px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 4px solid var(--garden-wood-900, #3a2518);
+    background: linear-gradient(180deg, #fff8ea, #e9dbc0);
+    box-shadow: 0 10px 20px rgba(58, 37, 24, 0.18);
+    pointer-events: auto;
+}
+
+.tut-npc-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+}
+
+.tut-content-box {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    padding: 16px 18px 14px;
+    border-radius: 22px;
+    background:
+        linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(244, 234, 211, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    box-shadow: 0 18px 30px rgba(58, 37, 24, 0.18);
+    color: var(--garden-ink, #3f2b1f);
+    pointer-events: auto;
+}
+
+.tut-content-box::after {
+    content: "";
+    position: absolute;
+    left: -11px;
+    bottom: 18px;
+    width: 18px;
+    height: 18px;
+    background: rgba(248, 239, 222, 0.98);
+    border-left: 3px solid var(--garden-wood-900, #3a2518);
+    border-bottom: 3px solid var(--garden-wood-900, #3a2518);
+    transform: rotate(45deg);
+}
+
+.tut-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.tut-npc-name {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(124, 168, 96, 0.18);
+    border: 2px solid rgba(84, 120, 68, 0.2);
+    color: var(--garden-moss-700, #547844);
+    font-size: 0.98rem;
+}
+
+.tut-close {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fffdf7, #eadabd);
+    color: var(--garden-wood-900, #3a2518);
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(58, 37, 24, 0.16);
+}
+
+.tut-body {
+    margin-bottom: 12px;
+    color: var(--garden-ink, #3f2b1f);
+    font-size: 1.08rem;
+    line-height: 1.28;
+    overflow: visible;
+}
+
+.tut-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-tut {
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fffdf7, #eadabd);
+    color: var(--garden-wood-900, #3a2518);
+    padding: 8px 14px;
+    font-size: 1rem;
+    font-family: 'VT323', monospace;
+    box-shadow: 0 4px 0 rgba(58, 37, 24, 0.16);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.16s ease;
+}
+
+.btn-tut:hover {
+    background: linear-gradient(180deg, #ffffff, #f1e5cf);
+}
+
+.btn-tut:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(58, 37, 24, 0.14);
+}
+
+.btn-tut.primary {
+    color: #fffdf7;
+    background: linear-gradient(180deg, #7fa462, #5f8249);
+}
+
+.gender-selection {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.btn-gender {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+}
+
+.btn-gender.male,
+.btn-gender.female {
+    background: linear-gradient(180deg, #fffdf7, #eadabd);
+    color: var(--garden-wood-900, #3a2518);
+}
+
+.tut-focus {
+    position: absolute;
+    border: 3px solid #f4e39e;
+    border-radius: 14px;
+    box-shadow: 0 0 0 9999px rgba(37, 22, 14, 0.54), 0 0 0 6px rgba(255, 253, 247, 0.24);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: var(--z-tutorial, 9999);
+}
+
+.tut-hand {
+    display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tut-dialog-container,
+    .tut-focus,
+    .btn-tut {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .tut-dialog-container {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        bottom: 156px;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .tut-dialog-container.shop-mode {
+        top: 12px !important;
+        bottom: auto !important;
+    }
+
+    .tut-npc-portrait {
+        width: 50px;
+        height: 50px;
+        flex-basis: 50px;
+        margin-right: -2px;
+        border-radius: 16px;
+    }
+
+    .tut-content-box {
+        padding: 14px 14px 12px;
+        border-radius: 18px;
+    }
+
+    .tut-body {
+        font-size: 1rem;
+        line-height: 1.24;
+    }
+
+    .btn-tut {
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tut-dialog-container {
+        bottom: 146px;
+    }
+
+    .tut-content-box {
+        padding: 12px 12px 10px;
+    }
+
+    .tut-close {
+        width: 32px;
+        height: 32px;
+    }
+}

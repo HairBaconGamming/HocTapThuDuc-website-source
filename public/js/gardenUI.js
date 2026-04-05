@@ -123,6 +123,12 @@
         syncShellState();
     }
 
+    function setShopOpenState(isOpen) {
+        const root = getShellRoot();
+        if (!root) return;
+        root.classList.toggle('shop-open', Boolean(isOpen));
+    }
+
     function openSidebar(panel = shellState.activePanel) {
         shellState.activePanel = panel;
         if (isMobileViewport()) {
@@ -608,8 +614,13 @@
         if (!overlay) return;
 
         closeSidebar();
+        closeGardenDropdown();
+        hidePlantStats();
+        toggleGuideWidget(false);
+        setShopOpenState(true);
         setGuideLine('Tàng Bảo Các đã mở. Chọn hạt giống hoặc trang trí rồi trở lại khu vườn để đặt vật phẩm.');
         overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
         document.getElementById('shop-npc-state').style.display = 'flex';
         document.getElementById('shop-item-state').style.display = 'none';
         selectedShopItem = null;
@@ -623,7 +634,11 @@
 
     function closeShop() {
         const overlay = document.getElementById('shopOverlay');
-        if (overlay) overlay.style.display = 'none';
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        setShopOpenState(false);
         setGuideLine('Khu vườn đã sẵn sàng. Chọn công cụ ở thanh dưới hoặc mở bảng điều hướng để xem nhiệm vụ.');
     }
 
@@ -850,6 +865,12 @@
 
         document.getElementById('closeShopBtn')?.addEventListener('click', () => {
             closeShop();
+        });
+
+        document.getElementById('shopOverlay')?.addEventListener('click', (event) => {
+            if (event.target?.id === 'shopOverlay') {
+                closeShop();
+            }
         });
 
         document.getElementById('btn-confirm-buy')?.addEventListener('click', () => {
