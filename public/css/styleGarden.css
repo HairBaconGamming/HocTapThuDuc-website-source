@@ -2094,3 +2094,765 @@ html {
         z-index: 139;
     }
 }
+
+/* --- GARDEN UI REFACTOR V2 --- */
+:root {
+    --z-canvas: 1;
+    --z-hud: 10;
+    --z-floating: 20;
+    --z-drawer: 50;
+    --z-modal: 100;
+    --z-tutorial: 9999;
+    --garden-glass-bg: rgba(15, 23, 42, 0.66);
+    --garden-glass-strong: rgba(15, 23, 42, 0.78);
+    --garden-glass-soft: rgba(30, 41, 59, 0.58);
+    --garden-glass-border: rgba(255, 255, 255, 0.15);
+    --garden-glass-highlight: rgba(255, 255, 255, 0.12);
+    --garden-shadow-soft: 0 14px 32px rgba(2, 8, 23, 0.22);
+    --garden-shadow-strong: 0 24px 48px rgba(2, 8, 23, 0.34);
+    --garden-radius: 16px;
+    --garden-radius-lg: 20px;
+    --garden-radius-pill: 999px;
+    --garden-accent-blue: #38bdf8;
+    --garden-accent-violet: #8b5cf6;
+    --garden-accent-green: #34d399;
+    --garden-accent-gold: #fbbf24;
+    --garden-text: #f8fafc;
+    --garden-text-muted: rgba(226, 232, 240, 0.78);
+    --garden-text-soft: rgba(226, 232, 240, 0.58);
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 26%),
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.14), transparent 20%),
+        linear-gradient(180deg, #020617 0%, #071124 100%);
+}
+
+body {
+    overflow: hidden;
+}
+
+#garden-game-container,
+.pixel-ui.garden-shell {
+    width: 100%;
+    height: 100dvh;
+}
+
+#garden-game-container {
+    z-index: var(--z-canvas);
+}
+
+.pixel-ui.garden-shell {
+    z-index: var(--z-hud);
+    padding: 14px 16px 104px 88px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.garden-shell-backdrop {
+    z-index: calc(var(--z-drawer) - 1);
+    background: rgba(2, 6, 23, 0.42);
+    backdrop-filter: blur(12px);
+}
+
+.garden-rail,
+.garden-shell-drawer,
+.hud-top.garden-topbar,
+.garden-guide-widget,
+.plant-info-panel,
+.planting-ui,
+.coords-badge,
+.hud-bottom,
+.garden-bottom-nav,
+.mobile-action-btn {
+    pointer-events: auto;
+}
+
+.garden-rail {
+    position: absolute;
+    top: 12px;
+    bottom: 104px;
+    left: 12px;
+    z-index: var(--z-hud);
+    width: 64px;
+    padding: 12px;
+    border-radius: 24px;
+    background: var(--garden-glass-bg);
+    border: 1px solid var(--garden-glass-border);
+    box-shadow: var(--garden-shadow-strong);
+    backdrop-filter: blur(14px);
+}
+
+.garden-rail:hover,
+.garden-rail:focus-within {
+    width: 214px;
+    background: var(--garden-glass-strong);
+}
+
+.garden-rail-btn {
+    color: var(--garden-text);
+    border-radius: 16px;
+}
+
+.garden-rail-btn:hover,
+.garden-rail-btn:focus-visible,
+.garden-rail-btn.is-active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(139, 92, 246, 0.22));
+}
+
+.garden-rail-primary {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.82), rgba(139, 92, 246, 0.78));
+    color: #ffffff;
+}
+
+.rail-counter {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.garden-shell-drawer {
+    position: absolute;
+    top: 12px;
+    left: 88px;
+    bottom: 104px;
+    z-index: var(--z-drawer);
+    width: min(340px, calc(100vw - 132px));
+    padding: 18px;
+    border-radius: 24px;
+    background: var(--garden-glass-strong);
+    border: 1px solid var(--garden-glass-border);
+    box-shadow: var(--garden-shadow-strong);
+    backdrop-filter: blur(18px);
+    color: var(--garden-text);
+}
+
+.drawer-header h2,
+.drawer-panel-header h3,
+.guide-tip strong,
+.social-card-value,
+.inventory-card strong,
+.quest-title,
+.info-text h3 {
+    color: var(--garden-text);
+}
+
+.drawer-kicker,
+.drawer-status,
+.guide-panel-kicker,
+.info-panel-kicker,
+.inventory-card span,
+.social-card-title,
+.quest-desc,
+.quest-progress-label,
+.quest-reward,
+.plant-action-meta,
+.stat-row label,
+.stat-val,
+.info-cell small {
+    color: var(--garden-text-muted);
+}
+
+.drawer-close-btn,
+.garden-dropdown-btn,
+.garden-compact-btn,
+.toolbelt-toggle,
+.pixel-btn-close,
+.guide-panel-action,
+.quest-panel-toggle {
+    border: 1px solid var(--garden-glass-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--garden-text);
+    box-shadow: var(--garden-shadow-soft);
+    backdrop-filter: blur(10px);
+}
+
+.drawer-tabs {
+    gap: 6px;
+}
+
+.drawer-tab {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--garden-text-muted);
+}
+
+.drawer-tab.active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(139, 92, 246, 0.82));
+    color: #ffffff;
+    box-shadow: 0 10px 26px rgba(56, 189, 248, 0.22);
+}
+
+.drawer-body {
+    overflow: hidden;
+}
+
+.drawer-panel {
+    overflow-y: auto;
+}
+
+.drawer-empty-state,
+.guide-tip,
+.social-card,
+.inventory-card,
+.quest-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--garden-glass-border);
+    box-shadow: none;
+}
+
+.drawer-quest-panel.quest-panel {
+    position: static;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+.quest-progress,
+.pixel-progress-track {
+    border: 0;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.24);
+}
+
+.quest-progress-fill {
+    background: linear-gradient(90deg, var(--garden-accent-blue), var(--garden-accent-green));
+}
+
+.quest-reward-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--garden-text);
+}
+
+.quest-claim-btn {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(139, 92, 246, 0.82));
+    color: #ffffff;
+}
+
+.quest-side-drawer {
+    display: none !important;
+}
+
+.hud-top.garden-topbar {
+    position: absolute;
+    top: 10px;
+    left: 88px;
+    right: 16px;
+    z-index: var(--z-hud);
+    align-items: center;
+    gap: 16px;
+}
+
+.garden-topbar-left,
+.garden-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.garden-topbar-left {
+    flex: 1 1 auto;
+}
+
+.garden-topbar-right {
+    flex: 0 0 auto;
+}
+
+.garden-scene-pill,
+.player-stats-compact,
+.resources.garden-resource-bar,
+.garden-guide-panel,
+.plant-info-panel,
+.toolbar,
+.garden-bottom-nav,
+.coords-badge,
+.planting-ui,
+.garden-dropdown-menu {
+    background: var(--garden-glass-bg);
+    border: 1px solid var(--garden-glass-border);
+    box-shadow: var(--garden-shadow-soft);
+    backdrop-filter: blur(14px);
+}
+
+.garden-scene-pill {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: var(--garden-radius-pill);
+}
+
+.garden-scene-main {
+    color: var(--garden-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.garden-scene-sub {
+    font-size: 0.78rem;
+    color: var(--garden-text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-stats-compact {
+    min-width: 152px;
+    padding: 6px 10px;
+    border-radius: var(--garden-radius-pill);
+    color: var(--garden-text);
+}
+
+.stat-level-box {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, rgba(56, 189, 248, 0.95), rgba(59, 130, 246, 0.78));
+}
+
+.stat-level-box .lbl,
+.stat-level-box .val,
+.realm-badge,
+.xp-text {
+    color: #ffffff;
+    text-shadow: none;
+}
+
+.xp-progress-wrapper {
+    border: 0;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.resources.garden-resource-bar {
+    padding: 8px 12px;
+    gap: 12px;
+    border-radius: var(--garden-radius-pill);
+}
+
+.resources.garden-resource-bar .res-item {
+    min-width: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--garden-text);
+    gap: 6px;
+    font-size: 0.96rem;
+}
+
+.resources.garden-resource-bar .res-item:not(:last-child)::after {
+    content: '';
+    width: 1px;
+    height: 18px;
+    margin-left: 12px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.resources.garden-resource-bar .pixel-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.garden-quick-actions {
+    display: none;
+}
+
+.garden-dropdown-menu {
+    min-width: 210px;
+    max-width: 260px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    color: var(--garden-text);
+}
+
+.dropdown-item-header,
+.dropdown-label {
+    color: var(--garden-text-soft);
+}
+
+.dropdown-value,
+.dropdown-garden-name {
+    color: var(--garden-text);
+}
+
+.dropdown-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
+}
+
+.planting-ui {
+    top: 86px;
+    z-index: var(--z-floating);
+    color: var(--garden-text);
+}
+
+.coords-badge {
+    z-index: var(--z-floating);
+    bottom: 18px;
+    right: 18px;
+    left: auto;
+    top: auto;
+    transform: none;
+    padding: 6px 10px;
+    border-radius: var(--garden-radius-pill);
+    color: var(--garden-text-muted);
+}
+
+.plant-info-panel {
+    z-index: var(--z-drawer);
+    top: 84px;
+    right: 16px;
+    width: min(300px, calc(100vw - 128px));
+    padding: 14px;
+    border-radius: 20px;
+    color: var(--garden-text);
+    opacity: 0;
+    transform: translateX(12px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.plant-info-panel.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.info-thumb {
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.info-cell {
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plant-action-btn {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(139, 92, 246, 0.82));
+    color: #ffffff;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 10px 22px rgba(56, 189, 248, 0.22);
+}
+
+.garden-guide-widget {
+    right: 16px;
+    bottom: 96px;
+    z-index: var(--z-floating);
+}
+
+.garden-guide-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    border: 1px solid var(--garden-glass-border);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.garden-guide-panel {
+    width: 220px;
+    color: var(--garden-text);
+}
+
+.garden-guide-panel p {
+    color: var(--garden-text-muted);
+    line-height: 1.3;
+}
+
+.hud-bottom {
+    position: absolute;
+    left: 50%;
+    bottom: 15px;
+    transform: translateX(-50%);
+    z-index: var(--z-hud);
+    gap: 10px;
+    max-width: calc(100vw - 32px);
+}
+
+.toolbelt-toggle {
+    width: 42px;
+    height: 42px;
+}
+
+.toolbar {
+    max-width: min(70vw, 560px);
+    padding: 10px;
+    border-radius: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.toolbar::-webkit-scrollbar {
+    display: none;
+}
+
+.tool-slot {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.tool-slot img {
+    width: 30px;
+    height: 30px;
+}
+
+.tool-slot:hover:not(.disabled-tool) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(2, 8, 23, 0.28);
+}
+
+.tool-slot:active:not(.disabled-tool) {
+    transform: translateY(0);
+}
+
+.tool-slot.active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(139, 92, 246, 0.82));
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 14px 24px rgba(56, 189, 248, 0.28);
+}
+
+.tool-slot.shop-slot {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(251, 146, 60, 0.2));
+}
+
+.key-hint {
+    top: 4px;
+    left: 6px;
+    font-size: 0.65rem;
+    color: rgba(248, 250, 252, 0.82);
+    text-shadow: none;
+}
+
+.mobile-action-btn {
+    z-index: var(--z-floating);
+    bottom: 96px;
+    left: 16px;
+    border-radius: 18px;
+    border: 1px solid var(--garden-glass-border);
+    background: var(--garden-glass-bg);
+    color: var(--garden-text);
+    box-shadow: var(--garden-shadow-soft);
+    backdrop-filter: blur(12px);
+}
+
+.pixel-modal-overlay {
+    z-index: var(--z-modal);
+    background: rgba(2, 6, 23, 0.56);
+    backdrop-filter: blur(10px);
+}
+
+.shop-window {
+    z-index: calc(var(--z-modal) + 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .garden-shell-backdrop,
+    .garden-rail,
+    .garden-shell-drawer,
+    .plant-info-panel,
+    .garden-guide-panel,
+    .tool-slot,
+    .toolbelt-toggle,
+    .toolbar,
+    .quest-progress-fill {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    html,
+    body,
+    #garden-game-container,
+    .pixel-ui.garden-shell {
+        min-height: 100dvh;
+        height: 100dvh;
+    }
+
+    .pixel-ui.garden-shell {
+        padding: 12px 12px calc(96px + env(safe-area-inset-bottom)) 12px;
+    }
+
+    .garden-rail {
+        display: none;
+    }
+
+    .hud-top.garden-topbar {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        gap: 8px;
+    }
+
+    .garden-topbar-left {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 8px;
+    }
+
+    .garden-topbar-right {
+        flex: 0 0 auto;
+        gap: 8px;
+    }
+
+    .garden-scene-pill {
+        display: none;
+    }
+
+    .player-stats-compact {
+        min-width: 0;
+        flex: 1 1 auto;
+        padding: 6px 8px;
+    }
+
+    .realm-badge {
+        font-size: 0.82rem;
+    }
+
+    .resources.garden-resource-bar {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .resources.garden-resource-bar .res-item {
+        font-size: 0.86rem;
+    }
+
+    .garden-shell-drawer {
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(88vw, 340px);
+        border-radius: 0 22px 22px 0;
+        transform: translateX(-100%);
+    }
+
+    .plant-info-panel {
+        left: 12px;
+        right: 12px;
+        top: auto;
+        bottom: calc(118px + env(safe-area-inset-bottom));
+        width: auto;
+        max-height: min(44dvh, 340px);
+        overflow-y: auto;
+    }
+
+    .garden-guide-widget {
+        right: 12px;
+        bottom: calc(134px + env(safe-area-inset-bottom));
+    }
+
+    .coords-badge {
+        bottom: calc(140px + env(safe-area-inset-bottom));
+        right: 12px;
+    }
+
+    .mobile-action-btn {
+        bottom: calc(134px + env(safe-area-inset-bottom));
+        left: 12px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .hud-bottom {
+        left: 12px;
+        right: 12px;
+        bottom: calc(64px + env(safe-area-inset-bottom) + 10px);
+        transform: none;
+        max-width: none;
+    }
+
+    .toolbelt-toggle {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+    }
+
+    .toolbar {
+        width: calc(100% - 52px);
+        max-width: none;
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .tool-slot {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
+
+    .tool-slot img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .key-hint {
+        display: none;
+    }
+
+    .garden-bottom-nav {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: var(--z-hud);
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.82);
+        border: 1px solid var(--garden-glass-border);
+        box-shadow: var(--garden-shadow-soft);
+        backdrop-filter: blur(14px);
+    }
+
+    .bottom-nav-link {
+        color: var(--garden-text-soft);
+    }
+
+    .bottom-nav-link.active {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(139, 92, 246, 0.22));
+        color: #ffffff;
+    }
+
+    .bottom-nav-link span {
+        font-size: 0.66rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .resources.garden-resource-bar .res-item:not(:last-child)::after {
+        display: none;
+    }
+
+    .resources.garden-resource-bar {
+        gap: 6px;
+    }
+
+    .garden-dropdown-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .bottom-nav-link span {
+        display: none;
+    }
+}

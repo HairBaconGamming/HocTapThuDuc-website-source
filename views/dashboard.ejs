@@ -1,189 +1,358 @@
 <%- include('partials/header') %>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <link rel="stylesheet" href="/css/styleDashboard.css">
 
+<%
+    const toNumber = (value, fallback = 0) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const encodeAvatarName = (value) => encodeURIComponent(String(value || 'Hoc vien'));
+
+    const safeUser = user || {};
+    const safeUsername = String(safeUser.username || 'Hoc vien').trim() || 'Hoc vien';
+    const safeAvatar = safeUser.avatar || `https://ui-avatars.com/api/?name=${encodeAvatarName(safeUsername)}&background=eff6ff&color=1d4ed8`;
+    const safeLevel = Math.max(1, toNumber(safeUser.level, 1));
+    const safeXP = Math.max(0, toNumber(safeUser.xp, 0));
+    const safePoints = Math.max(0, toNumber(safeUser.points, 0));
+    const safeStreak = Math.max(0, toNumber(safeUser.currentStreak, 0));
+    const safeCompletedLessons = Math.max(0, toNumber(completedLessonsCount, 0));
+
+    const nextLevelXP = Math.max(0, safeLevel * 1000);
+    const safePercent = nextLevelXP > 0 ? Math.min(100, Math.round((safeXP / nextLevelXP) * 100)) : 0;
+
+    const safeRecentCourse = recentCourse && typeof recentCourse === 'object'
+        ? {
+            _id: recentCourse._id || '',
+            href: recentCourse._id ? `/course/${recentCourse._id}` : '/courses',
+            title: String(recentCourse.title || 'Khoa hoc gan day'),
+            image: String(recentCourse.image || ''),
+            progress: clamp(toNumber(recentCourse.progress, 0), 0, 100),
+            completedLessons: Math.max(0, toNumber(recentCourse.completedLessons, 0)),
+            totalLessons: Math.max(0, toNumber(recentCourse.totalLessons, 0))
+        }
+        : null;
+
+    const safeEnrolledCourses = Array.isArray(enrolledCourses)
+        ? enrolledCourses.map((course) => ({
+            _id: course?._id || '',
+            href: course?._id ? `/course/${course._id}` : '/courses',
+            title: String(course?.title || 'Khoa hoc'),
+            image: String(course?.image || ''),
+            progress: clamp(toNumber(course?.progress, 0), 0, 100),
+            completedLessons: Math.max(0, toNumber(course?.completedLessons, 0)),
+            totalLessons: Math.max(0, toNumber(course?.totalLessons, 0))
+        }))
+        : [];
+
+    const safeAchievements = Array.isArray(userAchievements)
+        ? userAchievements.map((item) => {
+            const achievement = item?.achievementId || {};
+            return {
+                id: item?._id || achievement?._id || '',
+                name: String(achievement?.name || 'Thanh tich moi'),
+                icon: String(achievement?.icon || '🏆'),
+                unlockedAt: item?.unlockedAt ? new Date(item.unlockedAt) : null
+            };
+        })
+        : [];
+
+    const hasGardenData = !!gardenData;
+    const safeGardenData = {
+        water: Math.max(0, toNumber(gardenData?.water, 0)),
+        gold: Math.max(0, toNumber(gardenData?.gold, 0))
+    };
+
+    const safeWeeklyActivity = (() => {
+        try {
+            const raw = typeof weeklyActivity === 'string' ? JSON.parse(weeklyActivity) : weeklyActivity;
+            if (!Array.isArray(raw)) {
+                return [0, 0, 0, 0, 0, 0, 0];
+            }
+            return Array.from({ length: 7 }, (_, index) => {
+                const value = Math.max(0, toNumber(raw[index], 0));
+                return Number(value.toFixed(1));
+            });
+        } catch (error) {
+            return [0, 0, 0, 0, 0, 0, 0];
+        }
+    })();
+
+    const totalWeeklyHours = safeWeeklyActivity.reduce((sum, value) => sum + toNumber(value, 0), 0).toFixed(1);
+%>
+
 <script>
-    // Dữ liệu biểu đồ từ Server (Mảng 7 số thực)
-    // Nếu mảng rỗng hoặc toàn 0, UI sẽ hiển thị biểu đồ phẳng (đúng thực tế)
-    window.WEEKLY_ACTIVITY = <%- weeklyActivity || '[0,0,0,0,0,0,0]' %>;
+    window.WEEKLY_ACTIVITY = <%- JSON.stringify(safeWeeklyActivity) %>;
 </script>
 
-<div class="dashboard-wrapper">
+<div class="dashboard-shell">
     <div class="dashboard-container">
-        
-        <div class="dash-header animate__animated animate__fadeInDown">
-            <div class="user-welcome">
-                <div class="avatar-container">
-                    <img src="<%= user.avatar || 'https://ui-avatars.com/api/?name=' + user.username + '&background=random' %>" alt="Avatar">
-                    <span class="level-badge">LV.<%= user.level || 1 %></span>
-                </div>
-                <div class="welcome-text">
-                    <h1>Chào, <%= user.username %>! <span class="wave">👋</span></h1>
-                    
-                    <% 
-                        const currentLevel = user.level || 1;
-                        const currentXP = user.xp || 0;
-                        const nextLevelXP = currentLevel * 1000; 
-                        const percentXP = Math.min((currentXP / nextLevelXP) * 100, 100);
-                    %>
-                    <div class="xp-bar-container" title="<%= currentXP %> / <%= nextLevelXP %> XP">
-                        <div class="xp-bar-fill" style="width: <%= percentXP %>%;"></div>
-                        <span class="xp-text"><%= currentXP %> / <%= nextLevelXP %> XP</span>
+        <section class="dashboard-hero">
+            <div class="dashboard-hero__main">
+                <div class="dashboard-hero__identity">
+                    <div class="dashboard-avatar">
+                        <img src="<%= safeAvatar %>" alt="Avatar cua <%= safeUsername %>" onerror="this.src='https://ui-avatars.com/api/?name=<%= encodeAvatarName(safeUsername) %>&background=eff6ff&color=1d4ed8';">
+                        <span class="dashboard-avatar__badge">LV. <%= safeLevel %></span>
+                    </div>
+
+                    <div class="dashboard-hero__copy">
+                        <p class="dashboard-eyebrow">Bang dieu khien hoc tap</p>
+                        <h1 class="dashboard-title dashboard-truncate-single" title="<%= safeUsername %>">Chao, <%= safeUsername %>!</h1>
+                        <p class="dashboard-subtitle">Theo doi tien do hoc tap, vuon cua ban va quay lai nhung khoa hoc dang hoc ma khong bi roi boi giao dien.</p>
+
+                        <div class="dashboard-xp">
+                            <div class="dashboard-xp__header">
+                                <span class="dashboard-xp__label">Tien do cap do</span>
+                                <span class="dashboard-xp__meta"><%= safeXP %> / <%= nextLevelXP %> XP</span>
+                            </div>
+                            <div class="xp-bar-container" title="<%= safeXP %> / <%= nextLevelXP %> XP">
+                                <div class="xp-bar-fill" style="width: <%= safePercent %>%;"></div>
+                            </div>
+                            <div class="dashboard-xp__footer">
+                                <span>Da dat <strong><%= safePercent %>%</strong> cap do hien tai</span>
+                                <span>Con <strong><%= Math.max(0, nextLevelXP - safeXP) %> XP</strong> de len cap</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="header-stats">
-                <div class="h-stat-item">
-                    <i class="fas fa-fire text-danger"></i>
+            <div class="dashboard-hero__stats" aria-label="Thong ke tong quan">
+                <div class="hero-stat-pill">
+                    <span class="hero-stat-pill__icon">⚡</span>
                     <div>
-                        <span class="stat-val"><%= user.currentStreak || 0 %></span>
-                        <span class="stat-lbl">Streak</span>
+                        <span class="hero-stat-pill__value"><%= safePoints %></span>
+                        <span class="hero-stat-pill__label">Diem</span>
                     </div>
                 </div>
-                <div class="h-stat-item">
-                    <i class="fas fa-bolt text-warning"></i>
+                <div class="hero-stat-pill">
+                    <span class="hero-stat-pill__icon">🔥</span>
                     <div>
-                        <span class="stat-val"><%= user.points || 0 %></span>
-                        <span class="stat-lbl">Điểm</span>
+                        <span class="hero-stat-pill__value"><%= safeStreak %></span>
+                        <span class="hero-stat-pill__label">Streak</span>
+                    </div>
+                </div>
+                <div class="hero-stat-pill">
+                    <span class="hero-stat-pill__icon">🎓</span>
+                    <div>
+                        <span class="hero-stat-pill__value"><%= safeLevel %></span>
+                        <span class="hero-stat-pill__label">Cap do</span>
+                    </div>
+                </div>
+                <div class="hero-stat-pill">
+                    <span class="hero-stat-pill__icon">📘</span>
+                    <div>
+                        <span class="hero-stat-pill__value"><%= safeCompletedLessons %></span>
+                        <span class="hero-stat-pill__label">Bai da hoc</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="dash-grid">
-            <div class="dash-main">
-                
-                <% if (recentCourse) { %>
-                    <div class="section-card highlight-card animate__animated animate__fadeInUp">
-                        <div class="card-header">
-                            <h3><i class="fas fa-history"></i> Tiếp tục học</h3>
-                        </div>
-                        <div class="recent-course-box">
-                            <div class="rc-thumb">
-                                <img src="<%= recentCourse.image %>" onerror="this.src='https://i.ibb.co/BVnNtLhp/default-course.png'">
-                                <div class="play-overlay"><i class="fas fa-play"></i></div>
+        <div class="dash-bento">
+            <section class="dashboard-card dashboard-card--feature">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Resume Course</p>
+                        <h2 class="dashboard-card__title">Tiep tuc hoc</h2>
+                    </div>
+                    <% if (safeRecentCourse) { %>
+                        <span class="dashboard-chip"><%= safeRecentCourse.progress %>% hoan thanh</span>
+                    <% } %>
+                </div>
+
+                <% if (safeRecentCourse) { %>
+                    <div class="feature-course">
+                        <div class="media-frame feature-course__media <%= safeRecentCourse.image ? '' : 'is-fallback' %>">
+                            <% if (safeRecentCourse.image) { %>
+                                <img src="<%= safeRecentCourse.image %>" alt="<%= safeRecentCourse.title %>" onerror="this.parentElement.classList.add('is-fallback'); this.remove();">
+                            <% } %>
+                            <div class="media-placeholder">
+                                <span class="media-placeholder__icon">▶</span>
+                                <span class="media-placeholder__text">San sang tiep tuc</span>
                             </div>
-                            <div class="rc-info">
-                                <h4><%= recentCourse.title %></h4>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: <%= recentCourse.progress %>%"></div>
+                        </div>
+
+                        <div class="feature-course__body">
+                            <h3 class="dashboard-truncate-multiline" title="<%= safeRecentCourse.title %>"><%= safeRecentCourse.title %></h3>
+                            <p class="feature-course__copy">Quay lai bai hoc ban dang theo doi va tiep tuc duy tri nhiep hoc tap ma khong can tim lai tu dau.</p>
+
+                            <div class="feature-course__progress">
+                                <div class="feature-course__progress-head">
+                                    <span>Da hoc <strong><%= safeRecentCourse.completedLessons %>/<%= safeRecentCourse.totalLessons %></strong> bai</span>
+                                    <span><%= safeRecentCourse.progress %>%</span>
                                 </div>
-                                <div class="rc-meta">
-                                    <span>Đã hoàn thành <%= recentCourse.progress %>%</span>
-                                    <a href="/course/<%= recentCourse._id %>" class="btn-continue">Vào học <i class="fas fa-arrow-right ms-1"></i></a>
+                                <div class="progress-track">
+                                    <div class="progress-track__fill" style="width: <%= safeRecentCourse.progress %>%;"></div>
                                 </div>
                             </div>
+
+                            <div class="feature-course__actions">
+                                <a href="<%= safeRecentCourse.href %>" class="dashboard-btn dashboard-btn--primary">Vao hoc ngay</a>
+                                <a href="/courses" class="dashboard-btn dashboard-btn--ghost">Kham pha them</a>
+                            </div>
                         </div>
+                    </div>
+                <% } else { %>
+                    <div class="dashboard-empty">
+                        <div class="dashboard-empty__icon">✨</div>
+                        <h3>Chua co khoa hoc dang theo doi</h3>
+                        <p>Hay bat dau mot khoa hoc moi de bang dieu khien nay hien thi tien do hoc tap cua ban.</p>
+                        <a href="/courses" class="dashboard-btn dashboard-btn--primary">Kham pha khoa hoc</a>
+                    </div>
+                <% } %>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Weekly Learning</p>
+                        <h2 class="dashboard-card__title">Gio hoc tuan nay</h2>
+                    </div>
+                    <span class="dashboard-chip"><%= totalWeeklyHours %> gio</span>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="learningChart"></canvas>
+                </div>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Garden Snapshot</p>
+                        <h2 class="dashboard-card__title">Nong trai</h2>
+                    </div>
+                </div>
+
+                <% if (hasGardenData) { %>
+                    <div class="garden-panel">
+                        <div class="garden-stat">
+                            <span class="garden-stat__icon">💧</span>
+                            <div>
+                                <strong><%= safeGardenData.water %></strong>
+                                <span>Nuoc</span>
+                            </div>
+                        </div>
+                        <div class="garden-stat">
+                            <span class="garden-stat__icon">🪙</span>
+                            <div>
+                                <strong><%= safeGardenData.gold %></strong>
+                                <span>Vang</span>
+                            </div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="dashboard-empty dashboard-empty--compact">
+                        <div class="dashboard-empty__icon">🌱</div>
+                        <p>Vuon cua ban chua san sang. Vao cham soc de bat dau tich luy tai nguyen.</p>
                     </div>
                 <% } %>
 
-                <div class="section-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-chart-line"></i> Giờ học tuần này</h3>
+                <a href="/my-garden" class="dashboard-btn dashboard-btn--success">Vao cham soc vuon</a>
+            </section>
+
+            <section class="dashboard-card dashboard-card--wide">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">My Library</p>
+                        <h2 class="dashboard-card__title">Khoa hoc cua toi</h2>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="learningChart"></canvas>
-                    </div>
+                    <span class="dashboard-chip"><%= safeEnrolledCourses.length %> khoa hoc</span>
                 </div>
 
-                <div class="section-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
-                    <div class="card-header space-between">
-                        <h3><i class="fas fa-layer-group"></i> Khóa học của tôi</h3>
-                        <% if(enrolledCourses && enrolledCourses.length > 0) { %>
-                            <span class="badge-count"><%= enrolledCourses.length %></span>
-                        <% } %>
-                    </div>
-                    
-                    <div class="my-courses-list">
-                        <% if (enrolledCourses && enrolledCourses.length > 0) { %>
-                            <% enrolledCourses.forEach(course => { %>
-                                <a href="/course/<%= course._id %>" class="mc-item">
-                                    <img src="<%= course.image %>" onerror="this.src='https://i.ibb.co/BVnNtLhp/default-course.png'">
-                                    <div class="mc-info">
-                                        <h5><%= course.title %></h5>
-                                        <div class="mc-progress-mini">
-                                            <div class="bar" style="width: <%= course.progress %>%"></div>
-                                        </div>
-                                        <span class="mc-stat"><%= course.completedLessons %>/<%= course.totalLessons %> bài</span>
-                                    </div>
-                                    <div class="mc-arrow"><i class="fas fa-chevron-right"></i></div>
-                                </a>
-                            <% }) %>
-                        <% } else { %>
-                            <div class="text-center py-5">
-                                <p class="text-muted mb-3">Bạn chưa tham gia khóa học nào.</p>
-                                <a href="/courses" class="btn-continue">Khám phá ngay</a>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dash-sidebar">
-                
-                <div class="widget-card garden-widget animate__animated animate__fadeInRight">
-                    <div class="widget-header">
-                        <h3><i class="fas fa-seedling text-success"></i> Nông trại</h3>
-                    </div>
-                    <div class="garden-minimal">
-                        <div class="garden-stats-row">
-                            <div class="gs-item">
-                                <i class="fas fa-tint text-primary"></i>
-                                <span class="gs-value"><%= gardenData ? gardenData.water : 0 %></span>
-                                <span class="gs-label">Nước</span>
-                            </div>
-                            <div class="gs-divider"></div>
-                            <div class="gs-item">
-                                <i class="fas fa-coins text-warning"></i>
-                                <span class="gs-value"><%= gardenData ? gardenData.gold : 0 %></span>
-                                <span class="gs-label">Vàng</span>
-                            </div>
-                        </div>
-                        <a href="/my-garden" class="btn-garden-go">
-                            Vào chăm sóc <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="widget-card animate__animated animate__fadeInRight" style="animation-delay: 0.1s">
-                    <div class="widget-header">
-                        <h3><i class="fas fa-trophy text-warning"></i> Thành tích</h3>
-                    </div>
-                    <div class="achievements-list">
-                        <% if (userAchievements && userAchievements.length > 0) { %>
-                            <% userAchievements.forEach(ua => { 
-                                const ach = ua.achievementId || {}; 
-                            %>
-                                <div class="ach-row">
-                                    <div class="ach-icon"><%= ach.icon || '🏆' %></div>
-                                    <div class="ach-details">
-                                        <span class="ach-name"><%= ach.name %></span>
-                                        <span class="ach-date"><%= new Date(ua.unlockedAt).toLocaleDateString('vi-VN') %></span>
+                <% if (safeEnrolledCourses.length > 0) { %>
+                    <div class="course-list">
+                        <% safeEnrolledCourses.forEach((course) => { %>
+                            <a href="<%= course.href %>" class="course-list__item">
+                                <div class="media-frame course-list__media <%= course.image ? '' : 'is-fallback' %>">
+                                    <% if (course.image) { %>
+                                        <img src="<%= course.image %>" alt="<%= course.title %>" onerror="this.parentElement.classList.add('is-fallback'); this.remove();">
+                                    <% } %>
+                                    <div class="media-placeholder">
+                                        <span class="media-placeholder__icon">📚</span>
                                     </div>
                                 </div>
-                            <% }) %>
-                        <% } else { %>
-                            <div class="text-center py-3 text-muted small">
-                                Chưa có thành tích nào.
+
+                                <div class="course-list__body">
+                                    <h3 class="dashboard-truncate-multiline" title="<%= course.title %>"><%= course.title %></h3>
+                                    <div class="course-list__meta">
+                                        <span><%= course.completedLessons %>/<%= course.totalLessons %> bai</span>
+                                        <span><%= course.progress %>%</span>
+                                    </div>
+                                    <div class="progress-track progress-track--small">
+                                        <div class="progress-track__fill" style="width: <%= course.progress %>%;"></div>
+                                    </div>
+                                </div>
+
+                                <span class="course-list__arrow">→</span>
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div class="dashboard-empty dashboard-empty--compact">
+                        <div class="dashboard-empty__icon">🧭</div>
+                        <p>Ban chua tham gia khoa hoc nao. Thu bat dau voi mot mon hoc gan voi muc tieu cua ban.</p>
+                        <a href="/courses" class="dashboard-btn dashboard-btn--primary">Kham pha ngay</a>
+                    </div>
+                <% } %>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Recent Achievements</p>
+                        <h2 class="dashboard-card__title">Thanh tich</h2>
+                    </div>
+                </div>
+
+                <% if (safeAchievements.length > 0) { %>
+                    <div class="achievement-list">
+                        <% safeAchievements.forEach((achievement) => { %>
+                            <div class="achievement-item">
+                                <div class="achievement-item__icon"><%= achievement.icon %></div>
+                                <div class="achievement-item__body">
+                                    <h3 class="dashboard-truncate-single" title="<%= achievement.name %>"><%= achievement.name %></h3>
+                                    <span><%= achievement.unlockedAt ? achievement.unlockedAt.toLocaleDateString('vi-VN') : 'Moi mo khoa' %></span>
+                                </div>
                             </div>
-                        <% } %>
-                        <a href="/achievements" class="btn-view-all">Xem tất cả</a>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div class="dashboard-empty dashboard-empty--compact">
+                        <div class="dashboard-empty__icon">🏆</div>
+                        <p>Chua co thanh tich nao. Hay hoan thanh bai hoc de mo khoa nhung cot moc dau tien.</p>
+                    </div>
+                <% } %>
+
+                <a href="/achievements" class="dashboard-link">Xem tat ca thanh tich</a>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Quick Access</p>
+                        <h2 class="dashboard-card__title">Loi tat</h2>
                     </div>
                 </div>
 
-                <div class="widget-card animate__animated animate__fadeInRight" style="animation-delay: 0.2s">
-                    <div class="widget-header"><h3>Lối tắt</h3></div>
-                    <div class="shortcuts-grid">
-                        <a href="/courses" class="sc-btn"><i class="fas fa-search"></i> Khóa học</a>
-                        <a href="/leaderboard" class="sc-btn"><i class="fas fa-chart-bar"></i> BXH</a>
-                        <a href="/profile/edit" class="sc-btn"><i class="fas fa-user-cog"></i> Hồ sơ</a>
-                    </div>
+                <div class="shortcut-grid">
+                    <a href="/courses" class="shortcut-item">
+                        <span class="shortcut-item__icon">🔎</span>
+                        <span>Khoa hoc</span>
+                    </a>
+                    <a href="/leaderboard" class="shortcut-item">
+                        <span class="shortcut-item__icon">📈</span>
+                        <span>Bang xep hang</span>
+                    </a>
+                    <a href="/profile/edit" class="shortcut-item">
+                        <span class="shortcut-item__icon">⚙️</span>
+                        <span>Ho so</span>
+                    </a>
                 </div>
-
-            </div>
+            </section>
         </div>
     </div>
 </div>

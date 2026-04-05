@@ -9,6 +9,12 @@
     const tabPanels = Array.from(document.querySelectorAll('[data-guild-panel]'));
     const segmentButtons = Array.from(document.querySelectorAll('[data-guild-segment]'));
     const segmentPanels = Array.from(document.querySelectorAll('[data-guild-segment-panel]'));
+    const tabLabels = {
+        overview: 'Overview',
+        goal: 'Weekly Quests',
+        members: 'Members',
+        admin: 'Admin/Settings'
+    };
 
     const donationForm = document.getElementById('guildDonationForm');
     const treeSanctuary = document.getElementById('guildTreeSanctuary');
@@ -259,6 +265,10 @@
     }
 
     tabButtons.forEach((button) => {
+        const label = tabLabels[button.dataset.guildTab];
+        if (label) {
+            button.textContent = label;
+        }
         button.addEventListener('click', () => setActiveTab(button.dataset.guildTab));
     });
 

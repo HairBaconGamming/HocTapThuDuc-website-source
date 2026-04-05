@@ -430,15 +430,7 @@ exports.getGuildDetail = async (req, res) => {
             inventory
         };
         const roleOptions = getAssignableRoles(viewerRole);
-        const showAdminTab = Boolean(
-            permissions.approveApplications
-            || permissions.editAnnouncement
-            || permissions.manageWeeklyGoal
-            || permissions.setAutoKickRules
-            || permissions.promoteMembers
-            || permissions.kickMembers
-            || permissions.refreshInviteCode
-        );
+        const showAdminTab = isMember && viewerRole === 'leader';
         const activeTab = normalizeGuildTab(req.query.tab, showAdminTab);
         const donationCatalog = buildDonationCatalog(viewerResources);
         const donationLookup = donationCatalog.reduce((acc, item) => {

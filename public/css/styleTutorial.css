@@ -1,137 +1,220 @@
-/* --- PIXEL RPG TUTORIAL THEME v5.1 (UX Fixes) --- */
-
 #tutorial-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    /* [FIX 1] Z-Index cực cao để đè lên Shop (Shop là 101, Chat là 200) */
-    z-index: 99999; 
-    pointer-events: none; 
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-tutorial, 9999);
+    pointer-events: none;
     background: transparent;
 }
 
-/* Khung thoại chính */
 .tut-dialog-container {
     position: absolute;
-    bottom: 130px; 
-    left: 50%;
-    transform: translateX(-50%);
-    width: 95%; max-width: 800px;
-    height: auto; min-height: 160px;
+    left: 16px;
+    bottom: 108px;
+    width: min(360px, calc(100vw - 32px));
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
     pointer-events: none;
-    display: flex; align-items: flex-end;
-    font-family: 'VT323', monospace;
-    transition: bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-
-    /* [FIX] Z-Index CAO NHẤT, cao hơn cả tut-focus để không bị nền đen đè lên */
-    z-index: 20000 !important;
+    z-index: calc(var(--z-tutorial, 9999) + 1);
 }
 
-/* [FIX 3] Class đặc biệt khi ở trong Shop -> Hạ thấp xuống */
 .tut-dialog-container.shop-mode {
-    bottom: 20px !important; /* Hạ sát đáy màn hình */
-    z-index: 100000; /* Đảm bảo nổi hơn Shop Window */
+    top: 16px !important;
+    bottom: auto !important;
 }
 
-/* Chân dung NPC */
 .tut-npc-portrait {
-    width: 160px; /* Thu nhỏ chút cho cân đối */
-    height: auto;
-    aspect-ratio: 3/4;
-    margin-right: -25px;
-    z-index: 2;
-    filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.3));
-    position: relative;
-    bottom: 0;
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+    margin-right: -8px;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(15, 23, 42, 0.78);
+    box-shadow: 0 14px 28px rgba(2, 8, 23, 0.36);
     pointer-events: auto;
-}
-.tut-npc-portrait img {
-    width: 100%; height: 100%; object-fit: cover;
-    image-rendering: pixelated; border-bottom: 4px solid #3e2723;
+    backdrop-filter: blur(10px);
 }
 
-/* Nội dung hội thoại */
+.tut-npc-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+}
+
 .tut-content-box {
     flex: 1;
-    background: #fff3e0;
-    border: 4px solid #3e2723;
-    box-shadow: 0 0 0 2px #d7ccc8, 6px 6px 0 rgba(0,0,0,0.4);
-    border-radius: 12px; /* Bo tròn mềm mại hơn */
-    
-    /* [FIX 2] Padding rộng rãi, không fix height để chữ tự xuống dòng */
-    padding: 20px 20px 15px 35px;
-    display: flex; flex-direction: column;
-    position: relative; z-index: 1;
+    min-height: 0;
+    padding: 16px 18px 14px;
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.84);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 20px 44px rgba(2, 8, 23, 0.4);
+    color: #f8fafc;
     pointer-events: auto;
-    min-height: 140px; 
+    backdrop-filter: blur(16px);
 }
 
-.tut-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-.tut-npc-name { 
-    font-size: 1.4rem; font-weight: bold; color: #d84315; 
-    background: #ffccbc; padding: 2px 10px; border: 2px solid #3e2723; border-radius: 4px; 
-    transform: translateY(-30px); /* Đẩy tên cao lên hẳn */
-    box-shadow: 2px 2px 0 rgba(0,0,0,0.2); 
-}
-.tut-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #ef5350; position: absolute; top: 10px; right: 10px; }
-
-.tut-body { 
-    font-size: 1.3rem; 
-    line-height: 1.5; 
-    color: #3e2723; 
+.tut-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 10px;
-    /* [FIX 2] Bỏ overflow, để chữ hiện hết */
-    overflow: visible; 
 }
 
-.tut-controls { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; }
+.tut-npc-name {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.24);
+    color: #e0f2fe;
+    font-size: 1rem;
+    font-weight: bold;
+    transform: none;
+    box-shadow: none;
+}
+
+.tut-close {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.tut-body {
+    margin-bottom: 12px;
+    color: rgba(226, 232, 240, 0.92);
+    font-size: 1.12rem;
+    line-height: 1.45;
+    overflow: visible;
+}
+
+.tut-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
 
 .btn-tut {
-    background: #ffb74d; border: 3px solid #3e2723; color: #3e2723;
-    padding: 6px 18px; font-size: 1.2rem; cursor: pointer;
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.3); font-family: inherit; font-weight: bold;
-    transition: all 0.1s;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+    padding: 8px 14px;
+    font-size: 1rem;
+    font-family: 'VT323', monospace;
+    box-shadow: 0 10px 20px rgba(2, 8, 23, 0.24);
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
-.btn-tut:hover { background: #ffa726; transform: translate(-1px, -1px); }
-.btn-tut:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
-.btn-tut.primary { background: #66bb6a; color: white; border-color: #1b5e20; }
 
-/* Gender Selection & Highlight (Giữ nguyên) */
-.gender-selection { display: flex; gap: 20px; justify-content: center; margin-top: 10px; }
-.btn-gender { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 20px; font-size: 1.1rem; }
-.btn-gender i { font-size: 1.5rem; }
-.btn-gender.male { background: #bbdefb; color: #0d47a1; }
-.btn-gender.female { background: #f8bbd0; color: #880e4f; }
+.btn-tut:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 24px rgba(2, 8, 23, 0.3);
+}
+
+.btn-tut:active {
+    transform: translateY(0);
+}
+
+.btn-tut.primary {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(139, 92, 246, 0.82));
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.gender-selection {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.btn-gender {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+}
+
+.btn-gender.male,
+.btn-gender.female {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+}
 
 .tut-focus {
-    position: absolute; 
-    border: 4px solid #ffeb3b;
-    /* Box-shadow tạo nền đen xung quanh */
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7), 0 0 15px #ffeb3b; 
-    border-radius: 8px; 
-    pointer-events: none; 
-    transition: all 0.3s ease; 
-    
-    /* [FIX] Z-index thấp hơn khung thoại */
-    z-index: 10000; 
+    position: absolute;
+    border: 2px solid #38bdf8;
+    border-radius: 12px;
+    box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.62), 0 0 18px rgba(56, 189, 248, 0.45);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: var(--z-tutorial, 9999);
 }
 
 .tut-hand {
-    position: absolute; font-size: 4rem; filter: drop-shadow(3px 3px 0 #000);
-    animation: pointDown 1s infinite; z-index: 100000;
+    display: none !important;
 }
 
-@keyframes pointDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) {
+    .tut-dialog-container,
+    .tut-focus,
+    .btn-tut {
+        transition: none !important;
+        animation: none !important;
+    }
+}
 
-/* Mobile */
 @media (max-width: 768px) {
-    .tut-dialog-container { bottom: 110px; width: 98%; }
-    .tut-dialog-container.shop-mode { bottom: 10px !important; }
-    .tut-npc-portrait { width: 100px; margin-right: -15px; }
-    .tut-content-box { padding: 15px 10px 10px 20px; min-height: 120px; }
-    .tut-body { font-size: 1.1rem; }
-}
+    .tut-dialog-container {
+        top: 84px;
+        left: 12px;
+        right: 12px;
+        bottom: auto;
+        width: auto;
+        gap: 8px;
+        align-items: flex-start;
+    }
 
-/* Thêm đoạn này vào cuối file hoặc tìm class .tut-hand sửa lại */
-.tut-hand {
-    display: none !important; /* [FIX] Bỏ bàn tay chỉ */
+    .tut-dialog-container.shop-mode {
+        top: 12px !important;
+    }
+
+    .tut-npc-portrait {
+        width: 48px;
+        height: 48px;
+        flex-basis: 48px;
+        margin-right: -4px;
+        border-radius: 16px;
+    }
+
+    .tut-content-box {
+        padding: 14px 16px 12px;
+        border-radius: 18px;
+    }
+
+    .tut-body {
+        font-size: 1rem;
+        line-height: 1.35;
+    }
+
+    .tut-npc-name {
+        font-size: 0.92rem;
+    }
+
+    .btn-tut {
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
 }

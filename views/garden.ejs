@@ -24,7 +24,7 @@
     <div id="rustic-loading">
         <div class="farm-loader-box">
             <div class="farm-icon-bounce">
-                <img src="https://i.ibb.co/v66pYDv8/Gemini-Generated-Image-puwglepuwglepuwg-removebg-preview.png" alt="Loading Icon">
+                <img src="<%= (assets.UI && assets.UI.harvestIcons && assets.UI.harvestIcons.carrot) || (assets.PLANTS && assets.PLANTS.carrot && assets.PLANTS.carrot.harvestIcon) %>" alt="Loading Icon">
             </div>
 
             <div class="farm-title">Nông Trại Vui Vẻ</div>
@@ -199,30 +199,6 @@
             </div>
         </aside>
 
-        <!-- Quest Side Drawer (Phase 2) -->
-        <aside class="quest-side-drawer" id="questSideDrawer" aria-hidden="true" role="complementary">
-            <div class="quest-drawer-header">
-                <div>
-                    <h2>📋 Nhiệm vụ hằng ngày</h2>
-                </div>
-                <button id="questDrawerCloseBtn" class="quest-drawer-close" type="button" aria-label="Đóng nhiệm vụ">
-                    <i class="fas fa-xmark"></i>
-                </button>
-            </div>
-            <div class="quest-drawer-body">
-                <% if (isOwner) { %>
-                    <div class="quest-drawer-content" id="questDrawerContent">
-                        <div class="quest-list" id="questDrawerList"></div>
-                    </div>
-                <% } else { %>
-                    <div class="quest-drawer-empty">
-                        <i class="fas fa-seedling"></i>
-                        <p>Chỉ chủ vườn mới có thể nhận nhiệm vụ hằng ngày.</p>
-                    </div>
-                <% } %>
-            </div>
-        </aside>
-
         <div class="hud-top garden-topbar">
             <div class="garden-topbar-left">
                 <button id="gardenTopMenuBtn" class="pixel-btn garden-compact-btn mobile-only" type="button" aria-controls="gardenSidebar" aria-expanded="false">
@@ -233,20 +209,54 @@
                     <i class="fas fa-arrow-left"></i>
                 </a>
 
-                <% if (guildContext && guildContext.guild) { %>
-                    <a href="/guilds/<%= guildContext.guild.slug %>" class="pixel-btn garden-compact-btn guild-shortcut" title="Tông môn">
-                        <i class="fas fa-people-group"></i>
-                    </a>
-                <% } else if (isOwner) { %>
-                    <a href="/guilds" class="pixel-btn garden-compact-btn guild-shortcut" title="Tông môn">
-                        <i class="fas fa-people-group"></i>
-                    </a>
-                <% } %>
+                <div class="garden-scene-pill">
+                    <span class="garden-scene-main"><%= isOwner ? 'My Garden' : (garden.user ? garden.user.username + "'s Garden" : 'Neighbor Garden') %></span>
+                    <span class="garden-scene-sub">
+                        <%= isOwner ? 'Khu vườn tri thức' : 'Đang ghé thăm' %> · <span id="gardenQuickRealm"><%= garden.levelName %></span>
+                    </span>
+                </div>
+
+                <div class="pixel-panel player-stats-compact">
+                    <div class="stat-level-box">
+                        <span class="lbl">LV</span>
+                        <span class="val" id="ui-level"><%= garden.userLevel %></span>
+                    </div>
+
+                    <div class="stat-info-col">
+                        <div class="realm-badge" id="ui-realm"><%= garden.levelName %></div>
+                        <div class="xp-progress-wrapper">
+                            <% 
+                                const curXP = garden.currentXP || 0;
+                                const maxXP = garden.nextLevelXP || 100;
+                                const xpPct = (maxXP > 0) ? Math.min(100, (curXP / maxXP) * 100) : 0;
+                            %>
+                            <div class="xp-fill" id="ui-xp-bar" style="width: <%= xpPct %>%;"></div>
+                            <span class="xp-text" id="ui-xp-text"><%= curXP %>/<%= maxXP %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="garden-topbar-right">
+
+                <div class="pixel-panel resources garden-resource-bar">
+                    <div class="res-item" title="Nước">
+                        <img src="<%= resourceIcons.water %>" class="pixel-icon" alt="Nước">
+                        <span id="ui-water"><%= garden.water %></span>
+                    </div>
+                    <div class="res-item" title="Phân bón">
+                        <img src="<%= resourceIcons.fertilizer %>" class="pixel-icon" alt="Phân bón">
+                        <span id="ui-fertilizer"><%= garden.fertilizer || 0 %></span>
+                    </div>
+                    <div class="res-item" title="Vàng">
+                        <img src="<%= resourceIcons.gold %>" class="pixel-icon" alt="Vàng">
+                        <span id="ui-gold"><%= garden.gold %></span>
+                    </div>
+                </div>
 
                 <div class="garden-status-dropdown-container">
                     <button id="gardenStatusDropdownBtn" class="pixel-btn garden-compact-btn garden-dropdown-btn" type="button" title="Thông tin khu vườn" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-leaf"></i>
-                        <span class="garden-dropdown-indicator">🌳</span>
+                        <i class="fas fa-circle-info"></i>
                     </button>
                     <div id="gardenStatusDropdownMenu" class="garden-dropdown-menu pixel-panel" aria-hidden="true" role="menu">
                         <div class="dropdown-section">
@@ -282,68 +292,9 @@
                     </div>
                 </div>
 
-                <div class="garden-title-block">
-                    <div class="garden-kicker"><%= isOwner ? 'Khu vườn tri thức' : 'Đang ghé thăm' %></div>
-                    <div class="garden-title-row">
-                        <h1><%= isOwner ? 'My Garden' : (garden.user ? garden.user.username + "'s Garden" : 'Neighbor Garden') %></h1>
-                        <% if (!isOwner) { %>
-                            <span class="garden-title-chip">Khách</span>
-                        <% } %>
-                    </div>
-                    <div class="garden-meta-row">
-                        <span class="garden-meta-chip">📍 Canvas trung tâm</span>
-                        <span class="garden-meta-chip" id="gardenQuickRealm"><%= garden.levelName %></span>
-                        <% if (guildContext && guildContext.guild) { %>
-                            <span class="garden-meta-chip">🌌 <%= guildContext.guild.name %></span>
-                        <% } %>
-                    </div>
-                </div>
-            </div>
-
-            <div class="garden-topbar-right">
-                <div class="pixel-panel player-stats-compact">
-                    <div class="stat-level-box">
-                        <span class="lbl">LV</span>
-                        <span class="val" id="ui-level"><%= garden.userLevel %></span>
-                    </div>
-
-                    <div class="stat-info-col">
-                        <div class="realm-badge" id="ui-realm"><%= garden.levelName %></div>
-                        <div class="xp-progress-wrapper">
-                            <% 
-                                const curXP = garden.currentXP || 0;
-                                const maxXP = garden.nextLevelXP || 100;
-                                const xpPct = (maxXP > 0) ? Math.min(100, (curXP / maxXP) * 100) : 0;
-                            %>
-                            <div class="xp-fill" id="ui-xp-bar" style="width: <%= xpPct %>%;"></div>
-                            <span class="xp-text" id="ui-xp-text"><%= curXP %>/<%= maxXP %></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pixel-panel resources garden-resource-bar">
-                    <div class="res-item" title="Nước">
-                        <img src="<%= resourceIcons.water %>" class="pixel-icon" alt="Nước">
-                        <span id="ui-water"><%= garden.water %></span>
-                    </div>
-                    <div class="res-item" title="Phân bón">
-                        <img src="<%= resourceIcons.fertilizer %>" class="pixel-icon" alt="Phân bón">
-                        <span id="ui-fertilizer"><%= garden.fertilizer || 0 %></span>
-                    </div>
-                    <div class="res-item" title="Vàng">
-                        <img src="<%= resourceIcons.gold %>" class="pixel-icon" alt="Vàng">
-                        <span id="ui-gold"><%= garden.gold %></span>
-                    </div>
-                </div>
-
-                <div class="garden-quick-actions">
-                    <button class="garden-quick-btn" type="button" data-shell-target="quests">
-                        <i class="fas fa-list-check"></i>
-                        <span>Nhiệm vụ</span>
-                    </button>
-                    <button class="garden-quick-btn" type="button" data-shell-target="inventory">
+                <div class="garden-quick-actions" aria-label="Lối tắt">
+                    <button class="garden-quick-btn" type="button" data-shell-target="inventory" title="Mở túi vật phẩm">
                         <i class="fas fa-box-open"></i>
-                        <span>Vật phẩm</span>
                     </button>
                 </div>
             </div>

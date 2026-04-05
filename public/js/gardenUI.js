@@ -119,6 +119,7 @@
     function closeSidebar() {
         shellState.sidebarExpanded = false;
         shellState.mobileDrawerOpen = false;
+        shellState.questDrawerOpen = false;
         syncShellState();
     }
 
@@ -823,26 +824,8 @@
         document.querySelectorAll('[data-shell-target]').forEach((element) => {
             element.addEventListener('click', () => {
                 const target = element.getAttribute('data-shell-target') || 'quests';
-                
-                // Special handling: quests target opens the side drawer instead
-                if (target === 'quests') {
-                    toggleQuestDrawer();
-                } else {
-                    openPanel(target);
-                }
+                openPanel(target);
             });
-        });
-
-        // Quest drawer close button
-        document.getElementById('questDrawerCloseBtn')?.addEventListener('click', () => {
-            closeQuestDrawer();
-        });
-
-        // Close quest drawer when clicking outside (on backdrop)
-        document.getElementById('gardenShellBackdrop')?.addEventListener('click', () => {
-            if (shellState.questDrawerOpen) {
-                closeQuestDrawer();
-            }
         });
 
         document.getElementById('toggleToolbeltBtn')?.addEventListener('click', () => {
@@ -973,10 +956,9 @@
     }
 
     function toggleQuestDrawer() {
-        const drawer = document.getElementById('questSideDrawer');
-        if (!drawer) return;
-
-        const isOpen = drawer.getAttribute('aria-hidden') === 'false';
+        const isOpen = shellState.questDrawerOpen
+            && shellState.activePanel === 'quests'
+            && (shellState.sidebarExpanded || shellState.mobileDrawerOpen);
         if (isOpen) {
             closeQuestDrawer();
         } else {
@@ -985,6 +967,10 @@
     }
 
     function openQuestDrawer() {
+        shellState.questDrawerOpen = true;
+        openPanel('quests');
+        return;
+
         const drawer = document.getElementById('questSideDrawer');
         if (!drawer) return;
 
@@ -1036,6 +1022,14 @@
     }
 
     function closeQuestDrawer() {
+        shellState.questDrawerOpen = false;
+        if (shellState.activePanel === 'quests') {
+            closeSidebar();
+            return;
+        }
+        syncShellState();
+        return;
+
         const drawer = document.getElementById('questSideDrawer');
         if (!drawer) return;
 

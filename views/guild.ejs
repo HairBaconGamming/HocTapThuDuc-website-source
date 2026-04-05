@@ -1,41 +1,142 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleGuild.css">
 <%
-const guild = guildDetail.guild;
-const ui = guildUi;
-const tree = ui.tree;
-const treeAsset = ui.treeAsset;
-const competition = ui.competition;
-const weeklyGoal = ui.weeklyGoal;
-const weeklyGoalPercent = ui.weeklyGoalPercent;
-const donationCatalog = ui.donationCatalog;
-const currentBuffBadges = ui.currentBuffBadges;
-const showAdminTab = ui.showAdminTab;
-const roleLabelMap = ui.roleLabelMap;
-const topContributors = ui.topContributors;
-const topThreeContributors = ui.topThreeContributors;
-const activeTab = ui.activeTab;
-const announcementCopy = ui.announcementCopy;
+const safeArray = (value) => (Array.isArray(value) ? value : []);
+const safeNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+const formatInt = (value) => Math.max(0, safeNumber(value, 0)).toLocaleString('vi-VN');
+const formatDecimal = (value) => Math.max(0, safeNumber(value, 0)).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+const formatDate = (value, fallback = 'No recent activity') => {
+    if (!value) return fallback;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? fallback : date.toLocaleString('vi-VN');
+};
+const clampPercent = (value) => Math.max(0, Math.min(100, safeNumber(value, 0)));
+const ui = guildUi || {};
+const guild = guildDetail?.guild || {};
+const guildSlug = String(guild.slug || '');
+const guildId = String(guild._id || '');
+const safeGuildName = String(guild.name || 'Unnamed Guild');
+const safeGuildDescription = String(
+    guild.description
+    || 'A shared sanctuary to study, donate resources, and grow the Spirit Tree together.'
+);
+const safeMemberCount = Math.max(0, Number(guild.memberCount || 0));
+const safeMemberLimit = Math.max(safeMemberCount, Number(guild.memberLimit || 0));
+const guildMemberCount = safeMemberCount;
+const guildMemberLimit = safeMemberLimit;
+const safeLeaderName = String(guild.leader?.username || 'Unknown leader');
+const safeJoinMode = String(guild.settings?.joinMode || 'open');
+const safeInviteCode = String(guild.settings?.inviteCode || '');
+const showAdminTab = Boolean(ui.showAdminTab && viewerRole === 'leader');
+const activeTab = showAdminTab ? String(ui.activeTab || 'overview') : (ui.activeTab === 'admin' ? 'overview' : String(ui.activeTab || 'overview'));
+const tree = ui.tree || {};
+const treeAsset = ui.treeAsset || {};
+const treeCurrent = tree.current || {};
+const treeNext = tree.next || null;
+const treePercent = Math.max(0, Math.min(100, Number(tree.percent || 0)));
+const treeCurrentExp = Math.max(0, Number(tree.xpIntoStage || 0));
+const treeMaxExp = Math.max(treeCurrentExp, Number(tree.xpNeeded || 0));
+const treeStage = Math.max(0, Number(treeCurrent.stage || 0));
+const treeCurrentName = String(treeCurrent.name || 'Spirit Tree');
+const treeCurrentMotto = String(treeCurrent.motto || 'A quiet sanctuary where the guild gathers its strength.');
+const treeImageUrl = String(treeAsset.imageUrl || '');
+const treeImageAlt = String(treeAsset.name || treeCurrentName);
+const nextUnlockCopy = String(
+    ui.nextUnlockCopy
+    || (treeNext ? `Need ${Number(tree.xpForNextStage || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} more spirit power to unlock ${treeNext.name || 'the next stage'}.` : 'The Spirit Tree has reached its peak form.')
+);
+const competition = ui.competition || {};
+const weeklyGoal = ui.weeklyGoal || null;
+const weeklyGoalPercent = Math.max(0, Math.min(100, Number(ui.weeklyGoalPercent || 0)));
+const goalModalSummary = ui.goalModalSummary || null;
+const goalModalMetrics = Array.isArray(goalModalSummary?.metrics) ? goalModalSummary.metrics : [];
+const goalBanner = ui.goalBanner || null;
+const donationCatalog = Array.isArray(ui.donationCatalog) && ui.donationCatalog.length ? ui.donationCatalog : [];
+const donationSeed = donationCatalog[0] || {
+    key: 'water',
+    label: 'Water',
+    symbol: '💧',
+    iconUrl: '',
+    amount: 0
+};
+const currentBuffBadges = Array.isArray(ui.currentBuffBadges) ? ui.currentBuffBadges : [];
+const heroMetaChips = Array.isArray(ui.heroMetaChips) ? ui.heroMetaChips : [
+    { key: 'leader', text: `Leader: ${safeLeaderName}` },
+    { key: 'members', text: `${safeMemberCount}/${safeMemberLimit} members` },
+    { key: 'joinMode', text: safeJoinMode }
+];
+const rightRail = ui.rightRail || {};
+const rightRailLeaderboard = Array.isArray(rightRail.leaderboard) ? rightRail.leaderboard : [];
+const rightRailActivity = Array.isArray(rightRail.activity) ? rightRail.activity : [];
+const defaultSegment = String(rightRail.defaultSegment || 'leaderboard');
+const memberRows = Array.isArray(ui.memberRows) ? ui.memberRows : [];
+const adminRows = Array.isArray(ui.adminRows) ? ui.adminRows : [];
+const applications = Array.isArray(guildDetail?.applications) ? guildDetail.applications : [];
+const auditLogs = Array.isArray(guildDetail?.auditLogs) ? guildDetail.auditLogs : [];
+const roleLabelMap = ui.roleLabelMap || {};
+const roleOptionsSafe = Array.isArray(roleOptions) ? roleOptions : [];
+const topContributors = Array.isArray(ui.topContributors) ? ui.topContributors : [];
+const topThreeContributors = Array.isArray(ui.topThreeContributors) ? ui.topThreeContributors : [];
+const announcementCopy = String(ui.announcementCopy || '');
+const goalTargetLabel = String(ui.weeklyGoalTarget || 'Spirit Power');
+guild.name = safeGuildName;
+guild.description = safeGuildDescription;
+guild.slug = guildSlug;
+guild._id = guildId;
+guild.memberCount = guildMemberCount;
+guild.memberLimit = guildMemberLimit;
+tree.current = { ...treeCurrent, name: treeCurrentName, motto: treeCurrentMotto, stage: treeStage };
+tree.next = treeNext
+    ? { ...treeNext, name: treeNext.name || 'Next stage', unlockText: nextUnlockCopy }
+    : { name: 'Peak stage reached', unlockText: nextUnlockCopy };
+tree.percent = treePercent;
+ui.heroMetaChips = heroMetaChips;
+ui.rightRail = rightRail;
+ui.adminRows = adminRows;
+ui.weeklyGoalTarget = goalTargetLabel;
+ui.goalBanner = goalBanner
+    ? {
+        ...goalBanner,
+        title: String(goalBanner.title || 'Weekly Quest'),
+        progressText: String(goalBanner.progressText || 'Keep donating to complete the quest.'),
+        cta: String(goalBanner.cta || 'Open details'),
+        percent: clampPercent(goalBanner.percent)
+    }
+    : null;
+ui.goalModalSummary = goalModalSummary || {
+    title: 'Weekly Quest',
+    description: 'No campaign is active yet.',
+    metrics: []
+};
+guildDetail.applications = applications;
+guildDetail.auditLogs = auditLogs;
+guildDetail.recentContributions = rightRailActivity;
 %>
 <main
-    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2 guild-workspace-v3"
+    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2 guild-workspace-v3 guild-workspace-v4"
     data-guild-page
-    data-guild-slug="<%= guild.slug %>"
+    data-guild-slug="<%= guildSlug %>"
     data-viewer-id="<%= viewerUserId %>"
     data-active-tab="<%= activeTab %>"
-    data-default-segment="<%= ui.rightRail.defaultSegment %>"
+    data-default-segment="<%= defaultSegment %>"
 >
     <section class="guild-v2-hero guild-v3-hero">
         <div class="guild-v2-hero__copy guild-v3-hero__copy">
             <span class="guild-kicker">Không gian Tông Môn</span>
-            <h1><%= guild.name %></h1>
-            <p class="guild-v2-hero__lead">
+            <h1 class="guild-v4-title guild-ellipsis" title="<%= safeGuildName %>"><%= safeGuildName %></h1>
+            <p class="guild-v2-hero__lead guild-v4-copy">
                 <%= guild.description || 'Một nơi cùng nhau học, vun trồng Linh Thụ và cộng hưởng buff cho cả môn phái.' %>
             </p>
             <div class="guild-v2-hero__chips guild-v3-hero__chips">
                 <% ui.heroMetaChips.forEach((chip) => { %>
                     <span class="guild-chip"><%= chip.text %></span>
                 <% }) %>
+                <% if (!memberRows.length) { %>
+                    <div class="guild-empty-copy guild-empty-copy--panel">No members yet. Invite the first learner to join this guild.</div>
+                <% } %>
             </div>
         </div>
 
@@ -60,13 +161,13 @@ const announcementCopy = ui.announcementCopy;
 
             <div class="guild-v3-hero__buttons">
                 <% if (isMember) { %>
-                    <form action="/guilds/<%= guild.slug %>/leave" method="POST">
+                    <form action="/guilds/<%= guildSlug %>/leave" method="POST">
                         <button type="submit" class="guild-secondary-btn">
                             <%= viewerRole === 'leader' ? 'Giải tán / Rời tông' : 'Rời Tông Môn' %>
                         </button>
                     </form>
                 <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'open') { %>
-                    <form action="/guilds/<%= guild.slug %>/join" method="POST">
+                    <form action="/guilds/<%= guildSlug %>/join" method="POST">
                         <button type="submit" class="guild-primary-btn">Gia nhập Tông Môn</button>
                     </form>
                 <% } else if (!viewerContext.guild && canJoin && guild.settings?.joinMode === 'approval') { %>
@@ -129,10 +230,10 @@ const announcementCopy = ui.announcementCopy;
                         <div class="guild-v2-altar__spark guild-v2-altar__spark--two"></div>
                         <div class="guild-v2-altar__spark guild-v2-altar__spark--three"></div>
 
-                        <% if (treeAsset && treeAsset.imageUrl) { %>
+                        <% if (treeImageUrl) { %>
                             <img
-                                src="<%= treeAsset.imageUrl %>"
-                                alt="<%= treeAsset.name %>"
+                                src="<%= treeImageUrl %>"
+                                alt="<%= treeImageAlt %>"
                                 class="guild-v2-tree guild-v3-tree"
                                 loading="lazy"
                                 decoding="async"
@@ -141,8 +242,8 @@ const announcementCopy = ui.announcementCopy;
 
                         <div class="guild-v2-tree-card guild-v3-tree-card">
                             <span class="guild-mini-kicker">Bệ tế đàn Linh Thụ</span>
-                            <h2><%= tree.current.name %></h2>
-                            <p><%= tree.current.motto %></p>
+                            <h2 class="guild-ellipsis" title="<%= treeCurrentName %>"><%= treeCurrentName %></h2>
+                            <p><%= treeCurrentMotto %></p>
                         </div>
                     </div>
 
@@ -157,7 +258,12 @@ const announcementCopy = ui.announcementCopy;
                             </div>
 
                             <div class="guild-progress-bar guild-progress-bar--hero">
-                                <span style="width: <%= tree.percent %>%"></span>
+                                <span style="width: <%= treePercent %>%"></span>
+                            </div>
+
+                            <div class="guild-v4-progress-meta">
+                                <strong><%= formatDecimal(treeCurrentExp) %> / <%= formatDecimal(treeMaxExp) %> EXP</strong>
+                                <span>Stage <%= treeStage %> · <%= treePercent %>% complete</span>
                             </div>
 
                             <div class="guild-v2-unlock guild-v3-unlock">
@@ -179,8 +285,8 @@ const announcementCopy = ui.announcementCopy;
                         </div>
 
                         <% if (isMember) { %>
-                            <form class="guild-v2-donate guild-v3-donate" id="guildDonationForm" action="/guilds/<%= guild.slug %>/contribute" method="POST">
-                                <input type="hidden" name="resourceType" value="<%= donationCatalog[0].key %>">
+                            <form class="guild-v2-donate guild-v3-donate" id="guildDonationForm" action="/guilds/<%= guildSlug %>/contribute" method="POST">
+                                <input type="hidden" name="resourceType" value="<%= donationSeed.key %>">
                                 <input type="hidden" name="amount" value="10">
 
                                 <div class="guild-v2-donate__head guild-v3-donate__head">
@@ -188,11 +294,11 @@ const announcementCopy = ui.announcementCopy;
                                         <span class="guild-mini-kicker">Smart Dock</span>
                                         <h3>Hiến linh ngay</h3>
                                     </div>
-                                    <strong id="guildDonateSummary"><%= donationCatalog[0].symbol %> 10 <%= donationCatalog[0].label %></strong>
+                                    <strong id="guildDonateSummary"><%= donationSeed.symbol %> 10 <%= donationSeed.label %></strong>
                                 </div>
 
                                 <div class="guild-v2-resource-grid guild-v3-resource-grid" role="list">
-                                    <% donationCatalog.forEach((resource, index) => { %>
+                                    <% (donationCatalog.length ? donationCatalog : [donationSeed]).forEach((resource, index) => { %>
                                         <button
                                             type="button"
                                             class="guild-v2-resource <%= index === 0 ? 'is-active' : '' %>"
@@ -218,11 +324,11 @@ const announcementCopy = ui.announcementCopy;
 
                                 <div class="guild-v2-slider-card guild-v3-slider-card">
                                     <div class="guild-v2-slider-card__top">
-                                        <span id="guildSelectedResourceLabel"><%= donationCatalog[0].label %></span>
-                                        <small>Tồn kho: <b id="guildSelectedResourceAmount"><%= donationCatalog[0].amount.toLocaleString('vi-VN') %></b></small>
+                                        <span id="guildSelectedResourceLabel"><%= donationSeed.label %></span>
+                                        <small>Tồn kho: <b id="guildSelectedResourceAmount"><%= formatInt(donationSeed.amount) %></b></small>
                                     </div>
 
-                                    <input type="range" min="0" max="<%= Math.max(1, donationCatalog[0].amount) %>" value="10" class="guild-donation-slider" id="guildDonationSlider">
+                                    <input type="range" min="0" max="<%= Math.max(1, safeNumber(donationSeed.amount, 0)) %>" value="10" class="guild-donation-slider" id="guildDonationSlider">
 
                                     <div class="guild-v2-quick-grid">
                                         <button type="button" class="guild-quick-btn" data-quick-amount="10">+10</button>
@@ -253,7 +359,7 @@ const announcementCopy = ui.announcementCopy;
                                 <button type="button" class="guild-primary-btn" data-guild-drawer-target="invite">Nhập mật lệnh</button>
                             </div>
                         <% } else if (!viewerContext.guild && guild.settings?.joinMode === 'open') { %>
-                            <form action="/guilds/<%= guild.slug %>/join" method="POST" class="guild-v2-callout guild-v2-callout--form guild-v3-callout">
+                            <form action="/guilds/<%= guildSlug %>/join" method="POST" class="guild-v2-callout guild-v2-callout--form guild-v3-callout">
                                 <p>Tông Môn đang mở cổng. Gia nhập ngay để bắt đầu hiến linh và nhận buff chung.</p>
                                 <button type="submit" class="guild-primary-btn">Gia nhập ngay</button>
                             </form>
@@ -281,7 +387,7 @@ const announcementCopy = ui.announcementCopy;
 
                     <div class="guild-v2-segment-panel is-active" data-guild-segment-panel="leaderboard">
                         <div class="guild-v2-leaderboard guild-v3-leaderboard">
-                            <% ui.rightRail.leaderboard.forEach((entry) => { %>
+                            <% rightRailLeaderboard.forEach((entry) => { %>
                                 <article class="guild-v2-leaderboard-row guild-v2-leaderboard-row--rank-<%= entry.rank <= 3 ? entry.rank : 4 %>">
                                     <div class="guild-v2-leaderboard-row__identity">
                                         <span class="guild-v2-rank">#<%= entry.rank %></span>
@@ -294,7 +400,7 @@ const announcementCopy = ui.announcementCopy;
                                     <span class="guild-v2-leaderboard-row__value"><%= Number(entry.totalContributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %></span>
                                 </article>
                             <% }) %>
-                            <% if (!ui.rightRail.leaderboard.length) { %>
+                            <% if (!rightRailLeaderboard.length) { %>
                                 <p class="guild-empty-copy">Chưa có bảng vàng vì Tông Môn vẫn đang chờ những hiến lễ đầu tiên.</p>
                             <% } %>
                         </div>
@@ -302,7 +408,7 @@ const announcementCopy = ui.announcementCopy;
 
                     <div class="guild-v2-segment-panel" data-guild-segment-panel="activity" hidden>
                         <div class="guild-v2-timeline guild-v3-timeline">
-                            <% ui.rightRail.activity.forEach((entry) => { %>
+                            <% rightRailActivity.forEach((entry) => { %>
                                 <% const userHasApplauded = Array.isArray(entry.applaudedBy) && entry.applaudedBy.some((memberId) => String(memberId) === String(viewerUserId)); %>
                                 <article class="guild-v2-timeline-row guild-v2-timeline-row--<%= entry.dramaTone %>">
                                     <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
@@ -314,13 +420,13 @@ const announcementCopy = ui.announcementCopy;
                                         </p>
                                         <small><%= new Date(entry.createdAt).toLocaleString('vi-VN') %></small>
                                     </div>
-                                    <button type="button" class="guild-applause-btn guild-applause-btn--inline <%= userHasApplauded ? 'is-active' : '' %>" data-applause-url="/guilds/<%= guild.slug %>/contributions/<%= entry._id %>/applause">
+                                    <button type="button" class="guild-applause-btn guild-applause-btn--inline <%= userHasApplauded ? 'is-active' : '' %>" data-applause-url="/guilds/<%= guildSlug %>/contributions/<%= entry._id %>/applause">
                                         <span>👏</span>
                                         <strong data-applause-count><%= entry.applauseCount || 0 %></strong>
                                     </button>
                                 </article>
                             <% }) %>
-                            <% if (!ui.rightRail.activity.length) { %>
+                            <% if (!rightRailActivity.length) { %>
                                 <p class="guild-empty-copy">Dòng linh lực sẽ sáng lên khi các đồng môn bắt đầu hiến lễ.</p>
                             <% } %>
                         </div>
@@ -354,12 +460,15 @@ const announcementCopy = ui.announcementCopy;
                         <span style="width: <%= weeklyGoalPercent %>%"></span>
                     </div>
                     <div class="guild-v2-goal-metrics guild-v3-goal-metrics">
-                        <% ui.goalModalSummary.metrics.forEach((metric) => { %>
+                        <% goalModalMetrics.forEach((metric) => { %>
                             <div class="guild-v2-metric">
                                 <small><%= metric.label %></small>
                                 <strong><%= metric.value %></strong>
                             </div>
                         <% }) %>
+                        <% if (!rightRailActivity.length) { %>
+                            <p class="guild-empty-copy">No activities yet. Be the first to donate!</p>
+                        <% } %>
                     </div>
                 <% } else if (permissions.manageWeeklyGoal) { %>
                     <div class="guild-v3-empty-state">
@@ -407,7 +516,7 @@ const announcementCopy = ui.announcementCopy;
                         </div>
                     </div>
                     <div class="guild-v2-timeline guild-v2-timeline--compact guild-v3-timeline">
-                        <% guildDetail.recentContributions.slice(0, 8).forEach((entry) => { %>
+                        <% rightRailActivity.slice(0, 8).forEach((entry) => { %>
                             <article class="guild-v2-timeline-row guild-v2-timeline-row--<%= entry.dramaTone %>">
                                 <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
                                 <div class="guild-v2-timeline-row__copy">
@@ -433,16 +542,16 @@ const announcementCopy = ui.announcementCopy;
             </div>
 
             <div class="guild-v3-member-list">
-                <% ui.memberRows.forEach((member) => { %>
+                <% memberRows.forEach((member) => { %>
                     <article class="guild-v3-member-row">
                         <div class="guild-v3-member-row__identity">
                             <div class="guild-member-avatar-wrap">
-                                <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.username %>">
+                                <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.username || 'Member' %>">
                                 <span class="guild-online-dot <%= member.isOnline ? 'is-online' : '' %>"></span>
                             </div>
                             <div class="guild-v3-member-copy">
                                 <div class="guild-v3-member-copy__head">
-                                    <strong><%= member.username %></strong>
+                                    <strong class="guild-ellipsis" title="<%= member.username || 'Unknown member' %>"><%= member.username || 'Unknown member' %></strong>
                                     <span class="guild-v3-role-pill"><%= member.roleText %></span>
                                 </div>
                                 <small>Level <%= member.level || 0 %> · Hoạt động cuối: <%= member.lastActiveText %></small>
@@ -459,10 +568,10 @@ const announcementCopy = ui.announcementCopy;
                                 <summary class="guild-inline-btn guild-inline-btn--ghost">Quản trị</summary>
                                 <div class="guild-v3-member-menu__panel">
                                     <% if (member.canEditRole) { %>
-                                        <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/role" method="POST" class="guild-inline-form">
-                                            <input type="hidden" name="guildId" value="<%= guild._id %>">
+                                        <form action="/guilds/<%= guildSlug %>/members/<%= member._id %>/role" method="POST" class="guild-inline-form">
+                                            <input type="hidden" name="guildId" value="<%= guildId %>">
                                             <select name="nextRole">
-                                                <% roleOptions.forEach((role) => { %>
+                                                <% roleOptionsSafe.forEach((role) => { %>
                                                     <option value="<%= role %>"><%= roleLabelMap[role] %></option>
                                                 <% }) %>
                                             </select>
@@ -470,8 +579,8 @@ const announcementCopy = ui.announcementCopy;
                                         </form>
                                     <% } %>
                                     <% if (member.canKick) { %>
-                                        <form action="/guilds/<%= guild.slug %>/members/<%= member._id %>/kick" method="POST" class="guild-inline-form">
-                                            <input type="hidden" name="guildId" value="<%= guild._id %>">
+                                        <form action="/guilds/<%= guildSlug %>/members/<%= member._id %>/kick" method="POST" class="guild-inline-form">
+                                            <input type="hidden" name="guildId" value="<%= guildId %>">
                                             <input type="hidden" name="reason" value="Kỷ luật nội bộ">
                                             <button type="submit" class="guild-inline-btn guild-inline-btn--danger">Kick</button>
                                         </form>
