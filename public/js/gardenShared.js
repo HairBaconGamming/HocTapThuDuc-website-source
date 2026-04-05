@@ -165,6 +165,10 @@
         if (typeof window.renderDailyQuests === 'function') {
             window.renderDailyQuests(gardenData.dailyQuests || []);
         }
+
+        if (typeof window.renderGardenInventory === 'function') {
+            window.renderGardenInventory(gardenData.inventory || {});
+        }
     }
 
     function updateCoords(x, y) {

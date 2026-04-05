@@ -15,9 +15,235 @@
     let keyboardBound = false;
     let keepAliveStarted = false;
     let fertilizePending = false;
+    const shellState = {
+        sidebarExpanded: false,
+        mobileDrawerOpen: false,
+        questDrawerOpen: false,
+        toolbeltCollapsed: false,
+        dialogMinimized: true,
+        inspectorVisible: false,
+        activePanel: 'quests'
+    };
+    const resourceIcons = gardenAssets.UI?.resourceIcons || {};
+    const harvestIcons = gardenAssets.UI?.harvestIcons || {};
+    const guideTips = [
+        'Tưới nước đều để giữ tiến độ phát triển ổn định trong 24 giờ ẩm đất.',
+        'Dùng bảng nhiệm vụ để lấy thêm nước, phân bón và vàng miễn phí mỗi ngày.',
+        'Cà chua là cây nhiều vụ: thu hoạch xong sẽ lùi giai đoạn rồi mọc tiếp.',
+        'Mở túi vật phẩm để xem nông sản vừa thu được và chuẩn bị quyên góp cho Tông Môn.'
+    ];
 
     function getGardenItems() {
         return Array.isArray(gardenData.items) ? gardenData.items : [];
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function getShellRoot() {
+        return document.querySelector('.pixel-ui.garden-shell');
+    }
+
+    function getDisplayNameForItem(itemKey) {
+        return gardenAssets.PLANTS?.[itemKey]?.name || itemKey;
+    }
+
+    function getHarvestIcon(itemKey) {
+        return harvestIcons[itemKey]
+            || gardenAssets.PLANTS?.[itemKey]?.harvestIcon
+            || gardenAssets.PLANTS?.[itemKey]?.stages?.[gardenAssets.PLANTS[itemKey].stages.length - 1]
+            || resourceIcons.gold
+            || '';
+    }
+
+    function escapeHtml(value = '') {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function syncShellState() {
+        const root = getShellRoot();
+        const backdrop = document.getElementById('gardenShellBackdrop');
+        const sidebar = document.getElementById('gardenSidebar');
+        const toolbeltToggle = document.getElementById('toggleToolbeltBtn');
+        const guideToggle = document.getElementById('gardenGuideToggle');
+        const menuToggles = [
+            document.getElementById('gardenMenuToggle'),
+            document.getElementById('gardenTopMenuBtn')
+        ].filter(Boolean);
+        const isSidebarOpen = shellState.sidebarExpanded || shellState.mobileDrawerOpen;
+
+        if (!root) return;
+
+        root.classList.toggle('sidebar-open', isSidebarOpen);
+        root.classList.toggle('toolbelt-collapsed', shellState.toolbeltCollapsed);
+        root.classList.toggle('dialog-minimized', shellState.dialogMinimized);
+        root.classList.toggle('inspector-visible', shellState.inspectorVisible);
+
+        if (sidebar) {
+            sidebar.setAttribute('aria-hidden', isSidebarOpen ? 'false' : 'true');
+        }
+        if (backdrop) {
+            backdrop.hidden = !isSidebarOpen;
+        }
+        if (toolbeltToggle) {
+            toolbeltToggle.setAttribute('aria-expanded', shellState.toolbeltCollapsed ? 'false' : 'true');
+        }
+        if (guideToggle) {
+            guideToggle.setAttribute('aria-expanded', shellState.dialogMinimized ? 'false' : 'true');
+        }
+
+        menuToggles.forEach((toggle) => {
+            toggle.setAttribute('aria-expanded', isSidebarOpen ? 'true' : 'false');
+        });
+
+        document.querySelectorAll('[data-shell-target]').forEach((element) => {
+            const target = element.getAttribute('data-shell-target');
+            element.classList.toggle('is-active', target === shellState.activePanel);
+        });
+
+        document.querySelectorAll('.drawer-tab[data-shell-target]').forEach((element) => {
+            element.classList.toggle('active', element.getAttribute('data-shell-target') === shellState.activePanel);
+        });
+
+        document.querySelectorAll('.drawer-panel[data-sidebar-panel]').forEach((panel) => {
+            panel.classList.toggle('active', panel.getAttribute('data-sidebar-panel') === shellState.activePanel);
+        });
+    }
+
+    function closeSidebar() {
+        shellState.sidebarExpanded = false;
+        shellState.mobileDrawerOpen = false;
+        syncShellState();
+    }
+
+    function openSidebar(panel = shellState.activePanel) {
+        shellState.activePanel = panel;
+        if (isMobileViewport()) {
+            shellState.mobileDrawerOpen = true;
+        } else {
+            shellState.sidebarExpanded = true;
+        }
+        syncShellState();
+    }
+
+    function openPanel(panel = 'quests') {
+        shellState.activePanel = panel;
+        shellState.questDrawerOpen = panel === 'quests';
+
+        if (panel === 'quests') {
+            setGuideLine('Theo dõi nhiệm vụ để nhận thêm nước, phân bón và vàng miễn phí mỗi ngày.');
+        } else if (panel === 'inventory') {
+            setGuideLine('Đây là kho nông sản vừa thu hoạch. Bạn có thể giữ lại hoặc đem quyên góp cho Tông Môn.');
+        } else if (panel === 'guide') {
+            setGuideLine('Mở các mẹo điều phối để tối ưu nhịp tưới nước, bón phân và thu hoạch.');
+        } else if (panel === 'social') {
+            setGuideLine('Kết nối với khách ghé thăm và Tông Môn để biến khu vườn thành một điểm tụ hội.');
+        }
+
+        openSidebar(panel);
+    }
+
+    function toggleSidebar() {
+        if ((isMobileViewport() && shellState.mobileDrawerOpen) || (!isMobileViewport() && shellState.sidebarExpanded)) {
+            closeSidebar();
+            return;
+        }
+        openSidebar(shellState.activePanel || 'quests');
+    }
+
+    function updateQuestSummary() {
+        const countEl = document.getElementById('questSummaryCount');
+        const statusEl = document.getElementById('questSummaryStatus');
+        const quests = Array.isArray(gardenData.dailyQuests) ? gardenData.dailyQuests : [];
+        const pending = quests.filter((quest) => quest.complete && !quest.claimed).length;
+        const complete = quests.filter((quest) => quest.claimed).length;
+
+        if (countEl) {
+            countEl.innerText = String(pending || quests.length || 0);
+        }
+
+        if (!statusEl) return;
+        if (!quests.length) {
+            statusEl.innerText = 'Hôm nay chưa có nhiệm vụ';
+        } else if (pending > 0) {
+            statusEl.innerText = `${pending} thưởng đang chờ nhận`;
+        } else {
+            statusEl.innerText = `${complete}/${quests.length} nhiệm vụ đã hoàn tất`;
+        }
+    }
+
+    function renderInventory(inventory = gardenData.inventory || {}) {
+        const list = document.getElementById('gardenInventoryList');
+        const summary = document.getElementById('gardenInventorySummary');
+        if (!list) return;
+
+        const keys = ['sunflower', 'wheat', 'carrot', 'tomato'];
+        const total = keys.reduce((sum, key) => sum + Number(inventory[key] || 0), 0);
+
+        if (summary) {
+            summary.innerText = total > 0 ? `${total} nông sản trong túi` : 'Túi đang trống';
+        }
+
+        list.innerHTML = keys.map((key) => {
+            const count = Number(inventory[key] || 0);
+            return `
+                <div class="inventory-card">
+                    <img src="${escapeHtml(getHarvestIcon(key))}" alt="${escapeHtml(getDisplayNameForItem(key))}">
+                    <div>
+                        <strong>${escapeHtml(getDisplayNameForItem(key))}</strong>
+                        <span>${count} vật phẩm</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderGuideTips() {
+        const list = document.getElementById('gardenGuideTips');
+        if (!list) return;
+
+        list.innerHTML = guideTips.map((tip, index) => `
+            <div class="guide-tip">
+                <strong>Mẹo ${index + 1}</strong>
+                <div>${escapeHtml(tip)}</div>
+            </div>
+        `).join('');
+    }
+
+    function setGuideLine(text) {
+        const line = document.getElementById('gardenGuideLine');
+        if (line) line.innerText = text;
+    }
+
+    function toggleGuideWidget(force) {
+        shellState.dialogMinimized = typeof force === 'boolean'
+            ? !force
+            : !shellState.dialogMinimized;
+        syncShellState();
+    }
+
+    function toggleToolbelt(forceCollapsed) {
+        shellState.toolbeltCollapsed = typeof forceCollapsed === 'boolean'
+            ? forceCollapsed
+            : !shellState.toolbeltCollapsed;
+        syncShellState();
+    }
+
+    function handleViewportMode() {
+        if (isMobileViewport()) {
+            shellState.sidebarExpanded = false;
+            shellState.toolbeltCollapsed = true;
+        } else {
+            shellState.mobileDrawerOpen = false;
+            shellState.toolbeltCollapsed = false;
+        }
+        syncShellState();
     }
 
     function getSelectedPlantSprite() {
@@ -115,10 +341,35 @@
 
     function formatQuestReward(rewards = {}) {
         const rewardParts = [];
-        if (rewards.gold) rewardParts.push(`+${rewards.gold}G`);
-        if (rewards.water) rewardParts.push(`+${rewards.water} nước`);
-        if (rewards.fertilizer) rewardParts.push(`+${rewards.fertilizer} phân`);
-        return rewardParts.join(' | ') || 'Không có';
+
+        if (rewards.water) {
+            rewardParts.push(`
+                <span class="quest-reward-chip">
+                    <img src="${escapeHtml(resourceIcons.water || '')}" alt="Nước">
+                    <span>+${rewards.water} nước</span>
+                </span>
+            `);
+        }
+
+        if (rewards.fertilizer) {
+            rewardParts.push(`
+                <span class="quest-reward-chip">
+                    <img src="${escapeHtml(resourceIcons.fertilizer || '')}" alt="Phân bón">
+                    <span>+${rewards.fertilizer} phân</span>
+                </span>
+            `);
+        }
+
+        if (rewards.gold) {
+            rewardParts.push(`
+                <span class="quest-reward-chip">
+                    <img src="${escapeHtml(resourceIcons.gold || '')}" alt="Vàng">
+                    <span>+${rewards.gold} vàng</span>
+                </span>
+            `);
+        }
+
+        return rewardParts.join('');
     }
 
     function renderDailyQuests(quests = gardenData.dailyQuests || []) {
@@ -126,6 +377,7 @@
         if (!list) return;
 
         gardenData.dailyQuests = Array.isArray(quests) ? quests : [];
+        updateQuestSummary();
 
         if (!gardenData.dailyQuests.length) {
             list.innerHTML = '<div class="quest-empty">Hôm nay chưa có nhiệm vụ.</div>';
@@ -147,10 +399,10 @@
             return `
                 <div class="${cardClass}">
                     <div class="quest-topline">
-                        <strong class="quest-title">${quest.title}</strong>
+                        <strong class="quest-title">${escapeHtml(quest.title)}</strong>
                         <span class="quest-progress-label">${quest.progress}/${quest.target}</span>
                     </div>
-                    <div class="quest-desc">${quest.description}</div>
+                    <div class="quest-desc">${escapeHtml(quest.description)}</div>
                     <div class="quest-progress">
                         <div class="quest-progress-fill" style="width:${pct}%"></div>
                     </div>
@@ -334,21 +586,28 @@
 
     function showPlantStats(itemData) {
         if (statsInterval) clearInterval(statsInterval);
+        shellState.inspectorVisible = true;
+        setGuideLine('Đang xem cây trồng. Bạn có thể tưới nước, bón phân hoặc đổi công cụ ngay trên canvas.');
+        syncShellState();
         renderPlantStats(itemData);
     }
 
     function hidePlantStats() {
         if (statsInterval) clearInterval(statsInterval);
         statsInterval = null;
+        shellState.inspectorVisible = false;
         const panel = document.getElementById('plantStats');
         if (panel) panel.classList.remove('active');
         updateFertilizeControls({ visible: false });
+        syncShellState();
     }
 
     function openShopHTML(tab = 'plant') {
         const overlay = document.getElementById('shopOverlay');
         if (!overlay) return;
 
+        closeSidebar();
+        setGuideLine('Tàng Bảo Các đã mở. Chọn hạt giống hoặc trang trí rồi trở lại khu vườn để đặt vật phẩm.');
         overlay.style.display = 'flex';
         document.getElementById('shop-npc-state').style.display = 'flex';
         document.getElementById('shop-item-state').style.display = 'none';
@@ -364,6 +623,7 @@
     function closeShop() {
         const overlay = document.getElementById('shopOverlay');
         if (overlay) overlay.style.display = 'none';
+        setGuideLine('Khu vườn đã sẵn sàng. Chọn công cụ ở thanh dưới hoặc mở bảng điều hướng để xem nhiệm vụ.');
     }
 
     function getShopItems(type) {
@@ -520,6 +780,8 @@
             if (key === 'escape') {
                 closeShop();
                 hidePlantStats();
+                closeSidebar();
+                toggleGuideWidget(false);
                 window.cancelPlanting?.();
                 return;
             }
@@ -541,6 +803,37 @@
     function bindDomActions() {
         if (domActionsBound) return;
         domActionsBound = true;
+
+        document.getElementById('gardenMenuToggle')?.addEventListener('click', () => {
+            toggleSidebar();
+        });
+
+        document.getElementById('gardenTopMenuBtn')?.addEventListener('click', () => {
+            toggleSidebar();
+        });
+
+        document.getElementById('gardenMenuClose')?.addEventListener('click', () => {
+            closeSidebar();
+        });
+
+        document.getElementById('gardenShellBackdrop')?.addEventListener('click', () => {
+            closeSidebar();
+        });
+
+        document.querySelectorAll('[data-shell-target]').forEach((element) => {
+            element.addEventListener('click', () => {
+                const target = element.getAttribute('data-shell-target') || 'quests';
+                openPanel(target);
+            });
+        });
+
+        document.getElementById('toggleToolbeltBtn')?.addEventListener('click', () => {
+            toggleToolbelt();
+        });
+
+        document.getElementById('gardenGuideToggle')?.addEventListener('click', () => {
+            toggleGuideWidget(shellState.dialogMinimized);
+        });
 
         document.getElementById('cancelPlantingBtn')?.addEventListener('click', () => {
             window.cancelPlanting?.();
@@ -589,6 +882,8 @@
                 renderShopItems(element.getAttribute('data-shop-tab') || 'plant');
             });
         });
+
+        window.addEventListener('resize', handleViewportMode);
     }
 
     function startKeepAlivePing() {
@@ -680,7 +975,12 @@
         setAllowedTool(null);
         bindDomActions();
         bindKeyboardShortcuts();
+        renderInventory(gardenData.inventory || {});
         renderDailyQuests(gardenData.dailyQuests || []);
+        renderGuideTips();
+        setGuideLine('Chạm vào cây hoặc ô đất để xem thông tin nhanh. Mở bảng điều hướng để xem nhiệm vụ, vật phẩm và mẹo canh tác.');
+        handleViewportMode();
+        syncShellState();
         startKeepAlivePing();
         initLoadingSystem();
     }
@@ -697,5 +997,7 @@
     window.toggleMoveMode = toggleMoveMode;
     window.updateMobileMoveBtn = updateMobileMoveBtn;
     window.renderDailyQuests = renderDailyQuests;
+    window.renderGardenInventory = renderInventory;
+    window.openGardenPanel = openPanel;
     window.initGardenPage = initGardenPage;
 })(window);

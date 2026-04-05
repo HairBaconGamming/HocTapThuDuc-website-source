@@ -88,7 +88,7 @@ class MainScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('water_drop', '/api/pro-images/1767290687212-2rlhp4.png');
+        this.load.image('water_drop', ASSETS.UI?.resourceIcons?.water || '/api/pro-images/1767290687212-2rlhp4.png');
         this.load.image('star_particle', '/api/pro-images/1767290642605-hz0cd0.png');
         
         if (ASSETS.PLOT && ASSETS.PLOT.grass) this.load.image('grass_tile', ASSETS.PLOT.grass.textureUrl);

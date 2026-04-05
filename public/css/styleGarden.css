@@ -691,3 +691,1013 @@ body, html {
     0% { transform: translateY(0) scale(1,1); } 
     100% { transform: translateY(-15px) scale(0.95, 1.05); } 
 }
+
+/* --- GARDEN WORKSPACE REFRESH --- */
+:root {
+    --garden-shell-bg: rgba(255, 255, 255, 0.88);
+    --garden-shell-border: rgba(17, 24, 39, 0.08);
+    --garden-shell-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
+    --garden-shell-strong-shadow: 0 28px 60px rgba(15, 23, 42, 0.2);
+    --garden-accent-start: #2563eb;
+    --garden-accent-end: #7c3aed;
+    --garden-ink: #0f172a;
+    --garden-subtle: #64748b;
+    --garden-soft-bg: rgba(248, 250, 252, 0.9);
+}
+
+body,
+html {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4ff 52%, #edf8f1 100%);
+}
+
+.pixel-ui.garden-shell {
+    padding: 18px 18px 110px 92px;
+    align-items: stretch;
+}
+
+.garden-shell-backdrop {
+    position: fixed;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.28);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.25s ease;
+}
+
+.pixel-ui.garden-shell.sidebar-open .garden-shell-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.garden-rail,
+.garden-shell-drawer,
+.garden-topbar,
+.garden-guide-widget,
+.hud-bottom,
+.garden-bottom-nav,
+.coords-badge,
+.planting-ui,
+.plant-info-panel,
+.mobile-action-btn {
+    pointer-events: auto;
+}
+
+.garden-rail {
+    position: absolute;
+    top: 18px;
+    bottom: 108px;
+    left: 16px;
+    width: 64px;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: var(--garden-shell-shadow);
+    overflow: hidden;
+    transition: width 0.22s ease, background 0.22s ease;
+}
+
+.garden-rail:hover,
+.garden-rail:focus-within {
+    width: 228px;
+    background: rgba(15, 23, 42, 0.96);
+}
+
+.garden-rail-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+.garden-rail-btn:hover,
+.garden-rail-btn:focus-visible,
+.garden-rail-btn.is-active {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(124, 58, 237, 0.28));
+    transform: translateX(2px);
+}
+
+.garden-rail-primary {
+    background: linear-gradient(135deg, var(--garden-accent-start), var(--garden-accent-end));
+    box-shadow: 0 10px 24px rgba(99, 102, 241, 0.35);
+}
+
+.garden-rail-btn i {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.rail-label {
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.garden-rail:hover .rail-label,
+.garden-rail:focus-within .rail-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.rail-counter {
+    margin-left: auto;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 0.9rem;
+}
+
+.garden-shell-drawer {
+    position: absolute;
+    top: 18px;
+    left: 92px;
+    bottom: 108px;
+    width: min(360px, calc(100vw - 160px));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid var(--garden-shell-border);
+    box-shadow: var(--garden-shell-strong-shadow);
+    transform: translateX(-22px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+.pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.drawer-header,
+.drawer-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.drawer-header h2,
+.drawer-panel-header h3 {
+    margin: 6px 0 0;
+    font-size: 1.55rem;
+    color: var(--garden-ink);
+}
+
+.drawer-kicker,
+.info-panel-kicker,
+.guide-panel-kicker {
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4f46e5;
+}
+
+.drawer-close-btn {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    cursor: pointer;
+}
+
+.drawer-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.drawer-tab {
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: #eef2ff;
+    color: #4338ca;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.drawer-tab.active {
+    background: linear-gradient(135deg, var(--garden-accent-start), var(--garden-accent-end));
+    color: #fff;
+}
+
+.drawer-body {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.drawer-panel {
+    display: none;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.drawer-panel.active {
+    display: flex;
+}
+
+.drawer-status {
+    font-size: 0.95rem;
+    color: var(--garden-subtle);
+    text-align: right;
+}
+
+.drawer-empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 28px;
+    text-align: center;
+    border-radius: 24px;
+    background: var(--garden-soft-bg);
+    color: var(--garden-subtle);
+}
+
+.drawer-empty-state i {
+    font-size: 2rem;
+    color: #7c3aed;
+}
+
+.hud-top.garden-topbar {
+    position: absolute;
+    top: 18px;
+    left: 92px;
+    right: 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.garden-topbar-left,
+.garden-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: auto;
+}
+
+.garden-topbar-right {
+    margin-left: auto;
+}
+
+.garden-title-block {
+    max-width: min(540px, 48vw);
+    padding: 14px 18px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--garden-shell-border);
+    box-shadow: var(--garden-shell-shadow);
+    backdrop-filter: blur(10px);
+}
+
+.garden-kicker {
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #3b82f6;
+}
+
+.garden-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.garden-title-row h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3vw, 2.8rem);
+    line-height: 0.96;
+    color: var(--garden-ink);
+}
+
+.garden-title-chip,
+.garden-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(226, 232, 240, 0.85);
+    color: #334155;
+    font-size: 0.92rem;
+}
+
+.garden-meta-row {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.garden-compact-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border: 0;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--garden-ink);
+    box-shadow: var(--garden-shell-shadow);
+}
+
+.guild-shortcut {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(124, 58, 237, 0.18));
+}
+
+.resources.garden-resource-bar,
+.player-stats-compact {
+    border: 1px solid var(--garden-shell-border);
+    box-shadow: var(--garden-shell-shadow);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+}
+
+.player-stats-compact {
+    min-width: 180px;
+    padding: 6px 10px;
+    gap: 10px;
+}
+
+.resources.garden-resource-bar {
+    gap: 6px;
+    margin-left: 0;
+    padding: 8px 10px;
+}
+
+.resources.garden-resource-bar .res-item {
+    gap: 8px;
+    min-width: 78px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    background: rgba(241, 245, 249, 0.8);
+    color: var(--garden-ink);
+    font-size: 1rem;
+}
+
+.resources.garden-resource-bar .pixel-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.garden-quick-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.garden-quick-btn {
+    border: 0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--garden-ink);
+    box-shadow: var(--garden-shell-shadow);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.garden-quick-btn i {
+    color: #4f46e5;
+}
+
+.planting-ui {
+    top: 96px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--garden-shell-strong-shadow);
+}
+
+.coords-badge {
+    top: 106px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(15, 23, 42, 0.68);
+    box-shadow: var(--garden-shell-shadow);
+}
+
+.plant-info-panel {
+    top: 108px;
+    right: 18px;
+    width: min(320px, calc(100vw - 132px));
+    padding: 14px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--garden-shell-border);
+    box-shadow: var(--garden-shell-strong-shadow);
+    backdrop-filter: blur(12px);
+}
+
+.plant-info-panel.active {
+    display: flex;
+}
+
+.info-header {
+    gap: 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+    padding-bottom: 12px;
+}
+
+.info-thumb {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #eff6ff, #eef2ff);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.info-thumb img {
+    width: 44px;
+    height: 44px;
+}
+
+.info-text h3 {
+    font-size: 1.45rem;
+}
+
+.pixel-btn-close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 12px;
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.stat-row label,
+.stat-val,
+.info-cell small,
+.plant-action-meta,
+.quest-desc,
+.quest-progress-label,
+.quest-reward {
+    color: #475569;
+}
+
+.pixel-progress-track {
+    border: 0;
+    border-radius: 999px;
+    background: #dbe4f0;
+    overflow: hidden;
+}
+
+.info-grid {
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+}
+
+.info-cell {
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.info-cell strong {
+    text-align: left;
+}
+
+.plant-action-row {
+    border-top: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.plant-action-btn {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
+}
+
+.drawer-quest-panel.quest-panel {
+    position: static;
+    width: 100%;
+    top: auto;
+    left: auto;
+    background: #fbfdff;
+    border-radius: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.quest-panel-toggle {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    cursor: pointer;
+}
+
+.quest-list {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.quest-card {
+    padding: 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.quest-progress {
+    height: 9px;
+    border: 0;
+    border-radius: 999px;
+    background: #dce4f2;
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    background: linear-gradient(90deg, #22c55e, #38bdf8);
+}
+
+.quest-reward {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.quest-reward-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #334155;
+    font-size: 0.86rem;
+}
+
+.quest-reward-chip img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.quest-claim-btn {
+    border-radius: 12px;
+}
+
+.inventory-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.inventory-card {
+    padding: 14px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.inventory-card img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+}
+
+.inventory-card strong {
+    display: block;
+    color: var(--garden-ink);
+}
+
+.inventory-card span {
+    color: var(--garden-subtle);
+}
+
+.guide-list,
+.social-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.guide-tip,
+.social-card {
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    color: #334155;
+}
+
+.guide-tip strong,
+.social-card-value {
+    color: var(--garden-ink);
+}
+
+.social-link-card {
+    text-decoration: none;
+}
+
+.social-card-title {
+    font-size: 0.86rem;
+    color: var(--garden-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.garden-guide-widget {
+    position: absolute;
+    right: 18px;
+    bottom: 116px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.garden-guide-avatar {
+    width: 62px;
+    height: 62px;
+    border: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #f0fdf4);
+    box-shadow: var(--garden-shell-shadow);
+    cursor: pointer;
+}
+
+.garden-guide-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.garden-guide-panel {
+    width: 240px;
+    padding: 14px 16px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: var(--garden-shell-shadow);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.garden-guide-panel p {
+    margin: 8px 0 12px;
+    color: #334155;
+    line-height: 1.2;
+}
+
+.guide-panel-action {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    cursor: pointer;
+}
+
+.pixel-ui.garden-shell.dialog-minimized .garden-guide-panel {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.hud-bottom {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    width: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.toolbelt-toggle {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--garden-shell-shadow);
+    color: var(--garden-ink);
+    cursor: pointer;
+}
+
+.toolbar {
+    max-width: min(78vw, 680px);
+    padding: 8px 10px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: var(--garden-shell-shadow);
+    backdrop-filter: blur(10px);
+}
+
+.tool-slot {
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff, #eff4ff);
+}
+
+.tool-slot img {
+    width: 34px;
+    height: 34px;
+}
+
+.tool-slot.active {
+    border-color: rgba(99, 102, 241, 0.35);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(124, 58, 237, 0.22));
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .toolbar {
+    gap: 6px;
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .tool-slot {
+    width: 40px;
+    height: 40px;
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .tool-slot img {
+    width: 28px;
+    height: 28px;
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .tool-slot:not(.active):not(.shop-slot) {
+    display: none;
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .toolbelt-toggle i {
+    transform: rotate(180deg);
+}
+
+.garden-bottom-nav {
+    display: none;
+}
+
+.mobile-only {
+    display: none;
+}
+
+.resource-badge {
+    display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .garden-rail,
+    .garden-shell-drawer,
+    .garden-guide-panel,
+    .quest-progress-fill,
+    .tool-slot,
+    .garden-rail-btn,
+    .toolbelt-toggle i {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .pixel-ui.garden-shell {
+        padding: 12px 12px 92px;
+    }
+
+    .garden-rail {
+        display: none;
+    }
+
+    .mobile-only {
+        display: inline-flex;
+    }
+
+    .hud-top.garden-topbar {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .garden-topbar-left,
+    .garden-topbar-right {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .garden-topbar-right {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+
+    .garden-title-block {
+        max-width: none;
+        width: calc(100% - 126px);
+        min-width: 0;
+    }
+
+    .garden-title-row h1 {
+        font-size: 1.65rem;
+    }
+
+    .garden-meta-row {
+        gap: 6px;
+    }
+
+    .garden-meta-chip {
+        padding: 6px 10px;
+        font-size: 0.82rem;
+    }
+
+    .garden-quick-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .garden-quick-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 12px;
+    }
+
+    .resources.garden-resource-bar {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .player-stats-compact {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .coords-badge {
+        top: 92px;
+        font-size: 1rem;
+    }
+
+    .garden-shell-drawer {
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(90vw, 360px);
+        border-radius: 0 28px 28px 0;
+        transform: translateX(-100%);
+    }
+
+    .pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
+        transform: translateX(0);
+    }
+
+    .planting-ui {
+        top: 132px;
+        max-width: calc(100% - 32px);
+    }
+
+    .plant-info-panel {
+        left: 12px;
+        right: 12px;
+        top: auto;
+        bottom: 148px;
+        width: auto;
+    }
+
+    .garden-guide-widget {
+        right: 12px;
+        bottom: 152px;
+        gap: 8px;
+    }
+
+    .garden-guide-avatar {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+    }
+
+    .garden-guide-panel {
+        width: min(72vw, 220px);
+    }
+
+    .hud-bottom {
+        left: 12px;
+        right: 12px;
+        bottom: 82px;
+        transform: none;
+        justify-content: flex-end;
+    }
+
+    .toolbar {
+        max-width: none;
+        width: calc(100% - 56px);
+        justify-content: flex-start;
+    }
+
+    .tool-slot {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+    }
+
+    .tool-slot img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .mobile-action-btn {
+        bottom: 152px;
+        left: 12px;
+        width: 54px;
+        height: 54px;
+        border: 0;
+        box-shadow: var(--garden-shell-shadow);
+    }
+
+    .garden-bottom-nav {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        border-radius: 22px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: var(--garden-shell-shadow);
+    }
+
+    .bottom-nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        border-radius: 16px;
+        color: rgba(255, 255, 255, 0.82);
+        text-decoration: none;
+        font-size: 0.72rem;
+    }
+
+    .bottom-nav-link i {
+        font-size: 1rem;
+    }
+
+    .bottom-nav-link.active {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(124, 58, 237, 0.3));
+        color: #fff;
+    }
+
+    .inventory-list {
+        grid-template-columns: 1fr;
+    }
+}

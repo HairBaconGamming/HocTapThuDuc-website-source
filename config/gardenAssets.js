@@ -24,6 +24,7 @@ module.exports = {
             type: 'plant',
             price: 90,
             maxStage: 4,
+            harvestIcon: 'https://i.ibb.co/S4dVNQLx/image-removebg-preview-12.png',
             rewardGold: { min: 100, max: 140 },
             unlockLevel: 3,
             rewardXP: 100,
@@ -44,6 +45,7 @@ module.exports = {
             type: 'plant',
             price: 250,
             maxStage: 3,
+            harvestIcon: 'https://i.ibb.co/v66pYDv8/Gemini-Generated-Image-puwglepuwglepuwg-removebg-preview.png',
             rewardGold: { min: 300, max: 500 },
             unlockLevel: 8,
             rewardXP: 600,
@@ -63,7 +65,8 @@ module.exports = {
             type: 'plant',
             price: 2500,
             maxStage: 7,
-            afterharvestStage: 4,
+            harvestIcon: 'https://i.ibb.co/3yj0KTb6/image-removebg-preview-10.png',
+            afterharvestStage: 3,
             rewardGold: { min: 500, max: 600 },
             unlockLevel: 15,
             rewardXP: 2500,
@@ -98,9 +101,22 @@ module.exports = {
             cursor: { name: 'Tay', icon: '/api/pro-images/1767279404345-i1iil1.png' },
             hoe:    { name: 'Cuốc', icon: '/api/pro-images/1767279674003-ce1uok.png' },
             shovel: { name: 'Xẻng', icon: '/api/pro-images/1767282498111-ptuhwu.png' },
-            water:  { name: 'Tưới', icon: '/api/pro-images/1767284837348-1o2riz.png' },
+            water:  { name: 'Tưới', icon: 'https://hoctapthuduc.onrender.com/api/pro-images/1767290687212-2rlhp4.png' },
             basket: { name: 'Thu',  icon: '/api/pro-images/1767284874328-507gk3.png' },
             move:   { name: 'Di chuyển',  icon: '/api/pro-images/1767370869321-kpc8y0.png' }
+        }
+    },
+    UI: {
+        resourceIcons: {
+            water: 'https://hoctapthuduc.onrender.com/api/pro-images/1767290687212-2rlhp4.png',
+            fertilizer: 'https://i.ibb.co/23KTJtgc/phan-bon.png',
+            gold: 'https://i.ibb.co/WWYTbQxD/image-removebg-preview-11.png'
+        },
+        harvestIcons: {
+            sunflower: '/api/pro-images/1767283174918-vvfz7i.png',
+            wheat: 'https://i.ibb.co/S4dVNQLx/image-removebg-preview-12.png',
+            carrot: 'https://i.ibb.co/v66pYDv8/Gemini-Generated-Image-puwglepuwglepuwg-removebg-preview.png',
+            tomato: 'https://i.ibb.co/3yj0KTb6/image-removebg-preview-10.png'
         }
     },
     DECORS: {}
