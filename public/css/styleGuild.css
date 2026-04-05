@@ -1854,6 +1854,11 @@
     z-index: 90;
 }
 
+.guild-modal-backdrop[hidden],
+.guild-drawer-backdrop[hidden] {
+    display: none !important;
+}
+
 .guild-modal,
 .guild-drawer {
     position: fixed;
@@ -1898,6 +1903,11 @@
     cursor: pointer;
 }
 
+.guild-modal[hidden],
+.guild-modal-backdrop[hidden] {
+    display: none !important;
+}
+
 .guild-drawer {
     top: 0;
     right: 0;
@@ -1907,6 +1917,10 @@
 
 .guild-drawer[hidden] {
     display: none;
+}
+
+.guild-drawer-backdrop[hidden] {
+    display: none !important;
 }
 
 .guild-drawer__card {
@@ -2976,10 +2990,25 @@
 .guild-workspace-v2 .guild-drawer-backdrop {
     background: rgba(15, 23, 42, 0.42);
     backdrop-filter: blur(8px);
+    z-index: 100;
+}
+
+.guild-workspace-v2 .guild-modal-backdrop[hidden],
+.guild-workspace-v2 .guild-drawer-backdrop[hidden] {
+    display: none !important;
 }
 
 .guild-v2-modal {
     z-index: 110;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    position: fixed;
+}
+
+.guild-v2-modal[hidden] {
+    display: none !important;
 }
 
 .guild-v2-modal__card {
@@ -3526,10 +3555,29 @@
     box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
 }
 
+.guild-workspace-v3 .guild-v3-modal {
+    z-index: 115;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    position: fixed;
+}
+
+.guild-workspace-v3 .guild-v3-modal[hidden] {
+    display: none !important;
+}
+
 .guild-workspace-v3 .guild-modal-backdrop,
 .guild-workspace-v3 .guild-drawer-backdrop {
     background: rgba(2, 6, 23, 0.46);
     backdrop-filter: blur(10px);
+    z-index: 105;
+}
+
+.guild-workspace-v3 .guild-modal-backdrop[hidden],
+.guild-workspace-v3 .guild-drawer-backdrop[hidden] {
+    display: none !important;
 }
 
 .guild-workspace-v3 .guild-v3-drawer__card {
