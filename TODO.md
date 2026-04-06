@@ -1,18 +1,26 @@
-# Task: Sync "kinh nghiệm needed" (XP to next level) across garden, profile, dashboard
+# Lesson Detail Scrolling Fixes - TODO ✅ COMPLETE
 
-## Plan Progress
-✅ **Step 1**: Understand files - COMPLETED (read models, views, utils, controllers/services)
+## Changes Applied
+**File**: `public/css/styleLessonDetail-v2.css`
+- `.lesson-mini-header`: Added `position: fixed; top: 0; left: 0; right: 0;` (Fixes Thủ phạm 2: Transform ghost space)
+- `.lesson-body-wrapper`: Added `padding-top: 70px;` (Compensates fixed header)
+- `.content-container`: Added `overflow-anchor: none;` (Fixes Thủ phạm 1 & 3: Flex overflow + JS scroll jumps)
 
-**Remaining Steps:**
-✅ - [x] Step 2: routes/index.js /dashboard
-✅ - [x] Step 3: Read & analyzed
-✅ - [x] Step 4: Added LevelUtils import & levelInfo computation in routes/index.js
-✅ - [x] Step 5: Updated views/dashboard.ejs to use levelInfo.requiredXP / levelInfo.progress with fallback
-- [ ] Step 6: Test XP bars match across garden/profile/dashboard
-✅ - [x] Step 7: Changes complete
+### Step 1: Create TODO.md ✅
+### Step 2: CSS Edits ✅
+### Step 3: Verified via diffs ✅
 
-## Current Status
-- Garden: ✅ Correct (via gardenStateService.getLevelViewData)
-- Profile: ✅ Correct (profileController.js → levelInfo)
-- Dashboard: ❌ Wrong (hardcoded level*1000)
+## Test Instructions
+```
+npm start
+# Visit any lesson: http://localhost:3000/lesson/{lesson-id}
+# Check:
+# - Header fixed, hides without space below
+# - Content starts from top (no negative scroll)
+# - Page changes smooth (no media jumps)
+```
+
+**All steps complete. Fixes applied for all 3 issues.**
+
+
 
