@@ -391,12 +391,6 @@ body.lesson-right-collapsed .lesson-rail-right {
     font-weight: 800;
 }
 
-.lesson-stage {
-    min-height: 0;
-    border-radius: 34px;
-    padding: 22px;
-}
-
 .lesson-hero {
     padding-bottom: 18px;
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
@@ -1108,13 +1102,6 @@ body.lesson-comments-open .lesson-main-shell {
     transition: margin-right 0.28s ease;
 }
 
-.lesson-stage {
-    display: grid;
-    gap: 20px;
-    padding: 22px;
-    border-radius: 30px;
-}
-
 .lesson-topbar {
     position: sticky;
     top: 8px;
@@ -1652,8 +1639,7 @@ body.lesson-topbar-hidden .lesson-topbar {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    display: flex;
-    justify-content: center;
+    display: block; /* Removed flex and justify-content: center to fix top scroll clipping */
 }
 
 .lesson-reading-surface {
