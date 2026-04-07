@@ -391,6 +391,12 @@ body.lesson-right-collapsed .lesson-rail-right {
     font-weight: 800;
 }
 
+.lesson-stage {
+    min-height: 0;
+    border-radius: 34px;
+    padding: 22px;
+}
+
 .lesson-hero {
     padding-bottom: 18px;
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
@@ -706,61 +712,97 @@ body.lesson-right-collapsed .lesson-rail-right {
     display: none !important;
 }
 
-/* Content blocks */
+/* ==========================================================================
+   OPTIMIZED TYPOGRAPHY - Khoa học, dễ đọc, chống mỏi mắt
+   ========================================================================== */
+
+/* Giới hạn chiều rộng dòng để mắt không phải đảo quá xa */
 .content-block-render {
+    /* Sử dụng System Font siêu nét, dễ đọc trên mọi thiết bị */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Helvetica Neue", sans-serif;
     margin-bottom: 2rem;
+    color: #1e293b; 
 }
 
+/* Cỡ chữ chuẩn 18px và dãn dòng 1.65 */
+.content-block-render p,
+.content-block-render li {
+    font-size: 1.125rem; /* ~18px */
+    line-height: 1.65; 
+    color: #334155; /* Xám than, tránh dùng đen pure-black gây chói */
+    margin-top: 0;
+    margin-bottom: 1.6rem; /* Tách biệt rõ ràng giữa các đoạn */
+    letter-spacing: -0.01em; /* Kéo chữ lại gần một chút xíu để dễ quét (scan) */
+}
+
+/* Tinh chỉnh danh sách (Lists) */
+.content-block-render ul,
+.content-block-render ol {
+    padding-left: 1.8rem;
+    margin-bottom: 1.8rem;
+}
+
+.content-block-render li {
+    margin-bottom: 0.6rem;
+}
+
+.content-block-render li:last-child {
+    margin-bottom: 0;
+}
+
+/* Tinh chỉnh Heading (Tiêu đề) để tạo cấu trúc thị giác (Visual Hierarchy) */
 .content-block-render h1,
 .content-block-render h2,
 .content-block-render h3,
 .content-block-render h4 {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    line-height: 1.18;
-    color: var(--lesson-secondary);
+    color: #0f172a;
+    line-height: 1.3; /* Line-height hẹp hơn văn bản thường */
+    letter-spacing: -0.02em; 
+    margin-top: 2.8rem; /* Khoảng nghỉ (breathing room) lớn trước mỗi phần mới */
+    margin-bottom: 1.25rem;
+    font-weight: 700;
     scroll-margin-top: 100px;
 }
 
-.content-block-render h1 {
-    font-size: 2.3rem;
+.content-block-render h1 { font-size: 2.25rem; }
+.content-block-render h2 { 
+    font-size: 1.85rem; 
+    border-bottom: 1px solid #e2e8f0; /* Thêm đường gạch dưới H2 để chia block rõ rệt */
+    padding-bottom: 0.5rem; 
+}
+.content-block-render h3 { font-size: 1.45rem; }
+.content-block-render h4 { font-size: 1.2rem; }
+
+.content-block-render strong {
+    color: #0f172a;
+    font-weight: 700;
 }
 
-.content-block-render h2 {
-    font-size: 1.8rem;
+/* Cải thiện Blockquote (Trích dẫn) */
+.content-block-render blockquote {
+    margin: 2rem 0;
+    padding: 1.2rem 1.5rem;
+    background: #f8fafc;
+    border-left: 4px solid #cbd5e1; /* Màu thanh lịch, không quá gắt */
+    border-radius: 0 16px 16px 0;
+    font-size: 1.15rem;
+    font-style: italic;
+    color: #475569;
 }
 
-.content-block-render h3 {
-    font-size: 1.42rem;
+.content-block-render blockquote p:last-child {
+    margin-bottom: 0;
 }
 
-.content-block-render p,
-.content-block-render li {
-    font-size: 1.03rem;
-    line-height: 1.82;
-    color: #334155;
-}
-
-.content-block-render ul,
-.content-block-render ol {
-    padding-left: 1.4rem;
-}
-
+/* Trình bày hình ảnh mượt mà hơn */
 .content-block-render img {
     max-width: 100%;
     height: auto;
-    border-radius: 18px;
-    margin: 22px 0;
-    border: 1px solid var(--lesson-border);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-}
-
-.content-block-render blockquote {
-    margin: 1.8rem 0;
-    padding: 1rem 1.25rem;
-    border-left: 4px solid var(--lesson-accent);
-    background: #f8fafc;
-    border-radius: 0 16px 16px 0;
+    border-radius: 16px;
+    margin: 2.5rem auto; /* Căn giữa và tăng khoảng cách với text */
+    display: block;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
 }
 
 .video-block-wrapper {
@@ -1100,6 +1142,13 @@ body.lesson-comments-open .lesson-main-shell {
 
 .lesson-main-shell {
     transition: margin-right 0.28s ease;
+}
+
+.lesson-stage {
+    display: grid;
+    gap: 20px;
+    padding: 22px;
+    border-radius: 30px;
 }
 
 .lesson-topbar {
@@ -1544,7 +1593,7 @@ body.lesson-focus-mode .lesson-reading-surface {
 :root {
     --lesson-header-offset: 0px;
     --lesson-sidebar-width: 320px;
-    --lesson-content-max: 780px;
+    --lesson-content-max: 720px; /* Cập nhật để tối ưu hóa việc quét mắt */
     --lesson-drawer-width: 360px;
     --lesson-comments-width: 410px;
 }
@@ -1639,7 +1688,7 @@ body.lesson-topbar-hidden .lesson-topbar {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    display: block; /* Removed flex and justify-content: center to fix top scroll clipping */
+    display: block; /* Sửa lỗi cắt thanh cuộn, bỏ flex center */
 }
 
 .lesson-reading-surface {
