@@ -794,6 +794,110 @@ body.lesson-right-collapsed .lesson-rail-right {
     margin-bottom: 0;
 }
 
+/* ==========================================================================
+   MARKDOWN ELEMENTS - Bảng biểu, Code, Toán học, Phân cách
+   ========================================================================== */
+
+/* 1. BẢNG BIỂU (TABLES) - Hiển thị dữ liệu khoa học rõ ràng, chống rối mắt */
+.content-block-render table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: 1.05rem; /* Nhỏ hơn text thường một chút để bảng gọn gàng */
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden; /* Bo góc cho bảng */
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03); /* Đổ bóng nhẹ tạo chiều sâu */
+    display: block; /* Kích hoạt cuộn ngang trên mobile */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.content-block-render thead {
+    background-color: #f8fafc; /* Màu nền header dịu nhẹ */
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.content-block-render th,
+.content-block-render td {
+    padding: 14px 18px;
+    text-align: left;
+    border: 1px solid #e2e8f0;
+    line-height: 1.5;
+}
+
+.content-block-render th {
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap; /* Không xuống dòng ở tiêu đề cột */
+}
+
+/* Hiệu ứng sọc dưa (Zebra striping) cho bảng nhiều dòng dễ dò dữ liệu */
+.content-block-render tbody tr:nth-child(even) {
+    background-color: #fbfcfd;
+}
+
+.content-block-render tbody tr:hover {
+    background-color: #f1f5f9; /* Hover highlight dòng đang đọc */
+}
+
+/* 2. ĐƯỜNG PHÂN CÁCH (HORIZONTAL RULE) - Chuyển ý mượt mà */
+.content-block-render hr {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #cbd5e1, transparent); /* Đường kẻ mờ dần 2 đầu */
+    margin: 3.5rem 0; /* Khoảng nghỉ cực lớn khi chuyển phần (Ví dụ: từ Phần 1 sang Phần 2) */
+}
+
+/* 3. DANH SÁCH LỒNG NHAU (NESTED LISTS) */
+.content-block-render li > ul,
+.content-block-render li > ol {
+    margin-top: 0.5rem;
+    margin-bottom: 0; /* Tránh margin kép khi list lồng list */
+    padding-left: 1.5rem;
+}
+
+/* Đổi bullet point cho danh sách cấp 2 (tròn rỗng) và cấp 3 (vuông) để phân biệt cấp độ */
+.content-block-render ul ul { list-style-type: circle; }
+.content-block-render ul ul ul { list-style-type: square; }
+
+/* 4. INLINE TEXT (BOLD, ITALIC, INLINE CODE) */
+.content-block-render strong {
+    color: #0f172a; /* Đậm hơn màu text thường để nổi bật từ khóa */
+    font-weight: 700;
+}
+
+.content-block-render em {
+    color: #475569; /* In nghiêng dùng màu xám trầm hơn chút */
+    font-style: italic;
+}
+
+/* Cấu hình cho thẻ Code nội tuyến (Inline Code) nếu có sử dụng (ví dụ: `NaCl`) */
+.content-block-render code:not([class*="language-"]) {
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.9em;
+    background-color: #f1f5f9;
+    color: #db2777; /* Màu hồng đậm để nổi bật mã/từ vựng */
+    padding: 0.2em 0.4em;
+    border-radius: 6px;
+    word-break: break-word;
+}
+
+/* 5. TINH CHỈNH KATEX (TOÁN/HÓA HỌC) */
+/* Đảm bảo các công thức Hóa học/Toán học không phá vỡ khoảng cách dòng */
+.content-block-render .katex {
+    font-size: 1.1em; /* KaTeX thường nhỏ hơn text một chút, tăng lên 10% để cân bằng */
+    line-height: normal;
+    color: #0f172a; /* Màu công thức đậm để dễ nhìn (Ví dụ: F_2, Cl_2) */
+}
+
+.content-block-render .katex-display {
+    margin: 1.5rem 0; /* Khoảng cách cho công thức đứng độc lập 1 dòng */
+    overflow-x: auto; /* Cho phép cuộn ngang nếu công thức quá dài trên mobile */
+    overflow-y: hidden;
+    padding: 0.5rem 0;
+}
+
 /* Trình bày hình ảnh mượt mà hơn */
 .content-block-render img {
     max-width: 100%;
