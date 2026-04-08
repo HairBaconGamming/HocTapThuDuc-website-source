@@ -11,11 +11,11 @@ const RESOURCE_META = Object.freeze({
 const CONTRIBUTION_VALUES = Object.freeze({
     water: 6,
     fertilizer: 18,
-    gold: 0.1,
+    gold: 0.5,
     sunflower: 20,
     wheat: 35,
     carrot: 60,
-    tomato: 45
+    tomato: 120
 });
 
 const SPIRIT_TREE_XP_BASE = 1000;
