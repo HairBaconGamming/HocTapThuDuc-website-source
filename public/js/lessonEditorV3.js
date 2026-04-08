@@ -2354,6 +2354,8 @@ function editQuestionBlock(blockIndex) {
                 <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="choice"><i class="fas fa-list-ul"></i> Trắc nghiệm</button>
                 <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="fill"><i class="fas fa-edit"></i> Điền từ</button>
                 <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="essay"><i class="fas fa-pen-nib"></i> Tự luận</button>
+                <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="matching"><i class="fas fa-link"></i> Nối ý</button>
+                <button type="button" class="btn-add-q" data-quiz-action="add-question" data-container-id="${containerId}" data-question-type="ordering"><i class="fas fa-sort-amount-down"></i> Sắp xếp</button>
             </div>
         `,
         width: 850,
@@ -2394,6 +2396,12 @@ window.addQuestionItem = function(containerId, type) {
         qData.content = 'Thủ đô của Việt Nam là [Hà Nội].';
     } else if (type === 'essay') {
         qData.modelAnswer = '';
+    } else if (type === 'matching') {
+        qData.question = 'Nối các khái niệm sau:';
+        qData.pairs = [{left: '', right: ''}, {left: '', right: ''}];
+    } else if (type === 'ordering') {
+        qData.question = 'Sắp xếp theo thứ tự đúng:';
+        qData.items = ['', '', ''];
     }
     renderSingleQuestionItem(qData, idx, container);
     container.lastElementChild.scrollIntoView({ behavior: 'smooth' });
@@ -2422,6 +2430,24 @@ window.toggleMulti = function(checkbox, groupName) {
         inp.type = checkbox.checked ? 'checkbox' : 'radio';
         inp.checked = false; 
     });
+}
+
+window.addPairToQuestion = function(btn) {
+    const container = btn.parentElement.querySelector('.q-pairs-container');
+    const div = document.createElement('div');
+    div.className = 'pair-row';
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
+    div.innerHTML = `<input type="text" class="studio-select q-pair-left" placeholder="Vế trái"><input type="text" class="studio-select q-pair-right" placeholder="Vế phải (đáp án đúng)"><button type="button" class="btn-ctrl delete" data-quiz-action="remove-option"><i class="fas fa-minus"></i></button>`;
+    container.appendChild(div);
+}
+window.addOrderToQuestion = function(btn) {
+    const container = btn.parentElement.querySelector('.q-order-container');
+    const idx = container.querySelectorAll('.order-row').length + 1;
+    const div = document.createElement('div');
+    div.className = 'order-row';
+    div.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:5px;';
+    div.innerHTML = `<span style="color:#999; font-weight:bold;">${idx}.</span><input type="text" class="studio-select q-order-val" placeholder="Nhập bước"><button type="button" class="btn-ctrl delete" data-quiz-action="remove-option"><i class="fas fa-minus"></i></button>`;
+    container.appendChild(div);
 }
 
 function renderSingleQuestionItem(q, idx, container) {
@@ -2472,6 +2498,39 @@ function renderSingleQuestionItem(q, idx, container) {
             <input type="text" class="studio-select q-title" placeholder="Nhập đề bài tự luận..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
             <textarea class="q-model-answer" placeholder="Nhập đáp án mẫu hoặc gợi ý chấm điểm...">${q.modelAnswer || ''}</textarea>
         `;
+    } else if (q.type === 'matching') {
+        badge = `<span class="q-type-badge" style="background:#e0e7ff; color:#4338ca; border:1px solid #c7d2fe;">NỐI Ý</span>`;
+        let pairsHtml = '';
+        (q.pairs || []).forEach((p, i) => {
+            pairsHtml += `
+                <div class="pair-row" style="display:flex; gap:10px; margin-bottom:5px;">
+                    <input type="text" class="studio-select q-pair-left" value="${p.left}" placeholder="Vế trái">
+                    <input type="text" class="studio-select q-pair-right" value="${p.right}" placeholder="Vế phải (đáp án đúng)">
+                    <button type="button" class="btn-ctrl delete" data-quiz-action="remove-option"><i class="fas fa-minus"></i></button>
+                </div>`;
+        });
+        contentHtml = `
+            <input type="text" class="studio-select q-title" placeholder="Câu hỏi..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
+            <div class="q-pairs-container">${pairsHtml}</div>
+            <button type="button" class="btn-mini-add mt-2" onclick="addPairToQuestion(this)">+ Thêm cặp</button>
+        `;
+    } else if (q.type === 'ordering') {
+        badge = `<span class="q-type-badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;">SẮP XẾP</span>`;
+        let itemsHtml = '';
+        (q.items || []).forEach((item, i) => {
+            itemsHtml += `
+                <div class="order-row" style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                    <span style="color:#999; font-weight:bold;">${i+1}.</span>
+                    <input type="text" class="studio-select q-order-val" value="${item}" placeholder="Nhập bước theo đúng thứ tự">
+                    <button type="button" class="btn-ctrl delete" data-quiz-action="remove-option"><i class="fas fa-minus"></i></button>
+                </div>`;
+        });
+        contentHtml = `
+            <input type="text" class="studio-select q-title" placeholder="Câu hỏi..." value="${q.question}" style="font-weight:700; margin-bottom:10px;">
+            <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">Lưu ý: Nhập các mục theo đúng thứ tự chuẩn xác từ trên xuống dưới.</div>
+            <div class="q-order-container">${itemsHtml}</div>
+            <button type="button" class="btn-mini-add mt-2" onclick="addOrderToQuestion(this)">+ Thêm mục</button>
+        `;
     }
 
     const explainHtml = `
@@ -2511,6 +2570,23 @@ function serializeQuestionData(containerId) {
             const question = item.querySelector('.q-title').value;
             const modelAnswer = item.querySelector('.q-model-answer').value;
             if(question.trim()) data.push({ type, question, modelAnswer, explanation });
+        } else if (type === 'matching') {
+            const question = item.querySelector('.q-title').value;
+            const pairs = [];
+            item.querySelectorAll('.pair-row').forEach(row => {
+                const left = row.querySelector('.q-pair-left').value.trim();
+                const right = row.querySelector('.q-pair-right').value.trim();
+                if (left || right) pairs.push({ left, right });
+            });
+            if(question.trim() && pairs.length > 0) data.push({ type, question, pairs, explanation });
+        } else if (type === 'ordering') {
+            const question = item.querySelector('.q-title').value;
+            const orderItems = [];
+            item.querySelectorAll('.order-row').forEach(row => {
+                const val = row.querySelector('.q-order-val').value.trim();
+                if (val) orderItems.push(val);
+            });
+            if(question.trim() && orderItems.length > 0) data.push({ type, question, items: orderItems, explanation });
         }
     });
     return JSON.stringify(data);

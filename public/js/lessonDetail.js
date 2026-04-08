@@ -704,6 +704,54 @@ const LessonWorkspace = {
                         return `<label class="quiz-option" data-option-idx="${optionIndex}" data-is-correct="${isCorrect}"><input class="form-check-input" type="${inputType}" name="${inputName}" value="${optionIndex}" data-correct="${isCorrect}"><span>${this.escapeHtml(option)}</span></label>`;
                     }).join('');
                     contentHtml += `<div class="options-list">${optionsHtml}</div>`;
+                } else if (question.type === 'matching') {
+                    // Trộn đáp án cột phải (Shuffle)
+                    const rightOptions = (question.pairs || []).map((p, i) => ({ text: p.right, originalIndex: i }));
+                    // Shuffle array thuật toán mờ
+                    rightOptions.sort(() => Math.random() - 0.5); 
+
+                    let matchHtml = '<div class="matching-grid" style="display:grid; gap:10px; margin-top:10px;">';
+                    (question.pairs || []).forEach((p, pIdx) => {
+                        let selectOptions = `<option value="">-- Kéo chọn đáp án --</option>`;
+                        rightOptions.forEach(opt => {
+                            selectOptions += `<option value="${opt.originalIndex}">${this.escapeHtml(opt.text)}</option>`;
+                        });
+                        matchHtml += `
+                            <div class="matching-row" style="display:flex; align-items:center; gap:15px; background:white; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+                                <div style="flex:1; font-weight:600; color:#334155;">${this.escapeHtml(p.left)}</div>
+                                <div style="flex:1;">
+                                    <select class="form-select match-select" data-pair-idx="${pIdx}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                                        ${selectOptions}
+                                    </select>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    matchHtml += '</div>';
+                    contentHtml = `<div class="question-content mb-3">${parseMarkdown(`**Câu ${questionIndex + 1}:** ${question.question || ''}`)}</div>${matchHtml}`;
+
+                } else if (question.type === 'ordering') {
+                    // Trộn thứ tự
+                    const shuffledItems = (question.items || []).map((item, i) => ({ text: item, originalIndex: i })).sort(() => Math.random() - 0.5);
+                    
+                    let orderHtml = `<ul class="sortable-order-list" id="order-list-${blockIndex}-${questionIndex}" style="list-style:none; padding:0; margin:10px 0; display:grid; gap:8px;">`;
+                    shuffledItems.forEach(item => {
+                        orderHtml += `
+                            <li class="order-item" data-id="${item.originalIndex}" style="background:white; padding:12px 15px; border:1px solid #e2e8f0; border-radius:8px; cursor:grab; display:flex; align-items:center; gap:10px; font-weight:500;">
+                                <i class="fas fa-grip-vertical text-muted"></i> ${this.escapeHtml(item.text)}
+                            </li>`;
+                    });
+                    orderHtml += '</ul><div style="font-size:0.8rem; color:#64748b; font-style:italic;"><i class="fas fa-mouse-pointer"></i> Kéo thả các mục lên xuống để sắp xếp thứ tự đúng.</div>';
+                    
+                    contentHtml = `<div class="question-content mb-3">${parseMarkdown(`**Câu ${questionIndex + 1}:** ${question.question || ''}`)}</div>${orderHtml}`;
+
+                    // Active kéo thả sau khi render DOM
+                    setTimeout(() => {
+                        const el = document.getElementById(`order-list-${blockIndex}-${questionIndex}`);
+                        if(el && window.Sortable) {
+                            new Sortable(el, { animation: 150, ghostClass: 'bg-light' });
+                        }
+                    }, 100);
                 }
             }
 
@@ -759,6 +807,43 @@ const LessonWorkspace = {
                     const essayInput = questionEl.querySelector('.essay-input');
                     isQuestionCorrect = !!essayInput && essayInput.value.trim().length > 0;
                     if (essayInput) essayInput.disabled = true;
+                } else if (question.type === 'matching') {
+                    const selects = Array.from(questionEl.querySelectorAll('.match-select'));
+                    isQuestionCorrect = selects.every(select => {
+                        const expectedIdx = select.dataset.pairIdx;
+                        const selectedIdx = select.value;
+                        const matches = expectedIdx === selectedIdx;
+                        
+                        select.style.borderColor = matches ? '#10b981' : '#ef4444';
+                        select.style.backgroundColor = matches ? '#ecfdf5' : '#fef2f2';
+                        select.disabled = true;
+                        return matches;
+                    });
+
+                } else if (question.type === 'ordering') {
+                    const listItems = Array.from(questionEl.querySelectorAll('.order-item'));
+                    // Lấy thứ tự học sinh kéo thả
+                    const currentOrder = listItems.map(li => Number(li.dataset.id));
+                    
+                    // Kiểm tra xem nó có tăng dần từ 0, 1, 2, 3... không (vì gốc của ta lưu đúng thứ tự đó)
+                    isQuestionCorrect = true;
+                    for(let i = 0; i < currentOrder.length; i++) {
+                        const li = listItems[i];
+                        if(currentOrder[i] === i) {
+                            li.style.borderColor = '#10b981';
+                            li.style.backgroundColor = '#ecfdf5';
+                        } else {
+                            isQuestionCorrect = false;
+                            li.style.borderColor = '#ef4444';
+                            li.style.backgroundColor = '#fef2f2';
+                        }
+                        // Xóa cursor grab
+                        li.style.cursor = 'default';
+                    }
+                    
+                    // Tắt kéo thả
+                    const ul = questionEl.querySelector('.sortable-order-list');
+                    if(ul && ul.__sortable) ul.__sortable.option("disabled", true);
                 }
 
                 if (isQuestionCorrect) correctCount += 1;

@@ -528,10 +528,21 @@
                                         <div class="control-item actions-area" style="margin-top:20px;">
                                             <button type="button" class="btn-studio btn-publish" data-studio-action="save-lesson" data-publish-state="publish" style="width:100%; margin-bottom:8px;"><i class="fas fa-rocket"></i> Đăng bài</button>
                                             <button type="button" class="btn-studio btn-draft" data-studio-action="save-lesson" data-publish-state="draft" style="width:100%;"><i class="fas fa-save"></i> Lưu nháp</button>
-                                            <div style="display:flex; gap:5px; margin-top:15px; border-top:1px dashed #eee; padding-top:15px;">
-                                                <button type="button" class="btn-secondary" data-studio-action="export-lesson-json" style="flex:1; font-size:0.8rem;"><i class="fas fa-download"></i> Xuất JSON</button>
-                                                <button type="button" class="btn-secondary" data-studio-action="open-import-json" style="flex:1; font-size:0.8rem;"><i class="fas fa-upload"></i> Nhập JSON</button>
-                                                <input type="file" id="importJsonInput" accept=".json" style="display:none">
+                                            <div style="display:flex; flex-direction: column; gap:10px; margin-top:15px; border-top:1px dashed #eee; padding-top:15px;">
+                                                <div style="display:flex; gap:5px;">
+                                                    <button type="button" class="btn-secondary" data-studio-action="export-lesson-json" style="flex:1; font-size:0.8rem;">
+                                                        <i class="fas fa-download"></i> Xuất JSON
+                                                    </button>
+                                                    <button type="button" class="btn-secondary" data-studio-action="open-import-json" style="flex:1; font-size:0.8rem;">
+                                                        <i class="fas fa-upload"></i> Nhập JSON
+                                                    </button>
+                                                    <input type="file" id="importJsonInput" accept=".json" style="display:none">
+                                                </div>
+                                                
+                                                <!-- NÚT MỚI: TẠO BẰNG AI -->
+                                                <button type="button" class="btn-studio" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; font-size:0.85rem;" onclick="document.getElementById('aiPromptModal').style.display='flex'">
+                                                    <i class="fas fa-robot"></i> Dùng AI tạo bài học (Copy Prompt)
+                                                </button>
                                             </div>
                                             <div class="control-item" style="border-top:1px dashed #eee; margin-top:10px; padding-top:10px;">
                                                 <button type="button" class="btn-studio" data-studio-action="open-revisions" style="width:100%; background:#f8fafc; color:#334155; border:1px solid #cbd5e1;"><i class="fas fa-history"></i> Lịch sử phiên bản</button>
@@ -684,6 +695,110 @@
             </div>
         </div>
     </div>
+
+    <!-- AI PROMPT MODAL -->
+    <div id="aiPromptModal" class="math-modal-overlay">
+        <div class="math-modal-box" style="width:650px; max-width:95%;">
+            <h3 style="margin-bottom:15px; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <span><i class="fas fa-magic" style="color: #8b5cf6;"></i> Nhờ AI soạn bài học (Tự động hóa)</span>
+                <span onclick="document.getElementById('aiPromptModal').style.display='none'" style="cursor:pointer; color:#999;">&times;</span>
+            </h3>
+            
+            <div style="font-size: 0.9rem; color: #475569; margin-bottom: 15px; line-height: 1.6;">
+                <b>Hướng dẫn sử dụng:</b><br>
+                1. Bấm <b>Copy Prompt</b> bên dưới.<br>
+                2. Mở ChatGPT, Gemini hoặc Claude, dán đoạn lệnh vào. Đổi chữ <b style="color: #ef4444;">[CHỦ ĐỀ CỦA BẠN]</b> thành nội dung bạn muốn soạn.<br>
+                3. Copy toàn bộ đoạn mã JSON mà AI trả về, lưu thành 1 file <code>bai-hoc.json</code> (hoặc dùng Notepad lưu lại).<br>
+                4. Nhấn nút <b>Nhập JSON</b> ở bảng điều khiển để load thẳng bài học vào hệ thống!
+            </div>
+
+            <textarea id="aiPromptText" readonly style="width: 100%; height: 350px; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; background: #1e293b; color: #a5b4fc; font-family: 'Consolas', monospace; font-size: 13px; resize: none; line-height: 1.6; white-space: pre-wrap;">Đóng vai một Chuyên gia Giáo dục xuất sắc. Hãy soạn một bài học cực kỳ chi tiết về chủ đề: "[CHỦ ĐỀ BÀI HỌC CỦA BẠN]".
+
+LUẬT TỐI THƯỢNG: KẾT QUẢ TRẢ VỀ CHỈ ĐƯỢC PHÉP LÀ MỘT CHUỖI JSON HỢP LỆ. KHÔNG CÓ MARKDOWN WRAPPER (NHƯ ```json), KHÔNG LỜI CHÀO.
+
+Hệ thống hỗ trợ các dạng khối (blocks) nội dung:
+1. "header" (level 2,3), "text" (Hỗ trợ KaTeX $..$, $$..$$), "callout", "image", "video", "html_preview", "code", "resource".
+2. "question" (Quiz): Phải nằm cuối bài. Hỗ trợ 5 DẠNG BÀI TẬP:
+- "choice": Trắc nghiệm (có isMulti=true/false).
+- "fill": Điền khuyết (đặt đáp án trong ngoặc vuông, vd: 1+1=[2]).
+- "essay": Tự luận (có modelAnswer).
+- "matching": Nối ý cột Trái với cột Phải.
+- "ordering": Sắp xếp lại thứ tự đúng (Kéo thả).
+
+CẤU TRÚC JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
+{
+  "title": "Tên bài học",
+  "blocks": [
+    {
+      "type": "text",
+      "data": { "text": "Lý thuyết chi tiết ở đây..." }
+    },
+    {
+      "type": "question",
+      "data": {
+        "settings": { "randomizeQuestions": true, "passingScore": 80, "showFeedback": "submit" },
+        "questions": [
+          {
+            "type": "choice",
+            "question": "Thủ đô của Pháp?",
+            "options": ["London", "Paris", "Berlin", "Rome"],
+            "correct": [1],
+            "isMulti": false,
+            "explanation": "Paris là thủ đô nước Pháp."
+          },
+          {
+            "type": "fill",
+            "content": "Nước sôi ở [100] độ C trong điều kiện tiêu chuẩn.",
+            "explanation": "Kiến thức vật lý cơ bản."
+          },
+          {
+            "type": "matching",
+            "question": "Nối các nguyên tố hóa học với ký hiệu đúng:",
+            "pairs": [
+              { "left": "Oxy", "right": "O" },
+              { "left": "Sắt", "right": "Fe" },
+              { "left": "Vàng", "right": "Au" }
+            ],
+            "explanation": "Dựa vào bảng tuần hoàn hóa học."
+          },
+          {
+            "type": "ordering",
+            "question": "Sắp xếp các bước luộc trứng:",
+            "items": ["Bật bếp đun sôi nước", "Thả trứng vào", "Đợi 5 phút", "Vớt ra bóc vỏ"],
+            "explanation": "Trình tự logic phải là đun sôi nước trước."
+          }
+        ]
+      }
+    }
+  ]
+}
+
+Hãy chia bài học thành nhiều phần dẫn dắt logic. Phần bài tập cuối cùng PHẢI CÓ ÍT NHẤT 5 CÂU HỎI TRỘN LẪN ĐỦ CÁC DẠNG (choice, fill, matching, ordering).</textarea>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('aiPromptModal').style.display='none'">Đóng</button>
+                <button type="button" class="btn-primary" onclick="copyAIPrompt(this)" style="background: #8b5cf6; border: none;"><i class="fas fa-copy"></i> Copy Prompt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script xử lý nút Copy -->
+    <script>
+        function copyAIPrompt(btn) {
+            const text = document.getElementById('aiPromptText').value;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Đã Copy!';
+                btn.style.background = '#10b981'; // Đổi sang màu xanh success
+                setTimeout(() => { 
+                    btn.innerHTML = originalHtml; 
+                    btn.style.background = '#8b5cf6';
+                }, 2000);
+            }).catch(err => {
+                alert("Lỗi khi copy: " + err);
+            });
+        }
+    </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
