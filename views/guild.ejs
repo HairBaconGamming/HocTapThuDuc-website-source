@@ -200,6 +200,23 @@ guildDetail.recentContributions = rightRailActivity;
                     </section>
                 <% } %>
 
+                <% if (competition && competition.weekly && competition.weekly.self) { %>
+                    <section class="guild-v2-brief guild-v3-ribbon" style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a;">
+                        <div>
+                            <span class="guild-mini-kicker" style="color: #b45309;">Thành Tích Server</span>
+                            <h3 style="margin: 5px 0 0; color: #92400e; font-size: 1.2rem;">
+                                <%= competition.weekly.self.rewardIcon %> <%= competition.weekly.self.rewardTitle || 'Đang đua Top' %>
+                            </h3>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 2rem; font-weight: 900; color: #d97706; line-height: 1;">
+                                #<%= competition.weekly.self.rank %>
+                            </div>
+                            <span style="font-size: 0.8rem; color: #b45309; font-weight: 700; text-transform: uppercase;">Tuần này</span>
+                        </div>
+                    </section>
+                <% } %>
+
                 <% if (ui.goalBanner) { %>
                     <button type="button" class="guild-v2-goal-banner guild-v3-goal-banner" data-guild-modal-open="goal">
                         <div class="guild-v2-goal-banner__copy">

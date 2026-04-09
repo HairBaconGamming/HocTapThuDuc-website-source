@@ -13,6 +13,7 @@ const authMiddleware = require('../middlewares/auth');
 const gardenController = require('../controllers/gardenController');
 const { achievementChecker } = require('../utils/achievementUtils');
 const { getJwtSecret } = require('../utils/secrets');
+const LessonProgress = require('../models/LessonProgress');
 
 const JWT_SECRET = getJwtSecret();
 
@@ -153,6 +154,42 @@ router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
 router.get('/lesson/:id/revisions', isTeacher, lessonController.getRevisions);
 router.post('/lesson/restore/:revisionId', isTeacher, lessonController.restoreRevision);
 router.post('/lesson/claim-study-reward', authMiddleware.isLoggedIn, lessonController.claimStudyReward);
+
+router.post('/lesson/:id/progress', isLoggedIn, async (req, res) => {
+    try {
+        const { answersData } = req.body;
+
+        await LessonProgress.findOneAndUpdate(
+            { user: req.user._id, lesson: req.params.id },
+            { $set: { answersData: answersData && typeof answersData === 'object' ? answersData : {} } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Lesson progress save error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
+router.get('/lesson/:id/progress', isLoggedIn, async (req, res) => {
+    try {
+        const progress = await LessonProgress.findOne({
+            user: req.user._id,
+            lesson: req.params.id
+        }).lean();
+
+        res.json({
+            success: true,
+            answersData: progress && progress.answersData && typeof progress.answersData === 'object'
+                ? progress.answersData
+                : {}
+        });
+    } catch (error) {
+        console.error('Lesson progress load error:', error);
+        res.status(500).json({ success: false });
+    }
+});
 
 router.get('/ping', (req, res) => {
     res.status(200).send('Pong! 🏓');

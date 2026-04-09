@@ -36,6 +36,7 @@ const lessonSchema = new mongoose.Schema({
     isProOnly: { type: Boolean, default: false },  // Yêu cầu VIP (Cũ - giữ để tương thích)
     isPublished: { type: Boolean, default: true }, // Trạng thái đăng bài
     
+    allowSaveProgress: { type: Boolean, default: true },
     tags: [String],
     views: { type: Number, default: 0 }
 }, { timestamps: true });

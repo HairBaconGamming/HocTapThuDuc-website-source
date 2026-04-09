@@ -23,6 +23,9 @@ const LessonWorkspace = {
         this.initLessonContent();
         this.initNotes();
         this.maybeShowResumeBanner();
+        setTimeout(() => {
+            if (typeof LessonProgressManager !== 'undefined') LessonProgressManager.init();
+        }, 500);
     },
 
     getScrollContainer() {
@@ -661,6 +664,7 @@ const LessonWorkspace = {
         const questions = data.questions || [];
         const container = document.createElement('div');
         container.className = 'quiz-wrapper';
+        container.dataset.quizId = String(blockIndex);
         container.tabIndex = 0;
         const feedbackMode = settings.showFeedback || 'submit';
 
@@ -749,7 +753,15 @@ const LessonWorkspace = {
                     setTimeout(() => {
                         const el = document.getElementById(`order-list-${blockIndex}-${questionIndex}`);
                         if(el && window.Sortable) {
-                            new Sortable(el, { animation: 150, ghostClass: 'bg-light' });
+                            el.__sortable = new Sortable(el, {
+                                animation: 150,
+                                ghostClass: 'bg-light',
+                                onEnd: () => {
+                                    if (typeof LessonProgressManager !== 'undefined') {
+                                        LessonProgressManager.triggerSave();
+                                    }
+                                }
+                            });
                         }
                     }, 100);
                 }
@@ -1159,6 +1171,193 @@ const LessonWorkspace = {
     }
 };
 
+const LessonProgressManager = {
+    lessonId: window.LESSON_ID,
+    allowSave: window.LESSON_VIEW_STATE?.allowSaveProgress !== false && !!window.USER?.id,
+    saveTimeout: null,
+    isRestoring: false,
+
+    init() {
+        if (!this.allowSave || window.LESSON_VIEW_STATE?.isCompleted) return;
+
+        this.injectStableIds();
+        this.fetchProgress();
+
+        const contentArea = document.getElementById('lessonContentArea');
+        if (!contentArea) return;
+
+        contentArea.addEventListener('input', (event) => {
+            if (event.target.matches('input, textarea, select')) {
+                this.triggerSave();
+            }
+        });
+
+        contentArea.addEventListener('change', (event) => {
+            if (event.target.matches('input, textarea, select')) {
+                this.triggerSave();
+            }
+        });
+    },
+
+    injectStableIds() {
+        const wrappers = document.querySelectorAll('.quiz-wrapper');
+        wrappers.forEach((wrapper, blockIdx) => {
+            const quizId = wrapper.dataset.quizId || String(blockIdx);
+            wrapper.dataset.quizId = quizId;
+
+            wrapper.querySelectorAll('.quiz-question').forEach((questionEl, questionIdx) => {
+                questionEl.dataset.index = questionEl.dataset.index || String(questionIdx);
+
+                questionEl.querySelectorAll('.fill-input').forEach((input, inputIdx) => {
+                    input.dataset.saveId = `fill_${quizId}_${questionIdx}_${inputIdx}`;
+                });
+
+                questionEl.querySelectorAll('.essay-input').forEach((input) => {
+                    input.dataset.saveId = `essay_${quizId}_${questionIdx}`;
+                });
+
+                questionEl.querySelectorAll('.match-select').forEach((select) => {
+                    const pairIdx = select.dataset.pairIdx || '0';
+                    select.dataset.saveId = `match_${quizId}_${questionIdx}_${pairIdx}`;
+                });
+
+                const orderList = questionEl.querySelector('.sortable-order-list');
+                if (orderList) {
+                    orderList.dataset.saveId = `order_${quizId}_${questionIdx}`;
+                }
+            });
+        });
+    },
+
+    triggerSave() {
+        if (this.isRestoring) return;
+        window.clearTimeout(this.saveTimeout);
+        this.saveTimeout = window.setTimeout(() => this.saveToServer(), 1500);
+    },
+
+    async saveToServer() {
+        const answersData = this.collectData();
+        if (!this.lessonId) return;
+
+        try {
+            await fetch(`/api/lesson/${this.lessonId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answersData })
+            });
+
+            this.showSavedIndicator();
+        } catch (error) {
+            console.error('Save progress failed', error);
+        }
+    },
+
+    async fetchProgress() {
+        if (!this.lessonId) return;
+
+        try {
+            const response = await fetch(`/api/lesson/${this.lessonId}/progress`);
+            const data = await response.json();
+            if (data.success && data.answersData && Object.keys(data.answersData).length > 0) {
+                this.restoreData(data.answersData);
+            }
+        } catch (error) {
+            console.error('Load progress failed', error);
+        }
+    },
+
+    collectData() {
+        const data = {};
+        const contentArea = document.getElementById('lessonContentArea');
+        if (!contentArea) return data;
+
+        contentArea.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked').forEach((input) => {
+            const name = input.name;
+            if (!name) return;
+
+            if (input.type === 'checkbox') {
+                if (!Array.isArray(data[name])) data[name] = [];
+                data[name].push(input.value);
+            } else {
+                data[name] = input.value;
+            }
+        });
+
+        contentArea.querySelectorAll('input[type="text"][data-save-id], textarea[data-save-id], select[data-save-id]').forEach((input) => {
+            if (input.dataset.saveId && input.value !== '') {
+                data[input.dataset.saveId] = input.value;
+            }
+        });
+
+        contentArea.querySelectorAll('.sortable-order-list[data-save-id]').forEach((list) => {
+            data[list.dataset.saveId] = Array.from(list.querySelectorAll('.order-item')).map((item) => item.dataset.id);
+        });
+
+        return data;
+    },
+
+    restoreData(data) {
+        const contentArea = document.getElementById('lessonContentArea');
+        if (!contentArea) return;
+
+        this.isRestoring = true;
+
+        try {
+            contentArea.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach((input) => {
+                const savedValue = data[input.name];
+                if (savedValue === undefined) {
+                    input.checked = false;
+                    return;
+                }
+
+                if (Array.isArray(savedValue)) {
+                    input.checked = savedValue.includes(input.value);
+                } else {
+                    input.checked = savedValue === input.value;
+                }
+            });
+
+            contentArea.querySelectorAll('input[type="text"][data-save-id], textarea[data-save-id], select[data-save-id]').forEach((input) => {
+                const key = input.dataset.saveId;
+                if (key && Object.prototype.hasOwnProperty.call(data, key)) {
+                    input.value = data[key];
+                }
+            });
+
+            contentArea.querySelectorAll('.sortable-order-list[data-save-id]').forEach((list) => {
+                const key = list.dataset.saveId;
+                const savedOrder = data[key];
+                if (!Array.isArray(savedOrder)) return;
+
+                savedOrder.forEach((idStr) => {
+                    const item = list.querySelector(`.order-item[data-id="${idStr}"]`);
+                    if (item) list.appendChild(item);
+                });
+            });
+        } finally {
+            this.isRestoring = false;
+        }
+    },
+
+    showSavedIndicator() {
+        let indicator = document.getElementById('progress-saved-indicator');
+
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'progress-saved-indicator';
+            indicator.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Tiến trình đã lưu';
+            indicator.style.cssText = 'position:fixed;bottom:20px;left:20px;background:rgba(16,185,129,0.92);color:#fff;padding:8px 16px;border-radius:999px;font-size:0.82rem;font-weight:700;z-index:9999;box-shadow:0 10px 24px rgba(16,185,129,0.28);transition:opacity .25s ease;opacity:0;';
+            document.body.appendChild(indicator);
+        }
+
+        indicator.style.opacity = '1';
+        window.clearTimeout(indicator.__hideTimer);
+        indicator.__hideTimer = window.setTimeout(() => {
+            indicator.style.opacity = '0';
+        }, 2000);
+    }
+};
+
 function getEmbedUrl(url, autoplay) {
     if (!url) return null;
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?/\s]{11})/);
@@ -1276,3 +1475,4 @@ const StudyManager = {
 };
 
 window.LessonWorkspace = LessonWorkspace;
+window.LessonProgressManager = LessonProgressManager;

@@ -216,57 +216,6 @@ img { max-width: 100%; display: block; }
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
-/* 7. BREADCRUMB (Nổi khối nhẹ) */
-.custom-breadcrumb-wrapper {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 10px 20px;
-    margin-bottom: 30px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-    display: inline-flex; /* Gọn gàng hơn */
-}
-
-.breadcrumb-list {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.breadcrumb-item {
-    display: flex;
-    align-items: center;
-    color: var(--gray);
-}
-
-.breadcrumb-item a {
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: background 0.2s;
-}
-
-.breadcrumb-item a:hover {
-    color: var(--primary);
-    background-color: var(--info-bg);
-}
-
-.breadcrumb-item.active span {
-    color: var(--dark);
-    background: var(--light-bg);
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.breadcrumb-item:not(:last-child)::after {
-    content: '/';
-    margin: 0 8px;
-    color: #cbd5e1;
-    font-weight: 400;
-}
-
 /* 8. LOADING SPINNER */
 .spinner {
     width: 40px; height: 40px;
@@ -284,11 +233,4 @@ img { max-width: 100%; display: block; }
     .container { padding: 15px; }
     .card { padding: 20px; }
     .btn { padding: 10px 20px; font-size: 0.9rem; }
-    
-    .custom-breadcrumb-wrapper {
-        display: flex; 
-        overflow-x: auto; 
-        white-space: nowrap;
-        padding: 10px;
-    }
 }

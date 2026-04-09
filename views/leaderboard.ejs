@@ -2,100 +2,197 @@
 <link rel="stylesheet" href="/css/styleLeaderboard.css">
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
+<%
+    const safeTop3 = Array.isArray(top3) ? top3 : [];
+    const safeRestOfList = Array.isArray(restOfList) ? restOfList : [];
+    const safeGuildCompetition = guildCompetition || { weekly: { top: [] }, monthly: { top: [] } };
+    const weeklyGuildTop = Array.isArray(safeGuildCompetition.weekly?.top) ? safeGuildCompetition.weekly.top : [];
+    const monthlyGuildTop = Array.isArray(safeGuildCompetition.monthly?.top) ? safeGuildCompetition.monthly.top : [];
+%>
+
 <div class="leaderboard-wrapper">
-    
     <div class="lb-header">
         <h1 class="lb-title">🏆 Đấu Trường Danh Vọng</h1>
-        <div class="lb-desc">✨ Vinh danh những "Chiến Thần" chăm chỉ nhất Server ✨</div>
+        <div class="lb-desc">✨ Nơi vinh danh những huyền thoại của Server ✨</div>
     </div>
 
-    <div class="podium-container">
-        
-        <% if(top3[1]) { %>
-            <a href="/profile/view/<%= top3[1]._id %>" class="podium-link rank-2">
-                <div class="podium-card">
-                    <div class="rank-badge">2</div>
-                    <div class="podium-avatar-box">
-                        <img src="<%= top3[1].avatar || '/default.png' %>" class="podium-avatar">
-                    </div>
-                    <div class="podium-info">
-                        <div class="podium-name"><%= top3[1].username %></div>
-                        <div class="podium-score"><%= top3[1].points || 0 %> pts</div>
-                    </div>
-                </div>
-            </a>
-        <% } %>
-
-        <% if(top3[0]) { %>
-            <a href="/profile/view/<%= top3[0]._id %>" class="podium-link rank-1">
-                <div class="podium-card">
-                    <div class="crown">👑</div>
-                    <div class="rank-badge" style="background: #ffb300; border-color: #000; color: #000;">1</div>
-                    <div class="podium-avatar-box">
-                        <img src="<%= top3[0].avatar || '/default.png' %>" class="podium-avatar">
-                    </div>
-                    <div class="podium-info">
-                        <div class="podium-name">
-                            <%= top3[0].username %>
-                            <% if(top3[0].isPro) { %><span class="pro-badge">PRO</span><% } %>
-                        </div>
-                        <div class="podium-score" style="font-size: 2rem;"><%= top3[0].points || 0 %> pts</div>
-                        <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔥 Out Trình 🔥</div>
-                    </div>
-                </div>
-            </a>
-        <% } %>
-
-        <% if(top3[2]) { %>
-            <a href="/profile/view/<%= top3[2]._id %>" class="podium-link rank-3">
-                <div class="podium-card">
-                    <div class="rank-badge">3</div>
-                    <div class="podium-avatar-box">
-                        <img src="<%= top3[2].avatar || '/default.png' %>" class="podium-avatar">
-                    </div>
-                    <div class="podium-info">
-                        <div class="podium-name"><%= top3[2].username %></div>
-                        <div class="podium-score"><%= top3[2].points || 0 %> pts</div>
-                    </div>
-                </div>
-            </a>
-        <% } %>
+    <div class="lb-main-tabs">
+        <button class="lb-main-tab-btn active" type="button" onclick="switchMainTab(event, 'users')">👤 Cá Nhân</button>
+        <button class="lb-main-tab-btn" type="button" onclick="switchMainTab(event, 'guilds')">🏰 Tông Môn</button>
     </div>
 
-    <div class="rank-list">
-        <% if (restOfList && restOfList.length > 0) { %>
-            <% restOfList.forEach((u, idx) => { %>
-                <a href="/profile/view/<%= u._id %>" style="text-decoration: none;">
-                    <div class="rank-card">
-                        <div class="rank-num">#<%= idx + 4 %></div>
-                        <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar-sm">
-                        <div class="rank-details">
-                            <div class="rank-name-txt">
-                                <%= u.username %>
-                                <% if(u.isPro) { %><span class="pro-badge">PRO</span><% } %>
-                            </div>
-                            <div class="rank-meta"><%= u.class || 'Lớp ?' %> • <%= u.school || 'THPT Thủ Đức' %></div>
+    <div id="tab-users" class="lb-panel active">
+        <div class="podium-container">
+            <% if (safeTop3[1]) { %>
+                <a href="/profile/view/<%= safeTop3[1]._id %>" class="podium-link rank-2">
+                    <div class="podium-card">
+                        <div class="rank-badge">2</div>
+                        <div class="podium-avatar-box">
+                            <img src="<%= safeTop3[1].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
                         </div>
-                        <div class="rank-pts"><%= u.points || 0 %></div>
+                        <div class="podium-info">
+                            <div class="podium-name"><%= safeTop3[1].username %></div>
+                            <div class="podium-score"><%= safeTop3[1].points || 0 %> pts</div>
+                        </div>
                     </div>
                 </a>
-            <% }) %>
-        <% } else { %>
-            <div style="text-align: center; color: #999; padding: 40px;">
-                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" style="opacity: 0.5;">
-                <p>Chưa có ai ở đây cả. Hãy là người đầu tiên leo rank!</p>
-            </div>
-        <% } %>
+            <% } %>
+
+            <% if (safeTop3[0]) { %>
+                <a href="/profile/view/<%= safeTop3[0]._id %>" class="podium-link rank-1">
+                    <div class="podium-card">
+                        <div class="crown">👑</div>
+                        <div class="rank-badge" style="background: #ffb300; border-color: #000; color: #000;">1</div>
+                        <div class="podium-avatar-box">
+                            <img src="<%= safeTop3[0].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
+                        </div>
+                        <div class="podium-info">
+                            <div class="podium-name">
+                                <%= safeTop3[0].username %>
+                                <% if (safeTop3[0].isPro) { %><span class="pro-badge">PRO</span><% } %>
+                            </div>
+                            <div class="podium-score" style="font-size: 2rem;"><%= safeTop3[0].points || 0 %> pts</div>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔥 Out Trình 🔥</div>
+                        </div>
+                    </div>
+                </a>
+            <% } %>
+
+            <% if (safeTop3[2]) { %>
+                <a href="/profile/view/<%= safeTop3[2]._id %>" class="podium-link rank-3">
+                    <div class="podium-card">
+                        <div class="rank-badge">3</div>
+                        <div class="podium-avatar-box">
+                            <img src="<%= safeTop3[2].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
+                        </div>
+                        <div class="podium-info">
+                            <div class="podium-name"><%= safeTop3[2].username %></div>
+                            <div class="podium-score"><%= safeTop3[2].points || 0 %> pts</div>
+                        </div>
+                    </div>
+                </a>
+            <% } %>
+        </div>
+
+        <div class="rank-list">
+            <% if (safeRestOfList.length > 0) { %>
+                <% safeRestOfList.forEach((u, idx) => { %>
+                    <a href="/profile/view/<%= u._id %>" style="text-decoration: none;">
+                        <div class="rank-card">
+                            <div class="rank-num">#<%= idx + 4 %></div>
+                            <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar-sm" alt="Avatar">
+                            <div class="rank-details">
+                                <div class="rank-name-txt">
+                                    <%= u.username %>
+                                    <% if (u.isPro) { %><span class="pro-badge">PRO</span><% } %>
+                                </div>
+                                <div class="rank-meta"><%= u.class || 'Lớp ?' %> • <%= u.school || 'THPT Thủ Đức' %></div>
+                            </div>
+                            <div class="rank-pts"><%= u.points || 0 %></div>
+                        </div>
+                    </a>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align: center; color: #999; padding: 40px;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" style="opacity: 0.5;" alt="Empty state">
+                    <p>Chưa có ai ở đây cả. Hãy là người đầu tiên leo rank!</p>
+                </div>
+            <% } %>
+        </div>
     </div>
 
+    <div id="tab-guilds" class="lb-panel" style="display: none;">
+        <div class="guild-tabs">
+            <button class="guild-tab-btn active" type="button" onclick="switchGuildPeriod(event, 'weekly')">BXH Tuần Này</button>
+            <button class="guild-tab-btn" type="button" onclick="switchGuildPeriod(event, 'monthly')">BXH Tháng Này</button>
+        </div>
+
+        <div id="guild-weekly" class="guild-period-panel active">
+            <div class="podium-container">
+                <% [1, 0, 2].forEach((index) => { %>
+                    <% const g = weeklyGuildTop[index]; %>
+                    <% if (g) { %>
+                        <a href="/guilds/<%= g.guild.slug %>" style="text-decoration: none; color: inherit;" class="guild-podium-item rank-<%= index + 1 %>">
+                            <div class="guild-crown"><%= index === 0 ? '👑' : (index === 1 ? '🥈' : '🥉') %></div>
+                            <div class="guild-avatar">
+                                🌳
+                                <div class="guild-rank-badge"><%= index + 1 %></div>
+                            </div>
+                            <div class="guild-name"><%= g.guild.name %></div>
+                            <div class="guild-score"><%= Number(g.totalXp || 0).toLocaleString('vi-VN') %> Linh Lực</div>
+                        </a>
+                    <% } %>
+                <% }) %>
+            </div>
+            <div class="rank-list">
+                <% weeklyGuildTop.slice(3).forEach((g, idx) => { %>
+                    <a href="/guilds/<%= g.guild.slug %>" style="text-decoration: none; color: inherit;">
+                        <div class="guild-list-card">
+                            <div class="gl-left">
+                                <div class="gl-rank">#<%= idx + 4 %></div>
+                                <div class="gl-icon"><i class="fas fa-landmark"></i></div>
+                                <div class="gl-info">
+                                    <h4><%= g.guild.name %></h4>
+                                    <p><%= g.memberCountSnapshot %> thành viên</p>
+                                </div>
+                            </div>
+                            <div class="gl-score"><%= Number(g.totalXp || 0).toLocaleString('vi-VN') %></div>
+                        </div>
+                    </a>
+                <% }) %>
+                <% if (weeklyGuildTop.length === 0) { %>
+                    <div style="text-align: center; color: #999; padding: 40px;">Tuần này chưa có bang hội nào thức tỉnh.</div>
+                <% } %>
+            </div>
+        </div>
+
+        <div id="guild-monthly" class="guild-period-panel" style="display: none;">
+            <div class="podium-container">
+                <% [1, 0, 2].forEach((index) => { %>
+                    <% const g = monthlyGuildTop[index]; %>
+                    <% if (g) { %>
+                        <a href="/guilds/<%= g.guild.slug %>" style="text-decoration: none; color: inherit;" class="guild-podium-item rank-<%= index + 1 %>">
+                            <div class="guild-crown"><%= index === 0 ? '🌟' : (index === 1 ? '✨' : '💠') %></div>
+                            <div class="guild-avatar">
+                                🌳
+                                <div class="guild-rank-badge"><%= index + 1 %></div>
+                            </div>
+                            <div class="guild-name"><%= g.guild.name %></div>
+                            <div class="guild-score"><%= Number(g.totalXp || 0).toLocaleString('vi-VN') %> Linh Lực</div>
+                        </a>
+                    <% } %>
+                <% }) %>
+            </div>
+            <div class="rank-list">
+                <% monthlyGuildTop.slice(3).forEach((g, idx) => { %>
+                    <a href="/guilds/<%= g.guild.slug %>" style="text-decoration: none; color: inherit;">
+                        <div class="guild-list-card">
+                            <div class="gl-left">
+                                <div class="gl-rank">#<%= idx + 4 %></div>
+                                <div class="gl-icon"><i class="fas fa-landmark"></i></div>
+                                <div class="gl-info">
+                                    <h4><%= g.guild.name %></h4>
+                                    <p><%= g.memberCountSnapshot %> thành viên</p>
+                                </div>
+                            </div>
+                            <div class="gl-score"><%= Number(g.totalXp || 0).toLocaleString('vi-VN') %></div>
+                        </div>
+                    </a>
+                <% }) %>
+                <% if (monthlyGuildTop.length === 0) { %>
+                    <div style="text-align: center; color: #999; padding: 40px;">Tháng này chưa có bang hội nào thi đấu.</div>
+                <% } %>
+            </div>
+        </div>
+    </div>
 </div>
 
 <% if (user && myRank) { %>
-    <a href="/profile" style="text-decoration: none;">
+    <a href="/profile" style="text-decoration: none;" id="user-hud">
         <div class="player-hud">
             <div class="hud-left">
                 <div class="hud-rank"><%= myRank %></div>
-                <img src="<%= user.avatar || '/default.png' %>" class="hud-avatar">
+                <img src="<%= user.avatar || '/default.png' %>" class="hud-avatar" alt="Avatar">
                 <div class="hud-info">
                     <div class="hud-label">Thứ hạng của bạn</div>
                     <div class="hud-name"><%= user.username %></div>
@@ -111,49 +208,44 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        
-        // 1. Hàm chạy hiệu ứng (Sử dụng fromTo để chắc chắn 100% chạy đúng)
+    function switchMainTab(event, tab) {
+        document.querySelectorAll('.lb-main-tab-btn').forEach((btn) => btn.classList.remove('active'));
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+
+        document.getElementById('tab-users').style.display = tab === 'users' ? 'block' : 'none';
+        document.getElementById('tab-guilds').style.display = tab === 'guilds' ? 'block' : 'none';
+
+        const hud = document.getElementById('user-hud');
+        if (hud) {
+            hud.style.display = tab === 'users' ? 'block' : 'none';
+        }
+    }
+
+    function switchGuildPeriod(event, period) {
+        document.querySelectorAll('.guild-tab-btn').forEach((btn) => btn.classList.remove('active'));
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+
+        document.getElementById('guild-weekly').style.display = period === 'weekly' ? 'block' : 'none';
+        document.getElementById('guild-monthly').style.display = period === 'monthly' ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
         const runAnimations = () => {
-            // Nếu GSAP vẫn chưa có thì dừng, chờ lần check sau
             if (typeof gsap === 'undefined') return;
-
             const tl = gsap.timeline();
-
-            // Header bay xuống
-            tl.fromTo(".lb-header", 
-                { y: -50, opacity: 0, visibility: 'hidden' },
-                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: "back.out(1.7)" }
-            );
-
-            // Bục Podium nảy lên
-            tl.fromTo(".podium-link", 
-                { y: 100, opacity: 0, scale: 0.8, visibility: 'hidden' },
-                { y: 0, opacity: 1, scale: 1, visibility: 'visible', duration: 1, stagger: 0.2, ease: "elastic.out(1, 0.5)" },
-                "-=0.5"
-            );
-
-            // Danh sách Rank bay sang
-            tl.fromTo(".rank-card", 
-                { x: -30, opacity: 0, visibility: 'hidden' },
-                { x: 0, opacity: 1, visibility: 'visible', duration: 0.5, stagger: 0.05, ease: "power2.out" },
-                "-=0.8"
-            );
-
-            // Sticky Bar bay lên
-            tl.fromTo(".player-hud", 
-                { y: 100, opacity: 0, visibility: 'hidden' },
-                { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: "power2.out" },
-                "-=0.5"
-            );
+            tl.fromTo('.lb-header', { y: -50, opacity: 0, visibility: 'hidden' }, { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: 'back.out(1.7)' });
+            tl.fromTo('.podium-link, .guild-podium-item', { y: 100, opacity: 0, scale: 0.8, visibility: 'hidden' }, { y: 0, opacity: 1, scale: 1, visibility: 'visible', duration: 1, stagger: 0.2, ease: 'elastic.out(1, 0.5)' }, '-=0.5');
+            tl.fromTo('.rank-card, .guild-list-card', { x: -30, opacity: 0, visibility: 'hidden' }, { x: 0, opacity: 1, visibility: 'visible', duration: 0.5, stagger: 0.05, ease: 'power2.out' }, '-=0.8');
+            tl.fromTo('.player-hud', { y: 100, opacity: 0, visibility: 'hidden' }, { y: 0, opacity: 1, visibility: 'visible', duration: 0.8, ease: 'power2.out' }, '-=0.5');
         };
 
-        // 2. CƠ CHẾ KIỂM TRA & KÍCH HOẠT (Fix lỗi mạng chậm)
         if (typeof gsap !== 'undefined') {
-            // Nếu thư viện đã tải xong -> Chạy ngay
             runAnimations();
         } else {
-            // Nếu chưa xong -> Check mỗi 50ms
             const checkInterval = setInterval(() => {
                 if (typeof gsap !== 'undefined') {
                     clearInterval(checkInterval);
@@ -161,11 +253,9 @@
                 }
             }, 50);
 
-            // 3. FAILSAFE (Dự phòng): Sau 3 giây mà vẫn lỗi -> Hiện thủ công
-            // (Tránh trường hợp mạng rớt hẳn khiến trang trắng trơn)
             setTimeout(() => {
                 clearInterval(checkInterval);
-                document.querySelectorAll('.lb-header, .podium-link, .rank-card, .player-hud').forEach(el => {
+                document.querySelectorAll('.lb-header, .podium-link, .rank-card, .player-hud, .guild-podium-item, .guild-list-card').forEach((el) => {
                     el.style.opacity = '1';
                     el.style.visibility = 'visible';
                     el.style.transform = 'none';

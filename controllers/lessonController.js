@@ -36,11 +36,12 @@ exports.saveLessonAjax = async (req, res) => {
         const { 
             title, content, type, subjectId, isPro, quizData, isPublished,
             curriculumSnapshot, currentEditingId, 
-            courseId // <--- Bắt buộc phải có courseId gửi lên
+            courseId, allowSaveProgress // <--- Bắt buộc phải có courseId gửi lên
         } = req.body;
 
         const normalizedIsPro = toBoolean(isPro);
         const normalizedIsPublished = toBoolean(isPublished);
+        const normalizedAllowSaveProgress = allowSaveProgress !== undefined ? toBoolean(allowSaveProgress) : true;
         const normalizedSubjectId = subjectId || undefined;
         const ownedCourse = courseId ? await getOwnedCourse(courseId, req.user) : null;
         if (courseId && !ownedCourse) {
@@ -62,6 +63,7 @@ exports.saveLessonAjax = async (req, res) => {
             isPro: normalizedIsPro,
             isProOnly: normalizedIsPro,
             isPublished: normalizedIsPublished,
+            allowSaveProgress: normalizedAllowSaveProgress,
             quizData: quizData ? JSON.parse(quizData) : []
         };
 

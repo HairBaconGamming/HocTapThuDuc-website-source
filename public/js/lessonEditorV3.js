@@ -1728,6 +1728,8 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
         initBlocks(''); 
         const isProInp = document.getElementById('isProInput');
         if(isProInp) isProInp.checked = false;
+        const allowSaveInp = document.getElementById('allowSaveProgressInput');
+        if (allowSaveInp) allowSaveInp.checked = true;
         setSaveStatus('Ban nhap chua luu', 'dirty');
         
         setSaveStatus('Bản nháp (Chưa lưu)');
@@ -1759,6 +1761,8 @@ async function selectLesson(id, titleFallback = 'Bài học mới', type = 'theo
                 
                 const isProInp = document.getElementById('isProInput');
                 if(isProInp) isProInp.checked = l.isPro;
+                const allowSaveInp = document.getElementById('allowSaveProgressInput');
+                if (allowSaveInp) allowSaveInp.checked = l.allowSaveProgress !== false;
                 
                 updateStatusBadge(l.isPublished);
 
@@ -2626,6 +2630,8 @@ async function submitLessonAJAX(publishStatus) {
         const title = titleInput.value;
         const isProInp = document.getElementById('isProInput');
         const isPro = isProInp ? isProInp.checked : false;
+        const allowSaveInp = document.getElementById('allowSaveProgressInput');
+        const allowSaveProgress = allowSaveInp ? allowSaveInp.checked : true;
         
         const contentJSON = serializeBlocks();
         const subjectSelect = document.getElementById('selectSubject');
@@ -2658,6 +2664,7 @@ async function submitLessonAJAX(publishStatus) {
         const payload = {
             title, content: contentJSON, type: 'theory',
             isPro, isPublished: publishStatus,
+            allowSaveProgress,
             subjectId, courseId, // New field for hierarchy
             quizData: JSON.stringify(quizData),
             curriculumSnapshot: JSON.stringify(treeData),

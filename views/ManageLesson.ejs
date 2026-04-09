@@ -519,6 +519,16 @@
                                             </div>
                                         </div>
                                         <div class="control-item">
+                                            <span class="control-label">Tiến trình làm bài</span>
+                                            <div class="switch-wrapper">
+                                                <span>Tự động lưu câu trả lời (Auto-save)</span>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" id="allowSaveProgressInput" <%= (!lesson || lesson.allowSaveProgress !== false) ? 'checked' : '' %>>
+                                                    <span class="slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="control-item">
                                             <span class="control-label">Thông tin</span>
                                             <div class="meta-info" style="font-size:0.85rem; color:#555;">
                                                 <div style="margin-bottom:5px;"><i class="fas fa-user-edit"></i> Tác giả: <b><%= user.username %></b></div>

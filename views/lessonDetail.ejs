@@ -325,6 +325,7 @@
         lessonId: "<%= lesson._id %>",
         courseId: <%- JSON.stringify(course ? String(course._id) : '') %>,
         isCompleted: <%- JSON.stringify(!!isCompleted) %>,
+        allowSaveProgress: <%- JSON.stringify(lesson.allowSaveProgress !== false) %>,
         progressPercent: <%- JSON.stringify(courseProgress.percent || 0) %>,
         lessonPosition: <%- JSON.stringify(lessonPosition) %>,
         revisionKey: <%- JSON.stringify(lesson.updatedAt ? String(new Date(lesson.updatedAt).getTime()) : '') %>

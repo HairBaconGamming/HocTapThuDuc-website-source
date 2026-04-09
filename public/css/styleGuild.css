@@ -4456,3 +4456,235 @@
         margin-top: 10px;
     }
 }
+
+/* =========================================
+   PHONG VÂN BẢNG (GLOBAL LEADERBOARD)
+   ========================================= */
+
+.guild-global-leaderboard {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 32px;
+    padding: 40px 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.05);
+    margin-bottom: 40px;
+}
+
+.guild-global-leaderboard__head {
+    margin-bottom: 20px;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.guild-global-leaderboard__kicker {
+    font-size: 1rem;
+}
+
+.guild-global-leaderboard__head h2 {
+    font-size: 2.2rem;
+    color: #0f172a;
+    margin-top: 10px;
+}
+
+.guild-global-leaderboard__head p {
+    color: #64748b;
+}
+
+.leaderboard-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.leaderboard-tabs .guild-segment {
+    background: #f1f5f9;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.leaderboard-tabs .guild-segment.is-active {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: white;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+    transform: translateY(-3px);
+}
+
+.lb-podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 20px;
+    min-height: 300px;
+    padding-bottom: 20px;
+}
+
+.podium-item {
+    background: white;
+    border-radius: 24px;
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 220px;
+    position: relative;
+    border: 2px solid transparent;
+    transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.podium-item:hover {
+    transform: translateY(-15px);
+}
+
+.podium-crown {
+    font-size: 2.5rem;
+    position: absolute;
+    top: -35px;
+    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
+    animation: floatCrown 3s ease-in-out infinite;
+}
+
+.podium-avatar {
+    width: 80px;
+    height: 80px;
+    background: #f8fafc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    position: relative;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.podium-rank {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+}
+
+.podium-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 5px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.podium-score {
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 12px;
+}
+
+.podium-item.rank-1 {
+    width: 260px;
+    border-color: #f59e0b;
+    box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2);
+    z-index: 10;
+    transform: translateY(-20px);
+}
+
+.podium-item.rank-1:hover {
+    transform: translateY(-35px);
+    box-shadow: 0 30px 50px rgba(245, 158, 11, 0.3);
+}
+
+.podium-item.rank-1 .podium-avatar {
+    border: 4px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.podium-item.rank-1 .podium-rank {
+    background: #f59e0b;
+}
+
+.podium-item.rank-1 .podium-score {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.podium-item.rank-2 {
+    border-color: #cbd5e1;
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+}
+
+.podium-item.rank-2 .podium-avatar {
+    border: 4px solid #94a3b8;
+}
+
+.podium-item.rank-2 .podium-rank {
+    background: #94a3b8;
+}
+
+.podium-item.rank-2 .podium-score {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.podium-item.rank-3 {
+    border-color: #fdba74;
+    background: linear-gradient(180deg, #fffaf5, #ffedd5);
+}
+
+.podium-item.rank-3 .podium-avatar {
+    border: 4px solid #f97316;
+}
+
+.podium-item.rank-3 .podium-rank {
+    background: #f97316;
+}
+
+.podium-item.rank-3 .podium-score {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+@keyframes floatCrown {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@media (max-width: 768px) {
+    .lb-podium {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .podium-item.rank-1 {
+        order: -1;
+        transform: translateY(0);
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .podium-item.rank-2,
+    .podium-item.rank-3 {
+        width: 100%;
+        max-width: 320px;
+    }
+}

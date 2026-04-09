@@ -9,6 +9,8 @@ const {
     hasProContentAccess,
     canManageCourse
 } = require('../utils/contentAccess');
+const LevelUtils = require('../utils/level');
+const { buildCompletionGardenBundle } = require('../utils/lessonGamificationUtils');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -87,7 +89,7 @@ function getHeroDescription(description) {
     return firstSentence.length <= 180 ? firstSentence : `${firstSentence.slice(0, 177).trim()}...`;
 }
 
-function buildCourseRewardPreview({ course, progress, stats }) {
+function buildCourseRewardPreviewLegacy({ course, progress, stats }) {
     const accessibleCount = Math.max(1, Number(progress?.accessibleCount || 0));
     const totalVideos = Math.max(0, Number(stats?.totalVideos || 0));
     const totalQuiz = Math.max(0, Number(stats?.totalQuiz || 0));
@@ -105,6 +107,35 @@ function buildCourseRewardPreview({ course, progress, stats }) {
         fertilizer: Math.max(1, Math.ceil((totalVideos + totalQuiz) / 4)),
         gold: Math.max(80, totalVideos * 24 + totalQuiz * 30 + accessibleCount * 10),
         xp: accessibleCount * 12
+    };
+}
+
+function buildCourseRewardPreview({ course, progress, user }) {
+    const currentLevel = user ? Math.max(1, Number(user.level || 1)) : 1;
+    const remainingAccessible = Math.max(0, Number(progress?.accessibleCount || 0) - Number(progress?.completedCount || 0));
+    const multiplier = remainingAccessible > 0 ? remainingAccessible : Math.max(1, Number(progress?.accessibleCount || 1));
+    const headlineText = remainingAccessible > 0
+        ? `Hoàn thành ${remainingAccessible} bài còn lại sẽ nhận được:`
+        : 'Tổng tài nguyên khóa học mang lại:';
+
+    const baseGarden = buildCompletionGardenBundle(currentLevel);
+    const baseXp = Math.max(10, Math.floor(LevelUtils.getRequiredXP(currentLevel) * 0.05));
+    const basePoints = 10;
+
+    return {
+        badge: `Huy hiệu ${course?.subjectId?.name || 'Chặng mới'}`,
+        headline: headlineText,
+        water: baseGarden.water * multiplier,
+        fertilizer: baseGarden.fertilizer * multiplier,
+        gold: baseGarden.gold * multiplier,
+        xp: baseXp * multiplier,
+        points: basePoints * multiplier,
+        summary: [
+            `+${basePoints * multiplier} điểm`,
+            `+${baseXp * multiplier} XP`,
+            `+${baseGarden.water * multiplier} nước`,
+            `+${baseGarden.gold * multiplier} vàng`
+        ]
     };
 }
 
@@ -779,7 +810,7 @@ exports.getCourseDetail = async (req, res) => {
             || accessibleLessons[0]
             || null;
 
-        const rewardPreview = buildCourseRewardPreview({ course, progress, stats });
+        const rewardPreview = buildCourseRewardPreview({ course, progress, user: req.user });
         const learningPromise = buildCourseLearningPromise({ progress, stats });
 
         let flashcardDeck = {

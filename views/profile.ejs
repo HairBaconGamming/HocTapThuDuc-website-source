@@ -1,329 +1,749 @@
 <%- include('partials/header') %>
 
-<link rel="stylesheet" href="/css/styleProfile-refactored.css">
+<%
+    const safeProfileUser = profileUser || {};
+    const safeLevelInfo = levelInfo || {};
+    const safeStats = stats || {};
+    const safeGuildProfile = guildProfile || null;
+    const safeActivities = Array.isArray(activities) ? activities : [];
+    const safeAchievements = Array.isArray(achievements) ? achievements : [];
+    const safeUserRank = Number(userRank) || 0;
+    const safeStreak = Number(streak) || 0;
+    const safeTotalAchievements = Number(totalAchievements) || 0;
+    const safeAvatar = safeProfileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeProfileUser.username || 'User')}&background=eff6ff&color=1d4ed8`;
+    const safeUsername = safeProfileUser.username || 'Đạo hữu bí ẩn';
+    const safeBio = safeProfileUser.bio || 'Người chơi hệ bí ẩn, chưa để lại lời giới thiệu nào...';
+    const safeSchool = safeProfileUser.school || 'THPT';
+    const safeClass = safeProfileUser.class || 'Chưa cập nhật lớp';
+    const safeLevel = Number(safeLevelInfo.level) || 0;
+    const safeRealmProgress = Math.max(0, Math.min(100, Number(safeLevelInfo.progress) || 0));
+    const safeCurrentXP = Number(safeLevelInfo.currentXP) || 0;
+    const safeRequiredXP = Number(safeLevelInfo.requiredXP) || 0;
+    const safeRealmName = safeLevelInfo.realmName || 'Phàm Nhân';
+    const safeSubRealmName = safeLevelInfo.subRealmName || 'Cảnh giới chưa rõ';
+    const safePoints = Number(safeStats.points) || 0;
+    const safeLessons = Number(safeStats.lessons) || 0;
+    const safeGold = Number(safeStats.gold) || 0;
+    const safeAchievementPoints = Number(safeStats.achievementPoints) || 0;
+    const safeRoleLabel = safeProfileUser.isAdmin ? 'Admin' : (safeProfileUser.isTeacher ? 'Giáo viên' : 'Học sinh');
+    const safeRoleIcon = safeProfileUser.isAdmin ? 'fa-user-shield' : (safeProfileUser.isTeacher ? 'fa-chalkboard-teacher' : 'fa-user-graduate');
+    const safeGardenLink = isOwner ? '/my-garden' : `/my-garden/visit/${safeProfileUser._id || ''}`;
+%>
 
-<div class="profile-main">
-    
-    <!-- Hero Banner -->
-    <section class="profile-hero">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <div class="avatar-hero">
-                <img src="<%= profileUser.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Avatar">
-                <div class="realm-glow-ring"></div>
-                <div class="level-badge-hero">Lv.<%= levelInfo.level %></div>
-            </div>
-            <div class="hero-info">
-                <h1 class="user-name-hero"><%= profileUser.username %></h1>
-                <% if (profileUser.bio) { %>
-                    <p class="user-bio-hero"><%= profileUser.bio %></p>
+<style>
+    :root {
+        --prof-bg: #f8fafc;
+        --prof-surface: #ffffff;
+        --prof-border: #e2e8f0;
+        --prof-primary: #4f46e5;
+        --prof-text: #0f172a;
+        --prof-muted: #64748b;
+        --prof-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+        --radius-xl: 28px;
+        --radius-lg: 20px;
+    }
+
+    body {
+        background-color: var(--prof-bg);
+    }
+
+    .profile-v2-wrapper {
+        max-width: 1100px;
+        margin: 40px auto 80px;
+        padding: 0 20px;
+        font-family: 'Quicksand', sans-serif;
+    }
+
+    .prof-hero {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        border-radius: var(--radius-xl);
+        padding: 40px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(49, 46, 129, 0.2);
+        margin-bottom: 30px;
+    }
+
+    .prof-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .prof-avatar-box {
+        position: relative;
+        width: 130px;
+        height: 130px;
+        flex-shrink: 0;
+    }
+
+    .prof-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        background: #fff;
+        position: relative;
+        z-index: 2;
+    }
+
+    .prof-level-badge {
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f59e0b;
+        color: #fff;
+        padding: 4px 16px;
+        border-radius: 20px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        z-index: 3;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+        white-space: nowrap;
+    }
+
+    .prof-info {
+        flex: 1;
+        z-index: 2;
+        min-width: 0;
+    }
+
+    .prof-name {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin: 0 0 5px;
+        letter-spacing: -0.5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .prof-tags {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .p-tag {
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .p-tag.pro {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+    }
+
+    .p-tag.role {
+        background: rgba(99, 102, 241, 0.3);
+        color: #e0e7ff;
+    }
+
+    .prof-bio {
+        font-size: 1rem;
+        opacity: 0.85;
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 0;
+    }
+
+    .prof-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 2;
+    }
+
+    .btn-prof {
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        text-align: center;
+        transition: 0.2s;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-prof.edit {
+        background: white;
+        color: var(--prof-primary);
+    }
+
+    .btn-prof.edit:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+    }
+
+    .btn-prof.logout {
+        background: rgba(239, 68, 68, 0.1);
+        color: #fca5a5;
+    }
+
+    .btn-prof.logout:hover {
+        background: #ef4444;
+        color: white;
+    }
+
+    .prof-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        background: white;
+        padding: 8px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .prof-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .p-tab {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 14px;
+        border: none;
+        background: transparent;
+        font-weight: 700;
+        color: var(--prof-muted);
+        cursor: pointer;
+        transition: 0.3s;
+        white-space: nowrap;
+        font-size: 1rem;
+    }
+
+    .p-tab.active {
+        background: var(--prof-primary);
+        color: white;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: minmax(140px, auto);
+        gap: 20px;
+    }
+
+    .bento-card {
+        background: var(--prof-surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--prof-border);
+        padding: 24px;
+        box-shadow: var(--prof-shadow);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bento-card:hover {
+        transform: translateY(-5px);
+        border-color: #cbd5e1;
+        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    .span-2 {
+        grid-column: span 2;
+    }
+
+    .span-4 {
+        grid-column: span 4;
+    }
+
+    .realm-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .realm-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        opacity: 0.8;
+    }
+
+    .realm-name {
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin: 0 0 5px;
+        line-height: 1.2;
+    }
+
+    .realm-sub {
+        font-size: 0.9rem;
+        font-weight: 700;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .realm-progress-wrap {
+        margin-top: 15px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.5);
+        height: 8px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .realm-progress-fill {
+        height: 100%;
+        background: #16a34a;
+        border-radius: 10px;
+        transition: width 1s ease-out;
+    }
+
+    .realm-xp-text {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.8rem;
+        margin-top: 5px;
+        font-weight: 700;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .stat-val {
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--prof-text);
+        line-height: 1;
+        margin-bottom: 5px;
+        font-family: 'Consolas', monospace;
+    }
+
+    .stat-lbl {
+        font-size: 0.9rem;
+        color: var(--prof-muted);
+        font-weight: 600;
+    }
+
+    .link-card {
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        border-color: #fde68a;
+    }
+
+    .link-card.guild {
+        background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+        border-color: #e9d5ff;
+    }
+
+    .lc-content {
+        min-width: 0;
+    }
+
+    .lc-content h3 {
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin: 0 0 5px;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .lc-content p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .lc-icon {
+        width: 45px;
+        height: 45px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        transition: 0.3s;
+        flex-shrink: 0;
+    }
+
+    .link-card:hover .lc-icon {
+        transform: scale(1.1) translateX(3px);
+    }
+
+    .empty-msg {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+        font-weight: 600;
+        background: white;
+        border-radius: 20px;
+        border: 1px dashed #cbd5e1;
+    }
+
+    .empty-msg i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+        display: block;
+    }
+
+    .act-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .act-item {
+        background: white;
+        padding: 20px;
+        border-radius: 20px;
+        border: 1px solid var(--prof-border);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: 0.2s;
+    }
+
+    .act-item:hover {
+        border-color: var(--prof-primary);
+        transform: translateX(5px);
+    }
+
+    .act-icon {
+        width: 50px;
+        height: 50px;
+        background: #eff6ff;
+        color: #3b82f6;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .act-info h4 {
+        margin: 0 0 5px;
+        font-size: 1.1rem;
+        color: var(--prof-text);
+        font-weight: 700;
+    }
+
+    .act-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--prof-muted);
+    }
+
+    .ach-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .ach-item {
+        background: white;
+        padding: 20px;
+        border-radius: 20px;
+        border: 1px solid var(--prof-border);
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .ach-item:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 10px 20px rgba(245, 158, 11, 0.1);
+        transform: translateY(-5px);
+    }
+
+    .ach-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    .ach-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--prof-text);
+        line-height: 1.3;
+    }
+
+    @media (max-width: 900px) {
+        .bento-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .span-4 {
+            grid-column: span 2;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .prof-hero {
+            flex-direction: column;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .prof-tags {
+            justify-content: center;
+        }
+
+        .prof-actions {
+            flex-direction: row;
+            width: 100%;
+        }
+
+        .btn-prof {
+            flex: 1;
+        }
+
+        .bento-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .span-2,
+        .span-4 {
+            grid-column: span 1;
+        }
+
+        .ach-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="profile-v2-wrapper">
+    <div class="prof-hero">
+        <div class="prof-avatar-box">
+            <img src="<%= safeAvatar %>" class="prof-avatar" alt="Avatar">
+            <div class="prof-level-badge">Lv.<%= safeLevel %></div>
+        </div>
+
+        <div class="prof-info">
+            <h1 class="prof-name"><%= safeUsername %></h1>
+            <div class="prof-tags">
+                <% if (safeProfileUser.isPro) { %>
+                    <span class="p-tag pro"><i class="fas fa-crown"></i> PRO Member</span>
                 <% } %>
-                <% if (isOwner) { %>
-                    <div class="action-buttons-hero">
-                        <a href="/profile/edit" class="btn-modern btn-primary">
-                            <i class="fas fa-pen"></i> Edit Profile
-                        </a>
-                        <a href="/logout" class="btn-modern btn-secondary">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </div>
-                <% } %>
+                <span class="p-tag role">
+                    <i class="fas <%= safeRoleIcon %>"></i>
+                    <%= safeRoleLabel %>
+                </span>
+                <span class="p-tag role" style="background: rgba(16, 185, 129, 0.3); color: #d1fae5;">
+                    <%= safeClass %> • <%= safeSchool %>
+                </span>
             </div>
-        </div>
-    </section>
-
-    <!-- Sticky Tabs -->
-    <nav class="profile-tabs">
-        <button class="tab-btn active" data-tab="overview">📊 Overview</button>
-        <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
-        <button class="tab-btn" data-tab="activity">📈 Activity</button>
-    </nav>
-
-    <!-- Tab Contents -->
-    <div class="tab-content active" id="overview">
-        <div class="bento-grid">
-            <!-- Realm Card - Tall -->
-            <div class="bento-card realm-card learning-card" style="grid-row: span 2;">
-                <%- include('partials/realmDisplay', { realmInfo: realmInfo, user: profileUser }) %>
-            </div>
-
-            <!-- Learning Stats -->
-            <div class="bento-card learning-card">
-                <div class="stat-card">
-                    <div class="stat-emoji">📚</div>
-                    <div class="stat-value"><%= stats.lessons.toLocaleString() %></div>
-                    <div class="stat-title">Lessons</div>
-                </div>
-            </div>
-
-            <div class="bento-card learning-card">
-                <div class="stat-card">
-                    <div class="stat-emoji">🥇</div>
-                    <div class="stat-value">#<%= userRank %></div>
-                    <div class="stat-title">Global Rank</div>
-                </div>
-            </div>
-
-            <!-- Garden Stats -->
-            <div class="bento-card garden-card">
-                <div class="stat-card">
-                    <div class="stat-emoji">💰</div>
-                    <div class="stat-value"><%= stats.gold.toLocaleString() %></div>
-                    <div class="stat-title">Gold</div>
-                </div>
-            </div>
-
-            <div class="bento-card garden-card">
-                <div class="stat-card">
-                    <div class="stat-emoji">⭐</div>
-                    <div class="stat-value"><%= streak %></div>
-                    <div class="stat-title">Streak</div>
-                </div>
-            </div>
-
-            <!-- Quick Links -->
-            <div class="bento-card garden-card">
-                <div style="text-align: center;">
-                    <a href="<%= isOwner ? '/my-garden' : '/my-garden/visit/' + profileUser._id %>" 
-                       style="display: block; padding: 20px; font-size: 1.1rem; font-weight: 700; color: var(--garden-text); text-decoration: none;">
-                        🌱 <%= isOwner ? 'My Garden' : 'Visit Garden' %>
-                    </a>
-                </div>
-            </div>
-
-            <% if (guildProfile) { %>
-            <div class="bento-card learning-card">
-                <div style="text-align: center;">
-                    <a href="/guilds/<%= guildProfile.slug %>" 
-                       style="display: block; padding: 20px; font-size: 1.1rem; font-weight: 700; color: var(--learning-text); text-decoration: none;">
-                        👥 <%= guildProfile.name %> (Stage <%= guildProfile.treeStage || 0 %>)
-                    </a>
-                </div>
-            </div>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Achievements Tab -->
-    <div class="tab-content" id="achievements">
-        <div class="achievements-grid">
-            <% if (achievements && achievements.length > 0) { %>
-                <% achievements.forEach((achievement, index) => { %>
-                    <div class="achievement-badge" style="animation-delay: <%= index * 0.1 %>s">
-                        <div class="achievement-icon"><%= achievement.achievementId?.icon || '🎖️' %></div>
-                        <div class="achievement-name">
-                            <%= (achievement.achievementId?.name || 'Achievement').substring(0, 20) %>
-                        </div>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8;">
-                    <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
-                    <h3>No achievements yet</h3>
-                    <p>Keep learning to unlock epic badges!</p>
-                </div>
-            <% } %>
-            <% if (totalAchievements > 6) { %>
-                <div style="grid-column: 1/-1; text-align: center; padding: 20px;">
-                    <a href="/achievements" class="btn-modern btn-primary" style="display: inline-block;">View All Achievements</a>
-                </div>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Activity Tab -->
-    <div class="tab-content" id="activity">
-        <div class="activity-list">
-            <% if (activities && activities.length > 0) { %>
-                <% activities.forEach(activity => { %>
-                    <div class="activity-item">
-                        <div class="activity-icon">📚</div>
-                        <div class="activity-details">
-                            <h4>Completed: <%= activity.lessonId?.title?.substring(0, 40) || 'Lesson' %>...</h4>
-                            <div class="activity-time"><%= moment(activity.completedAt).fromNow() %></div>
-                        </div>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div style="text-align: center; padding: 80px 40px; color: #94a3b8;">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px;">📈</div>
-                    <h3>No recent activity</h3>
-                    <p>Your learning journey will appear here!</p>
-                </div>
-            <% } %>
-        </div>
-    </div>
-        
-        <div class="bento-card identity-card">
-            <div class="avatar-wrapper">
-                <img src="<%= profileUser.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="avatar-img" alt="Avatar">
-                <div class="level-badge">Lv.<%= levelInfo.level %></div>
-            </div>
-            
-            <h1 class="user-name"><%= profileUser.username %></h1>
-            
-            <span class="user-role">
-                <%= isOwner ? 'Chủ nhân 🏠' : 'Khách ghé thăm 👋' %>
-            </span>
-
-            <div class="bio-box">
-                <%= profileUser.bio || "Chưa có lời giới thiệu nào. Một người bí ẩn..." %>
-            </div>
-
-            <% if (isOwner) { %>
-            <div class="action-buttons">
-                <a href="/profile/edit" class="btn-chill btn-edit">
-                    <i class="fas fa-pen"></i> Sửa
-                </a>
-                <a href="/logout" class="btn-chill btn-logout">
-                    <i class="fas fa-sign-out-alt"></i> Thoát
-                </a>
-            </div>
-            <% } %>
+            <p class="prof-bio"><%= safeBio %></p>
         </div>
 
-        <div class="bento-card realm-card-wrapper" style="padding: 0; background: transparent; border: none; box-shadow: none; overflow: visible;">
-            <%- include('partials/realmDisplay', { realmInfo: realmInfo, user: profileUser }) %>
-        </div>
-
-        <div class="stats-container">
-            <div class="mini-stat gold">
-                <div class="stat-emoji">💰</div>
-                <div class="stat-num"><%= stats.gold.toLocaleString() %></div>
-                <div class="stat-title">Vàng</div>
+        <% if (isOwner) { %>
+            <div class="prof-actions">
+                <a href="/profile/edit" class="btn-prof edit"><i class="fas fa-pen"></i> Chỉnh sửa</a>
+                <a href="/logout" class="btn-prof logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
             </div>
-            <div class="mini-stat points">
-                <div class="stat-emoji">🍀</div>
-                <div class="stat-num"><%= stats.points.toLocaleString() %></div>
-                <div class="stat-title">Điểm</div>
-            </div>
-            <div class="mini-stat lessons">
-                <div class="stat-emoji">📚</div>
-                <div class="stat-num"><%= stats.lessons %></div>
-                <div class="stat-title">Bài học</div>
-            </div>
-        </div>
-
-        <a href="<%= isOwner ? '/my-garden' : '/my-garden/visit/' + profileUser._id %>" class="bento-card garden-link-card">
-            <div class="garden-content">
-                <div><%= isOwner ? 'Về Nông Trại' : 'Ghé thăm Vườn' %></div>
-                <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">Trồng cây, nuôi cá, chill... 🌱</div>
-            </div>
-            <div class="garden-arrow">➔</div>
-        </a>
-
-        <% if (guildProfile) { %>
-        <a href="/guilds/<%= guildProfile.slug %>" class="bento-card garden-link-card" style="background: linear-gradient(135deg, #ede9fe, #eff6ff);">
-            <div class="garden-content">
-                <div>Tông Môn: <strong><%= guildProfile.name %></strong></div>
-                <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">Linh Thụ Stage <%= guildProfile.treeStage || 0 %> · +<%= guildProfile.buffSnapshot?.lessonXpPct || 0 %>% XP</div>
-            </div>
-            <div class="garden-arrow">✦</div>
-        </a>
         <% } %>
+    </div>
 
-        <div class="bento-card achievement-card">
-            <div class="achievement-header">
-                <span>🏆 Thành tích</span>
-                <span class="achievement-count"><%= totalAchievements %> đã đạt</span>
-            </div>
-            
-            <div class="achievement-grid">
-                <% if (achievements && achievements.length > 0) { %>
-                    <% achievements.forEach(achievement => { %>
-                        <div class="achievement-item" title="<%= achievement.achievementId?.name || 'Thành tích' %>">
-                            <div class="achievement-icon">
-                                <%= achievement.achievementId?.icon || '🎖️' %>
-                            </div>
-                            <div class="achievement-name">
-                                <%= (achievement.achievementId?.name || 'Thành tích').substring(0, 15) %>
-                            </div>
-                        </div>
-                    <% }); %>
-                <% } else { %>
-                    <div style="text-align:center; padding:20px; color:#94a3b8; font-style:italic; grid-column: 1/-1;">
-                        "Chưa có thành tích nào. Hãy bắt đầu học tập!" 🌟
+    <div class="prof-tabs">
+        <button class="p-tab active" type="button" onclick="switchTab(event, 'overview')"><i class="fas fa-th-large"></i> Tổng quan</button>
+        <button class="p-tab" type="button" onclick="switchTab(event, 'activity')"><i class="fas fa-bolt"></i> Hoạt động</button>
+        <button class="p-tab" type="button" onclick="switchTab(event, 'achievements')"><i class="fas fa-medal"></i> Thành tích</button>
+    </div>
+
+    <div id="tab-overview" class="tab-content active">
+        <div class="bento-grid">
+            <div class="bento-card realm-card span-2">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div class="realm-sub"><%= safeSubRealmName %></div>
+                        <h2 class="realm-name"><%= safeRealmName %></h2>
                     </div>
-                <% } %>
+                    <div class="realm-icon">☯️</div>
+                </div>
+                <div class="realm-progress-wrap">
+                    <div class="realm-progress-fill" style="width: <%= safeRealmProgress %>%;"></div>
+                </div>
+                <div class="realm-xp-text">
+                    <span>Linh Khí</span>
+                    <span><%= safeCurrentXP.toLocaleString('vi-VN') %> / <%= safeRequiredXP.toLocaleString('vi-VN') %></span>
+                </div>
             </div>
-            
-            <% if (totalAchievements > 6) { %>
-                <div style="text-align: center; margin-top: 15px;">
-                    <a href="/achievements" class="btn-sm btn-light">Xem tất cả</a>
+
+            <div class="bento-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-val">#<%= safeUserRank %></div>
+                <div class="stat-lbl">Xếp hạng Server</div>
+            </div>
+
+            <div class="bento-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-val"><%= safeStreak %></div>
+                <div class="stat-lbl">Chuỗi ngày học</div>
+            </div>
+
+            <div class="bento-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-val"><%= safePoints.toLocaleString('vi-VN') %></div>
+                <div class="stat-lbl">Điểm cống hiến</div>
+            </div>
+
+            <div class="bento-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-val"><%= safeLessons %></div>
+                <div class="stat-lbl">Bài đã hoàn thành</div>
+            </div>
+
+            <div class="bento-card">
+                <div class="stat-icon">🪙</div>
+                <div class="stat-val"><%= safeGold.toLocaleString('vi-VN') %></div>
+                <div class="stat-lbl">Vàng nông trại</div>
+            </div>
+
+            <div class="bento-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-val"><%= safeAchievementPoints.toLocaleString('vi-VN') %></div>
+                <div class="stat-lbl">Điểm thành tích</div>
+            </div>
+
+            <a href="<%= safeGardenLink %>" class="bento-card link-card span-2">
+                <div class="lc-content">
+                    <h3><%= isOwner ? 'Về Nông Trại' : 'Ghé thăm Vườn' %> 🌱</h3>
+                    <p>Trồng cây, thu thập tài nguyên và nhận buff học tập.</p>
+                </div>
+                <div class="lc-icon"><i class="fas fa-arrow-right" style="color: #d97706;"></i></div>
+            </a>
+
+            <% if (safeGuildProfile) { %>
+                <a href="/guilds/<%= safeGuildProfile.slug %>" class="bento-card link-card guild span-2">
+                    <div class="lc-content">
+                        <h3>Tông Môn: <%= safeGuildProfile.name || 'Bang hội bí ẩn' %> 🏰</h3>
+                        <p>Linh Thụ Giai Đoạn <%= safeGuildProfile.treeStage || 0 %> • Buff +<%= safeGuildProfile.buffSnapshot?.lessonXpPct || 0 %>% XP</p>
+                    </div>
+                    <div class="lc-icon"><i class="fas fa-arrow-right" style="color: #9333ea;"></i></div>
+                </a>
+            <% } else { %>
+                <a href="/guilds" class="bento-card link-card guild span-2">
+                    <div class="lc-content">
+                        <h3>Tông Môn / Bang Hội 🏰</h3>
+                        <p>Bạn chưa gia nhập. Tìm bang hội để nhận buff chung ngay!</p>
+                    </div>
+                    <div class="lc-icon"><i class="fas fa-search" style="color: #9333ea;"></i></div>
+                </a>
+            <% } %>
+        </div>
+    </div>
+
+    <div id="tab-activity" class="tab-content">
+        <div class="act-list">
+            <% if (safeActivities.length > 0) { %>
+                <% safeActivities.forEach((act) => { %>
+                    <div class="act-item">
+                        <div class="act-icon"><i class="fas fa-check"></i></div>
+                        <div class="act-info">
+                            <h4>Đã hoàn thành: <%= act.lessonId ? act.lessonId.title : 'Bài học đã bị xóa' %></h4>
+                            <p><i class="far fa-clock"></i> <%= moment(act.completedAt).locale('vi').fromNow() %></p>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="empty-msg">
+                    <i class="fas fa-history"></i>
+                    Chưa có hoạt động học tập nào gần đây.
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <div id="tab-achievements" class="tab-content">
+        <div class="ach-grid">
+            <% if (safeAchievements.length > 0) { %>
+                <% safeAchievements.forEach((ach) => { %>
+                    <div class="ach-item" title="<%= ach.achievementId?.description || 'Thành tích' %>">
+                        <div class="ach-icon"><%= ach.achievementId?.icon || '🏆' %></div>
+                        <div class="ach-name"><%= ach.achievementId?.name || 'Thành tích bí ẩn' %></div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="empty-msg" style="grid-column: 1/-1;">
+                    <i class="fas fa-medal"></i>
+                    Bộ sưu tập thành tích đang trống. Hãy bắt đầu cày cuốc nào!
                 </div>
             <% } %>
         </div>
 
-        <div class="stats-container-bottom">
-            <div class="mini-stat-bottom rank">
-                <div class="stat-emoji">🥇</div>
-                <div class="stat-num">#<%= userRank %></div>
-                <div class="stat-title">Xếp hạng</div>
-            </div>
-            <div class="mini-stat-bottom streak">
-                <div class="stat-emoji">🔥</div>
-                <div class="stat-num"><%= streak %></div>
-                <div class="stat-title">Chuỗi học</div>
-            </div>
-            <div class="mini-stat-bottom total-points">
-                <div class="stat-emoji">⭐</div>
-                <div class="stat-num"><%= (stats.achievementPoints || 0).toLocaleString() %></div>
-                <div class="stat-title">Điểm TT</div>
-            </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/achievements" class="btn-prof edit" style="display: inline-block; background: white; border: 2px solid var(--prof-border);">
+                Xem toàn bộ kho thành tích
+            </a>
         </div>
-
-        <div class="bento-card activity-card">
-            <div class="activity-header">
-                <span>🔥 Hoạt động gần đây</span>
-            </div>
-            
-            <div class="activity-list">
-                <% if (activities && activities.length > 0) { %>
-                    <% activities.forEach(activity => { %>
-                        <div class="activity-item">
-                            <div class="act-icon">📝</div>
-                            <div class="act-info">
-                                <div class="act-title">
-                                    Đã học xong: <strong><%= activity.lessonId ? activity.lessonId.title : 'Bài học ẩn' %></strong>
-                                </div>
-                                <div class="act-time">
-                                    <%= moment(activity.completedAt).fromNow() %>
-                                </div>
-                            </div>
-                        </div>
-                    <% }); %>
-                <% } else { %>
-                    <div style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">
-                        "Im ắng quá... Chưa có hoạt động nào." 🍃
-                    </div>
-                <% } %>
-            </div>
-        </div>
-
     </div>
 </div>
 
-        <!-- Tab Toggle JS -->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const tabs = document.querySelectorAll('.tab-btn');
-                const contents = document.querySelectorAll('.tab-content');
+<script>
+    function switchTab(event, tabId) {
+        document.querySelectorAll('.p-tab').forEach((tab) => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active'));
 
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const targetTab = tab.dataset.tab;
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
 
-                        // Update active tab
-                        tabs.forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-
-                        // Show target content
-                        contents.forEach(c => c.classList.remove('active'));
-                        document.getElementById(targetTab).classList.add('active');
-                    });
-                });
-            });
-        </script>
+        const target = document.getElementById('tab-' + tabId);
+        if (target) {
+            target.classList.add('active');
+        }
+    }
+</script>
 
 <%- include('partials/footer') %>
-
