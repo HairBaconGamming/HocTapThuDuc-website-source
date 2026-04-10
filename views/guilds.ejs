@@ -1,106 +1,320 @@
 <%- include('partials/header') %>
-<link rel="stylesheet" href="/css/styleGuild.css">
+
+<style>
+    /* =========================================
+       GUILD HUB V2 - MMO & NEO-BENTO EDITION
+       ========================================= */
+    :root {
+        --gh-bg: #f8fafc;
+        --gh-surface: #ffffff;
+        --gh-border: #e2e8f0;
+        --gh-primary: #4f46e5;
+        --gh-primary-hover: #4338ca;
+        --gh-text: #0f172a;
+        --gh-muted: #64748b;
+        --radius-xl: 28px;
+        --radius-lg: 20px;
+        --shadow-glow: 0 10px 30px rgba(79, 70, 229, 0.15);
+    }
+
+    body { background-color: var(--gh-bg); }
+
+    .gh-wrapper {
+        max-width: 1200px;
+        margin: 40px auto 80px;
+        padding: 0 20px;
+        font-family: 'Quicksand', sans-serif;
+    }
+
+    /* --- HERO SECTION --- */
+    .gh-hero-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 30px;
+        margin-bottom: 50px;
+    }
+
+    .gh-hero-card {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        border-radius: var(--radius-xl);
+        padding: 40px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-glow);
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .gh-hero-card::after {
+        content: ''; position: absolute; right: -10%; top: -20%;
+        width: 300px; height: 300px; background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+        border-radius: 50%; pointer-events: none;
+    }
+
+    .gh-kicker {
+        display: inline-block; padding: 6px 16px; background: rgba(255,255,255,0.1);
+        border-radius: 20px; font-size: 0.85rem; font-weight: 800; letter-spacing: 1px;
+        text-transform: uppercase; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .gh-hero-card h1 { font-size: 2.8rem; font-weight: 900; line-height: 1.1; margin: 0 0 15px; }
+    .gh-hero-card p { font-size: 1.1rem; opacity: 0.85; line-height: 1.6; margin: 0; max-width: 90%; }
+
+    /* CREATE GUILD FORM */
+    .gh-create-card {
+        background: var(--gh-surface);
+        border-radius: var(--radius-xl);
+        padding: 35px;
+        border: 1px solid var(--gh-border);
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+    }
+    .gh-create-card h2 { font-size: 1.5rem; font-weight: 800; color: var(--gh-text); margin: 0 0 5px; }
+    .gh-create-card p { color: var(--gh-muted); font-size: 0.95rem; margin-bottom: 20px; }
+
+    .gh-input, .gh-textarea {
+        width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
+        border-radius: 14px; font-family: inherit; font-size: 1rem;
+        background: #f8fafc; transition: 0.2s; outline: none; margin-bottom: 15px;
+    }
+    .gh-input:focus, .gh-textarea:focus { border-color: var(--gh-primary); background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .gh-textarea { resize: vertical; min-height: 80px; }
+
+    .btn-create {
+        width: 100%; padding: 14px; border: none; border-radius: 14px;
+        background: var(--gh-primary); color: white; font-weight: 800; font-size: 1.05rem;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+    .btn-create:hover:not(:disabled) { transform: translateY(-2px); background: var(--gh-primary-hover); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4); }
+    .btn-create:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
+
+    /* --- DIRECTORY GRID --- */
+    .gh-section-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .gh-section-header h2 { font-size: 1.8rem; font-weight: 900; color: var(--gh-text); margin: 0; }
+    .gh-count { font-weight: 700; color: var(--gh-primary); background: #e0e7ff; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; }
+
+    .gh-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 25px;
+    }
+
+    .guild-card {
+        background: var(--gh-surface);
+        border: 1px solid var(--gh-border);
+        border-radius: var(--radius-xl);
+        padding: 25px;
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; flex-direction: column;
+        position: relative; overflow: hidden;
+    }
+    .guild-card:hover {
+        transform: translateY(-5px);
+        border-color: #cbd5e1;
+        box-shadow: 0 15px 35px -10px rgba(0,0,0,0.1);
+    }
+
+    /* Card Header */
+    .gc-header { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+    .gc-avatar {
+        width: 55px; height: 55px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+        border-radius: 16px; display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; font-weight: 900; color: var(--gh-primary); flex-shrink: 0;
+        border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .gc-info { flex: 1; min-width: 0; }
+    .gc-name { font-size: 1.25rem; font-weight: 800; color: var(--gh-text); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gc-leader { font-size: 0.85rem; color: var(--gh-muted); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+    .gc-leader img { width: 20px; height: 20px; border-radius: 50%; }
+
+    .gc-desc { font-size: 0.95rem; color: var(--gh-muted); line-height: 1.5; margin-bottom: 20px; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Tags & Stats */
+    .gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .g-stat { background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #f1f5f9; text-align: center; }
+    .g-stat span { display: block; font-size: 0.75rem; color: var(--gh-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+    .g-stat strong { font-size: 1.1rem; color: var(--gh-text); font-weight: 900; }
+
+    /* Requirements Zone */
+    .gc-reqs { background: #fffbeb; border: 1px dashed #fcd34d; padding: 12px; border-radius: 14px; margin-bottom: 20px; }
+    .req-title { font-size: 0.8rem; font-weight: 800; color: #b45309; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+    .req-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .req-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: white; border: 1px solid #fde68a; color: #92400e; display: flex; align-items: center; gap: 5px; }
+    .req-badge.pass { border-color: #86efac; color: #166534; background: #dcfce7; }
+    .req-badge.fail { border-color: #fca5a5; color: #991b1b; background: #fee2e2; }
+
+    /* Actions */
+    .gc-actions { display: flex; gap: 10px; }
+    .btn-gc { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; text-align: center; cursor: pointer; transition: 0.2s; text-decoration: none; border: none; }
+    .btn-gc.view { background: #f1f5f9; color: var(--gh-text); }
+    .btn-gc.view:hover { background: #e2e8f0; }
+    .btn-gc.join { background: var(--gh-primary); color: white; }
+    .btn-gc.join:hover { background: var(--gh-primary-hover); }
+    .btn-gc.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+        .gh-hero-grid { grid-template-columns: 1fr; }
+        .gh-grid { grid-template-columns: 1fr; }
+    }
+</style>
 
 <%
     const joinModeLabelMap = {
-        open: 'Vào tự do',
-        approval: 'Cần phê duyệt',
-        invite: 'Chỉ qua mật lệnh'
+        open: 'Mở cửa tự do',
+        approval: 'Duyệt đơn',
+        invite: 'Mật lệnh'
     };
+
+    // User stats an toàn
+    const uLvl = user.level || 0;
+    const uStreak = user.currentStreak || 0;
+    const uPts = Math.max(user.points || 0, user.totalPoints || 0);
 %>
 
-<main class="guild-page-shell guild-page-shell--hub">
-    <section class="guild-hub-hero">
-        <div class="guild-hub-copy">
-            <span class="guild-kicker">Tông Môn / Bang Hội</span>
-            <h1>Khai tông, kết minh và nuôi dưỡng Linh Thụ chung.</h1>
-            <p>
-                Gia nhập một cộng đồng tự học, quyên góp tài nguyên từ khu vườn cá nhân và cùng nhau mở khóa buff
-                cho cả Tông Môn.
-            </p>
-            <div class="guild-identity-row">
-                <span class="guild-chip">Cần Level <%= minCreateLevel %> để lập Tông Môn</span>
-                <span class="guild-chip"><%= realmInfo.fullName %></span>
-                <span class="guild-chip">XP học bài + Buff khu vườn</span>
+<div class="gh-wrapper">
+    
+    <!-- 1. HERO & CREATE SECTION -->
+    <div class="gh-hero-grid">
+        <div class="gh-hero-card">
+            <span class="gh-kicker"><i class="fas fa-network-wired"></i> Liên Minh Học Tập</span>
+            <h1>Tông Môn & Bang Hội</h1>
+            <p>Không chỉ là nơi hội tụ anh tài, Tông Môn còn cộng hưởng sức mạnh, buff thêm XP học bài và bảo vệ khu vườn của bạn. Lập team ngay!</p>
+            
+            <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
+                <span style="background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; backdrop-filter: blur(5px);">
+                    <i class="fas fa-user-circle text-warning"></i> Bạn đang ở: Cấp <%= uLvl %>
+                </span>
+                <span style="background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; backdrop-filter: blur(5px);">
+                    <i class="fas fa-star text-warning"></i> Yêu cầu lập Bang: Cấp <%= minCreateLevel %>
+                </span>
             </div>
         </div>
 
-        <div class="guild-create-panel">
-            <div class="guild-card-head">
-                <div>
-                    <span class="guild-mini-kicker">Bắt đầu</span>
-                    <h2>Lập Tông Môn mới</h2>
-                </div>
-            </div>
-            <form action="/guilds" method="POST" class="guild-create-form">
-                <label>
-                    <span>Tên Tông Môn</span>
-                    <input type="text" name="name" maxlength="60" minlength="3" placeholder="Ví dụ: Thiên Mộc Tông" required>
-                </label>
-                <label>
-                    <span>Mô tả ngắn</span>
-                    <textarea name="description" rows="3" maxlength="260" placeholder="Tinh thần, mục tiêu và lời hứa của Tông Môn"></textarea>
-                </label>
-                <button type="submit" class="guild-primary-btn" <%= canCreateGuild ? '' : 'disabled' %>>Khai tông ngay</button>
-                <% if (!canCreateGuild) { %>
-                    <small class="guild-helper-note">Bạn cần đạt level <%= minCreateLevel %> để lập Tông Môn riêng.</small>
-                <% } %>
+        <div class="gh-create-card">
+            <h2>Khai Sơn Lập Phái</h2>
+            <p>Tạo Tông Môn của riêng bạn (Yêu cầu Lv.<%= minCreateLevel %>)</p>
+            
+            <form action="/guilds" method="POST">
+                <input type="text" name="name" class="gh-input" maxlength="60" minlength="3" placeholder="Tên Tông Môn (Ví dụ: Thanh Vân Môn)" required <%= !canCreateGuild ? 'disabled' : '' %>>
+                <textarea name="description" class="gh-textarea" maxlength="260" placeholder="Slogan hoặc lời hứa của Tông Môn..." <%= !canCreateGuild ? 'disabled' : '' %>></textarea>
+                
+                <button type="submit" class="btn-create" <%= !canCreateGuild ? 'disabled' : '' %>>
+                    <%= canCreateGuild ? 'Lập Tông Môn Ngay 🚀' : `Cần cày thêm đến Lv.${minCreateLevel} 🔒` %>
+                </button>
             </form>
         </div>
-    </section>
+    </div>
 
-    <section class="guild-directory">
-        <div class="guild-card-head">
-            <div>
-                <span class="guild-mini-kicker">Tông Môn đang mở</span>
-                <h2>Chọn một nơi để cùng nhau thăng cấp.</h2>
-            </div>
-            <span class="guild-card-meta"><%= guilds.length %> tông môn đang chờ thành viên mới</span>
-        </div>
+    <!-- 2. DIRECTORY GRID -->
+    <div class="gh-section-header">
+        <h2>Danh Sách Tông Môn</h2>
+        <span class="gh-count"><%= guilds.length %> Đang hoạt động</span>
+    </div>
 
-        <div class="guild-directory-grid">
-            <% guilds.forEach((entry) => { %>
-                <article class="guild-directory-card">
-                    <div class="guild-directory-top">
-                        <div>
-                            <span class="guild-stage-pill">Stage <%= entry.treeProgress.current.stage %></span>
-                            <h3><%= entry.name %></h3>
+    <div class="gh-grid">
+        <% guilds.forEach((entry) => { 
+            // LẤY ĐIỀU KIỆN TỪ DATABASE CỦA GUILD
+            const thresholds = entry.settings?.joinThresholds || {};
+            const reqLevel = thresholds.minLevel || entry.levelRequirement || 0;
+            const reqStreak = thresholds.minStreak || 0;
+            const reqPoints = thresholds.minTotalPoints || 0;
+            const reqMins = thresholds.minWeeklyMinutes || 0;
+            
+            // ĐÁNH GIÁ ĐIỀU KIỆN
+            let isEligible = true;
+            let reqsHTML = '';
+
+            // 1. Check Level
+            if (reqLevel > 0) {
+                const pass = uLvl >= reqLevel;
+                if(!pass) isEligible = false;
+                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu Level"><i class="fas ${pass ? 'fa-check' : 'fa-times'}"></i> Lv.${reqLevel}</span>`;
+            }
+            
+            // 2. Check Streak
+            if (reqStreak > 0) {
+                const pass = uStreak >= reqStreak;
+                if(!pass) isEligible = false;
+                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu chuỗi học liên tiếp"><i class="fas fa-fire"></i> ${reqStreak} ngày</span>`;
+            }
+
+            // 3. Check Points
+            if (reqPoints > 0) {
+                const pass = uPts >= reqPoints;
+                if(!pass) isEligible = false;
+                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu tổng điểm"><i class="fas fa-star"></i> ${reqPoints} pts</span>`;
+            }
+
+            // 4. Check Minutes (Backend sẽ check kỹ, FE chỉ hiển thị)
+            if (reqMins > 0) {
+                // Ta ko tính trực tiếp phút ở EJS được, nên mặc định coi như màu vàng (cảnh báo)
+                reqsHTML += `<span class="req-badge" style="border-color:#fbd38d; background:#fefcbf; color:#975a16;" title="Yêu cầu học trong tuần"><i class="far fa-clock"></i> ${reqMins}p/tuần</span>`;
+            }
+
+            // Nếu không có điều kiện nào đặc biệt
+            if (reqsHTML === '') {
+                reqsHTML = `<span class="req-badge pass"><i class="fas fa-check-circle"></i> Tự do gia nhập</span>`;
+            }
+
+            // Chữ hiển thị nút bấm
+            let btnText = 'Gia nhập';
+            let actionUrl = `/guilds/${entry.slug}/join`;
+            
+            if (entry.settings?.joinMode === 'approval') { btnText = 'Nộp đơn'; actionUrl = `/guilds/${entry.slug}`; }
+            else if (entry.settings?.joinMode === 'invite') { btnText = 'Nhập mã'; actionUrl = `/guilds/${entry.slug}`; }
+
+            // Vô hiệu hóa nút nếu không đủ điều kiện (trừ khi là Invite/Approval thì cứ cho vô trang chi tiết xem)
+            const disableJoin = !isEligible && entry.settings?.joinMode === 'open';
+        %>
+            <article class="guild-card">
+                
+                <div class="gc-header">
+                    <div class="gc-avatar"><%= entry.name.charAt(0).toUpperCase() %></div>
+                    <div class="gc-info">
+                        <h3 class="gc-name" title="<%= entry.name %>"><%= entry.name %></h3>
+                        <div class="gc-leader">
+                            <img src="<%= entry.leader?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>">
+                            Tông chủ: <b><%= entry.leader?.username || 'Ẩn danh' %></b>
                         </div>
-                        <div class="guild-members-pill"><%= entry.memberCount %>/<%= entry.memberLimit %></div>
                     </div>
+                </div>
 
-                    <p><%= entry.description || 'Tông Môn này đang chiêu mộ những đồng môn muốn vừa học giỏi vừa nuôi Linh Thụ thật mạnh.' %></p>
+                <p class="gc-desc"><%= entry.description || 'Tông Môn này đang chiêu mộ những đồng môn muốn vừa học giỏi vừa nuôi Linh Thụ thật mạnh.' %></p>
 
-                    <div class="guild-identity-row">
-                        <span class="guild-chip"><%= joinModeLabelMap[entry.settings?.joinMode || 'open'] %></span>
-                        <span class="guild-chip">Level tối thiểu <%= entry.settings?.joinThresholds?.minLevel || entry.levelRequirement || 0 %></span>
+                <div class="gc-stats">
+                    <div class="g-stat">
+                        <span>Thành viên</span>
+                        <strong><i class="fas fa-users text-primary"></i> <%= entry.memberCount %>/<%= entry.memberLimit %></strong>
                     </div>
-
-                    <div class="guild-buff-ribbons guild-buff-ribbons--compact">
-                        <span class="guild-buff-ribbon guild-buff-ribbon--xp"><small>XP học bài</small><strong>+<%= entry.buffSnapshot.lessonXpPct %>%</strong></span>
-                        <span class="guild-buff-ribbon guild-buff-ribbon--garden"><small>Độ bền cây</small><strong>+<%= entry.buffSnapshot.witherTimeBonusPct %>%</strong></span>
+                    <div class="g-stat">
+                        <span>Buff XP</span>
+                        <strong><i class="fas fa-bolt text-warning"></i> +<%= entry.buffSnapshot.lessonXpPct %>%</strong>
                     </div>
+                </div>
 
-                    <div class="guild-progress-bar">
-                        <span style="width: <%= entry.treeProgress.percent %>%"></span>
+                <div class="gc-reqs">
+                    <div class="req-title">
+                        <i class="fas fa-clipboard-list"></i> Điều kiện gia nhập (<%= joinModeLabelMap[entry.settings?.joinMode || 'open'] %>)
                     </div>
+                    <div class="req-list">
+                        <%- reqsHTML %>
+                    </div>
+                </div>
 
-                    <div class="guild-directory-actions">
-                        <a href="/guilds/<%= entry.slug %>" class="guild-secondary-btn">Xem chi tiết</a>
-                        <% if (entry.settings?.joinMode === 'open') { %>
-                            <form action="/guilds/<%= entry.slug %>/join" method="POST">
-                                <button type="submit" class="guild-primary-btn" <%= (user.level || 0) >= (entry.settings?.joinThresholds?.minLevel || entry.levelRequirement || 0) ? '' : 'disabled' %>>Gia nhập</button>
-                            </form>
-                        <% } else if (entry.settings?.joinMode === 'approval') { %>
-                            <a href="/guilds/<%= entry.slug %>" class="guild-primary-btn">Nộp đơn</a>
-                        <% } else { %>
-                            <a href="/guilds/<%= entry.slug %>" class="guild-primary-btn">Nhập mật lệnh</a>
-                        <% } %>
-                    </div>
-                </article>
-            <% }) %>
-        </div>
-    </section>
-</main>
+                <div class="gc-actions">
+                    <a href="/guilds/<%= entry.slug %>" class="btn-gc view"><i class="fas fa-eye"></i> Chi tiết</a>
+                    
+                    <% if (entry.settings?.joinMode === 'open') { %>
+                        <form action="<%= actionUrl %>" method="POST" style="flex: 1; margin: 0; display: flex;">
+                            <button type="submit" class="btn-gc join <%= disableJoin ? 'disabled' : '' %>" <%= disableJoin ? 'disabled' : '' %> style="flex:1">
+                                <%= disableJoin ? 'Chưa đủ ĐK 🔒' : btnText %>
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <a href="<%= actionUrl %>" class="btn-gc join"><%= btnText %></a>
+                    <% } %>
+                </div>
+            </article>
+        <% }) %>
+    </div>
+</div>
 
 <%- include('partials/footer') %>

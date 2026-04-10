@@ -1,322 +1,510 @@
 <%- include('partials/header') %>
-<link rel="stylesheet" href="/css/styleEditProfile-refactored.css">
 
 <style>
-    .gallery-tabs {
+    /* =========================================
+       EDIT PROFILE V3 - NEO BENTO EDITION
+       ========================================= */
+    :root {
+        --ep-bg: #f8fafc;
+        --ep-surface: #ffffff;
+        --ep-border: #e2e8f0;
+        --ep-primary: #4f46e5;
+        --ep-primary-hover: #4338ca;
+        --ep-text-main: #0f172a;
+        --ep-text-muted: #64748b;
+        --ep-shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05);
+        --ep-shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08);
+        --ep-shadow-glow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        --radius-xl: 24px;
+        --radius-lg: 16px;
+    }
+
+    body { background-color: var(--ep-bg); }
+
+    .ep-container {
+        max-width: 1000px;
+        margin: 40px auto 80px;
+        padding: 0 20px;
+        font-family: 'Quicksand', sans-serif;
+    }
+
+    .ep-header {
+        margin-bottom: 30px;
+    }
+
+    .ep-header h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--ep-text-main);
+        margin: 0 0 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .ep-header p { color: var(--ep-text-muted); margin: 0; font-size: 1.05rem; }
+
+    /* Layout Grid */
+    .ep-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+
+    /* BENTO CARDS */
+    .ep-card {
+        background: var(--ep-surface);
+        border: 1px solid var(--ep-border);
+        border-radius: var(--radius-xl);
+        padding: 30px;
+        box-shadow: var(--ep-shadow-sm);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .ep-card:hover {
+        box-shadow: var(--ep-shadow-md);
+        border-color: #cbd5e1;
+    }
+
+    .ep-card-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--ep-text-main);
+        margin: 0 0 20px;
         display: flex;
-        border-bottom: 2px solid #f3f4f6;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 2px dashed #f1f5f9;
+        padding-bottom: 15px;
+    }
+    .ep-card-title i { color: var(--ep-primary); }
+
+    /* Left Sidebar (Avatar) */
+    .ep-sidebar {
+        position: sticky;
+        top: 100px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .ep-avatar-wrapper {
+        position: relative;
+        width: 150px; height: 150px;
         margin-bottom: 20px;
     }
-    .gallery-tab {
-        padding: 10px 20px;
+
+    .ep-avatar {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        transition: 0.3s;
+    }
+
+    .ep-btn-cam {
+        position: absolute;
+        bottom: 5px; right: 5px;
+        width: 42px; height: 42px;
+        background: var(--ep-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        border: 3px solid white;
         cursor: pointer;
-        font-weight: 600;
-        color: #6b7280;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s;
+        transition: 0.2s;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
     }
-    .gallery-tab:hover { color: #d97706; }
-    .gallery-tab.active {
-        color: #d97706;
-        border-bottom: 2px solid #d97706;
+    .ep-btn-cam:hover { transform: scale(1.1) rotate(10deg); background: var(--ep-primary-hover); }
+
+    .ep-username { font-size: 1.5rem; font-weight: 800; color: var(--ep-text-main); margin: 0 0 5px; }
+    .ep-role-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 5px 12px; border-radius: 20px;
+        font-size: 0.85rem; font-weight: 700;
+        background: <%= user.isPro ? 'linear-gradient(135deg, #fef3c7, #fde68a)' : '#f1f5f9' %>;
+        color: <%= user.isPro ? '#b45309' : '#64748b' %>;
+        border: 1px solid <%= user.isPro ? '#fcd34d' : '#e2e8f0' %>;
     }
-    .empty-state {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 20px;
-        color: #9ca3af;
-        font-style: italic;
+
+    /* Form Styles */
+    .ep-form-group { margin-bottom: 20px; }
+    .ep-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    
+    .ep-label {
+        display: block; font-size: 0.9rem; font-weight: 700;
+        color: var(--ep-text-muted); margin-bottom: 8px;
+    }
+
+    .ep-input, .ep-textarea, .ep-select {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: var(--radius-lg);
+        background: #f8fafc;
+        font-family: inherit; font-size: 1rem; color: var(--ep-text-main);
+        transition: all 0.2s ease;
+        outline: none;
+    }
+
+    .ep-input:focus, .ep-textarea:focus, .ep-select:focus {
+        background: #fff;
+        border-color: var(--ep-primary);
+        box-shadow: var(--ep-shadow-glow);
+    }
+
+    .ep-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+    /* Password Input Wrapper */
+    .ep-pw-wrapper { position: relative; }
+    .ep-pw-toggle {
+        position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem;
+    }
+    .ep-pw-toggle:hover { color: var(--ep-primary); }
+
+    /* Trạng thái check pass */
+    .pw-status { font-size: 0.85rem; font-weight: 700; margin-top: 8px; display: block; }
+    .pw-match { color: #10b981; }
+    .pw-mismatch { color: #ef4444; }
+    .ep-input.is-valid { border-color: #10b981; background: #ecfdf5; }
+    .ep-input.is-invalid { border-color: #ef4444; background: #fef2f2; }
+
+    /* Action Bar */
+    .ep-actions {
+        display: flex; justify-content: flex-end; gap: 15px;
+        margin-top: 30px;
+    }
+    .btn-ep {
+        padding: 14px 28px; border-radius: 50px; font-weight: 800; font-size: 1rem;
+        cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; border: none;
+    }
+    .btn-ep-cancel { background: white; color: var(--ep-text-muted); border: 2px solid var(--ep-border); text-decoration: none; }
+    .btn-ep-cancel:hover { background: #f1f5f9; color: var(--ep-text-main); }
+    .btn-ep-save {
+        background: linear-gradient(135deg, var(--ep-primary), #6366f1); color: white;
+        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.25);
+    }
+    .btn-ep-save:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(79, 70, 229, 0.35); }
+
+    /* --- AVATAR MODAL --- */
+    .ep-modal-overlay {
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center; z-index: 9999;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .ep-modal-overlay.active { display: flex; opacity: 1; }
+    
+    .ep-modal-box {
+        background: white; width: 650px; max-width: 95%; border-radius: 28px;
+        padding: 30px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-height: 85vh; display: flex; flex-direction: column;
+    }
+    .ep-modal-overlay.active .ep-modal-box { transform: scale(1); }
+
+    .ep-modal-close {
+        position: absolute; top: 20px; right: 20px; width: 36px; height: 36px;
+        background: #f1f5f9; border: none; border-radius: 50%; color: #64748b;
+        font-size: 1.2rem; cursor: pointer; transition: 0.2s;
+    }
+    .ep-modal-close:hover { background: #e2e8f0; color: #ef4444; transform: rotate(90deg); }
+
+    .ep-modal-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f8fafc; padding: 6px; border-radius: 16px; }
+    .ep-mtab { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 12px; font-weight: 700; color: var(--ep-text-muted); cursor: pointer; transition: 0.2s; }
+    .ep-mtab.active { background: white; color: var(--ep-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+    .ep-gallery-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px;
+        overflow-y: auto; padding-right: 5px; flex: 1;
+    }
+    .ep-gallery-grid::-webkit-scrollbar { width: 6px; }
+    .ep-gallery-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    .ep-gallery-item {
+        aspect-ratio: 1; border-radius: 50%; overflow: hidden; cursor: pointer;
+        border: 3px solid transparent; transition: 0.2s; padding: 2px;
+    }
+    .ep-gallery-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #f1f5f9; }
+    .ep-gallery-item:hover { border-color: #cbd5e1; transform: scale(1.05); }
+    .ep-gallery-item.selected { border-color: var(--ep-primary); box-shadow: 0 0 15px rgba(79, 70, 229, 0.3); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .ep-grid { grid-template-columns: 1fr; gap: 20px; }
+        .ep-sidebar { position: static; }
+        .ep-form-row { grid-template-columns: 1fr; gap: 0; }
     }
 </style>
 
-<section class="edit-container">
-        <div class="edit-hero">
-            <h1>🛠️ Edit Profile</h1>
-            <p>Update your info to shine on the leaderboard!</p>
-        </div>
+<div class="ep-container">
+    <div class="ep-header">
+        <h1>Thiết lập hồ sơ ⚙️</h1>
+        <p>Cập nhật thông tin để mọi người biết bạn là ai trên Bảng Xếp Hạng.</p>
+    </div>
 
-        <form action="/profile/edit" method="POST" class="edit-grid">
-            
-            <div class="glass-card avatar-zone">
-                <div class="avatar-display">
-                    <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
-                         id="avatarPreview">
+    <form action="/profile/edit" method="POST" id="profileForm" class="ep-grid">
+        
+        <!-- CỘT TRÁI: AVATAR & THÔNG TIN CƠ BẢN -->
+        <aside>
+            <div class="ep-card ep-sidebar">
+                <div class="ep-avatar-wrapper">
+                    <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" id="avatarPreview" class="ep-avatar">
+                    <button type="button" class="ep-btn-cam" onclick="openAvatarModal()" title="Đổi ảnh đại diện">
+                        <i class="fas fa-camera"></i>
+                    </button>
                 </div>
+                <h2 class="ep-username"><%= user.username %></h2>
+                <div class="ep-role-badge">
+                    <% if(user.isPro) { %>
+                        <i class="fas fa-crown"></i> VIP Member
+                    <% } else { %>
+                        <i class="fas fa-seedling"></i> Học viên
+                    <% } %>
+                </div>
+
+                <!-- Input ẩn chứa link avatar để gửi về server -->
+                <input type="hidden" name="avatar" id="avatarInput" value="<%= user.avatar %>">
                 
-                <div class="user-display-name"><%= user.username %></div>
-                <div class="user-role-badge">
-                    <%= user.isPro ? '👑 VIP Member' : '🌱 Newbie' %>
-                </div>
-
-                <div class="form-group" style="margin-top: 20px;">
-                    <label style="font-weight: 600; color: #374151; margin-bottom: 8px; display: block; font-size: 0.9rem;">Ảnh đại diện</label>
-                    
-                    <div style="display: flex; gap: 10px; align-items: flex-start; flex-direction: column;">
-                        <div class="input-group" style="display: flex; gap: 10px; width: 100%;">
-                            <input type="text" 
-                                   class="input-v3" 
-                                   name="avatar" 
-                                   id="avatarInput" 
-                                   value="<%= user.avatar %>" 
-                                   placeholder="Nhập link hoặc chọn từ kho..." 
-                                   oninput="document.getElementById('avatarPreview').src = this.value || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'"
-                                   style="flex: 1;">
-                            
-                            <button type="button" 
-                                    onclick="openAvatarModal()" 
-                                    style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; white-space: nowrap; transition: 0.2s;">
-                                <i class="fas fa-images"></i> Kho Avatar
-                            </button>
-                        </div>
-                        <small style="color: #6b7280; font-size: 0.8rem;">Bạn có thể chọn ảnh mẫu miễn phí hoặc ảnh đã tải lên (PRO).</small>
-                    </div>
-                </div>
+                <p style="margin-top: 20px; font-size: 0.85rem; color: var(--ep-text-muted); line-height: 1.5;">
+                    Ảnh đại diện giúp bạn nổi bật hơn trong các cuộc thảo luận và bảng xếp hạng tông môn.
+                </p>
             </div>
+        </aside>
 
-            <div class="glass-card form-zone">
-                <h3 class="card-title"><i class="fas fa-info-circle"></i> Personal Info</h3>
+        <!-- CỘT PHẢI: FORM CHỈNH SỬA -->
+        <div style="display: flex; flex-direction: column; gap: 30px;">
+            
+            <!-- CARD 1: THÔNG TIN CÁ NHÂN -->
+            <div class="ep-card">
+                <h3 class="ep-card-title"><i class="fas fa-address-card"></i> Thông Tin Cá Nhân</h3>
                 
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-input" value="<%= user.email || '' %>" placeholder="your.email@example.com">
+                <div class="ep-form-group">
+                    <label class="ep-label">Email liên hệ</label>
+                    <input type="email" name="email" class="ep-input" value="<%= user.email || '' %>" placeholder="email.cua.ban@example.com">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Bio</label>
-                    <textarea name="bio" class="form-textarea" placeholder="Tell us about yourself..."><%= user.bio || '' %></textarea>
+                <div class="ep-form-group">
+                    <label class="ep-label">Tiểu sử (Bio)</label>
+                    <textarea name="bio" class="ep-textarea" placeholder="Vài dòng giới thiệu cực ngầu về bản thân..."><%= user.bio || '' %></textarea>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="input-group-v3">
-                        <label class="label-v3">Lớp</label>
-                        <input type="text" name="class" class="input-v3" value="<%= user.class || '' %>" placeholder="VD: 12A1">
+                <div class="ep-form-row">
+                    <div class="ep-form-group">
+                        <label class="ep-label">Lớp</label>
+                        <input type="text" name="class" class="ep-input" value="<%= user.class || '' %>" placeholder="VD: 12A1">
                     </div>
-                    <div class="input-group-v3">
-                        <label class="label-v3">Trường</label>
-                        <select name="school" class="input-v3">
-                            <option value="" disabled <%= !user.school ? 'selected' : '' %>>Chọn trường...</option>
+                    <div class="ep-form-group">
+                        <label class="ep-label">Trường</label>
+                        <select name="school" class="ep-select">
+                            <option value="" disabled <%= !user.school ? 'selected' : '' %>>-- Chọn trường --</option>
                             <option value="THPT Thủ Đức" <%= user.school === 'THPT Thủ Đức' ? 'selected' : '' %>>THPT Thủ Đức</option>
                             <option value="THPT Nguyễn Hữu Huân" <%= user.school === 'THPT Nguyễn Hữu Huân' ? 'selected' : '' %>>THPT Nguyễn Hữu Huân</option>
-                            <option value="Khác" <%= user.school === 'Khác' ? 'selected' : '' %>>Khác...</option>
+                            <option value="THPT Tam Phú" <%= user.school === 'THPT Tam Phú' ? 'selected' : '' %>>THPT Tam Phú</option>
+                            <option value="Khác" <%= user.school === 'Khác' ? 'selected' : '' %>>Trường khác...</option>
                         </select>
                     </div>
                 </div>
+            </div>
+
+            <!-- CARD 2: BẢO MẬT & MẬT KHẨU -->
+            <div class="ep-card">
+                <h3 class="ep-card-title" style="color: #db2777; border-bottom-color: #fce7f3;">
+                    <i class="fas fa-shield-alt"></i> Bảo Mật Tài Khoản
+                </h3>
+                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Để trống nếu bạn không muốn thay đổi mật khẩu.</p>
                 
-                <div class="password-accordion">
-                    <div class="accordion-header">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-lock" style="font-size: 1.2rem; color: #ec4899;"></i>
-                            <h4>Change Password</h4>
-                        </div>
-                        <i class="fas fa-chevron-down accordion-icon"></i>
-                    </div>
-                    
-                    <div class="accordion-content">
-                        <div class="password-fields">
-                            <div class="form-group">
-                                <label class="form-label">Current Password</label>
-                                <div class="password-wrapper">
-                                    <input type="password" name="currentPassword" class="form-input" placeholder="Enter current password">
-                                    <button type="button" class="password-eye" onclick="togglePassword(this)"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </div>
-                        <div class="input-group-v3">
-                            <label class="label-v3">Mật khẩu mới</label>
-                            <div class="password-wrapper">
-                                <input type="password" name="newPassword" class="input-v3" placeholder="Tối thiểu 8 ký tự..." disabled>
-                                <button type="button" class="eye-btn"><i class="fas fa-eye"></i></button>
-                            </div>
-                        </div>
-                        <div class="input-group-v3">
-                            <label class="label-v3">Xác nhận mật khẩu mới</label>
-                            <input type="password" name="confirmNewPassword" class="input-v3" placeholder="Nhập lại mật khẩu mới..." disabled>
-                        </div>
-                        <div id="pwMatchMessage" class="match-message"></div>
+                <div class="ep-form-group">
+                    <label class="ep-label">Mật khẩu hiện tại</label>
+                    <div class="ep-pw-wrapper">
+                        <input type="password" name="currentPassword" class="ep-input" placeholder="Nhập mật khẩu cũ để xác thực">
+                        <button type="button" class="ep-pw-toggle" onclick="togglePw(this)"><i class="fas fa-eye"></i></button>
                     </div>
                 </div>
 
-                <div class="action-bar">
-                    <a href="/profile" class="btn-glass btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-glass btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
+                <div class="ep-form-row">
+                    <div class="ep-form-group">
+                        <label class="ep-label">Mật khẩu mới</label>
+                        <div class="ep-pw-wrapper">
+                            <input type="password" name="newPassword" id="newPass" class="ep-input" placeholder="Tối thiểu 8 ký tự">
+                            <button type="button" class="ep-pw-toggle" onclick="togglePw(this)"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="ep-form-group">
+                        <label class="ep-label">Nhập lại mật khẩu mới</label>
+                        <div class="ep-pw-wrapper">
+                            <input type="password" name="confirmNewPassword" id="confirmPass" class="ep-input" placeholder="Khớp với mật khẩu trên">
+                            <button type="button" class="ep-pw-toggle" onclick="togglePw(this)"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <span id="pwStatus" class="pw-status"></span>
+                    </div>
                 </div>
             </div>
-        </form>
-    </section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script>
-    // Password Accordion
-    const accordionHeader = document.querySelector('.accordion-header');
-    const accordionContent = document.querySelector('.accordion-content');
-    accordionHeader.addEventListener('click', () => {
-        const icon = accordionHeader.querySelector('.accordion-icon');
-        accordionContent.classList.toggle('active');
-        icon.style.transform = accordionContent.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
-    });
+            <!-- ACTIONS -->
+            <div class="ep-actions">
+                <a href="/profile" class="btn-ep btn-ep-cancel">Hủy bỏ</a>
+                <button type="submit" class="btn-ep btn-ep-save">
+                    <i class="fas fa-save"></i> Lưu Thay Đổi
+                </button>
+            </div>
 
-    // Password Toggle
-    function togglePassword(btn) {
-        const input = btn.parentElement.querySelector('input');
-        const icon = btn.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
-        }
-    }
-</script>
+        </div>
+    </form>
+</div>
 
-<div id="avatarModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="modal-content" style="background: white; width: 600px; max-width: 90%; border-radius: 12px; padding: 20px; position: relative; max-height: 80vh; overflow-y: auto;">
-        <span onclick="closeAvatarModal()" style="position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; color: #666;">&times;</span>
+<!-- =========================================
+     AVATAR GALLERY MODAL
+     ========================================= -->
+<div class="ep-modal-overlay" id="avatarModal">
+    <div class="ep-modal-box">
+        <button class="ep-modal-close" onclick="closeAvatarModal()"><i class="fas fa-times"></i></button>
+        <h2 style="margin: 0 0 20px; font-weight: 800; font-size: 1.5rem; color: var(--ep-text-main);">Đổi ảnh đại diện</h2>
         
-        <h3 style="margin-bottom: 0px; color: var(--dark-ink);">Chọn Ảnh Đại Diện</h3>
-        
-        <div class="gallery-tabs">
-            <div class="gallery-tab active" onclick="switchTab('default')">Mẫu có sẵn (Free)</div>
-            <div class="gallery-tab" onclick="switchTab('uploaded')">Ảnh của tôi (PRO)</div>
+        <div class="ep-modal-tabs">
+            <button class="ep-mtab active" onclick="switchModalTab('default')">Ảnh Free mẫu</button>
+            <button class="ep-mtab" onclick="switchModalTab('pro')"><i class="fas fa-crown" style="color: #d97706;"></i> Kho ảnh PRO</button>
         </div>
 
-        <div id="galleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px;">
-            </div>
+        <div class="ep-gallery-grid" id="galleryGrid">
+            <!-- Render JS -->
+        </div>
 
-        <div id="uploadAction" style="display: none; margin-top: 15px; text-align: center; border-top: 1px dashed #ddd; padding-top: 15px;">
-            <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Bạn muốn dùng ảnh khác? Hãy tải lên kho ảnh PRO.</p>
-            <a href="/pro-images" target="_blank" class="btn-save" style="display: inline-block; text-decoration: none; font-size: 0.9rem;">
-                <i class="fas fa-cloud-upload-alt"></i> Quản lý & Tải ảnh lên
+        <div id="proUploadHint" style="display: none; margin-top: 20px; text-align: center; border-top: 1px dashed #e2e8f0; padding-top: 15px;">
+            <p style="font-size: 0.9rem; color: var(--ep-text-muted); margin-bottom: 10px;">Bạn muốn dùng ảnh cá nhân? Tải lên kho ảnh PRO nhé.</p>
+            <a href="/pro-images" target="_blank" class="btn-ep btn-ep-cancel" style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fas fa-cloud-upload-alt"></i> Quản lý & Tải ảnh
             </a>
         </div>
     </div>
 </div>
 
 <script>
-    // Biến lưu trạng thái PRO của user để JS xử lý
-    const isUserPro = <%= user.isPro %>; 
-    let currentTab = 'default';
-
-    // Danh sách ảnh mẫu (Public)
-    const defaultImages = [
-        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140037.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/924/924915.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/2922/2922506.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/921/921071.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/1999/1999625.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140061.png' },
-        { url: 'https://cdn-icons-png.flaticon.com/512/4140/4140051.png' }
-    ];
-
-    // Mở Modal
-    function openAvatarModal() {
-        document.getElementById('avatarModal').style.display = 'flex';
-        // Mặc định load tab default
-        switchTab('default');
-    }
-
-    // Đóng Modal
-    function closeAvatarModal() {
-        document.getElementById('avatarModal').style.display = 'none';
-    }
-
-    // Chuyển Tab
-    function switchTab(tabName) {
-        currentTab = tabName;
-        const grid = document.getElementById('galleryGrid');
-        const uploadAction = document.getElementById('uploadAction');
-        const tabs = document.querySelectorAll('.gallery-tab');
-
-        // Cập nhật UI Tabs
-        tabs.forEach(t => t.classList.remove('active'));
-        if(tabName === 'default') tabs[0].classList.add('active');
-        else tabs[1].classList.add('active');
-
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Đang tải...</p>';
-
-        if (tabName === 'default') {
-            uploadAction.style.display = 'none';
-            renderImages(defaultImages);
+    // --- 1. XỬ LÝ MẬT KHẨU ---
+    function togglePw(btn) {
+        const input = btn.previousElementSibling;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
         } else {
-            // Tab Uploaded (PRO only)
-            if (!isUserPro) {
-                grid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-lock" style="font-size: 2rem; color: #d97706; margin-bottom: 10px;"></i><br>
-                        Tính năng này chỉ dành cho tài khoản <b>VIP Member</b>.<br>
-                        <a href="/upgrade" target="_blank" style="color: #4f46e5; font-weight: bold;">Nâng cấp ngay</a> để tải ảnh riêng của bạn!
-                    </div>
-                `;
-                uploadAction.style.display = 'none';
-                return;
-            }
-            
-            uploadAction.style.display = 'block';
-            fetchUploadedImages();
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
         }
     }
 
-    // Render ảnh ra Grid
-    function renderImages(images) {
-        const grid = document.getElementById('galleryGrid');
-        grid.innerHTML = '';
+    const newP = document.getElementById('newPass');
+    const confP = document.getElementById('confirmPass');
+    const status = document.getElementById('pwStatus');
 
-        if (!images || images.length === 0) {
-            grid.innerHTML = '<div class="empty-state">Chưa có ảnh nào.</div>';
+    function checkPasswords() {
+        if (!newP.value && !confP.value) {
+            status.textContent = '';
+            confP.classList.remove('is-valid', 'is-invalid');
             return;
         }
+        if (newP.value === confP.value) {
+            status.innerHTML = '<i class="fas fa-check-circle"></i> Mật khẩu khớp!';
+            status.className = 'pw-status pw-match';
+            confP.classList.add('is-valid');
+            confP.classList.remove('is-invalid');
+        } else {
+            status.innerHTML = '<i class="fas fa-times-circle"></i> Mật khẩu chưa khớp...';
+            status.className = 'pw-status pw-mismatch';
+            confP.classList.add('is-invalid');
+            confP.classList.remove('is-valid');
+        }
+    }
+    newP.addEventListener('input', checkPasswords);
+    confP.addEventListener('input', checkPasswords);
 
-        images.forEach(img => {
-            const imgEl = document.createElement('img');
-            imgEl.src = img.url;
-            imgEl.title = img.displayName || img.tag || 'Avatar';
-            imgEl.style.cssText = "width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; object-fit: cover; background: #f9fafb;";
-            
-            // Hover effect
-            imgEl.onmouseover = () => { imgEl.style.border = "2px solid #d97706"; imgEl.style.transform = "scale(1.1)"; };
-            imgEl.onmouseout = () => { imgEl.style.border = "2px solid transparent"; imgEl.style.transform = "scale(1)"; };
 
-            // Select action
-            imgEl.onclick = () => {
-                document.getElementById('avatarInput').value = img.url;
-                document.getElementById('avatarPreview').src = img.url;
-                closeAvatarModal();
-            };
+    // --- 2. XỬ LÝ AVATAR MODAL ---
+    const isUserPro = <%= user.isPro ? 'true' : 'false' %>;
+    const defaultImages = [
+        'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
+        'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
+        'https://cdn-icons-png.flaticon.com/512/4140/4140047.png',
+        'https://cdn-icons-png.flaticon.com/512/924/924915.png',
+        'https://cdn-icons-png.flaticon.com/512/2922/2922506.png',
+        'https://cdn-icons-png.flaticon.com/512/2922/2922510.png',
+        'https://cdn-icons-png.flaticon.com/512/921/921071.png',
+        'https://cdn-icons-png.flaticon.com/512/1999/1999625.png',
+        'https://cdn-icons-png.flaticon.com/512/4140/4140061.png',
+        'https://cdn-icons-png.flaticon.com/512/4140/4140051.png'
+    ];
 
-            grid.appendChild(imgEl);
-        });
+    const modal = document.getElementById('avatarModal');
+    const grid = document.getElementById('galleryGrid');
+
+    function openAvatarModal() {
+        modal.classList.add('active');
+        switchModalTab('default'); // Load tab free trước
     }
 
-    // Gọi API lấy ảnh PRO
-    async function fetchUploadedImages() {
-        try {
-            // Gọi route /api/pro-images/list mà bạn đã định nghĩa trong proImages.js
-            const res = await fetch('/api/pro-images/list');
-            if (res.status === 403 || res.status === 401) {
-                // Xử lý trường hợp hết phiên hoặc mất quyền
-                alert('Vui lòng đăng nhập lại để sử dụng tính năng này.');
+    function closeAvatarModal() {
+        modal.classList.remove('active');
+    }
+
+    function selectImage(url) {
+        document.getElementById('avatarPreview').src = url;
+        document.getElementById('avatarInput').value = url;
+        closeAvatarModal();
+    }
+
+    async function switchModalTab(tab) {
+        // UI Tabs
+        document.querySelectorAll('.ep-mtab').forEach(t => t.classList.remove('active'));
+        event.currentTarget?.classList.add('active');
+
+        const uploadHint = document.getElementById('proUploadHint');
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Đang tải...</p>';
+
+        if (tab === 'default') {
+            uploadHint.style.display = 'none';
+            grid.innerHTML = defaultImages.map(url => `
+                <div class="ep-gallery-item" onclick="selectImage('${url}')">
+                    <img src="${url}">
+                </div>
+            `).join('');
+        } else {
+            // PRO TAB
+            if (!isUserPro) {
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding: 40px; background: #fffbeb; border-radius: 16px; border: 1px dashed #fcd34d;">
+                        <i class="fas fa-lock" style="font-size: 2.5rem; color: #d97706; margin-bottom: 15px;"></i>
+                        <h4 style="color: #b45309; margin:0 0 10px;">Khóa tính năng</h4>
+                        <p style="color: #92400e; font-size: 0.9rem;">Tính năng này dành cho tài khoản <b>VIP Member</b>.<br>Bạn có thể tải ảnh chụp cá nhân lên server.</p>
+                        <a href="/upgrade" class="btn-ep btn-ep-save" style="margin-top: 10px; padding: 10px 20px; font-size: 0.9rem;">Nâng cấp ngay</a>
+                    </div>
+                `;
+                uploadHint.style.display = 'none';
                 return;
             }
-            const data = await res.json();
-            renderImages(data);
-        } catch (error) {
-            console.error(error);
-            document.getElementById('galleryGrid').innerHTML = '<p style="color:red; grid-column: 1/-1; text-align:center;">Lỗi tải ảnh.</p>';
+
+            uploadHint.style.display = 'block';
+            try {
+                const res = await fetch('/api/pro-images/list');
+                const data = await res.json();
+                if (data.length === 0) {
+                    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#94a3b8; font-style:italic;">Kho ảnh của bạn đang trống.</div>';
+                } else {
+                    grid.innerHTML = data.map(img => `
+                        <div class="ep-gallery-item" onclick="selectImage('${img.url}')">
+                            <img src="${img.url}">
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#ef4444;">Lỗi tải ảnh từ server.</p>';
+            }
         }
     }
 
-    // Đóng modal khi click ra ngoài
-    window.onclick = function(event) {
-        const modal = document.getElementById('avatarModal');
-        if (event.target == modal) {
-            closeAvatarModal();
-        }
+    // Đóng khi click nền đen ngoài modal
+    window.onclick = function(e) {
+        if (e.target === modal) closeAvatarModal();
     }
 </script>
 
