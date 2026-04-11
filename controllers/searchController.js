@@ -17,6 +17,13 @@ const SYSTEM_FEATURES = [
         icon: "fas fa-trophy",
         desc: "Xem ai đang đứng đầu server học tập"
     },
+    {
+        title: "🆘 Bảng Cầu Cứu",
+        url: "/qa",
+        keywords: ["hoi dap", "q&a", "giai bai", "cau cuu", "hoi bai", "stack overflow", "tro giup hoc tap"],
+        icon: "fas fa-life-ring",
+        desc: "Đăng câu hỏi, nhận lời giải và treo thưởng vàng"
+    },
     { 
         title: "📡 Phòng Live Stream", 
         url: "/live", 

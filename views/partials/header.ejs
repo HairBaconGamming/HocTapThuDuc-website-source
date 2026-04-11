@@ -79,7 +79,7 @@
                 </div>
             </li>
 
-            <li class="nav-item has-dropdown <%= ['live', 'leaderboard'].includes(activePage) ? 'active' : '' %>">
+            <li class="nav-item has-dropdown <%= ['live', 'leaderboard', 'qa'].includes(activePage) ? 'active' : '' %>">
                 <a href="#" class="nav-link">
                     <i class="fas fa-rocket icon"></i> Đồ chơi <i class="fas fa-chevron-down dropdown-indicator"></i>
                 </a>
@@ -91,6 +91,7 @@
                     <% } %>
                     
                     <a href="/leaderboard" class="tool-dropdown-link"><i class="fas fa-trophy"></i> <span>Đua Top Server</span></a>
+                    <a href="/qa" class="tool-dropdown-link"><i class="fas fa-life-ring"></i> <span>Bảng Cầu Cứu</span></a>
                     <% if (user && (user.isPro || user.isTeacher || user.isAdmin)) { %>
                         <a href="/pro-images" class="tool-dropdown-link"><i class="fas fa-images"></i> <span>Kho ảnh xịn</span></a>
                     <% } else { %>

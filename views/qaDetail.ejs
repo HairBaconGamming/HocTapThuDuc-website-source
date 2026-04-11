@@ -1,0 +1,309 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="/css/styleQA.css">
+
+<%
+const detailQuestion = question || {};
+const safeAnswers = Array.isArray(answers) ? answers : [];
+const safeSidebar = sidebar || {};
+const safeContributorWeekly = Array.isArray(safeSidebar.contributors?.weekly) ? safeSidebar.contributors.weekly : [];
+const safeHotTags = Array.isArray(safeSidebar.hotTags) ? safeSidebar.hotTags : [];
+const safeRelatedQuestions = Array.isArray(relatedQuestions) ? relatedQuestions : [];
+const questionStatus = detailQuestion.status || 'open';
+const canAnswer = !!user && questionStatus !== 'closed';
+%>
+
+<div class="qa-detail-shell">
+    <section class="qa-hero" style="margin-bottom: 18px;">
+        <div>
+            <div class="qa-question-top">
+                <span class="qa-badge qa-badge-subject"><%= detailQuestion.subject || 'Khác' %></span>
+                <span class="qa-badge qa-badge-grade">Lớp <%= detailQuestion.grade || 'Chung' %></span>
+                <% if (Number(detailQuestion.bountyAmount || 0) > 0) { %>
+                    <span class="qa-badge qa-badge-bounty"><i class="fas fa-coins"></i> Treo thưởng <%= Number(detailQuestion.bountyAmount || 0).toLocaleString('vi-VN') %></span>
+                <% } %>
+                <span class="qa-badge qa-badge-status-<%= questionStatus %>">
+                    <%= questionStatus === 'resolved' ? 'Đã giải quyết' : questionStatus === 'closed' ? 'Đã đóng' : 'Đang chờ lời giải' %>
+                </span>
+            </div>
+
+            <h1 class="qa-question-title"><%= detailQuestion.title || 'Chi tiết câu hỏi' %></h1>
+            <p class="qa-hero-desc" style="max-width: 780px;">
+                Người hỏi đang cần một lời giải rõ ràng, gọn bước và dễ theo. Nếu bạn hiểu đoạn này thật sự, đây là lúc kéo rank học thuật cho mình.
+            </p>
+
+            <div class="qa-hero-actions">
+                <% if (canAnswer) { %>
+                    <a href="#qaAnswerComposer" class="qa-btn qa-btn-primary"><i class="fas fa-feather-pointed"></i> Viết lời giải</a>
+                <% } else if (!user) { %>
+                    <a href="/login" class="qa-btn qa-btn-primary"><i class="fas fa-sign-in-alt"></i> Đăng nhập để trả lời</a>
+                <% } %>
+                <a href="/qa" class="qa-btn qa-btn-secondary"><i class="fas fa-arrow-left"></i> Quay lại feed</a>
+            </div>
+        </div>
+
+        <div class="qa-hero-stats">
+            <div class="qa-hero-stat">
+                <strong><%= Number(detailQuestion.answerCount || safeAnswers.length || 0).toLocaleString('vi-VN') %></strong>
+                <span>Lời giải</span>
+            </div>
+            <div class="qa-hero-stat">
+                <strong><%= Number(detailQuestion.viewCount || 0).toLocaleString('vi-VN') %></strong>
+                <span>Lượt xem</span>
+            </div>
+            <div class="qa-hero-stat">
+                <strong><%= Number(detailQuestion.upvoteCount || 0).toLocaleString('vi-VN') %></strong>
+                <span>Vote câu hỏi</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="qa-detail-layout" style="grid-template-columns: minmax(0, 1fr) 320px;">
+        <section class="qa-thread">
+            <article class="qa-question-card">
+                <div class="qa-question-meta">
+                    <div class="qa-author-row">
+                        <img class="qa-avatar" src="<%= detailQuestion.author?.avatar || '/default.png' %>" alt="Avatar <%= detailQuestion.author?.username || 'ẩn danh' %>">
+                        <div class="qa-author-meta">
+                            <div class="qa-author-name qa-ellipsis">
+                                <span class="qa-ellipsis"><%= detailQuestion.author?.username || 'Ẩn danh' %></span>
+                                <% if (detailQuestion.author?.isPro) { %><i class="fas fa-crown" style="color:#f59e0b;"></i><% } %>
+                            </div>
+                            <div class="qa-author-sub qa-ellipsis">
+                                <span class="qa-tier-pill"><%= detailQuestion.tier?.icon || '🌱' %> <%= detailQuestion.tier?.label || 'Tân Binh' %></span>
+                                <span style="margin-left: 10px;"><time data-relative-time datetime="<%= detailQuestion.createdAt %>"><%= new Date(detailQuestion.createdAt).toLocaleString('vi-VN') %></time></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qa-richtext qa-math qa-question-summary">
+                    <%- marked(detailQuestion.content || '') %>
+                </div>
+
+                <% if (Array.isArray(detailQuestion.images) && detailQuestion.images.length > 0) { %>
+                    <div class="qa-image-grid">
+                        <% detailQuestion.images.forEach((imageUrl) => { %>
+                            <a href="<%= imageUrl %>" target="_blank" rel="noopener noreferrer">
+                                <img src="<%= imageUrl %>" alt="Hình minh họa câu hỏi">
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </article>
+
+            <% if (canAnswer) { %>
+                <section class="qa-composer" id="qaAnswerComposer">
+                    <h3><i class="fas fa-feather-pointed"></i> Thả lời giải của bạn</h3>
+                    <form id="qaAnswerForm" class="qa-form-grid">
+                        <input type="hidden" name="questionId" value="<%= detailQuestion._id %>">
+
+                        <div class="qa-form-field qa-span-2">
+                            <label for="qaAnswerContent">Nội dung lời giải</label>
+                            <textarea id="qaAnswerContent" name="content" placeholder="Có thể viết từng bước, dán công thức LaTeX như $$\\int x^2 dx$$, hoặc giải thích chỗ người hỏi đang bí." required></textarea>
+                        </div>
+
+                        <div class="qa-form-field qa-span-2">
+                            <label for="qaAnswerImages">Ảnh lời giải</label>
+                            <textarea id="qaAnswerImages" name="images" rows="3" placeholder="Nếu có ảnh lời giải, dán link Cloudinary mỗi dòng một ảnh."></textarea>
+                        </div>
+
+                        <div class="qa-form-actions qa-span-2">
+                            <div class="qa-helper-text">Tip: trình bày ít nhưng chắc, mỗi bước đều có lý do thì tỉ lệ được chốt đáp án cao hơn rất nhiều.</div>
+                            <button type="submit" class="qa-btn qa-btn-primary">
+                                <i class="fas fa-paper-plane"></i> Gửi lời giải
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            <% } else if (!user) { %>
+                <section class="qa-composer">
+                    <h3>Muốn tham gia giải bài?</h3>
+                    <p class="qa-helper-text">Đăng nhập để upvote, trả lời, bình luận và leo bảng phong thần học thuật.</p>
+                    <a href="/login" class="qa-btn qa-btn-primary" style="margin-top: 12px;"><i class="fas fa-sign-in-alt"></i> Đăng nhập ngay</a>
+                </section>
+            <% } %>
+
+            <section class="qa-answer-list">
+                <h2><i class="fas fa-sparkles"></i> Lời giải từ cộng đồng</h2>
+
+                <% if (safeAnswers.length > 0) { %>
+                    <% safeAnswers.forEach((answer) => { %>
+                        <article class="qa-answer-card" id="answer-<%= answer._id %>">
+                            <div class="qa-answer-top">
+                                <% if (answer.isAccepted) { %>
+                                    <span class="qa-badge qa-badge-accepted"><i class="fas fa-check-circle"></i> Đáp án đã chốt</span>
+                                <% } %>
+                                <span class="qa-badge qa-badge-subject">+<%= Number(answer.upvoteCount || 0).toLocaleString('vi-VN') %> upvote</span>
+                            </div>
+
+                            <div class="qa-answer-meta">
+                                <div class="qa-answer-author">
+                                    <img class="qa-avatar" src="<%= answer.author?.avatar || '/default.png' %>" alt="Avatar <%= answer.author?.username || 'thành viên' %>">
+                                    <div class="qa-author-meta">
+                                        <div class="qa-author-name qa-ellipsis">
+                                            <span class="qa-ellipsis"><%= answer.author?.username || 'Thành viên' %></span>
+                                            <% if (answer.author?.isPro) { %><i class="fas fa-crown" style="color:#f59e0b;"></i><% } %>
+                                        </div>
+                                        <div class="qa-author-sub qa-ellipsis">
+                                            <span class="qa-tier-pill"><%= answer.tier?.icon || '🌱' %> <%= answer.tier?.label || 'Tân Binh' %></span>
+                                            <span style="margin-left: 10px;"><time data-relative-time datetime="<%= answer.createdAt %>"><%= new Date(answer.createdAt).toLocaleString('vi-VN') %></time></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="qa-richtext qa-math qa-answer-content">
+                                <%- marked(answer.content || '') %>
+                            </div>
+
+                            <% if (Array.isArray(answer.images) && answer.images.length > 0) { %>
+                                <div class="qa-image-grid">
+                                    <% answer.images.forEach((imageUrl) => { %>
+                                        <a href="<%= imageUrl %>" target="_blank" rel="noopener noreferrer">
+                                            <img src="<%= imageUrl %>" alt="Hình lời giải">
+                                        </a>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+
+                            <div class="qa-answer-toolbar">
+                                <div class="qa-answer-actions">
+                                    <% if (user) { %>
+                                        <button type="button" class="qa-mini-btn qa-upvote-btn" data-action-url="/qa/answers/<%= answer._id %>/upvote">
+                                            <i class="fas fa-arrow-up"></i> Upvote lời giải
+                                        </button>
+                                        <button type="button" class="qa-mini-btn" data-toggle-comments="comments-<%= answer._id %>">
+                                            <i class="fas fa-comments"></i> Thảo luận (<%= Array.isArray(answer.comments) ? answer.comments.length : 0 %>)
+                                        </button>
+                                    <% } else { %>
+                                        <a href="/login" class="qa-mini-btn"><i class="fas fa-sign-in-alt"></i> Đăng nhập để tương tác</a>
+                                    <% } %>
+                                </div>
+
+                                <% if (user && String(detailQuestion.author?._id || detailQuestion.author) === String(user._id) && !detailQuestion.acceptedAnswer && !answer.isAccepted) { %>
+                                    <button type="button" class="qa-mini-btn qa-accept-btn" data-action-url="/qa/answers/<%= answer._id %>/accept">
+                                        <i class="fas fa-award"></i> Chốt đáp án này
+                                    </button>
+                                <% } else if (answer.isAccepted) { %>
+                                    <span class="qa-mini-btn" style="cursor:default;"><i class="fas fa-award"></i> Đã nhận thưởng chốt bài</span>
+                                <% } %>
+                            </div>
+
+                            <div class="qa-comments-wrap" id="comments-<%= answer._id %>" <%= Array.isArray(answer.comments) && answer.comments.length > 0 ? '' : 'hidden' %>>
+                                <div class="qa-answer-comments">
+                                    <% if (Array.isArray(answer.comments) && answer.comments.length > 0) { %>
+                                        <% answer.comments.forEach((comment) => { %>
+                                            <div class="qa-comment-item">
+                                                <img class="qa-comment-avatar" src="<%= comment.author?.avatar || '/default.png' %>" alt="Avatar <%= comment.author?.username || 'thành viên' %>">
+                                                <div>
+                                                    <div class="qa-comment-meta">
+                                                        <div class="qa-comment-name qa-ellipsis">
+                                                            <span class="qa-ellipsis"><%= comment.author?.username || 'Thành viên' %></span>
+                                                        </div>
+                                                        <div class="qa-comment-sub"><time data-relative-time datetime="<%= comment.createdAt %>"><%= new Date(comment.createdAt).toLocaleString('vi-VN') %></time></div>
+                                                    </div>
+                                                    <div class="qa-comment-content qa-math"><%- marked(comment.content || '') %></div>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+
+                                <% if (user) { %>
+                                    <form class="qa-comment-form" data-answer-id="<%= answer._id %>">
+                                        <textarea name="content" placeholder="Hỏi thêm một bước nhỏ, phản biện hoặc bổ sung mẹo giải..."></textarea>
+                                        <button type="submit" class="qa-comment-submit">Gửi thảo luận</button>
+                                    </form>
+                                <% } %>
+                            </div>
+                        </article>
+                    <% }) %>
+                <% } else { %>
+                    <div class="qa-empty">
+                        <strong>Chưa có lời giải nào xuất hiện.</strong>
+                        <p>Đây là cơ hội đẹp để bạn mở bát, nhận upvote đầu tiên và kéo danh vọng cho team mình.</p>
+                    </div>
+                <% } %>
+            </section>
+        </section>
+
+        <aside class="qa-sidebar" style="top: 100px;">
+            <section class="qa-sidebar-card">
+                <h2 class="qa-panel-title">Bài liên quan</h2>
+                <% if (safeRelatedQuestions.length > 0) { %>
+                    <div class="qa-related-list">
+                        <% safeRelatedQuestions.forEach((item) => { %>
+                            <article class="qa-related-card">
+                                <a href="/qa/questions/<%= item._id %>">
+                                    <div class="qa-card-top">
+                                        <span class="qa-badge qa-badge-subject"><%= item.subject || 'Khác' %></span>
+                                        <span class="qa-badge qa-badge-grade">Lớp <%= item.grade || 'Chung' %></span>
+                                    </div>
+                                    <h4><%= item.title || 'Câu hỏi liên quan' %></h4>
+                                    <p><%= item.previewText || 'Chưa có mô tả.' %></p>
+                                </a>
+                            </article>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div class="qa-empty" style="padding: 24px 8px;">
+                        <strong>Chưa có câu hỏi tương tự.</strong>
+                        <p>Khi cộng đồng hỏi nhiều hơn theo môn và khối này, khu này sẽ gợi ý tự nhiên hơn.</p>
+                    </div>
+                <% } %>
+            </section>
+
+            <section class="qa-sidebar-card">
+                <h2 class="qa-panel-title">Top người giải tuần</h2>
+                <div class="qa-contributor-list">
+                    <% if (safeContributorWeekly.length > 0) { %>
+                        <% safeContributorWeekly.forEach((contributor) => { %>
+                            <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
+                                <div class="qa-contributor-row" style="gap:12px; padding:0; border:none;">
+                                    <img class="qa-contributor-avatar" src="<%= contributor.avatar || '/default.png' %>" alt="Avatar <%= contributor.username || 'thành viên' %>">
+                                    <div class="qa-contributor-meta">
+                                        <div class="qa-contributor-name qa-ellipsis">
+                                            <span class="qa-ellipsis">#<%= contributor.rank %> <%= contributor.username || 'Thành viên' %></span>
+                                        </div>
+                                        <div class="qa-contributor-sub qa-ellipsis"><%= contributor.tier?.icon || '🌱' %> <%= contributor.tier?.label || 'Tân Binh' %></div>
+                                    </div>
+                                </div>
+                                <div class="qa-contributor-score"><%= Number(contributor.score || 0).toLocaleString('vi-VN') %></div>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="qa-empty" style="padding: 24px 8px;">
+                            <strong>Chưa có bảng phong thần.</strong>
+                            <p>Một vài lời giải chất lượng nữa là khu này sẽ rất vui.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+
+            <section class="qa-sidebar-card">
+                <h2 class="qa-panel-title">Hot Tags</h2>
+                <div class="qa-tag-list">
+                    <% if (safeHotTags.length > 0) { %>
+                        <% safeHotTags.forEach((tag) => { %>
+                            <a href="<%= tag.url %>" class="qa-tag-chip">
+                                <span><%= tag.label %></span>
+                                <small><%= Number(tag.count || 0).toLocaleString('vi-VN') %> bài</small>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="qa-empty" style="padding: 24px 8px;">
+                            <strong>Tags đang ngủ yên.</strong>
+                            <p>Cứ thêm vài câu hỏi nữa, hệ thống sẽ tự kéo những chủ đề hot lên đây.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="/js/qa.js"></script>
+<%- include('partials/footer') %>

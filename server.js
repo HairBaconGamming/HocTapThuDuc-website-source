@@ -155,6 +155,7 @@ app.use("/", require("./routes/index"));
 app.use("/", require("./routes/auth"));
 app.use("/my-garden", require('./routes/garden'));
 app.use("/guilds", require('./routes/guild'));
+app.use("/qa", require('./routes/qaRoutes'));
 
 app.use("/lesson", require("./routes/lesson"));
 app.use("/api", require("./routes/api"));
