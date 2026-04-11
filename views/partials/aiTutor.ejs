@@ -1,0 +1,120 @@
+<%
+    const tutorVariant = typeof aiTutorVariant !== 'undefined' ? aiTutorVariant : 'default';
+    const tutorPage = typeof aiTutorPage !== 'undefined' ? aiTutorPage : tutorVariant;
+    const tutorTitle = typeof aiTutorTitle !== 'undefined'
+        ? aiTutorTitle
+        : (tutorVariant === 'garden'
+            ? 'Nông Trại AI'
+            : tutorVariant === 'lesson-studio'
+                ? 'Studio AI'
+                : tutorVariant === 'lesson-detail'
+                    ? 'Gia Sư AI'
+                    : 'AI Tutor');
+    const tutorSubtitle = typeof aiTutorSubtitle !== 'undefined'
+        ? aiTutorSubtitle
+        : (tutorVariant === 'garden'
+            ? 'Gợi ý nước đi tiếp theo trong vườn'
+            : tutorVariant === 'lesson-studio'
+                ? 'Biên tập, rà soát và lên ý tưởng bài học'
+                : tutorVariant === 'lesson-detail'
+                    ? 'Giải thích ngắn gọn ngay lúc đang học'
+                    : 'Tóm tắt, giải thích và dẫn đường học tập');
+    const tutorUser = user
+        ? {
+            id: String(user._id || ''),
+            username: user.username || 'Bạn',
+            level: Number(user.level) || 0,
+            isAdmin: !!user.isAdmin,
+            isTeacher: !!user.isTeacher,
+            isPro: !!user.isPro
+        }
+        : null;
+%>
+
+<div
+    class="ai-tutor-shell ai-tutor-shell--<%= tutorVariant %>"
+    id="aiTutorShell"
+    data-ai-tutor-shell
+    data-variant="<%= tutorVariant %>"
+    data-page-type="<%= tutorPage %>"
+>
+    <button
+        type="button"
+        class="ai-tutor-fab"
+        data-ai-tutor-toggle
+        aria-expanded="false"
+        aria-controls="aiTutorPanel"
+    >
+        <span class="ai-tutor-fab-orb">
+            <i class="fas fa-robot"></i>
+        </span>
+        <span class="ai-tutor-fab-copy">
+            <strong><%= tutorTitle %></strong>
+            <small><%= tutorSubtitle %></small>
+        </span>
+    </button>
+
+    <section
+        class="ai-tutor-panel"
+        id="aiTutorPanel"
+        data-ai-tutor-panel
+        hidden
+        aria-live="polite"
+    >
+        <header class="ai-tutor-panel-head">
+            <div>
+                <span class="ai-tutor-kicker">AI hướng dẫn</span>
+                <h3><%= tutorTitle %></h3>
+                <p><%= tutorSubtitle %></p>
+            </div>
+            <button type="button" class="ai-tutor-mini-btn" data-ai-tutor-close aria-label="Đóng AI Tutor">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </header>
+
+        <div class="ai-tutor-context" data-ai-tutor-context>
+            <span class="ai-tutor-context-pill" data-ai-tutor-context-label>Đang đọc ngữ cảnh trang</span>
+            <span class="ai-tutor-context-line" data-ai-tutor-selection-status>Chưa có đoạn chọn riêng.</span>
+        </div>
+
+        <div class="ai-tutor-quick-actions" data-ai-tutor-actions></div>
+
+        <div class="ai-tutor-thread" data-ai-tutor-thread>
+            <article class="ai-tutor-msg ai-tutor-msg--assistant">
+                <div class="ai-tutor-msg-bubble" data-ai-tutor-welcome>
+                    Mình đang bám theo nội dung trang này. Bạn cứ hỏi ngắn gọn, mình sẽ giải thích theo đúng ngữ cảnh hiện tại.
+                </div>
+            </article>
+        </div>
+
+        <form class="ai-tutor-form" data-ai-tutor-form>
+            <label class="ai-tutor-input-wrap" for="aiTutorInput">
+                <textarea
+                    id="aiTutorInput"
+                    class="ai-tutor-input"
+                    data-ai-tutor-input
+                    rows="2"
+                    placeholder="Hỏi AI Tutor điều bạn đang cần..."
+                ></textarea>
+            </label>
+            <div class="ai-tutor-form-foot">
+                <span class="ai-tutor-status" data-ai-tutor-status>Sẵn sàng hỗ trợ</span>
+                <button type="submit" class="ai-tutor-send">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Gửi</span>
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<script>
+    window.AI_TUTOR_BOOTSTRAP = Object.assign({}, window.AI_TUTOR_BOOTSTRAP || {}, {
+        variant: <%- JSON.stringify(tutorVariant) %>,
+        pageType: <%- JSON.stringify(tutorPage) %>,
+        title: <%- JSON.stringify(tutorTitle) %>,
+        subtitle: <%- JSON.stringify(tutorSubtitle) %>,
+        user: <%- JSON.stringify(tutorUser) %>
+    });
+</script>
+<script src="/js/aiTutor.js"></script>

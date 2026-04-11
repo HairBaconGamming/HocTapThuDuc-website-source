@@ -183,6 +183,7 @@ app.use("/live", require("./routes/live"));
 app.use('/search', searchRouter);        
 app.use("/api/pro-images", require("./routes/proImages"));
 app.use("/api/quiz-generator", require("./routes/quizGenerator"));
+app.use("/api/ai-tutor", require("./routes/aiTutor"));
 app.use('/api/flashcards', require('./routes/flashcard'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/comments', require('./routes/comments'));

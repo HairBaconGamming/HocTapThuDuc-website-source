@@ -13,6 +13,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <link rel="stylesheet" href="/css/styleGarden.css">
+    <link rel="stylesheet" href="/css/styleAiTutor.css">
 </head>
 <body class="garden-rustic-page">
     <% 
@@ -558,5 +559,12 @@
     </script>
     <link rel="stylesheet" href="/css/styleTutorial.css">
     <script src="/js/tutorial.js"></script>
+    <%- include('partials/aiTutor', {
+        user,
+        aiTutorVariant: 'garden',
+        aiTutorPage: 'garden',
+        aiTutorTitle: 'Nông Trại AI',
+        aiTutorSubtitle: 'Gợi ý nước đi tiếp theo trong vườn'
+    }) %>
 </body>
 </html>

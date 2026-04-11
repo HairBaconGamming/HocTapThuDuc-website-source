@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styleStudio.css">
     <link rel="stylesheet" href="/css/styleStudioV4.css">
+    <link rel="stylesheet" href="/css/styleAiTutor.css">
     <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
@@ -826,5 +827,12 @@ Hãy chia bài học thành nhiều phần dẫn dắt logic. Phần bài tập 
             }
         });
     </script>
+    <%- include('partials/aiTutor', {
+        user,
+        aiTutorVariant: 'lesson-studio',
+        aiTutorPage: 'lesson-studio',
+        aiTutorTitle: 'Studio AI',
+        aiTutorSubtitle: 'Góp ý bố cục, nội dung và checklist publish'
+    }) %>
 </body>
 </html>

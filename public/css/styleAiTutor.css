@@ -1,0 +1,532 @@
+:root {
+    --ai-tutor-accent: #4f46e5;
+    --ai-tutor-accent-soft: rgba(79, 70, 229, 0.12);
+    --ai-tutor-ink: #0f172a;
+    --ai-tutor-muted: #64748b;
+    --ai-tutor-surface: rgba(255, 255, 255, 0.96);
+    --ai-tutor-border: rgba(148, 163, 184, 0.2);
+    --ai-tutor-shadow: 0 20px 50px rgba(15, 23, 42, 0.14);
+    --ai-tutor-radius-xl: 24px;
+    --ai-tutor-radius-lg: 18px;
+    --ai-tutor-radius-md: 14px;
+    --ai-tutor-radius-pill: 999px;
+    --ai-tutor-width: min(360px, calc(100vw - 28px));
+    --ai-tutor-z: 1260;
+}
+
+.ai-tutor-shell {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: var(--ai-tutor-z);
+    width: var(--ai-tutor-width);
+    max-width: calc(100vw - 28px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.ai-tutor-shell * {
+    box-sizing: border-box;
+}
+
+.ai-tutor-fab,
+.ai-tutor-panel {
+    pointer-events: auto;
+}
+
+.ai-tutor-fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 10px 14px 10px 12px;
+    border: 1px solid var(--ai-tutor-border);
+    border-radius: var(--ai-tutor-radius-pill);
+    background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 40%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+    color: var(--ai-tutor-ink);
+    box-shadow: var(--ai-tutor-shadow);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.ai-tutor-fab:hover,
+.ai-tutor-shell.is-open .ai-tutor-fab {
+    transform: translateY(-2px);
+    border-color: rgba(79, 70, 229, 0.28);
+    box-shadow: 0 26px 60px rgba(79, 70, 229, 0.18);
+}
+
+.ai-tutor-fab-orb {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    box-shadow: 0 10px 22px rgba(79, 70, 229, 0.26);
+}
+
+.ai-tutor-fab-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+}
+
+.ai-tutor-fab-copy strong,
+.ai-tutor-panel-head h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.15;
+}
+
+.ai-tutor-fab-copy small,
+.ai-tutor-panel-head p,
+.ai-tutor-status,
+.ai-tutor-context-line {
+    color: var(--ai-tutor-muted);
+}
+
+.ai-tutor-fab-copy small {
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.ai-tutor-panel {
+    width: 100%;
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--ai-tutor-radius-xl);
+    border: 1px solid var(--ai-tutor-border);
+    background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+    color: var(--ai-tutor-ink);
+    box-shadow: var(--ai-tutor-shadow);
+    backdrop-filter: blur(12px);
+    max-height: min(70dvh, 640px);
+    overflow: hidden;
+}
+
+.ai-tutor-panel[hidden] {
+    display: none;
+}
+
+.ai-tutor-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ai-tutor-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    color: var(--ai-tutor-accent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.ai-tutor-panel-head p {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.ai-tutor-mini-btn,
+.ai-tutor-send,
+.ai-tutor-action {
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+}
+
+.ai-tutor-mini-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ai-tutor-muted);
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.ai-tutor-mini-btn:hover,
+.ai-tutor-action:hover,
+.ai-tutor-send:hover {
+    transform: translateY(-1px);
+}
+
+.ai-tutor-context {
+    display: grid;
+    gap: 8px;
+}
+
+.ai-tutor-context-pill,
+.ai-tutor-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--ai-tutor-radius-pill);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.ai-tutor-context-pill {
+    justify-self: start;
+    color: var(--ai-tutor-accent);
+    background: var(--ai-tutor-accent-soft);
+}
+
+.ai-tutor-context-line {
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.ai-tutor-quick-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ai-tutor-action {
+    color: var(--ai-tutor-ink);
+    background: rgba(241, 245, 249, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ai-tutor-action.is-selected,
+.ai-tutor-send {
+    color: #fff;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+}
+
+.ai-tutor-thread {
+    min-height: 0;
+    max-height: min(34dvh, 280px);
+    overflow-y: auto;
+    display: grid;
+    gap: 10px;
+    padding-right: 4px;
+}
+
+.ai-tutor-msg {
+    display: flex;
+}
+
+.ai-tutor-msg--user {
+    justify-content: flex-end;
+}
+
+.ai-tutor-msg-bubble {
+    max-width: 92%;
+    padding: 12px 14px;
+    border-radius: 18px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: rgba(241, 245, 249, 0.95);
+    color: var(--ai-tutor-ink);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.ai-tutor-msg--assistant .ai-tutor-msg-bubble {
+    border-top-left-radius: 8px;
+}
+
+.ai-tutor-msg--user .ai-tutor-msg-bubble {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    border-color: transparent;
+    border-top-right-radius: 8px;
+}
+
+.ai-tutor-form {
+    display: grid;
+    gap: 10px;
+}
+
+.ai-tutor-input-wrap {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(248, 250, 252, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ai-tutor-input {
+    width: 100%;
+    min-height: 54px;
+    resize: vertical;
+    max-height: 120px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    color: var(--ai-tutor-ink);
+}
+
+.ai-tutor-form-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ai-tutor-status {
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.ai-tutor-send {
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ai-tutor-shell.is-busy .ai-tutor-send {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.ai-tutor-shell--lesson-detail {
+    right: 20px;
+    bottom: 112px;
+    --ai-tutor-z: 1295;
+}
+
+.ai-tutor-shell--lesson-detail .ai-tutor-fab,
+.ai-tutor-shell--lesson-detail .ai-tutor-panel {
+    background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 255, 0.98));
+}
+
+.ai-tutor-shell--lesson-detail .ai-tutor-fab-orb,
+.ai-tutor-shell--lesson-detail .ai-tutor-send,
+.ai-tutor-shell--lesson-detail .ai-tutor-action.is-selected {
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+}
+
+.ai-tutor-shell--lesson-studio {
+    right: 18px;
+    bottom: 18px;
+    --ai-tutor-z: 9100;
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-fab,
+.ai-tutor-shell--lesson-studio .ai-tutor-panel {
+    color: #e2e8f0;
+    background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.2), transparent 34%),
+        linear-gradient(180deg, rgba(9, 16, 30, 0.96), rgba(15, 23, 42, 0.96));
+    border-color: rgba(191, 219, 254, 0.16);
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-fab-copy small,
+.ai-tutor-shell--lesson-studio .ai-tutor-panel-head p,
+.ai-tutor-shell--lesson-studio .ai-tutor-status,
+.ai-tutor-shell--lesson-studio .ai-tutor-context-line,
+.ai-tutor-shell--lesson-studio .ai-tutor-mini-btn {
+    color: #94a3b8;
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-context-pill {
+    color: #bfdbfe;
+    background: rgba(37, 99, 235, 0.18);
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-input-wrap,
+.ai-tutor-shell--lesson-studio .ai-tutor-msg-bubble,
+.ai-tutor-shell--lesson-studio .ai-tutor-action {
+    background: rgba(15, 23, 42, 0.72);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.16);
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-msg--user .ai-tutor-msg-bubble,
+.ai-tutor-shell--lesson-studio .ai-tutor-send,
+.ai-tutor-shell--lesson-studio .ai-tutor-action.is-selected,
+.ai-tutor-shell--lesson-studio .ai-tutor-fab-orb {
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-input {
+    color: #f8fafc;
+}
+
+.ai-tutor-shell--garden {
+    right: 18px;
+    bottom: 152px;
+    --ai-tutor-z: 55;
+    --ai-tutor-width: min(330px, calc(100vw - 32px));
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab,
+.ai-tutor-shell--garden .ai-tutor-panel {
+    font-family: "VT323", monospace;
+    color: #3f2b1f;
+    background:
+        linear-gradient(180deg, rgba(255, 252, 245, 0.99), rgba(244, 234, 211, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 3px solid #3a2518;
+    box-shadow: 0 16px 28px rgba(58, 37, 24, 0.22);
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab {
+    padding: 8px 14px 8px 10px;
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab-copy strong,
+.ai-tutor-shell--garden .ai-tutor-panel-head h3 {
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab-copy small,
+.ai-tutor-shell--garden .ai-tutor-panel-head p,
+.ai-tutor-shell--garden .ai-tutor-status,
+.ai-tutor-shell--garden .ai-tutor-context-line {
+    color: #6f5948;
+}
+
+.ai-tutor-shell--garden .ai-tutor-kicker {
+    color: #7c5d32;
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab-orb,
+.ai-tutor-shell--garden .ai-tutor-send,
+.ai-tutor-shell--garden .ai-tutor-action.is-selected {
+    color: #fffdf7;
+    background: linear-gradient(180deg, #8a5c3b, #5a3927);
+    box-shadow: 0 8px 0 rgba(58, 37, 24, 0.18);
+}
+
+.ai-tutor-shell--garden .ai-tutor-mini-btn,
+.ai-tutor-shell--garden .ai-tutor-action,
+.ai-tutor-shell--garden .ai-tutor-input-wrap,
+.ai-tutor-shell--garden .ai-tutor-msg-bubble {
+    background: rgba(255, 250, 240, 0.96);
+    border: 2px solid rgba(58, 37, 24, 0.22);
+}
+
+.ai-tutor-shell--garden .ai-tutor-msg--user .ai-tutor-msg-bubble {
+    background: linear-gradient(180deg, #8a5c3b, #5a3927);
+    color: #fffaf0;
+    border-color: transparent;
+}
+
+.ai-tutor-shell--garden .ai-tutor-action,
+.ai-tutor-shell--garden .ai-tutor-context-pill {
+    font-size: 0.92rem;
+}
+
+.ai-tutor-shell--garden .ai-tutor-input,
+.ai-tutor-shell--garden .ai-tutor-msg-bubble {
+    font-size: 0.98rem;
+}
+
+.ai-tutor-shell--garden .ai-tutor-panel {
+    border-radius: 24px;
+}
+
+@media (max-width: 1024px) {
+    .ai-tutor-shell--lesson-studio {
+        bottom: 14px;
+        right: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ai-tutor-shell {
+        right: 12px;
+        bottom: 12px;
+        --ai-tutor-width: min(340px, calc(100vw - 20px));
+    }
+
+    .ai-tutor-fab {
+        min-height: 52px;
+        padding: 8px 12px 8px 10px;
+    }
+
+    .ai-tutor-fab-copy small {
+        display: none;
+    }
+
+    .ai-tutor-panel {
+        max-height: min(72dvh, 560px);
+        padding: 14px;
+    }
+
+    .ai-tutor-thread {
+        max-height: min(30dvh, 220px);
+    }
+
+    .ai-tutor-shell--lesson-detail {
+        right: 12px;
+        bottom: 92px;
+    }
+
+    .ai-tutor-shell--lesson-studio {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .ai-tutor-shell--garden {
+        right: 12px;
+        bottom: 170px;
+    }
+}
+
+@media (max-width: 560px) {
+    .ai-tutor-form-foot {
+        align-items: flex-end;
+        flex-direction: column;
+    }
+
+    .ai-tutor-status {
+        width: 100%;
+    }
+
+    .ai-tutor-send {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-tutor-fab,
+    .ai-tutor-mini-btn,
+    .ai-tutor-send,
+    .ai-tutor-action {
+        transition: none !important;
+    }
+}

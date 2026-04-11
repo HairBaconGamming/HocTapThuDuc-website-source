@@ -10,6 +10,14 @@
     </div>
 </footer>
 
+<%- include('aiTutor', {
+    user,
+    aiTutorVariant: typeof aiTutorVariant !== 'undefined' ? aiTutorVariant : undefined,
+    aiTutorPage: typeof aiTutorPage !== 'undefined' ? aiTutorPage : undefined,
+    aiTutorTitle: typeof aiTutorTitle !== 'undefined' ? aiTutorTitle : undefined,
+    aiTutorSubtitle: typeof aiTutorSubtitle !== 'undefined' ? aiTutorSubtitle : undefined
+}) %>
+
 <% if (typeof user !== 'undefined' && user) { %>
 <script>
     (function() {
