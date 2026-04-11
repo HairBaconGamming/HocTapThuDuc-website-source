@@ -25,6 +25,7 @@ const LessonWorkspace = {
         this.maybeShowResumeBanner();
         setTimeout(() => {
             if (typeof LessonProgressManager !== 'undefined') LessonProgressManager.init();
+            if (typeof LessonPresenceManager !== 'undefined') LessonPresenceManager.init();
         }, 500);
     },
 
@@ -1474,5 +1475,187 @@ const StudyManager = {
     }
 };
 
+const LessonPresenceManager = {
+    lessonId: window.LESSON_ID,
+    socket: null,
+    cooldownMs: 5000,
+    cooldownUntil: 0,
+    currentUsers: [],
+
+    init() {
+        const bootstrap = window.LESSON_PRESENCE_STATE;
+        const bar = document.getElementById('co-presence-bar');
+        const avatarGroup = document.getElementById('live-avatars');
+        const interactionLayer = document.getElementById('interaction-layer');
+
+        if (!bootstrap?.lessonId || !bootstrap?.currentUser?.id || !bar || !avatarGroup || !interactionLayer) {
+            return;
+        }
+
+        if (typeof io !== 'function') {
+            bar.classList.add('is-hidden');
+            return;
+        }
+
+        this.lessonId = bootstrap.lessonId;
+        this.currentUser = this.normalizeUser(bootstrap.currentUser);
+        this.bar = bar;
+        this.avatarGroup = avatarGroup;
+        this.interactionLayer = interactionLayer;
+        this.currentUsers = [this.currentUser];
+        this.render();
+        this.socket = io();
+
+        this.bindSocketEvents();
+        this.socket.emit('userConnect', this.currentUser.id);
+        this.socket.emit('join_lesson', {
+            lessonId: this.lessonId,
+            user: this.currentUser
+        });
+    },
+
+    bindSocketEvents() {
+        if (!this.socket) return;
+
+        this.socket.on('update_presence', (users = []) => {
+            this.currentUsers = this.normalizeUsers(users);
+            this.render();
+        });
+
+        this.socket.on('receive_interaction', (data = {}) => {
+            const emoji = data.emoji || '🙌';
+            const startX = window.innerWidth - 90 + (Math.random() * 48 - 24);
+            const startY = window.innerHeight - 96;
+            this.spawnFloatingEmoji(emoji, startX, startY);
+        });
+    },
+
+    normalizeUser(user = {}) {
+        const id = String(user.id || user._id || '').trim();
+        const username = String(user.username || user.name || 'Bạn học').trim() || 'Bạn học';
+        const avatar = String(user.avatar || '').trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=eff6ff&color=1d4ed8`;
+        return { id, username, avatar };
+    },
+
+    normalizeUsers(users = []) {
+        const uniqueUsers = new Map();
+
+        users.forEach((user) => {
+            const safeUser = this.normalizeUser(user);
+            if (!safeUser.id || uniqueUsers.has(safeUser.id)) return;
+            uniqueUsers.set(safeUser.id, safeUser);
+        });
+
+        if (this.currentUser?.id && !uniqueUsers.has(this.currentUser.id)) {
+            uniqueUsers.set(this.currentUser.id, this.currentUser);
+        }
+
+        return Array.from(uniqueUsers.values());
+    },
+
+    render() {
+        if (!this.avatarGroup || !this.bar) return;
+
+        const users = this.currentUsers.length ? this.currentUsers : [this.currentUser];
+        const visibleUsers = users.slice(0, 5);
+        const hiddenCount = Math.max(0, users.length - visibleUsers.length);
+        const presenceText = this.bar.querySelector('.presence-text');
+
+        if (presenceText) {
+            presenceText.textContent =
+                users.length > 1 ? `Đang cùng học: ${users.length}` : 'Bạn đang học';
+        }
+
+        this.bar.classList.toggle('is-solo', users.length <= 1);
+
+        this.avatarGroup.innerHTML = '';
+
+        visibleUsers.forEach((user) => {
+            const avatar = document.createElement('button');
+            avatar.type = 'button';
+            avatar.className = `live-avatar${user.id === this.currentUser.id ? ' is-self' : ''}`;
+            avatar.title =
+                user.id === this.currentUser.id
+                    ? `${user.username} (Bạn)`
+                    : `Gửi high-five cho ${user.username}`;
+            avatar.setAttribute('aria-label', avatar.title);
+
+            const image = document.createElement('img');
+            image.src = user.avatar;
+            image.alt = user.username;
+            image.loading = 'lazy';
+            image.decoding = 'async';
+
+            avatar.appendChild(image);
+
+            if (user.id !== this.currentUser.id) {
+                avatar.addEventListener('click', (event) => this.sendHighFive(user.id, event));
+            } else {
+                avatar.disabled = true;
+            }
+
+            this.avatarGroup.appendChild(avatar);
+        });
+
+        if (hiddenCount > 0) {
+            const more = document.createElement('div');
+            more.className = 'avatar-more';
+            more.textContent = `+${hiddenCount}`;
+            more.title = `${hiddenCount} bạn học khác đang online`;
+            this.avatarGroup.appendChild(more);
+        }
+    },
+
+    sendHighFive(targetUserId, event) {
+        const now = Date.now();
+        if (now < this.cooldownUntil || !this.socket) {
+            this.showCooldownHint();
+            return;
+        }
+
+        this.cooldownUntil = now + this.cooldownMs;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + 6;
+
+        this.socket.emit('send_interaction', {
+            lessonId: this.lessonId,
+            targetUserId,
+            type: 'high_five',
+            emoji: '🙌'
+        });
+
+        this.spawnFloatingEmoji('🙌', startX, startY);
+    },
+
+    showCooldownHint() {
+        if (!this.bar) return;
+        this.bar.classList.add('is-cooldown');
+        window.clearTimeout(this.cooldownTimer);
+        this.cooldownTimer = window.setTimeout(() => {
+            this.bar.classList.remove('is-cooldown');
+        }, 600);
+    },
+
+    spawnFloatingEmoji(emoji, x, y) {
+        if (!this.interactionLayer) return;
+
+        const element = document.createElement('div');
+        element.className = 'floating-emoji';
+        element.textContent = emoji;
+        element.style.left = `${x - 16}px`;
+        element.style.top = `${y}px`;
+        element.style.setProperty('--float-x', `${(Math.random() - 0.5) * 54}px`);
+
+        this.interactionLayer.appendChild(element);
+
+        window.setTimeout(() => {
+            element.remove();
+        }, 2000);
+    }
+};
+
 window.LessonWorkspace = LessonWorkspace;
 window.LessonProgressManager = LessonProgressManager;
+window.LessonPresenceManager = LessonPresenceManager;

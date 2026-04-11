@@ -1,24 +1,26 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const apiKey =
+  process.env.SILICONFLOW_API_KEY ||
+  process.env.SILICONFLOW_TOKEN ||
+  "";
 
-const apiKey = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY || "";
+const modelName =
+  process.env.SILICONFLOW_AI_TUTOR_MODEL || "nex-agi/DeepSeek-V3.1-Nex-N1";
 
-const generationConfig = {
+const requestConfig = {
   temperature: 0.55,
-  topP: 0.92,
-  topK: 40,
-  maxOutputTokens: 1800,
-  responseMimeType: "text/plain"
+  top_p: 0.92,
+  max_tokens: 1800
 };
 
 const pageGuides = {
   default:
-    "Ngữ cảnh chung của website học tập. Hãy đóng vai người hướng dẫn học tập gọn gàng, ưu tiên tóm tắt, định hướng bước tiếp theo và chỉ ra điều quan trọng nhất trên trang.",
+    "Ngữ cảnh là website học tập tổng quát. Hãy đóng vai người hướng dẫn học tập gọn gàng, ưu tiên tóm tắt, định hướng bước tiếp theo và chỉ ra điều quan trọng nhất trên trang.",
   "lesson-detail":
-    "Ngữ cảnh là trang học bài. Ưu tiên giải thích dễ hiểu, tóm tắt phần đang học, gợi ý cách ghi nhớ, tạo câu hỏi ôn nhanh và không làm lộ đáp án theo kiểu quá trực tiếp nếu người học chỉ muốn gợi ý.",
+    "Ngữ cảnh là trang học bài. Ưu tiên giải thích dễ hiểu, tóm tắt phần đang học, gợi ý cách ghi nhớ, tạo câu hỏi ôn nhanh và không làm lộ đáp án quá trực tiếp nếu người học chỉ muốn gợi ý.",
   "lesson-studio":
     "Ngữ cảnh là studio biên soạn bài học. Hãy hành xử như một instructional designer và biên tập viên: góp ý cấu trúc, chất lượng truyền đạt, checklist trước khi publish, ý tưởng quiz, microcopy và cách làm bài học rõ hơn.",
   garden:
-    "Ngữ cảnh là game nông trại học tập. Hãy hướng dẫn nước đi tiếp theo, ưu tiên tài nguyên, giải thích UI/nhiệm vụ, và giữ giọng điệu thân thiện như một trợ lý nông trại thông minh."
+    "Ngữ cảnh là game nông trại học tập. Hãy hướng dẫn nước đi tiếp theo, ưu tiên tài nguyên, giải thích UI hoặc nhiệm vụ, và giữ giọng điệu thân thiện như một trợ lý nông trại thông minh."
 };
 
 function cleanText(value, limit = 4000) {
@@ -71,7 +73,9 @@ function buildSystemPrompt({
 }) {
   const guide = pageGuides[pageType] || pageGuides.default;
   const userSummary = user
-    ? `Người dùng hiện tại: ${cleanText(user.username || "Học viên", 60)} | level ${Math.max(0, Number(user.level) || 0)} | vai trò: ${user.isAdmin ? "admin" : user.isTeacher ? "teacher" : "student"}`
+    ? `Người dùng hiện tại: ${cleanText(user.username || "Học viên", 60)} | level ${Math.max(0, Number(user.level) || 0)} | vai trò: ${
+        user.isAdmin ? "admin" : user.isTeacher ? "teacher" : "student"
+      }`
     : "Người dùng hiện tại: khách hoặc chưa đăng nhập.";
 
   const safePageTitle = cleanText(pageTitle, 140);
@@ -82,11 +86,11 @@ function buildSystemPrompt({
   const safeHistory = formatHistory(history);
 
   return [
-    "Bạn là AI Tutor của Hoc Tap Thu Duc.",
+    "Bạn là AI Tutor của Học Tập Thủ Đức.",
+    "Hãy luôn phản hồi bằng tiếng Việt thuần túy, sử dụng ngôn ngữ dễ hiểu phù hợp với học sinh.",
     "Mục tiêu: hướng dẫn ngắn gọn, hữu ích, dễ làm theo và không lan man.",
     guide,
     "Quy tắc trả lời:",
-    "- Luôn trả lời bằng tiếng Việt tự nhiên.",
     "- Giữ câu trả lời gọn: tối đa 1 đoạn mở đầu ngắn và 3-5 bullet khi cần.",
     "- Nếu dữ liệu trang thiếu, nói rõ đang suy luận từ ngữ cảnh hiện có.",
     "- Không bịa dữ kiện, số liệu, hay hành vi hệ thống.",
@@ -103,9 +107,65 @@ function buildSystemPrompt({
     .join("\n\n");
 }
 
+function extractReplyFromChoices(payload) {
+  const content = payload?.choices?.[0]?.message?.content;
+
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item?.type === "text") return item.text || "";
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return "";
+}
+
+async function requestTutorReply(finalPrompt) {
+  const response = await fetch("https://api.siliconflow.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: [
+        {
+          role: "user",
+          content: finalPrompt
+        }
+      ],
+      ...requestConfig
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const remoteError =
+      payload?.error?.message ||
+      payload?.message ||
+      "SiliconFlow không trả về phản hồi hợp lệ.";
+    const error = new Error(remoteError);
+    error.statusCode = response.status;
+    throw error;
+  }
+
+  return cleanText(extractReplyFromChoices(payload), 5000);
+}
+
 exports.askTutor = async (req, res) => {
   try {
-    const { prompt, pageType, pageTitle, selection, contextSummary, metadata, history } = req.body || {};
+    const { prompt, pageType, pageTitle, selection, contextSummary, metadata, history } =
+      req.body || {};
     const safePrompt = cleanText(prompt, 1200);
 
     if (!safePrompt) {
@@ -118,19 +178,9 @@ exports.askTutor = async (req, res) => {
     if (!apiKey) {
       return res.status(503).json({
         success: false,
-        error: "AI Tutor chưa được cấu hình khoá Gemini trên server."
+        error: "AI Tutor chưa được cấu hình khóa SiliconFlow trên server."
       });
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-thinking-exp-01-21"
-    });
-
-    const chatSession = model.startChat({
-      generationConfig,
-      history: []
-    });
 
     const finalPrompt = buildSystemPrompt({
       pageType: cleanText(pageType, 80) || "default",
@@ -143,8 +193,7 @@ exports.askTutor = async (req, res) => {
       user: req.user || null
     });
 
-    const result = await chatSession.sendMessage(finalPrompt);
-    const reply = cleanText(result?.response?.text?.() || "", 5000);
+    const reply = await requestTutorReply(finalPrompt);
 
     if (!reply) {
       return res.status(502).json({
@@ -159,9 +208,18 @@ exports.askTutor = async (req, res) => {
     });
   } catch (error) {
     console.error("AI Tutor error:", error);
-    return res.status(500).json({
+
+    const statusCode =
+      Number(error?.statusCode) >= 400 && Number(error?.statusCode) < 600
+        ? Number(error.statusCode)
+        : 500;
+
+    return res.status(statusCode).json({
       success: false,
-      error: "AI Tutor đang hơi quá tải. Bạn thử lại sau ít phút nhé."
+      error:
+        statusCode >= 500
+          ? "AI Tutor đang hơi quá tải. Bạn thử lại sau ít phút nhé."
+          : cleanText(error?.message, 240) || "Không thể lấy phản hồi từ AI Tutor."
     });
   }
 };

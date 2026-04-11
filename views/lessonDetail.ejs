@@ -103,6 +103,15 @@
                             <% } %>
                         </p>
 
+                        <% if (user) { %>
+                            <div class="co-presence-container" id="co-presence-bar" aria-live="polite">
+                                <div class="presence-pulse"></div>
+                                <span class="presence-text">Đang cùng học:</span>
+                                <div class="avatar-group" id="live-avatars"></div>
+                            </div>
+                            <div id="interaction-layer"></div>
+                        <% } %>
+
                         <div class="lesson-section-strip" id="lessonSectionStrip">
                             <span class="lesson-empty-inline">Đang chia bài học theo các phần chính...</span>
                         </div>
@@ -316,6 +325,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <script>
     window.LESSON_ID = '<%= lesson._id %>';
@@ -330,6 +340,14 @@
         lessonPosition: <%- JSON.stringify(lessonPosition) %>,
         revisionKey: <%- JSON.stringify(lesson.updatedAt ? String(new Date(lesson.updatedAt).getTime()) : '') %>
     };
+    window.LESSON_PRESENCE_STATE = <%- user ? JSON.stringify({
+        lessonId: String(lesson._id),
+        currentUser: {
+            id: String(user._id),
+            username: user.username || 'Bạn học',
+            avatar: user.avatar || ''
+        }
+    }) : 'null' %>;
 
     <%
         let rawContent = lesson.content || [];

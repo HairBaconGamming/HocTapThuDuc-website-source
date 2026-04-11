@@ -401,18 +401,38 @@
 let allAchievements = [];
 let currentFilters = { category: 'all', rarity: 'all' };
 
+function syncStatsFromLoadedAchievements(serverStats = {}) {
+    const totalFromGrid = Array.isArray(allAchievements) ? allAchievements.length : 0;
+    const unlockedFromGrid = Array.isArray(allAchievements)
+        ? allAchievements.filter((achievement) => achievement && achievement.unlocked).length
+        : 0;
+    const safeTotal = Math.max(Number(serverStats.total) || 0, totalFromGrid);
+    const safeUnlocked = Math.max(Number(serverStats.unlocked) || 0, unlockedFromGrid);
+    const safeCompletion = safeTotal > 0
+        ? Math.min(100, Math.round((safeUnlocked / safeTotal) * 100))
+        : 0;
+    const safePoints = Number(serverStats.achievementPoints) || 0;
+
+    document.getElementById('total-achievements').textContent = safeTotal;
+    document.getElementById('unlocked-count').textContent = safeUnlocked;
+    document.getElementById('completion-percent').textContent = `${safeCompletion}%`;
+    document.getElementById('total-points').textContent = safePoints.toLocaleString('vi-VN');
+}
+
 async function loadAchievements() {
     try {
         const response = await fetch('/api/achievements/all');
         const data = await response.json();
         
         if (data.success) {
-            allAchievements = data.achievements;
+            allAchievements = Array.isArray(data.achievements) ? data.achievements : [];
             loadStats();
             renderAchievements();
         }
     } catch (err) {
         console.error('Load achievements error:', err);
+        allAchievements = [];
+        syncStatsFromLoadedAchievements();
     }
 }
 
@@ -423,14 +443,11 @@ async function loadStats() {
         
         if (data.success) {
             // [FIX] Sửa 'points' thành 'achievementPoints' để khớp với server trả về
-            const { total, unlocked, completion, achievementPoints } = data.stats;
-            document.getElementById('total-achievements').textContent = total;
-            document.getElementById('unlocked-count').textContent = unlocked;
-            document.getElementById('completion-percent').textContent = completion + '%';
-            document.getElementById('total-points').textContent = achievementPoints || 0;
+            syncStatsFromLoadedAchievements(data.stats || {});
         }
     } catch (err) {
         console.error('Load stats error:', err);
+        syncStatsFromLoadedAchievements();
     }
 }
 

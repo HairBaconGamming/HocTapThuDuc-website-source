@@ -87,7 +87,7 @@ exports.getProfile = async (req, res) => {
             },
             activities: activities,
             achievements: recentAchievements,
-            totalAchievements: achievementStats.unlocked || 0,
+            totalAchievements: achievementStats.total || 0,
             userRank: userRank,
             streak: streakInfo.streak,
             lastStudyDate: streakInfo.lastStudyDate,

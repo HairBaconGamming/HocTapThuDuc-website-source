@@ -34,11 +34,93 @@ const io = socketio(server);
 app.locals.io = io;
 setIo(io);
 
+const lessonRooms = new Map();
+
+function normalizeLessonPresenceUser(user = {}) {
+  const id = String(user.id || user._id || '').trim();
+  if (!id) return null;
+
+  const username = String(user.username || user.name || 'Bạn học').trim() || 'Bạn học';
+  const avatar =
+    String(user.avatar || '').trim() ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=eff6ff&color=1d4ed8`;
+
+  return { id, username, avatar };
+}
+
+function emitLessonPresence(lessonId) {
+  const room = lessonRooms.get(lessonId);
+  const uniqueUsers = new Map();
+
+  if (room instanceof Map) {
+    room.forEach((user) => {
+      if (user?.id && !uniqueUsers.has(user.id)) {
+        uniqueUsers.set(user.id, user);
+      }
+    });
+  }
+
+  io.to(`lesson:${lessonId}`).emit('update_presence', Array.from(uniqueUsers.values()));
+}
+
+function leaveLessonRoom(socket) {
+  const lessonId = socket.lessonPresenceId;
+  if (!lessonId || !lessonRooms.has(lessonId)) return;
+
+  const room = lessonRooms.get(lessonId);
+  room.delete(socket.id);
+
+  if (room.size === 0) {
+    lessonRooms.delete(lessonId);
+  }
+
+  emitLessonPresence(lessonId);
+}
+
 io.on("connection", (socket) => {
   socket.on("userConnect", (userId) => {
     if (userId) {
       socket.join(`user:${userId}`);
     }
+  });
+
+  socket.on("join_lesson", ({ lessonId, user } = {}) => {
+    const safeLessonId = String(lessonId || "").trim();
+    const safeUser = normalizeLessonPresenceUser(user);
+    if (!safeLessonId || !safeUser) return;
+
+    if (socket.lessonPresenceId && socket.lessonPresenceId !== safeLessonId) {
+      leaveLessonRoom(socket);
+    }
+
+    socket.join(`lesson:${safeLessonId}`);
+    socket.lessonPresenceId = safeLessonId;
+    socket.lessonPresenceUser = safeUser;
+
+    if (!lessonRooms.has(safeLessonId)) {
+      lessonRooms.set(safeLessonId, new Map());
+    }
+
+    lessonRooms.get(safeLessonId).set(socket.id, safeUser);
+    emitLessonPresence(safeLessonId);
+  });
+
+  socket.on("send_interaction", (payload = {}) => {
+    const safeLessonId = String(payload.lessonId || socket.lessonPresenceId || "").trim();
+    if (!safeLessonId) return;
+
+    socket.to(`lesson:${safeLessonId}`).emit("receive_interaction", {
+      lessonId: safeLessonId,
+      targetUserId: String(payload.targetUserId || ""),
+      type: payload.type || "high_five",
+      emoji: payload.emoji || "🙌",
+      senderId: socket.lessonPresenceUser?.id || "",
+      senderName: socket.lessonPresenceUser?.username || "Bạn học"
+    });
+  });
+
+  socket.on("disconnect", () => {
+    leaveLessonRoom(socket);
   });
 });
 

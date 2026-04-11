@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Lesson = require("../models/Lesson");
 const LessonCompletion = require("../models/LessonCompletion");
 const Garden = require("../models/Garden");
+const { ACHIEVEMENT_DEFINITIONS } = require("../config/achievementDefinitions");
 const { emitAchievementUnlocked } = require("./realtime");
 
 const RARITY_ORDER = {
@@ -17,6 +18,10 @@ const CUSTOM_TRIGGER_MAP = {
   login: ["first_login"],
   register: ["community_join"]
 };
+
+const ACHIEVEMENT_DEFINITION_MAP = new Map(
+  ACHIEVEMENT_DEFINITIONS.map((achievement) => [achievement.id, achievement])
+);
 
 const HIDDEN_ACHIEVEMENT_PLACEHOLDER = {
   name: "Thanh tich bi an",
@@ -86,20 +91,66 @@ function normalizeAchievementDetail(source) {
     ? source.achievementId
     : null;
   const achievementData = source.achievementData || {};
+  const canonicalId = source.id || achievementId?.id || achievementData.id || null;
+  const canonicalDefinition = canonicalId
+    ? ACHIEVEMENT_DEFINITION_MAP.get(canonicalId) || null
+    : null;
 
   return {
     _id: source._id ? toIdString(source._id) : achievementId?._id ? toIdString(achievementId._id) : null,
-    id: source.id || achievementId?.id || achievementData.id || null,
-    name: source.name || achievementId?.name || achievementData.name || "Thanh tich",
-    description: source.description || achievementId?.description || achievementData.description || "",
+    id: canonicalId,
+    name:
+      canonicalDefinition?.name ||
+      source.name ||
+      achievementId?.name ||
+      achievementData.name ||
+      "Thành tích",
+    description:
+      canonicalDefinition?.description ||
+      source.description ||
+      achievementId?.description ||
+      achievementData.description ||
+      "",
     icon: source.icon || achievementId?.icon || achievementData.icon || "🏆",
-    color: source.color || achievementId?.color || achievementData.color || "#4f46e5",
-    points: Number(source.points ?? achievementId?.points ?? achievementData.points ?? 0),
-    rarity: source.rarity || achievementId?.rarity || achievementData.rarity || "common",
-    category: source.category || achievementId?.category || achievementData.category || "learning",
-    unlockMessage: source.unlockMessage || achievementId?.unlockMessage || achievementData.unlockMessage || "",
-    isHidden: Boolean(source.isHidden ?? achievementId?.isHidden),
-    condition: source.condition || achievementId?.condition || null
+    color:
+      canonicalDefinition?.color ||
+      source.color ||
+      achievementId?.color ||
+      achievementData.color ||
+      "#4f46e5",
+    points: Number(
+      canonicalDefinition?.points ??
+        source.points ??
+        achievementId?.points ??
+        achievementData.points ??
+        0
+    ),
+    rarity:
+      canonicalDefinition?.rarity ||
+      source.rarity ||
+      achievementId?.rarity ||
+      achievementData.rarity ||
+      "common",
+    category:
+      canonicalDefinition?.category ||
+      source.category ||
+      achievementId?.category ||
+      achievementData.category ||
+      "learning",
+    unlockMessage:
+      canonicalDefinition?.unlockMessage ||
+      source.unlockMessage ||
+      achievementId?.unlockMessage ||
+      achievementData.unlockMessage ||
+      "",
+    isHidden: Boolean(
+      source.isHidden ?? achievementId?.isHidden ?? canonicalDefinition?.isHidden
+    ),
+    condition:
+      canonicalDefinition?.condition ||
+      source.condition ||
+      achievementId?.condition ||
+      null
   };
 }
 
@@ -204,9 +255,9 @@ function maskLockedAchievement(achievement) {
 
   return {
     ...achievement,
-    name: HIDDEN_ACHIEVEMENT_PLACEHOLDER.name,
-    description: HIDDEN_ACHIEVEMENT_PLACEHOLDER.description,
-    icon: HIDDEN_ACHIEVEMENT_PLACEHOLDER.icon
+    name: "Thành tích bí ẩn",
+    description: "Mở khóa để khám phá thành tích này.",
+    icon: "❓"
   };
 }
 
