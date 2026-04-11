@@ -1,165 +1,246 @@
 const mongoose = require("mongoose");
 const multer = require("multer");
-const { Readable } = require("stream");
-const path = require("path");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const ProImage = require("../models/ProImage");
 
-// 1. Cấu hình URI và Kết nối GridFS
-let mongoURI = process.env.IMAGE_MONGO_URI;
-if (typeof mongoURI === 'string') mongoURI = mongoURI.replace(/^"(.*)"$/, '$1');
-if (!mongoURI) {
-  console.warn('IMAGE_MONGO_URI not set; using mongodb://localhost:27017/studypro as fallback for pro-images');
-  mongoURI = 'mongodb://localhost:27017/studypro';
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+const LEGACY_BUCKET_NAME = "pro-images";
+
+function stripWrappingQuotes(value) {
+  return typeof value === "string" ? value.replace(/^\"(.*)\"$/, "$1") : value;
 }
 
-const conn = mongoose.createConnection(mongoURI);
+const hasCloudinaryConfig = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
 
-let bucket;
-conn.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "pro-images",
+if (hasCloudinaryConfig) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
   });
-  console.log("GridFS connection is ready.");
-});
-
-function sanitizeFilename(originalName) {
-  const fileExt = path.extname(originalName);
-  const randomString = Math.random().toString(36).substring(2, 8);
-  return `${Date.now()}-${randomString}${fileExt}`;
+} else {
+  console.warn(
+    "Cloudinary credentials are missing. /api/pro-images/upload will be unavailable until env vars are configured."
+  );
 }
 
-// 2. Cấu hình Multer (Memory Storage)
+const storage = hasCloudinaryConfig
+  ? new CloudinaryStorage({
+      cloudinary,
+      params: async () => ({
+        folder: "hoctapthuduc/pro-images",
+        allowed_formats: ["jpeg", "jpg", "png", "gif", "webp", "bmp", "tiff", "svg"],
+        transformation: [{ quality: "auto", fetch_format: "auto" }],
+      }),
+    })
+  : multer.memoryStorage();
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  fileFilter: function (req, file, cb) {
+  storage,
+  limits: { fileSize: MAX_UPLOAD_SIZE },
+  fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|svg/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const originalName = file?.originalname || "";
+    const mimeType = file?.mimetype || "";
+    const extname = allowedTypes.test(originalName.toLowerCase());
+    const mimetype = allowedTypes.test(mimeType.toLowerCase());
 
     if (extname && mimetype) {
       return cb(null, true);
-    } else {
-      cb(new Error("Chỉ cho phép upload file ảnh!"));
     }
+
+    cb(new Error("Chi cho phep upload file anh!"));
   },
 });
 
-// Middleware xử lý upload để dùng trong router
 exports.uploadMiddleware = upload.single("image");
 
-// 3. Các hàm xử lý (Handlers)
+const legacyMongoUri = stripWrappingQuotes(
+  process.env.IMAGE_MONGO_URI || process.env.MONGO_URI || "mongodb://localhost:27017/studypro"
+);
 
-// Upload ảnh
-exports.uploadImage = (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Không có file được upload!" });
-  }
+let legacyConn;
+let legacyBucket;
 
-  if (!bucket) {
-    return res.status(500).json({ error: "Kết nối tới DB chưa sẵn sàng." });
-  }
+function ensureLegacyBucket() {
+  if (legacyConn) return;
 
-  const sanitizedFilename = sanitizeFilename(req.file.originalname);
-  const readableStream = Readable.from(req.file.buffer);
-
-  const uploadStream = bucket.openUploadStream(sanitizedFilename, {
-    contentType: req.file.mimetype,
-    metadata: {
-      user: req.user._id.toString(),
-      displayName: req.file.originalname,
-    },
-  });
-
-  readableStream
-    .pipe(uploadStream)
-    .on("error", (err) => {
-      console.error("Lỗi khi upload file:", err);
-      return res.status(500).json({ error: "Lỗi khi upload file." });
-    })
-    .on("finish", () => {
-      const imageUrl = `/api/pro-images/${uploadStream.filename}`;
-      res.status(201).json({ url: imageUrl, fileId: uploadStream.id });
+  legacyConn = mongoose.createConnection(legacyMongoUri);
+  legacyConn.once("open", () => {
+    legacyBucket = new mongoose.mongo.GridFSBucket(legacyConn.db, {
+      bucketName: LEGACY_BUCKET_NAME,
     });
-};
+    console.log("Legacy GridFS connection is ready for pro-images compatibility.");
+  });
+  legacyConn.on("error", (err) => {
+    console.warn("Legacy GridFS connection error for pro-images:", err.message);
+  });
+}
 
-// Lấy danh sách ảnh
-exports.getList = async (req, res) => {
-  if (!bucket) {
-    return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
-  }
+ensureLegacyBucket();
+
+function buildImagePayload(image) {
+  const payload = image && typeof image.toObject === "function" ? image.toObject() : image;
+  const fallbackName =
+    payload?.displayName || payload?.filename || payload?.public_id || "Anh da tai len";
+
+  return {
+    _id: payload?._id,
+    url: payload?.url || "",
+    public_id: payload?.public_id || null,
+    filename: payload?.filename || payload?.public_id || null,
+    displayName: fallbackName,
+    size: Number(payload?.size) || 0,
+    createdAt: payload?.createdAt || null,
+    source: payload?.source || "cloudinary",
+    legacyFileId: payload?.legacyFileId || null,
+  };
+}
+
+async function getLegacyGridFsFiles(userId, migratedLegacyIds = new Set()) {
+  if (!legacyBucket) return [];
 
   try {
-    const files = await bucket.find({ "metadata.user": req.user._id.toString() }).toArray();
-
-    if (!files || files.length === 0) {
-      return res.json([]);
-    }
-
-    const filesWithDisplay = files.map((file) => ({
-      ...file,
-      url: `/api/pro-images/${file.filename}`,
-      displayName: file.metadata?.displayName || file.filename,
-    }));
-
-    res.json(filesWithDisplay);
+    const files = await legacyBucket.find({ "metadata.user": String(userId) }).toArray();
+    return files
+      .filter((file) => !migratedLegacyIds.has(String(file._id)))
+      .map((file) =>
+        buildImagePayload({
+          _id: file._id,
+          url: `/api/pro-images/${file.filename}`,
+          filename: file.filename,
+          displayName: file.metadata?.displayName || file.filename,
+          size: file.length,
+          createdAt: file.uploadDate,
+          source: "gridfs",
+          legacyFileId: String(file._id),
+        })
+      );
   } catch (err) {
-    console.error("Lỗi truy vấn danh sách ảnh:", err);
-    res.status(500).json({ error: "Lỗi máy chủ khi truy vấn ảnh." });
+    console.warn("Could not read legacy GridFS images:", err.message);
+    return [];
   }
-};
+}
 
-// Xem ảnh (Render file từ GridFS)
-exports.getImage = async (req, res) => {
-  if (!bucket) {
-    return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
+exports.uploadImage = async (req, res) => {
+  if (!hasCloudinaryConfig) {
+    return res.status(503).json({ error: "Cloudinary chua duoc cau hinh tren server." });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: "Khong co file duoc upload!" });
   }
 
   try {
-    const files = await bucket.find({ filename: req.params.filename }).toArray();
+    const newImage = await ProImage.create({
+      user: req.user._id,
+      url: req.file.path,
+      public_id: req.file.filename,
+      filename: req.file.filename,
+      displayName: req.file.originalname,
+      size: Number(req.file.size || req.file.bytes) || 0,
+      source: "cloudinary",
+    });
 
+    res.status(201).json({
+      url: newImage.url,
+      fileId: newImage._id,
+      image: buildImagePayload(newImage),
+    });
+  } catch (err) {
+    console.error("Loi khi upload file len Cloudinary:", err);
+    res.status(500).json({ error: "Loi khi upload file." });
+  }
+};
+
+exports.getList = async (req, res) => {
+  try {
+    const cloudinaryFiles = await ProImage.find({ user: req.user._id }).sort({ createdAt: -1 }).lean();
+    const migratedLegacyIds = new Set(
+      cloudinaryFiles.map((file) => String(file.legacyFileId || "")).filter(Boolean)
+    );
+    const legacyFiles = await getLegacyGridFsFiles(req.user._id, migratedLegacyIds);
+
+    const merged = [
+      ...cloudinaryFiles.map((file) => buildImagePayload({ ...file, source: "cloudinary" })),
+      ...legacyFiles,
+    ].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    res.json(merged);
+  } catch (err) {
+    console.error("Loi truy van danh sach anh:", err);
+    res.status(500).json({ error: "Loi may chu khi truy van anh." });
+  }
+};
+
+exports.getImage = async (req, res) => {
+  if (!legacyBucket) {
+    return res.status(404).json({ error: "Anh khong ton tai!" });
+  }
+
+  try {
+    const files = await legacyBucket.find({ filename: req.params.filename }).toArray();
     if (!files || files.length === 0) {
-      return res.status(404).json({ error: "Ảnh không tồn tại!" });
+      return res.status(404).json({ error: "Anh khong ton tai!" });
     }
 
     const file = files[0];
-    res.set("Content-Type", file.contentType);
+    res.set("Content-Type", file.contentType || "application/octet-stream");
     res.set("Content-Disposition", `inline; filename="${file.metadata?.displayName || file.filename}"`);
-
-    const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-    downloadStream.pipe(res);
+    legacyBucket.openDownloadStreamByName(req.params.filename).pipe(res);
   } catch (err) {
-    console.error("Lỗi truy xuất file:", err);
-    res.status(500).json({ error: "Lỗi máy chủ khi truy xuất file." });
+    console.error("Loi truy xuat legacy GridFS image:", err);
+    res.status(500).json({ error: "Loi may chu khi truy xuat anh." });
   }
 };
 
-// Xóa ảnh
 exports.deleteImage = async (req, res) => {
-  if (!bucket) {
-    return res.status(500).json({ error: "Kết nối DB chưa sẵn sàng." });
-  }
-
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "ID file không hợp lệ." });
+      return res.status(400).json({ error: "ID file khong hop le." });
     }
 
-    const fileId = new mongoose.Types.ObjectId(req.params.id);
+    const imageId = new mongoose.Types.ObjectId(req.params.id);
 
-    // Kiểm tra quyền sở hữu
-    const file = await conn.db.collection("pro-images.files").findOne({
-      _id: fileId,
-      "metadata.user": req.user._id.toString()
+    const cloudinaryImage = await ProImage.findOne({
+      _id: imageId,
+      user: req.user._id,
     });
 
-    if (!file) {
-      return res.status(404).json({ error: "Ảnh không tồn tại hoặc bạn không có quyền xóa." });
+    if (cloudinaryImage) {
+      if (cloudinaryImage.public_id) {
+        if (!hasCloudinaryConfig) {
+          return res.status(503).json({ error: "Cloudinary chua duoc cau hinh tren server." });
+        }
+        await cloudinary.uploader.destroy(cloudinaryImage.public_id, { resource_type: "image" });
+      }
+
+      await cloudinaryImage.deleteOne();
+      return res.status(200).json({ message: "Xoa anh thanh cong!" });
     }
 
-    await bucket.delete(fileId);
-    res.status(200).json({ message: "Xóa ảnh thành công!" });
+    if (!legacyBucket || !legacyConn) {
+      return res.status(404).json({ error: "Anh khong ton tai hoac ban khong co quyen xoa." });
+    }
+
+    const legacyFile = await legacyConn.db.collection(`${LEGACY_BUCKET_NAME}.files`).findOne({
+      _id: imageId,
+      "metadata.user": String(req.user._id),
+    });
+
+    if (!legacyFile) {
+      return res.status(404).json({ error: "Anh khong ton tai hoac ban khong co quyen xoa." });
+    }
+
+    await legacyBucket.delete(imageId);
+    res.status(200).json({ message: "Xoa anh thanh cong!" });
   } catch (err) {
-    console.error("Lỗi xóa file:", err);
-    res.status(500).json({ error: "Lỗi máy chủ khi xóa ảnh." });
+    console.error("Loi xoa file:", err);
+    res.status(500).json({ error: "Loi may chu khi xoa anh." });
   }
 };

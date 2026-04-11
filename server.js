@@ -21,6 +21,7 @@ const { getSessionSecret } = require("./utils/secrets");
 const { corsOptionsDelegate } = require("./utils/corsPolicy");
 const { setIo } = require("./utils/realtime");
 const { startGuildJobs } = require("./jobs/guildJobs");
+const { migrateLegacyProImages, hasCloudinaryEnv } = require("./services/proImageMigrationService");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -54,7 +55,22 @@ const mongooseOptions = {
 };
 
 mongoose.connect(uri.replace(/^"(.*)"$/, '$1'), mongooseOptions)
-  .then(() => console.log('✅ MongoDB connected.'))
+  .then(async () => {
+    console.log('✅ MongoDB connected.');
+    if (hasCloudinaryEnv()) {
+      setTimeout(() => {
+        migrateLegacyProImages({ deleteLegacy: true, logger: console })
+          .then((summary) => {
+            if (!summary?.skipped) {
+              console.log(`[pro-image-migrate] startup migration done: success=${summary.successCount}, skipped=${summary.skipCount}, failed=${summary.failCount}`);
+            }
+          })
+          .catch((error) => {
+            console.warn('[pro-image-migrate] startup migration failed:', error.message);
+          });
+      }, 4000);
+    }
+  })
   .catch(err => {
     console.error('❌ MongoDB Connection Error:', err.message);
     console.log('⚠️  TROUBLESHOOTING:');

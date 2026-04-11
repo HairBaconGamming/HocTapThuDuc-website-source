@@ -1,142 +1,171 @@
 <%- include('partials/header') %>
 
 <style>
-    /* CSS giữ nguyên style đẹp như cũ */
     .pro-gallery-container {
-        max-width: 1000px; margin: 40px auto; padding: 20px;
-        background: white; border-radius: 16px;
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 16px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
     }
     .header-area {
-        display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
-        border-bottom: 2px solid #f3f4f6; padding-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #f3f4f6;
+        padding-bottom: 20px;
+        gap: 16px;
     }
     .upload-zone {
-        border: 2px dashed #cbd5e1; border-radius: 12px;
-        padding: 40px; text-align: center; cursor: pointer;
-        transition: 0.2s; background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #f8fafc;
         position: relative;
     }
     .upload-zone:hover { border-color: #d97706; background: #fffbeb; }
     .upload-zone.dragover { border-color: #d97706; background: #fff7ed; transform: scale(1.01); }
-    
     .gallery-grid {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; margin-top: 30px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
     }
     .gallery-item {
-        position: relative; border-radius: 12px; overflow: hidden;
-        aspect-ratio: 1/1; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        group; cursor: pointer; border: 2px solid transparent; background: #eee;
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        cursor: pointer;
+        border: 2px solid transparent;
+        background: #eee;
     }
     .gallery-item:hover { border-color: #d97706; }
     .gallery-item img {
-        width: 100%; height: 100%; object-fit: cover; transition: 0.3s;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: 0.3s;
     }
     .gallery-item:hover img { transform: scale(1.1); }
-    
     .item-actions {
-        position: absolute; bottom: 0; left: 0; width: 100%;
-        background: rgba(0,0,0,0.7); padding: 10px;
-        display: flex; justify-content: space-around;
-        opacity: 0; transition: 0.2s;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0,0,0,0.7);
+        padding: 10px;
+        display: flex;
+        justify-content: space-around;
+        opacity: 0;
+        transition: 0.2s;
     }
     .gallery-item:hover .item-actions { opacity: 1; }
-    
     .action-btn {
-        color: white; cursor: pointer; font-size: 1.2rem; transition: 0.2s;
+        color: white;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: 0.2s;
     }
     .action-btn:hover { color: #fbbf24; transform: scale(1.2); }
     .delete-btn:hover { color: #ef4444; }
-
-    /* Progress Bar */
     .progress-wrapper {
-        display: none; margin-top: 15px;
+        display: none;
+        margin-top: 15px;
     }
     .progress-bar {
-        width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;
+        width: 100%;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
     }
     .progress-fill {
-        height: 100%; background: #d97706; width: 0%; transition: width 0.2s;
+        height: 100%;
+        background: #d97706;
+        width: 0%;
+        transition: width 0.2s;
     }
 </style>
 
 <div class="container">
     <div class="pro-gallery-container">
-        
         <div class="header-area">
             <div>
-                <h2 style="margin:0; color: #1f2937;">Kho Ảnh PRO 👑</h2>
-                <p style="margin:5px 0 0; color:#6b7280;">Lưu trữ ảnh cá nhân (GridFS Storage).</p>
+                <h2 style="margin:0; color: #1f2937;">Kho Anh PRO</h2>
+                <p style="margin:5px 0 0; color:#6b7280;">Luu tru anh ca nhan voi Cloudinary CDN, nen anh tu dong va tai nhanh hon.</p>
             </div>
             <a href="/profile" class="btn-secondary" style="padding: 8px 16px; border-radius: 8px; text-decoration: none;">
-                <i class="fas fa-arrow-left"></i> Quay lại
+                <i class="fas fa-arrow-left"></i> Quay lai
             </a>
         </div>
 
         <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #d97706; margin-bottom: 15px;"></i>
-            <h4 style="margin:0; color:#374151;">Click hoặc Kéo ảnh vào đây để tải lên</h4>
-            <p style="margin:5px 0 0; color:#9ca3af; font-size: 0.9rem;">Hỗ trợ: JPG, PNG, GIF (Max 50MB)</p>
+            <h4 style="margin:0; color:#374151;">Click hoac keo anh vao day de tai len</h4>
+            <p style="margin:5px 0 0; color:#9ca3af; font-size: 0.9rem;">Ho tro: JPG, PNG, GIF, WEBP, SVG (Max 10MB)</p>
             <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFiles(this.files)">
-            
+
             <div class="progress-wrapper" id="progressWrapper">
                 <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-                <div style="font-size: 0.8rem; color: #6b7280; margin-top: 5px;">Đang xử lý...</div>
+                <div style="font-size: 0.8rem; color: #6b7280; margin-top: 5px;">Dang xu ly...</div>
             </div>
         </div>
 
         <div id="galleryGrid" class="gallery-grid">
             <div style="grid-column:1/-1; text-align:center; padding: 40px; color:#9ca3af;">
-                <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                <i class="fas fa-spinner fa-spin"></i> Dang tai du lieu...
             </div>
         </div>
-
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // 1. LOAD IMAGES
     async function loadImages() {
         const grid = document.getElementById('galleryGrid');
         try {
             const res = await fetch('/api/pro-images/list');
-            
-            if (!res.ok) throw new Error('Lỗi tải danh sách ảnh');
-            
+            if (!res.ok) throw new Error('Loi tai danh sach anh');
+
             const data = await res.json();
-            
             grid.innerHTML = '';
+
             if (!data || data.length === 0) {
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding: 40px; color:#9ca3af; font-style:italic;">
-                    Chưa có ảnh nào. Hãy tải lên ngay!
-                </div>`;
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding: 40px; color:#9ca3af; font-style:italic;">
+                        Chua co anh nao. Hay tai len ngay!
+                    </div>
+                `;
                 return;
             }
 
-            data.forEach(img => {
-                // img bao gồm: _id, filename, url, metadata...
+            data.forEach((img) => {
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
                 div.innerHTML = `
-                    <img src="${img.url}" loading="lazy" onerror="this.src='/img/placeholder.png'">
+                    <img src="${img.url}" alt="${img.displayName || 'Uploaded image'}" loading="lazy" onerror="this.src='/img/placeholder.png'">
                     <div class="item-actions">
                         <i class="fas fa-link action-btn" title="Copy Link" onclick="copyLink('${img.url}')"></i>
-                        <i class="fas fa-trash-alt action-btn delete-btn" title="Xóa ảnh" onclick="deleteImage('${img._id}')"></i>
+                        <i class="fas fa-trash-alt action-btn delete-btn" title="Xoa anh" onclick="deleteImage('${img._id}')"></i>
                     </div>
                 `;
                 grid.appendChild(div);
             });
-        } catch(e) {
+        } catch (e) {
             console.error(e);
-            grid.innerHTML = '<p style="color:red; text-align:center;">Lỗi kết nối server.</p>';
+            grid.innerHTML = '<p style="color:red; text-align:center;">Loi ket noi server.</p>';
         }
     }
 
-    // 2. UPLOAD HANDLING
     const dropZone = document.getElementById('dropZone');
-    
-    // Drag & Drop effects
+
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => {
@@ -146,10 +175,9 @@
     });
 
     async function handleFiles(files) {
-        if(files.length === 0) return;
+        if (files.length === 0) return;
         const file = files[0];
 
-        // UI Loading
         document.getElementById('progressWrapper').style.display = 'block';
         const pFill = document.getElementById('progressFill');
         pFill.style.width = '30%';
@@ -162,65 +190,72 @@
                 method: 'POST',
                 body: formData
             });
-            
-            const data = await res.json();
 
-            // Backend GridFS trả về 201 Created khi thành công
+            const data = await res.json();
             if (res.ok) {
                 pFill.style.width = '100%';
                 setTimeout(() => {
                     document.getElementById('progressWrapper').style.display = 'none';
                     pFill.style.width = '0%';
-                    loadImages(); // Reload list
+                    loadImages();
                     Swal.fire({
-                        toast: true, position: 'top-end', icon: 'success', 
-                        title: 'Tải ảnh thành công!', showConfirmButton: false, timer: 3000
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Tai anh thanh cong!',
+                        showConfirmButton: false,
+                        timer: 3000
                     });
                 }, 500);
             } else {
-                throw new Error(data.error || 'Lỗi upload');
+                throw new Error(data.error || 'Loi upload');
             }
-        } catch(e) {
+        } catch (e) {
             document.getElementById('progressWrapper').style.display = 'none';
-            Swal.fire('Lỗi', e.message || 'Không thể tải ảnh.', 'error');
+            Swal.fire('Loi', e.message || 'Khong the tai anh.', 'error');
         }
     }
 
-    // 3. ACTIONS
     function copyLink(url) {
-        const fullUrl = window.location.origin + url;
+        const fullUrl = /^https?:\/\//i.test(url) ? url : (window.location.origin + url);
         navigator.clipboard.writeText(fullUrl);
         Swal.fire({
-            toast: true, position: 'top-end', icon: 'success', 
-            title: 'Đã copy link ảnh!', showConfirmButton: false, timer: 1500
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Da copy link anh!',
+            showConfirmButton: false,
+            timer: 1500
         });
     }
 
     async function deleteImage(id) {
         const result = await Swal.fire({
-            title: 'Xóa ảnh này?', text: "Không thể khôi phục sau khi xóa.",
-            icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa ngay', cancelButtonText: 'Hủy'
+            title: 'Xoa anh nay?',
+            text: 'Khong the khoi phuc sau khi xoa.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xoa ngay',
+            cancelButtonText: 'Huy'
         });
 
-        if(result.isConfirmed) {
+        if (result.isConfirmed) {
             try {
                 const res = await fetch('/api/pro-images/' + id, { method: 'DELETE' });
                 const data = await res.json();
-                
-                // Backend trả về 200 OK khi xóa thành công
-                if(res.ok) {
+
+                if (res.ok) {
                     loadImages();
-                    Swal.fire('Đã xóa!', 'Ảnh đã bị xóa.', 'success');
+                    Swal.fire('Da xoa!', 'Anh da bi xoa.', 'success');
                 } else {
-                    Swal.fire('Lỗi', data.error || 'Không xóa được', 'error');
+                    Swal.fire('Loi', data.error || 'Khong xoa duoc', 'error');
                 }
-            } catch(e) {
-                Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+            } catch (e) {
+                Swal.fire('Loi', 'Loi ket noi server', 'error');
             }
         }
     }
 
-    // Init
     document.addEventListener('DOMContentLoaded', loadImages);
 </script>
 
