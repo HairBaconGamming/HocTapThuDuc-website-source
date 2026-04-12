@@ -12,8 +12,9 @@
     --ai-tutor-radius-lg: 16px;
     --ai-tutor-radius-md: 12px;
     --ai-tutor-radius-pill: 999px;
-    /* Nhỏ gọn hơn một chút */
-    --ai-tutor-width: min(340px, calc(100vw - 32px));
+    
+    /* [CẬP NHẬT] Tăng chiều rộng từ 340px lên 400px để không gian chat thoáng hơn */
+    --ai-tutor-width: min(400px, calc(100vw - 32px));
     --ai-tutor-z: 1260;
     --ai-tutor-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -97,7 +98,9 @@
 /* Chat Panel */
 .ai-tutor-panel {
     width: 100%;
-    display: grid;
+    /* [CẬP NHẬT] Đổi từ grid sang flex column để kiểm soát overflow hoàn hảo */
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     padding: 14px;
     border-radius: var(--ai-tutor-radius-xl);
@@ -107,7 +110,7 @@
     box-shadow: var(--ai-tutor-shadow-lg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    max-height: min(75dvh, 600px);
+    max-height: min(80dvh, 650px); /* Tăng nhẹ max-height để phù hợp width mới */
     overflow: hidden;
     transform-origin: bottom right;
     transition: opacity var(--ai-tutor-transition), transform var(--ai-tutor-transition);
@@ -120,35 +123,40 @@
 }
 
 .ai-tutor-panel-head {
+    /* [CẬP NHẬT] Ép không cho shrink, thu nhỏ padding/gap */
+    flex-shrink: 0;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 8px;
+    gap: 8px;
+    padding-bottom: 6px; 
     border-bottom: 1px solid var(--ai-tutor-border);
 }
 
 .ai-tutor-kicker {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
+    gap: 4px;
+    margin-bottom: 2px;
     color: var(--ai-tutor-accent);
-    font-size: 0.7rem;
+    /* [CẬP NHẬT] Thu nhỏ font size */
+    font-size: 0.65rem; 
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .ai-tutor-panel-head h3 {
     margin: 0;
-    font-size: 1rem;
+    /* [CẬP NHẬT] Thu nhỏ Header */
+    font-size: 0.95rem; 
     font-weight: 600;
 }
 
 .ai-tutor-panel-head p {
-    margin: 4px 0 0;
-    font-size: 0.8rem;
+    /* [CẬP NHẬT] Thu nhỏ text phụ */
+    margin: 2px 0 0;
+    font-size: 0.75rem; 
     color: var(--ai-tutor-muted);
 }
 
@@ -163,8 +171,8 @@
 }
 
 .ai-tutor-mini-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px; /* [CẬP NHẬT] Thu nhỏ nút mini */
+    height: 28px;
     border-radius: var(--ai-tutor-radius-md);
     display: inline-flex;
     align-items: center;
@@ -182,11 +190,13 @@
 .ai-tutor-action {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    /* [CẬP NHẬT] Thu nhỏ gap, padding, font-size */
+    gap: 4px;
+    padding: 4px 10px;
     border-radius: var(--ai-tutor-radius-pill);
-    font-size: 0.75rem;
+    font-size: 0.7rem; 
     font-weight: 600;
+    white-space: nowrap; /* Tránh rớt dòng xấu xí */
 }
 
 .ai-tutor-context-pill {
@@ -195,6 +205,8 @@
 }
 
 .ai-tutor-quick-actions {
+    /* [CẬP NHẬT] Đảm bảo phần này không bị méo */
+    flex-shrink: 0; 
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
@@ -221,10 +233,14 @@
 
 /* Khu vực Chat */
 .ai-tutor-thread {
-    min-height: 0;
-    max-height: min(40dvh, 320px);
+    /* [CẬP NHẬT QUAN TRỌNG] Flex 1 giúp khung chat chiếm hết phần trống, 
+       tự động đẩy Header lên trên và Form xuống đáy */
+    flex: 1; 
+    min-height: 120px; 
+    max-height: none; /* Xoá max height tĩnh vì flex đã lo việc này */
     overflow-y: auto;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     padding-right: 4px;
     scroll-behavior: smooth;
@@ -260,7 +276,7 @@
     color: var(--ai-tutor-ink);
 }
 
-/* [MỚI] Tối ưu Đa phương tiện trong bong bóng chat */
+/* Tối ưu Đa phương tiện trong bong bóng chat */
 .ai-tutor-msg-bubble img,
 .ai-tutor-msg-bubble video,
 .ai-tutor-msg-bubble iframe {
@@ -324,14 +340,19 @@
 
 /* Form Input */
 .ai-tutor-form {
-    display: grid;
+    /* [CẬP NHẬT QUAN TRỌNG] flex-shrink: 0 đảm bảo form KHÔNG BAO GIỜ bị ép nhỏ
+       hay tràn ra ngoài khi khung chat phía trên dài ra */
+    flex-shrink: 0; 
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    margin-top: auto; /* Ghim sát đáy */
 }
 
 .ai-tutor-input-wrap {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 12px; /* Thu nhỏ padding chút để gọn hơn */
     border-radius: var(--ai-tutor-radius-lg);
     background: rgba(248, 250, 252, 0.8);
     border: 1px solid var(--ai-tutor-border);
@@ -345,9 +366,9 @@
 
 .ai-tutor-input {
     width: 100%;
-    min-height: 40px;
+    min-height: 36px; /* [CẬP NHẬT] Gọn hơn */
     max-height: 100px;
-    resize: none; /* Tắt resize mặc định, dùng JS auto-grow sẽ mượt hơn */
+    resize: none; 
     border: 0;
     outline: 0;
     background: transparent;
@@ -364,18 +385,18 @@
 }
 
 .ai-tutor-status {
-    font-size: 0.75rem;
+    font-size: 0.7rem; /* Gọn hơn */
     color: var(--ai-tutor-muted);
 }
 
 .ai-tutor-send {
-    min-height: 36px;
-    padding: 0 16px;
+    min-height: 32px; /* [CẬP NHẬT] Gọn hơn */
+    padding: 0 14px;
     border-radius: var(--ai-tutor-radius-pill);
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* Gọn hơn */
     font-weight: 600;
 }
 
@@ -416,10 +437,8 @@
 
 
 /* ========================================================
-   CÁC PHIÊN BẢN (THEMES)
+   CÁC PHIÊN BẢN (THEMES) - Giữ nguyên logic cũ
    ======================================================== */
-
-/* Theme: Lesson Detail */
 .ai-tutor-shell--lesson-detail {
     --ai-tutor-z: 1295;
     bottom: 90px;
@@ -432,7 +451,6 @@
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
-/* Theme: Dark Mode (Lesson Studio) */
 .ai-tutor-shell--lesson-studio {
     --ai-tutor-z: 9100;
 }
@@ -465,7 +483,6 @@
     background: linear-gradient(135deg, #2563eb, #38bdf8);
 }
 
-/* Theme: Garden (Retro / Game-like) */
 .ai-tutor-shell--garden {
     --ai-tutor-z: 55;
     bottom: 120px;
@@ -506,11 +523,11 @@
     }
     
     .ai-tutor-fab-copy small {
-        display: none; /* Giấu text phụ trên mobile để gọn hơn */
+        display: none;
     }
 
     .ai-tutor-panel {
-        max-height: min(80dvh, 500px);
+        max-height: min(85dvh, 600px);
     }
 }
 
