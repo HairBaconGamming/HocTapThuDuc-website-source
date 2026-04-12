@@ -1,0 +1,143 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleQA.css">
+
+<%
+const safeSubjects = Array.isArray(subjects) ? subjects : [];
+const safeGrades = Array.isArray(grades) ? grades : [];
+const safeSidebar = sidebar || {};
+const weeklyContributors = Array.isArray(safeSidebar.contributors?.weekly) ? safeSidebar.contributors.weekly : [];
+%>
+
+<div class="qa-shell">
+    <section class="qa-hero">
+        <div>
+            <span class="qa-kicker"><i class="fas fa-feather-pointed"></i> Đăng câu hỏi</span>
+            <h1 class="qa-hero-title">Biến chỗ mắc thành một lời kêu gọi giải cứu thật rõ ràng.</h1>
+            <p class="qa-hero-desc">
+                Ghi tiêu đề cụ thể, dán đề bài, thêm hình nếu cần và treo thưởng vàng để kéo cao thủ vào đúng câu hỏi.
+            </p>
+
+            <div class="qa-hero-actions">
+                <a href="/qa" class="qa-btn qa-btn-secondary"><i class="fas fa-arrow-left"></i> Quay về bảng chính</a>
+                <a href="/qa/community" class="qa-btn qa-btn-secondary"><i class="fas fa-people-group"></i> Xem cộng đồng</a>
+            </div>
+        </div>
+
+        <div class="qa-hero-stats">
+            <div class="qa-hero-stat">
+                <strong>1</strong>
+                <span>Tiêu đề rõ</span>
+            </div>
+            <div class="qa-hero-stat">
+                <strong>2</strong>
+                <span>Ngữ cảnh đủ</span>
+            </div>
+            <div class="qa-hero-stat">
+                <strong>3</strong>
+                <span>Có thể treo thưởng</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="qa-layout">
+        <section class="qa-feed">
+            <div class="qa-panel qa-form-panel">
+                <div class="qa-feed-head qa-panel-head">
+                    <div>
+                        <h2>Tạo bài mới</h2>
+                        <p>Càng mô tả rõ, cộng đồng càng dễ giúp nhanh và đúng trọng tâm.</p>
+                    </div>
+                </div>
+
+                <form id="qaQuestionForm" class="qa-form-stack">
+                    <label class="qa-form-field">
+                        <span>Tiêu đề câu hỏi</span>
+                        <input type="text" name="title" maxlength="180" placeholder="Ví dụ: Vì sao ở bước 3 lại suy ra được bất đẳng thức này?" required>
+                    </label>
+
+                    <div class="qa-form-row">
+                        <label class="qa-form-field">
+                            <span>Môn học</span>
+                            <select name="subject">
+                                <% safeSubjects.forEach((subject) => { %>
+                                    <option value="<%= subject %>"><%= subject %></option>
+                                <% }) %>
+                            </select>
+                        </label>
+
+                        <label class="qa-form-field">
+                            <span>Khối lớp</span>
+                            <select name="grade">
+                                <% safeGrades.forEach((grade) => { %>
+                                    <option value="<%= grade %>"><%= grade === 'Chung' ? 'Chung' : ('Lớp ' + grade) %></option>
+                                <% }) %>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="qa-form-field">
+                        <span>Nội dung chi tiết</span>
+                        <textarea name="content" rows="10" placeholder="Mô tả đề bài, chỗ đang bí, công thức đã thử hoặc điều bạn muốn được giải thích..." required></textarea>
+                    </label>
+
+                    <div class="qa-form-row">
+                        <label class="qa-form-field">
+                            <span>Ảnh minh họa</span>
+                            <textarea name="images" rows="3" placeholder="Dán URL ảnh, mỗi dòng một ảnh nếu cần"></textarea>
+                        </label>
+
+                        <label class="qa-form-field">
+                            <span>Treo thưởng vàng</span>
+                            <input type="number" name="bountyAmount" min="0" max="50000" step="10" value="0" placeholder="0">
+                        </label>
+                    </div>
+
+                    <div class="qa-form-actions">
+                        <button type="submit" class="qa-btn qa-btn-primary"><i class="fas fa-paper-plane"></i> Đăng lên Bảng Cầu Cứu</button>
+                        <a href="/qa/questions" class="qa-btn qa-btn-secondary">Xem feed câu hỏi</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <aside class="qa-sidebar">
+            <section class="qa-sidebar-card">
+                <h2 class="qa-panel-title">Checklist bài hỏi tốt</h2>
+                <div class="qa-filter-list">
+                    <div class="qa-filter-link is-static"><span>Nêu rõ đang bí ở đâu</span><span>01</span></div>
+                    <div class="qa-filter-link is-static"><span>Gắn đúng môn và khối</span><span>02</span></div>
+                    <div class="qa-filter-link is-static"><span>Đính ảnh hoặc dữ kiện đủ</span><span>03</span></div>
+                    <div class="qa-filter-link is-static"><span>Treo thưởng nếu cần lời giải nhanh</span><span>04</span></div>
+                </div>
+            </section>
+
+            <section class="qa-sidebar-card">
+                <h2 class="qa-panel-title">Người đang gánh team tuần này</h2>
+                <div class="qa-contributor-list">
+                    <% if (weeklyContributors.length > 0) { %>
+                        <% weeklyContributors.forEach((contributor) => { %>
+                            <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
+                                <div class="qa-contributor-row" style="gap:12px; padding:0; border:none;">
+                                    <img class="qa-contributor-avatar" src="<%= contributor.avatar || '/default.png' %>" alt="">
+                                    <div class="qa-contributor-meta">
+                                        <div class="qa-contributor-name qa-ellipsis">#<%= contributor.rank %> <%= contributor.username %></div>
+                                        <div class="qa-contributor-sub qa-ellipsis"><%= contributor.tier?.icon || '🌱' %> <%= contributor.tier?.label || 'Tân Binh' %></div>
+                                    </div>
+                                </div>
+                                <div class="qa-contributor-score"><%= Number(contributor.score || 0).toLocaleString('vi-VN') %></div>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="qa-empty" style="padding: 24px 8px;">
+                            <strong>Tuần này đang chờ người mở màn.</strong>
+                            <p>Một lời giải chất lượng có thể đưa bạn lên bảng ngay.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script src="/js/qa.js"></script>
+<%- include('partials/footer') %>

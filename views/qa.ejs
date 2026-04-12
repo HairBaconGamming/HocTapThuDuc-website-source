@@ -45,9 +45,9 @@ const queryFor = (overrides = {}) => {
 
             <div class="qa-hero-actions">
                 <% if (user) { %>
-                    <button type="button" class="qa-btn qa-btn-primary" data-open-modal="ask-question">
+                    <a href="/qa/ask" class="qa-btn qa-btn-primary">
                         <i class="fas fa-plus"></i> Đăng câu hỏi mới
-                    </button>
+                    </a>
                 <% } else { %>
                     <a href="/login" class="qa-btn qa-btn-primary">
                         <i class="fas fa-sign-in-alt"></i> Đăng nhập để hỏi bài
@@ -55,6 +55,9 @@ const queryFor = (overrides = {}) => {
                 <% } %>
                 <a href="<%= queryFor({ sort: 'hot' }) %>" class="qa-btn qa-btn-secondary">
                     <i class="fas fa-fire"></i> Xem bài đang hot
+                </a>
+                <a href="/qa/community" class="qa-btn qa-btn-secondary">
+                    <i class="fas fa-people-group"></i> Vào khu cộng đồng
                 </a>
             </div>
         </div>
@@ -157,7 +160,7 @@ const queryFor = (overrides = {}) => {
 
             <% if (safeQuestions.length > 0) { %>
                 <% safeQuestions.forEach((question) => { %>
-                    <a href="/qa/questions/<%= question._id %>" class="qa-feed-card">
+                    <a href="<%= question.href || ('/qa/questions/' + question._id) %>" class="qa-feed-card">
                         <div class="qa-card-top">
                             <span class="qa-badge qa-badge-subject"><%= question.subject || 'Khác' %></span>
                             <span class="qa-badge qa-badge-grade">Lớp <%= question.grade || 'Chung' %></span>

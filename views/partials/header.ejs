@@ -3,6 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%
+        const defaultOgDescription = 'Nền tảng học tập gamified với khóa học, bài học tương tác, AI Tutor, garden, guild và cộng đồng hỏi đáp.';
+        const ogDescription = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : defaultOgDescription;
+        const ogImage = typeof metaImage !== 'undefined' && metaImage
+            ? metaImage
+            : 'https://hoctapthuduc.onrender.com/api/pro-images/1752242181665-mcpehv.png';
+        const canonicalUrl = typeof metaUrl !== 'undefined' && metaUrl
+            ? metaUrl
+            : (typeof buildAbsoluteUrl === 'function' ? buildAbsoluteUrl(siteOrigin, currentPath) : currentPath);
+        const socialTitle = typeof metaTitle !== 'undefined' && metaTitle
+            ? metaTitle
+            : (typeof title !== 'undefined' ? `${title} ✨` : 'Học Tập Thủ Đức ✨');
+    %>
+    <meta name="description" content="<%= ogDescription %>">
+    <link rel="canonical" href="<%= canonicalUrl %>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Học Tập Thủ Đức">
+    <meta property="og:title" content="<%= socialTitle %>">
+    <meta property="og:description" content="<%= ogDescription %>">
+    <meta property="og:image" content="<%= ogImage %>">
+    <meta property="og:url" content="<%= canonicalUrl %>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= socialTitle %>">
+    <meta name="twitter:description" content="<%= ogDescription %>">
+    <meta name="twitter:image" content="<%= ogImage %>">
     <title><%= typeof title !== 'undefined' ? title : 'Học Tập Thủ Đức' %> ✨</title>
     <link rel="icon" type="image/png" href="https://hoctapthuduc.onrender.com/api/pro-images/1752242181665-mcpehv.png">
 

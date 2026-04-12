@@ -217,7 +217,7 @@
             }
 
             if (action === 'question') {
-                window.lessonCommentsSystem?.setPendingContext(this.currentSelection.anchor);
+                window.lessonCommentsSystem?.setPendingContext(this.cloneAnchor(this.currentSelection.anchor));
                 this.clearSelection();
                 return;
             }
@@ -232,6 +232,20 @@
             if (selection) selection.removeAllRanges();
             this.currentSelection = null;
             this.hideSelectionToolbar();
+        }
+
+        cloneAnchor(anchor) {
+            return anchor ? JSON.parse(JSON.stringify(anchor)) : null;
+        }
+
+        getModalClasses() {
+            return {
+                popup: 'lesson-smart-modal-popup',
+                title: 'lesson-smart-modal-title',
+                htmlContainer: 'lesson-smart-modal-html',
+                confirmButton: 'lesson-smart-modal-confirm',
+                cancelButton: 'lesson-smart-modal-cancel'
+            };
         }
 
         async createAnnotation(payload) {
@@ -255,21 +269,37 @@
 
         async createNoteFromSelection() {
             if (!window.Swal) return;
+            const anchor = this.cloneAnchor(this.currentSelection?.anchor);
+            if (!anchor) return;
 
             const result = await Swal.fire({
                 title: 'Ghi chú ngay tại đoạn đang đọc',
                 html: `
-                    <textarea id="lesson-inline-note" class="swal2-textarea" placeholder="Viết điều bạn muốn ghi nhớ hoặc hỏi lại..." style="display:block;width:100%;min-height:140px;"></textarea>
-                    <select id="lesson-inline-note-color" class="swal2-select" style="display:block;width:100%;margin-top:12px;">
-                        <option value="yellow">Vàng dịu</option>
-                        <option value="blue">Xanh nhạt</option>
-                        <option value="green">Xanh lá</option>
-                        <option value="pink">Hồng</option>
-                        <option value="purple">Tím</option>
-                    </select>
+                    <div class="lesson-smart-modal-shell">
+                        <div class="lesson-smart-modal-context">
+                            <span class="lesson-smart-modal-kicker">Đoạn đang chọn</span>
+                            <strong>${this.escapeHtml(anchor.selectedText || 'Đoạn trích hiện tại')}</strong>
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-inline-note">Ghi chú của bạn</label>
+                            <textarea id="lesson-inline-note" class="swal2-textarea" placeholder="Viết điều bạn muốn ghi nhớ hoặc hỏi lại..." style="display:block;width:100%;min-height:160px;"></textarea>
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-inline-note-color">Màu đánh dấu</label>
+                            <select id="lesson-inline-note-color" class="swal2-select" style="display:block;width:100%;margin-top:12px;">
+                                <option value="yellow">Vàng dịu</option>
+                                <option value="blue">Xanh nhạt</option>
+                                <option value="green">Xanh lá</option>
+                                <option value="pink">Hồng</option>
+                                <option value="purple">Tím</option>
+                            </select>
+                        </div>
+                    </div>
                 `,
                 focusConfirm: false,
                 showCancelButton: true,
+                buttonsStyling: false,
+                customClass: this.getModalClasses(),
                 confirmButtonText: 'Lưu ghi chú',
                 cancelButtonText: 'Đóng',
                 preConfirm: () => {
@@ -289,21 +319,37 @@
                 kind: 'note',
                 color: result.value.color,
                 note: result.value.note,
-                anchor: this.currentSelection.anchor
+                anchor
             });
         }
 
         async createFlashcardFromSelection() {
             if (!window.Swal) return;
 
-            const selectedText = this.currentSelection.anchor.selectedText;
+            const anchor = this.cloneAnchor(this.currentSelection?.anchor);
+            if (!anchor) return;
+            const selectedText = anchor.selectedText;
             const result = await Swal.fire({
                 title: 'Tạo checkpoint flashcard',
                 html: `
-                    <input id="lesson-inline-flashcard-front" class="swal2-input" placeholder="Mặt trước: câu hỏi hoặc tín hiệu gợi nhớ" value="Ý chính của đoạn này là gì?">
-                    <textarea id="lesson-inline-flashcard-back" class="swal2-textarea" placeholder="Mặt sau: câu trả lời / ghi nhớ chính" style="display:block;width:100%;min-height:140px;">${selectedText}</textarea>
+                    <div class="lesson-smart-modal-shell">
+                        <div class="lesson-smart-modal-context">
+                            <span class="lesson-smart-modal-kicker">Checkpoint từ đoạn trích</span>
+                            <strong>${this.escapeHtml(selectedText || 'Đoạn trích hiện tại')}</strong>
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-inline-flashcard-front">Mặt trước</label>
+                            <input id="lesson-inline-flashcard-front" class="swal2-input" placeholder="Mặt trước: câu hỏi hoặc tín hiệu gợi nhớ" value="Ý chính của đoạn này là gì?">
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-inline-flashcard-back">Mặt sau</label>
+                            <textarea id="lesson-inline-flashcard-back" class="swal2-textarea" placeholder="Mặt sau: câu trả lời / ghi nhớ chính" style="display:block;width:100%;min-height:160px;">${this.escapeHtml(selectedText || '')}</textarea>
+                        </div>
+                    </div>
                 `,
                 showCancelButton: true,
+                buttonsStyling: false,
+                customClass: this.getModalClasses(),
                 confirmButtonText: 'Tạo flashcard',
                 cancelButtonText: 'Đóng',
                 preConfirm: () => {
@@ -326,7 +372,7 @@
                     body: JSON.stringify({
                         front: result.value.front,
                         back: result.value.back,
-                        anchor: this.currentSelection.anchor
+                        anchor
                     })
                 });
                 const data = await response.json();
@@ -605,13 +651,31 @@
 
             const result = await Swal.fire({
                 title: 'Cập nhật ghi chú',
-                input: 'textarea',
-                inputValue: annotation.note || '',
-                inputPlaceholder: 'Viết lại ghi chú...',
+                html: `
+                    <div class="lesson-smart-modal-shell">
+                        <div class="lesson-smart-modal-context">
+                            <span class="lesson-smart-modal-kicker">Đang chỉnh sửa</span>
+                            <strong>${this.escapeHtml(annotation.anchor?.selectedText || 'Ghi chú trong bài học')}</strong>
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-edit-note">Nội dung ghi chú</label>
+                            <textarea id="lesson-edit-note" class="swal2-textarea" placeholder="Viết lại ghi chú..." style="display:block;width:100%;min-height:160px;">${this.escapeHtml(annotation.note || '')}</textarea>
+                        </div>
+                    </div>
+                `,
                 showCancelButton: true,
+                buttonsStyling: false,
+                customClass: this.getModalClasses(),
                 confirmButtonText: 'Lưu',
                 cancelButtonText: 'Đóng',
-                inputValidator: (value) => (!String(value || '').trim() ? 'Ghi chú không được để trống.' : null)
+                preConfirm: () => {
+                    const value = document.getElementById('lesson-edit-note')?.value?.trim();
+                    if (!value) {
+                        Swal.showValidationMessage('Ghi chú không được để trống.');
+                        return false;
+                    }
+                    return value;
+                }
             });
 
             if (!result.isConfirmed) return;

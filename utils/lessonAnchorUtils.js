@@ -18,6 +18,16 @@ function hashSeed(seed) {
     return hashText(seed).slice(0, 12);
 }
 
+function legacyClientHashSeed(seed) {
+    let hash = 0;
+    const source = String(seed || '');
+    for (let index = 0; index < source.length; index += 1) {
+        hash = ((hash << 5) - hash) + source.charCodeAt(index);
+        hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+}
+
 function createStableBlockKey(block, index = 0) {
     if (!block || typeof block !== 'object') return `block-${index}`;
 
@@ -33,7 +43,8 @@ function createStableBlockKey(block, index = 0) {
         block.data?.url ||
         '';
 
-    return `block-${index}-${hashSeed(`${block.type || 'unknown'}|${String(seedText).slice(0, 120)}`)}`;
+    const seed = `${block.type || 'unknown'}|${String(seedText || '').slice(0, 160)}`;
+    return `block-${index}-${legacyClientHashSeed(seed)}`;
 }
 
 function extractLessonBlocks(lessonOrContent) {

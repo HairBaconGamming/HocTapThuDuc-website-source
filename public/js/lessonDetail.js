@@ -809,11 +809,19 @@ const LessonWorkspace = {
                     });
                 } else if (question.type === 'fill') {
                     const fillInputs = Array.from(questionEl.querySelectorAll('.fill-input'));
+                    questionEl.querySelectorAll('.fill-answer-hint').forEach((node) => node.remove());
                     isQuestionCorrect = fillInputs.every((input) => {
-                        const matches = input.value.trim().toLowerCase() === String(input.dataset.answer || '').trim().toLowerCase();
+                        const expectedAnswer = String(input.dataset.answer || '').trim();
+                        const matches = input.value.trim().toLowerCase() === expectedAnswer.toLowerCase();
                         input.classList.toggle('is-valid', matches);
                         input.classList.toggle('is-invalid', !matches);
                         input.disabled = true;
+                        if (!matches && expectedAnswer) {
+                            const hint = document.createElement('span');
+                            hint.className = 'fill-answer-hint';
+                            hint.textContent = `Dap an: ${expectedAnswer}`;
+                            input.insertAdjacentElement('afterend', hint);
+                        }
                         return matches;
                     });
                 } else if (question.type === 'essay') {

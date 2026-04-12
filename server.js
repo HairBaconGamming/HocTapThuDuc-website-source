@@ -22,6 +22,7 @@ const { corsOptionsDelegate } = require("./utils/corsPolicy");
 const { setIo } = require("./utils/realtime");
 const { startGuildJobs } = require("./jobs/guildJobs");
 const { migrateLegacyProImages, hasCloudinaryEnv } = require("./services/proImageMigrationService");
+const { buildAbsoluteUrl, buildCoursePath, buildQuestionPath, buildSubjectPath } = require("./utils/urlHelpers");
 require("./config/passport")(passport);
 
 const trackVisits = require('./middlewares/trackVisits');
@@ -179,6 +180,10 @@ const { JSDOM } = require('jsdom');
 const purify = DOMPurify(new JSDOM('').window);
 app.locals.marked = (text) => purify.sanitize(marked.parse(text || ""));
 app.locals.markedInline = (text) => purify.sanitize(marked.parseInline(text || ""));
+app.locals.buildSubjectPath = buildSubjectPath;
+app.locals.buildCoursePath = buildCoursePath;
+app.locals.buildQuestionPath = buildQuestionPath;
+app.locals.buildAbsoluteUrl = buildAbsoluteUrl;
 
 /* ======================================================
    MIDDLEWARE CONFIGURATION
@@ -223,6 +228,8 @@ app.use(flash());
 // [FIX] Đưa Globals lên TRƯỚC banCheck để tránh lỗi 'activePage is not defined'
 app.use(async (req, res, next) => {
     res.locals.user = req.user || null;
+    res.locals.siteOrigin = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    res.locals.currentPath = req.originalUrl || req.url || '/';
     res.locals.activePage = ''; // Default value an toàn
     
     res.locals.pendingAchievements = req.session?.newAchievements || [];

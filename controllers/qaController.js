@@ -11,6 +11,7 @@ const {
     getWeekRange,
     getMonthRange
 } = require('../utils/guildPeriodUtils');
+const { buildAbsoluteUrl, buildQuestionPath } = require('../utils/urlHelpers');
 
 const Question = QuestionModel;
 const QUESTION_SUBJECTS = QuestionModel.QUESTION_SUBJECTS || ['Toán', 'Lý', 'Hóa', 'Sinh', 'Anh', 'Văn', 'Khác'];
@@ -347,6 +348,37 @@ function respondError(req, res, statusCode, message, redirectUrl) {
     return res.redirect(redirectUrl || '/qa');
 }
 
+async function loadQaFeedState(req) {
+    const filters = {
+        sort: ['newest', 'hot', 'unanswered', 'mine'].includes(req.query.sort) ? req.query.sort : 'newest',
+        subject: QUESTION_SUBJECTS.includes(req.query.subject) ? req.query.subject : '',
+        grade: QUESTION_GRADES.includes(req.query.grade) ? req.query.grade : '',
+        q: normalizeString(req.query.q)
+    };
+
+    const query = buildQuestionQuery(filters, req.user);
+    const sort = buildQuestionSort(filters.sort);
+
+    const [questions, sidebar] = await Promise.all([
+        Question.find(query)
+            .sort(sort)
+            .limit(30)
+            .populate('author', 'username avatar isPro points')
+            .lean(),
+        buildSidebarPayload()
+    ]);
+
+    const feed = questions.map((question) => ({
+        ...question,
+        previewText: questionPreviewText(question),
+        tier: buildTier(question.author?.points || 0),
+        upvoteCount: Array.isArray(question.upvotes) ? question.upvotes.length : 0,
+        href: buildQuestionPath(question)
+    }));
+
+    return { filters, sidebar, feed };
+}
+
 exports.getQaHub = async (req, res) => {
     try {
         const filters = {
@@ -384,12 +416,93 @@ exports.getQaHub = async (req, res) => {
             grades: QUESTION_GRADES,
             sidebar,
             breadcrumbs: buildBreadcrumbsForHub(),
+            metaTitle: 'Bảng Cầu Cứu | Học Tập Thủ Đức',
+            metaDescription: 'Không học một mình. Vào Bảng Cầu Cứu để hỏi bài, treo thưởng, xem cao thủ giải đề và theo dõi cộng đồng học thuật.',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, '/qa'),
             activePage: 'qa'
         });
     } catch (error) {
         console.error('QA Hub Error:', error);
         req.flash('error', 'Không thể tải Bảng Cầu Cứu lúc này.');
         res.redirect('/');
+    }
+};
+
+exports.getQaFeed = async (req, res) => {
+    try {
+        const { filters, sidebar, feed } = await loadQaFeedState(req);
+        res.render('qa', {
+            title: 'Diễn đàn câu hỏi',
+            user: req.user,
+            questions: feed,
+            filters,
+            subjects: QUESTION_SUBJECTS,
+            grades: QUESTION_GRADES,
+            sidebar,
+            breadcrumbs: [
+                { label: 'Trang chủ', url: '/' },
+                { label: 'Bảng Cầu Cứu', url: '/qa' },
+                { label: 'Dòng câu hỏi', url: null }
+            ],
+            metaTitle: 'Dòng câu hỏi | Học Tập Thủ Đức',
+            metaDescription: 'Theo dõi các câu hỏi mới nhất, bài đang hot, bài chưa có lời giải và những chủ đề được hỏi nhiều nhất.',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, '/qa/questions'),
+            activePage: 'qa'
+        });
+    } catch (error) {
+        console.error('QA Feed Error:', error);
+        req.flash('error', 'Không thể tải dòng câu hỏi.');
+        res.redirect('/qa');
+    }
+};
+
+exports.getQaAskPage = async (req, res) => {
+    try {
+        const sidebar = await buildSidebarPayload();
+        res.render('qaAsk', {
+            title: 'Đăng câu hỏi mới',
+            user: req.user,
+            subjects: QUESTION_SUBJECTS,
+            grades: QUESTION_GRADES,
+            sidebar,
+            breadcrumbs: [
+                { label: 'Trang chủ', url: '/' },
+                { label: 'Bảng Cầu Cứu', url: '/qa' },
+                { label: 'Đăng câu hỏi', url: null }
+            ],
+            metaTitle: 'Đăng câu hỏi | Học Tập Thủ Đức',
+            metaDescription: 'Đăng bài khó, treo thưởng vàng và mô tả rõ vấn đề để nhận lời giải chất lượng từ cộng đồng học tập.',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, '/qa/ask'),
+            activePage: 'qa'
+        });
+    } catch (error) {
+        console.error('QA Ask Page Error:', error);
+        req.flash('error', 'Không thể mở trang đăng câu hỏi.');
+        res.redirect('/qa');
+    }
+};
+
+exports.getQaCommunityPage = async (req, res) => {
+    try {
+        const sidebar = await buildSidebarPayload();
+        res.render('qaCommunity', {
+            title: 'Cộng đồng học thuật',
+            user: req.user,
+            sidebar,
+            breadcrumbs: [
+                { label: 'Trang chủ', url: '/' },
+                { label: 'Bảng Cầu Cứu', url: '/qa' },
+                { label: 'Cộng đồng', url: null }
+            ],
+            metaTitle: 'Cộng đồng học thuật | Học Tập Thủ Đức',
+            metaDescription: 'Theo dõi top contributor, hot tags và nhịp trao đổi học thuật đang sôi động trên HTTD.',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, '/qa/community'),
+            activePage: 'qa'
+        });
+    } catch (error) {
+        console.error('QA Community Error:', error);
+        req.flash('error', 'Không thể tải trang cộng đồng.');
+        res.redirect('/qa');
     }
 };
 
@@ -408,6 +521,12 @@ exports.getQuestionDetail = async (req, res) => {
         if (!question) {
             req.flash('error', 'Không tìm thấy câu hỏi này.');
             return res.redirect('/qa');
+        }
+
+        const canonicalPath = buildQuestionPath(question);
+        const canonicalSlug = canonicalPath.split('/').pop();
+        if (req.params.slug !== canonicalSlug) {
+            return res.redirect(301, canonicalPath);
         }
 
         const [answers, sidebar, relatedQuestions] = await Promise.all([
@@ -442,6 +561,7 @@ exports.getQuestionDetail = async (req, res) => {
             previewText: questionPreviewText(question),
             tier: buildTier(question.author?.points || 0),
             upvoteCount: Array.isArray(question.upvotes) ? question.upvotes.length : 0,
+            href: canonicalPath,
             viewerCanAccept: viewerId && String(question.author?._id || question.author) === viewerId && !question.acceptedAnswer
         };
 
@@ -452,12 +572,17 @@ exports.getQuestionDetail = async (req, res) => {
             answers: answerCards,
             relatedQuestions: relatedQuestions.map((item) => ({
                 ...item,
-                previewText: questionPreviewText(item)
+                previewText: questionPreviewText(item),
+                href: buildQuestionPath(item)
             })),
             sidebar,
             subjects: QUESTION_SUBJECTS,
             grades: QUESTION_GRADES,
             breadcrumbs: buildBreadcrumbsForQuestion(question),
+            metaTitle: `${question.title} | Bảng Cầu Cứu`,
+            metaDescription: questionPreviewText(question),
+            metaImage: question.images?.[0] || 'https://hoctapthuduc.onrender.com/api/pro-images/1752242181665-mcpehv.png',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, canonicalPath),
             activePage: 'qa'
         });
     } catch (error) {
@@ -510,7 +635,7 @@ exports.createQuestion = async (req, res) => {
             req,
             res,
             { question },
-            `/qa/questions/${question._id}`,
+            buildQuestionPath(question),
             'Đã treo câu hỏi lên Bảng Cầu Cứu.'
         );
     } catch (error) {
@@ -553,7 +678,7 @@ exports.createAnswer = async (req, res) => {
             req,
             res,
             { answer },
-            `/qa/questions/${questionId}#answer-${answer._id}`,
+            `${buildQuestionPath({ _id: questionId })}#answer-${answer._id}`,
             'Lời giải của bạn đã được gửi.'
         );
     } catch (error) {
@@ -605,7 +730,7 @@ exports.upvoteAnswer = async (req, res) => {
                 upvoted: !hasUpvoted,
                 upvoteCount: answer.upvotes.length
             },
-            `/qa/questions/${answer.question}#answer-${answer._id}`,
+            `${buildQuestionPath({ _id: answer.question })}#answer-${answer._id}`,
             hasUpvoted ? 'Đã rút lại upvote.' : 'Đã upvote câu trả lời.'
         );
     } catch (error) {

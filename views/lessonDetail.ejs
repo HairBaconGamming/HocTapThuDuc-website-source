@@ -25,7 +25,7 @@
                 <span class="lesson-inline-progress"><%= lessonPosition.index %>/<%= lessonPosition.total %></span>
             </div>
 
-            <a href="<%= course ? ('/course/' + course._id) : '/subjects' %>" class="lesson-course-link">
+            <a href="<%= course ? buildCoursePath(course) : '/subjects' %>" class="lesson-course-link">
                 <i class="fas fa-arrow-left"></i>
                 <span>Quay lại <%= course ? 'khóa học' : 'môn học' %></span>
             </a>

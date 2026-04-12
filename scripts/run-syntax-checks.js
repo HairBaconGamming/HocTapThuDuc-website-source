@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const vm = require('vm');
 
 const ROOT = process.cwd();
 const TARGETS = [
@@ -52,15 +52,13 @@ const uniqueFiles = Array.from(new Set(files)).sort();
 const failures = [];
 
 for (const file of uniqueFiles) {
-  const result = spawnSync(process.execPath, ['--check', file], {
-    cwd: ROOT,
-    encoding: 'utf8'
-  });
-
-  if (result.status !== 0) {
+  try {
+    const source = fs.readFileSync(file, 'utf8');
+    new vm.Script(source, { filename: file, displayErrors: true });
+  } catch (error) {
     failures.push({
       file: path.relative(ROOT, file),
-      output: [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+      output: String(error && error.stack ? error.stack : error)
     });
   }
 }

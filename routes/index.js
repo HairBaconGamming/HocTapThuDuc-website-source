@@ -18,6 +18,7 @@ const Garden = require('../models/Garden');
 const LessonRevision = require('../models/LessonRevision');
 const UserActivityLog = require('../models/UserActivityLog');
 const { getCourseAccessState, buildCourseVisibilityFilter } = require('../utils/contentAccess');
+const { buildAbsoluteUrl, buildCoursePath, buildSubjectPath } = require('../utils/urlHelpers');
 
 // --- IMPORT CONTROLLERS ---
 const courseController = require('../controllers/courseController');
@@ -250,7 +251,7 @@ router.get("/flashcards/review", isLoggedIn, async (req, res) => {
 
         const breadcrumbs = [
             { label: 'Trang chủ', url: '/' },
-            ...(course ? [{ label: course.title, url: `/course/${course._id}` }] : []),
+            ...(course ? [{ label: course.title, url: buildCoursePath(course) }] : []),
             { label: 'Ôn tập flashcard', url: null }
         ];
 
@@ -279,13 +280,36 @@ router.get("/subjects", async (req, res) => {
     } catch(e) { console.error(e); res.redirect('/'); }
 });
 
-router.get("/subjects/:id", async (req, res) => {
+router.get("/subjects/:id/:slug?", async (req, res) => {
     try {
         const subjectId = req.params.id;
         const subject = await Subject.findById(subjectId).lean();
         if (!subject) return res.redirect('/subjects');
+        const canonicalPath = buildSubjectPath(subject);
+        if (req.params.slug !== canonicalPath.split('/').pop()) {
+            return res.redirect(301, canonicalPath);
+        }
         const courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
-        res.render("subjectDetail", { user: req.user, subject, courses, selectedCourse: null, units: [], lessons: [], totalLessons: 0, uniqueTags: [], activeTag: '', currentCategory: '', currentQuery: '', currentSort: 'desc', activePage: "subjects" });
+        res.render("subjectDetail", {
+            title: subject.name,
+            user: req.user,
+            subject,
+            courses,
+            selectedCourse: null,
+            units: [],
+            lessons: [],
+            totalLessons: 0,
+            uniqueTags: [],
+            activeTag: '',
+            currentCategory: '',
+            currentQuery: '',
+            currentSort: 'desc',
+            metaTitle: `${subject.name} | Học Tập Thủ Đức`,
+            metaDescription: subject.description || `Khám phá các khóa học ${subject.name} với lộ trình rõ ràng, bài học tương tác và gamification học tập.`,
+            metaImage: subject.image || 'https://i.ibb.co/BVnNtLhp/default-course.png',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, canonicalPath),
+            activePage: "subjects"
+        });
     } catch (e) { console.error(e); res.redirect('/subjects'); }
 });
 
@@ -311,11 +335,16 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
     } catch(e) { req.flash("error", "Lỗi."); res.redirect("/profile/edit"); }
 });
 
-router.get('/course/:id', async (req, res, next) => {
+router.get('/course/:id/:slug?', async (req, res, next) => {
     try {
         const course = await Course.findById(req.params.id).select('_id author isPublished isPro').lean();
         if (!course) {
             return courseController.getCourseDetail(req, res, next);
+        }
+
+        const canonicalPath = buildCoursePath(course);
+        if (req.params.slug !== canonicalPath.split('/').pop()) {
+            return res.redirect(301, canonicalPath);
         }
 
         const access = await getCourseAccessState(req.user, course);

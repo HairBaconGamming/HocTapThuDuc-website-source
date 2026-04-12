@@ -24,35 +24,49 @@
     const state = {
         busy: false,
         open: false,
-        messages: []
+        messages: [],
+        renderScheduled: false
     };
 
     const actionSets = {
         default: [
-            { label: "Tóm tắt trang", prompt: "Tóm tắt nhanh nội dung quan trọng nhất trên trang này cho tôi." },
-            { label: "Bước tiếp theo", prompt: "Với trang này, tôi nên làm gì tiếp theo để học hiệu quả hơn?" },
-            { label: "Ôn tập nhanh", prompt: "Tạo 3 câu hỏi ôn nhanh dựa trên nội dung trang này." }
+            { label: "Tom tat trang", prompt: "Tom tat nhanh noi dung quan trong nhat tren trang nay cho toi." },
+            { label: "Buoc tiep theo", prompt: "Voi trang nay, toi nen lam gi tiep theo de hoc hieu qua hon?" },
+            { label: "On tap nhanh", prompt: "Tao 3 cau hoi on nhanh dua tren noi dung trang nay." }
         ],
         "lesson-detail": [
-            { label: "Tóm tắt bài", prompt: "Tóm tắt bài học này thật ngắn gọn, dễ nhớ." },
-            { label: "Giải thích chậm hơn", prompt: "Giải thích nội dung này theo cách chậm hơn và rõ hơn." },
-            { label: "Tạo mini quiz", prompt: "Tạo 3 câu hỏi mini để tôi tự kiểm tra lại bài này." }
+            { label: "Tom tat bai", prompt: "Tom tat bai hoc nay that ngan gon, de nho." },
+            { label: "Giai thich cham", prompt: "Giai thich noi dung nay theo cach cham hon va ro hon." },
+            { label: "Tao mini quiz", prompt: "Tao 3 cau hoi mini de toi tu kiem tra lai bai nay." }
         ],
         "lesson-studio": [
-            { label: "Rà soát bài", prompt: "Rà soát bài học đang soạn và chỉ ra 3 điểm cần nâng chất lượng." },
-            { label: "Viết lại mở bài", prompt: "Viết lại đoạn mở đầu bài học để gọn, rõ và cuốn hút hơn." },
-            { label: "Checklist publish", prompt: "Cho tôi checklist trước khi publish bài học này." }
+            { label: "Ra soat bai", prompt: "Ra soat bai hoc dang soan va chi ra 3 diem can nang chat luong." },
+            { label: "Viet lai mo bai", prompt: "Viet lai doan mo dau bai hoc de gon, ro va cuon hut hon." },
+            { label: "Checklist publish", prompt: "Cho toi checklist truoc khi publish bai hoc nay." }
         ],
         garden: [
-            { label: "Nên làm gì tiếp", prompt: "Với trạng thái vườn hiện tại, tôi nên ưu tiên làm gì tiếp theo?" },
-            { label: "Giải thích nhiệm vụ", prompt: "Giải thích nhanh các mục tiêu hoặc việc cần làm trong vườn." },
-            { label: "Tối ưu tài nguyên", prompt: "Gợi ý cách dùng nước, phân bón và vàng hợp lý hơn." }
+            { label: "Nen lam gi tiep", prompt: "Voi trang thai vuon hien tai, toi nen uu tien lam gi tiep theo?" },
+            { label: "Giai thich nhiem vu", prompt: "Giai thich nhanh cac muc tieu hoac viec can lam trong vuon." },
+            { label: "Toi uu tai nguyen", prompt: "Goi y cach dung nuoc, phan bon va vang hop ly hon." }
+        ],
+        qa: [
+            { label: "Dat cau hoi ro hon", prompt: "Giup toi viet lai cau hoi theo cach ro, gon va de duoc giai hon." },
+            { label: "Tach bai giai", prompt: "Neu tra loi bai nay, nen tach thanh may buoc de de theo nhat?" },
+            { label: "Y tuong bounty", prompt: "Khi nao nen treo bounty va can mo ta them gi de thu hut nguoi giai?" }
         ]
     };
+
+    if (window.marked && typeof window.marked.use === "function") {
+        window.marked.use({
+            breaks: true,
+            gfm: true
+        });
+    }
 
     function detectPageType() {
         if (document.body.classList.contains("garden-rustic-page")) return "garden";
         if (document.body.classList.contains("studio-v4-page")) return "lesson-studio";
+        if (document.body.classList.contains("qa")) return "qa";
         if (document.querySelector(".lesson-detail-page")) return "lesson-detail";
         return "default";
     }
@@ -104,8 +118,8 @@
             pageTitle: document.title || "",
             selection: getSelectedText(),
             contextSummary: [
-                heading ? `Tiêu đề chính: ${clampText(heading.textContent, 180)}` : "",
-                sampleText ? `Nội dung hiện có:\n${sampleText}` : ""
+                heading ? `Tieu de chinh: ${clampText(heading.textContent, 180)}` : "",
+                sampleText ? `Noi dung hien co:\n${sampleText}` : ""
             ].filter(Boolean).join("\n\n"),
             metadata: {
                 pathname: window.location.pathname,
@@ -126,11 +140,11 @@
             pageTitle: clampText(title, 180),
             selection: getSelectedText(),
             contextSummary: [
-                heroMeta ? `Meta bài học: ${clampText(heroMeta, 240)}` : "",
-                currentSection ? `Đang đọc: ${clampText(currentSection, 140)}` : "",
-                nextSection ? `Kế tiếp: ${clampText(nextSection, 140)}` : "",
-                lessonContent ? `Nội dung hiện trên màn hình:\n${lessonContent}` : "",
-                !lessonContent && fallbackB64 ? `Nội dung bài học:\n${clampText(fallbackB64, 2800)}` : ""
+                heroMeta ? `Meta bai hoc: ${clampText(heroMeta, 240)}` : "",
+                currentSection ? `Dang doc: ${clampText(currentSection, 160)}` : "",
+                nextSection ? `Ke tiep: ${clampText(nextSection, 160)}` : "",
+                lessonContent ? `Noi dung hien tren man hinh:\n${lessonContent}` : "",
+                !lessonContent && fallbackB64 ? `Noi dung bai hoc:\n${clampText(fallbackB64, 2800)}` : ""
             ].filter(Boolean).join("\n\n"),
             metadata: {
                 lessonId: window.LESSON_ID || "",
@@ -163,10 +177,10 @@
             pageTitle: snapshot?.title || document.title,
             selection: getSelectedText(),
             contextSummary: [
-                snapshot?.title ? `Tiêu đề bài học: ${clampText(snapshot.title, 200)}` : "",
-                `Context đang sửa: ${snapshot?.activeContext || "unknown"}`,
-                `Số block: ${Number(metrics.blocks) || 0}, số từ: ${Number(metrics.words) || 0}, media: ${Number(metrics.media) || 0}, read time: ${Number(metrics.readTime) || 0} phút.`,
-                firstBlocks.length ? `Mẫu block đầu:\n${clampText(JSON.stringify(firstBlocks, null, 2), 1200)}` : ""
+                snapshot?.title ? `Tieu de bai hoc: ${clampText(snapshot.title, 200)}` : "",
+                `Context dang sua: ${snapshot?.activeContext || "unknown"}`,
+                `So block: ${Number(metrics.blocks) || 0}, so tu: ${Number(metrics.words) || 0}, media: ${Number(metrics.media) || 0}, read time: ${Number(metrics.readTime) || 0} phut.`,
+                firstBlocks.length ? `Mau block dau:\n${clampText(JSON.stringify(firstBlocks, null, 2), 1200)}` : ""
             ].filter(Boolean).join("\n\n"),
             metadata: {
                 studioSnapshot: snapshot ? {
@@ -193,11 +207,11 @@
             pageTitle: clampText(sceneTitle, 160),
             selection: "",
             contextSummary: [
-                `Tài nguyên: nước ${Number(gardenData.water) || 0}, phân bón ${Number(gardenData.fertilizer) || 0}, vàng ${Number(gardenData.gold) || 0}.`,
-                `Tiến trình tutorial: step ${Number(gardenData.tutorialStep) || 0}.`,
-                `Quest đang hiện: ${clampText(questCount, 20)}.`,
-                guideLine ? `NPC đang nhắc: ${clampText(guideLine, 240)}` : "",
-                visiblePlant && visiblePlant !== "..." ? `Đang xem cây: ${clampText(visiblePlant, 120)}` : ""
+                `Tai nguyen: nuoc ${Number(gardenData.water) || 0}, phan bon ${Number(gardenData.fertilizer) || 0}, vang ${Number(gardenData.gold) || 0}.`,
+                `Tien trinh tutorial: step ${Number(gardenData.tutorialStep) || 0}.`,
+                `Quest dang hien: ${clampText(questCount, 20)}.`,
+                guideLine ? `NPC dang nhac: ${clampText(guideLine, 240)}` : "",
+                visiblePlant && visiblePlant !== "..." ? `Dang xem cay: ${clampText(visiblePlant, 120)}` : ""
             ].filter(Boolean).join("\n\n"),
             metadata: {
                 garden: {
@@ -211,10 +225,28 @@
         };
     }
 
+    function getQaContext() {
+        const hero = document.querySelector(".qa-hero-title, .qa-question-title, .qa-panel-title");
+        const feedText = clampText(document.querySelector(".qa-shell, .qa-detail-shell")?.innerText || "", 2500);
+        return {
+            pageTitle: document.title || "",
+            selection: getSelectedText(),
+            contextSummary: [
+                hero ? `Khu vuc hien tai: ${clampText(hero.textContent, 180)}` : "",
+                feedText ? `Tom tat khu hoi dap:\n${feedText}` : ""
+            ].filter(Boolean).join("\n\n"),
+            metadata: {
+                pathname: window.location.pathname,
+                pageKind: "qa"
+            }
+        };
+    }
+
     function buildContext() {
         if (pageType === "lesson-detail") return getLessonDetailContext();
         if (pageType === "lesson-studio") return getLessonStudioContext();
         if (pageType === "garden") return getGardenContext();
+        if (pageType === "qa") return getQaContext();
         return getCommonPageContext();
     }
 
@@ -230,51 +262,114 @@
         if (!selectionStatus) return;
         const selected = getSelectedText();
         selectionStatus.textContent = selected
-            ? `Đang bám theo đoạn bạn bôi đen (${selected.length} ký tự).`
-            : "Chưa có đoạn chọn riêng.";
+            ? `Dang bam theo doan ban boi den (${selected.length} ky tu).`
+            : "Chua co doan chon rieng.";
     }
 
     function updateContextLabel() {
         if (!contextLabel) return;
         const labels = {
-            default: "Đang đọc bối cảnh trang",
-            "lesson-detail": "Đang bám vào bài học hiện tại",
-            "lesson-studio": "Đang đọc snapshot từ studio",
-            garden: "Đang đọc trạng thái vườn"
+            default: "Dang doc ngu canh trang",
+            "lesson-detail": "Dang bam vao bai hoc hien tai",
+            "lesson-studio": "Dang doc snapshot tu studio",
+            garden: "Dang doc trang thai vuon",
+            qa: "Dang doc khu hoi dap hoc thuat"
         };
         contextLabel.textContent = labels[pageType] || labels.default;
     }
 
-    function createMessage(role, content) {
-        state.messages.push({ role, content: clampText(content, 5000) });
-        if (state.messages.length > 10) {
-            state.messages = state.messages.slice(-10);
+    function createMessage(role, content, options) {
+        const message = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            role,
+            content: clampText(content, 12000),
+            streaming: !!options?.streaming
+        };
+        state.messages.push(message);
+        if (state.messages.length > 12) {
+            state.messages = state.messages.slice(-12);
         }
+        return message;
     }
 
-    function renderThread() {
+    function renderMarkdown(content) {
+        const source = String(content || "");
+        if (!source.trim()) {
+            return "";
+        }
+
+        if (window.marked && typeof window.marked.parse === "function") {
+            const rawHtml = window.marked.parse(source, { breaks: true, gfm: true });
+            if (window.DOMPurify && typeof window.DOMPurify.sanitize === "function") {
+                return window.DOMPurify.sanitize(rawHtml, {
+                    USE_PROFILES: { html: true }
+                });
+            }
+            return rawHtml;
+        }
+
+        return escapeHtml(source).replace(/\n/g, "<br>");
+    }
+
+    function decorateMath(root) {
+        if (!root || typeof window.renderMathInElement !== "function") return;
+        window.renderMathInElement(root, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+        });
+    }
+
+    function renderThreadNow() {
         if (!thread) return;
 
         const welcome = shell.querySelector("[data-ai-tutor-welcome]");
         if (welcome) {
             const introMap = {
-                default: "Mình bám theo nội dung trang này để tóm tắt, giải thích và gợi ý bước tiếp theo cho bạn.",
-                "lesson-detail": "Mình đang đọc cùng bài học với bạn. Bạn có thể nhờ tóm tắt, giải thích chậm hơn hoặc tạo câu hỏi ôn nhanh.",
-                "lesson-studio": "Mình đang theo snapshot studio để góp ý cấu trúc, chất lượng và checklist publish cho bài học bạn đang soạn.",
-                garden: "Mình đang nhìn trạng thái khu vườn hiện tại để gợi ý tài nguyên, nhiệm vụ và bước tiếp theo."
+                default: "Minh bam theo noi dung trang nay de tom tat, giai thich va goi y buoc tiep theo cho ban.",
+                "lesson-detail": "Minh dang doc cung bai hoc voi ban. Ban co the nho tom tat, giai thich cham hon, hoac tao mini quiz co cong thuc LaTeX.",
+                "lesson-studio": "Minh dang theo snapshot studio de goi y cau truc, quality va checklist publish cho bai hoc ban dang soan.",
+                garden: "Minh dang nhin trang thai khu vuon hien tai de goi y tai nguyen, nhiem vu va buoc tiep theo.",
+                qa: "Minh dang bam theo khu hoi dap de giup dat cau hoi ro hon, tach bai giai theo tung buoc va huong dan cach thao luan."
             };
-            welcome.textContent = introMap[pageType] || introMap.default;
+            welcome.innerHTML = renderMarkdown(introMap[pageType] || introMap.default);
+            decorateMath(welcome);
         }
 
-        const dynamicMessages = state.messages.map((message) => `
-            <article class="ai-tutor-msg ai-tutor-msg--${message.role}">
-                <div class="ai-tutor-msg-bubble">${escapeHtml(message.content)}</div>
-            </article>
-        `).join("");
-
         const staticMessage = thread.querySelector(".ai-tutor-msg");
-        thread.innerHTML = staticMessage ? staticMessage.outerHTML + dynamicMessages : dynamicMessages;
+        const staticHtml = staticMessage ? staticMessage.outerHTML : "";
+        const dynamicHtml = state.messages.map((message) => {
+            const isAssistant = message.role === "assistant";
+            const bubbleClass = isAssistant
+                ? `ai-tutor-msg-bubble ai-tutor-msg-bubble--rich${message.streaming ? " is-streaming" : ""}`
+                : "ai-tutor-msg-bubble";
+            const bubbleContent = isAssistant
+                ? renderMarkdown(message.content)
+                : escapeHtml(message.content).replace(/\n/g, "<br>");
+
+            return `
+                <article class="ai-tutor-msg ai-tutor-msg--${message.role}">
+                    <div class="${bubbleClass}">${bubbleContent || (message.streaming ? '<span class="ai-tutor-caret"></span>' : '')}</div>
+                </article>
+            `;
+        }).join("");
+
+        thread.innerHTML = `${staticHtml}${dynamicHtml}`;
+        thread.querySelectorAll(".ai-tutor-msg-bubble--rich").forEach(decorateMath);
         thread.scrollTop = thread.scrollHeight;
+    }
+
+    function scheduleRenderThread() {
+        if (state.renderScheduled) return;
+        state.renderScheduled = true;
+        window.requestAnimationFrame(() => {
+            state.renderScheduled = false;
+            renderThreadNow();
+        });
     }
 
     function renderQuickActions() {
@@ -302,7 +397,7 @@
         try {
             window.localStorage.setItem(storageKey, state.open ? "1" : "0");
         } catch (error) {
-            // Ignore localStorage failures.
+            // Ignore storage errors.
         }
     }
 
@@ -316,17 +411,17 @@
         }
     }
 
-    async function askTutor(promptText) {
+    async function askTutorOnce(promptText) {
         const prompt = clampText(promptText, 1200);
         if (!prompt || state.busy) return;
 
         const context = buildContext();
         state.busy = true;
         shell.classList.add("is-busy");
-        setStatus("AI Tutor đang suy nghĩ...");
+        setStatus("AI Tutor dang suy nghi...");
 
         createMessage("user", prompt);
-        renderThread();
+        scheduleRenderThread();
 
         try {
             const response = await fetch("/api/ai-tutor/ask", {
@@ -339,22 +434,137 @@
                     selection: context.selection,
                     contextSummary: context.contextSummary,
                     metadata: context.metadata,
-                    history: state.messages.slice(-6)
+                    history: state.messages.slice(-6).map((message) => ({
+                        role: message.role,
+                        content: message.content
+                    }))
                 })
             });
 
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) {
-                throw new Error(data.error || "Không thể gọi AI Tutor lúc này.");
+                throw new Error(data.error || "Khong the goi AI Tutor luc nay.");
             }
 
             createMessage("assistant", data.reply);
-            renderThread();
-            setStatus("Đã cập nhật gợi ý mới.");
+            scheduleRenderThread();
+            setStatus("Da cap nhat goi y moi.");
         } catch (error) {
-            createMessage("assistant", error.message || "AI Tutor đang hơi bận một nhịp. Thử lại sau nhé.");
-            renderThread();
-            setStatus("Tạm thời chưa lấy được phản hồi.");
+            createMessage("assistant", error.message || "AI Tutor dang hoi ban mot nhip. Thu lai sau nhe.");
+            scheduleRenderThread();
+            setStatus("Tam thoi chua lay duoc phan hoi.");
+        } finally {
+            state.busy = false;
+            shell.classList.remove("is-busy");
+        }
+    }
+
+    function parseSseBlocks(buffer, onPacket) {
+        let working = buffer;
+        let boundaryIndex = working.indexOf("\n\n");
+
+        while (boundaryIndex >= 0) {
+            const block = working.slice(0, boundaryIndex);
+            working = working.slice(boundaryIndex + 2);
+            boundaryIndex = working.indexOf("\n\n");
+
+            const dataText = block
+                .split("\n")
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).trim())
+                .join("");
+
+            if (!dataText) continue;
+
+            try {
+                onPacket(JSON.parse(dataText));
+            } catch (error) {
+                // Ignore malformed chunks.
+            }
+        }
+
+        return working;
+    }
+
+    async function askTutor(promptText) {
+        const prompt = clampText(promptText, 1200);
+        if (!prompt || state.busy) return;
+
+        const context = buildContext();
+        const history = state.messages.slice(-6).map((message) => ({
+            role: message.role,
+            content: message.content
+        }));
+
+        state.busy = true;
+        shell.classList.add("is-busy");
+        setStatus("AI Tutor dang stream phan hoi...");
+
+        createMessage("user", prompt);
+        const assistantMessage = createMessage("assistant", "", { streaming: true });
+        scheduleRenderThread();
+
+        try {
+            const response = await fetch("/api/ai-tutor/stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt,
+                    pageType,
+                    pageTitle: context.pageTitle,
+                    selection: context.selection,
+                    contextSummary: context.contextSummary,
+                    metadata: context.metadata,
+                    history
+                })
+            });
+
+            if (!response.ok || !response.body) {
+                throw new Error("Streaming tam thoi khong san sang.");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let streamDone = false;
+
+            while (!streamDone) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                buffer = parseSseBlocks(buffer, (packet) => {
+                    if (packet.type === "delta" && packet.delta) {
+                        assistantMessage.content += packet.delta;
+                        scheduleRenderThread();
+                        setStatus("Dang nhan tung dong tra loi...");
+                        return;
+                    }
+
+                    if (packet.type === "done") {
+                        assistantMessage.content = packet.reply || assistantMessage.content;
+                        assistantMessage.streaming = false;
+                        scheduleRenderThread();
+                        setStatus("Da cap nhat goi y moi.");
+                        streamDone = true;
+                        return;
+                    }
+
+                    if (packet.type === "error") {
+                        throw new Error(packet.error || "Khong the stream phan hoi luc nay.");
+                    }
+                });
+            }
+
+            assistantMessage.streaming = false;
+            if (!assistantMessage.content.trim()) {
+                throw new Error("AI Tutor chua tao duoc phan hoi phu hop.");
+            }
+            scheduleRenderThread();
+        } catch (error) {
+            state.messages = state.messages.filter((message) => message.id !== assistantMessage.id);
+            scheduleRenderThread();
+            await askTutorOnce(prompt);
+            return;
         } finally {
             state.busy = false;
             shell.classList.remove("is-busy");
@@ -363,7 +573,7 @@
 
     function handleQuickActionClick(event) {
         const actionBtn = event.target.closest("[data-ai-action]");
-        if (!actionBtn) return;
+        if (!actionBtn || !quickActions) return;
 
         quickActions.querySelectorAll(".ai-tutor-action").forEach((button) => {
             button.classList.toggle("is-selected", button === actionBtn);
@@ -413,7 +623,7 @@
         if (pageType === "lesson-studio") {
             document.addEventListener("lesson-studio:statechange", () => {
                 updateContextLabel();
-                setStatus("Đã làm mới snapshot studio.");
+                setStatus("Da lam moi snapshot studio.");
             });
         }
     }
@@ -422,6 +632,6 @@
     updateContextLabel();
     updateSelectionStatus();
     restoreOpenState();
-    renderThread();
+    renderThreadNow();
     bindEvents();
 })();

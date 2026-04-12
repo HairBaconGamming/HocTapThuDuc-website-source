@@ -11,6 +11,7 @@ const {
 } = require('../utils/contentAccess');
 const LevelUtils = require('../utils/level');
 const { buildCompletionGardenBundle } = require('../utils/lessonGamificationUtils');
+const { buildAbsoluteUrl, buildCoursePath, buildSubjectPath } = require('../utils/urlHelpers');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -847,6 +848,10 @@ exports.getCourseDetail = async (req, res) => {
                 { label: course.subjectId?.name || 'Môn học', url: course.subjectId ? `/subjects/${course.subjectId._id}` : '/subjects' },
                 { label: course.title, url: null }
             ],
+            metaTitle: `${course.title} | Học Tập Thủ Đức`,
+            metaDescription: getHeroDescription(course.description),
+            metaImage: course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png',
+            metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, buildCoursePath(course)),
             user: req.user,
             activePage: 'courses'
         });

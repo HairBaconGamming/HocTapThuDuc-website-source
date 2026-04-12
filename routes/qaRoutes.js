@@ -5,7 +5,10 @@ const qaController = require('../controllers/qaController');
 const { isLoggedIn } = require('../middlewares/auth');
 
 router.get('/', qaController.getQaHub);
-router.get('/questions/:id', qaController.getQuestionDetail);
+router.get('/questions', qaController.getQaFeed);
+router.get('/ask', isLoggedIn, qaController.getQaAskPage);
+router.get('/community', qaController.getQaCommunityPage);
+router.get('/questions/:id/:slug?', qaController.getQuestionDetail);
 
 router.post('/questions', isLoggedIn, qaController.createQuestion);
 router.post('/answers', isLoggedIn, qaController.createAnswer);

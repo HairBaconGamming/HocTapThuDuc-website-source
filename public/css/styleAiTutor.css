@@ -241,11 +241,101 @@
     border-radius: 18px;
     font-size: 0.88rem;
     line-height: 1.6;
-    white-space: pre-wrap;
     word-break: break-word;
     background: rgba(241, 245, 249, 0.95);
     color: var(--ai-tutor-ink);
     border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.ai-tutor-msg-bubble > :first-child {
+    margin-top: 0;
+}
+
+.ai-tutor-msg-bubble > :last-child {
+    margin-bottom: 0;
+}
+
+.ai-tutor-msg-bubble p,
+.ai-tutor-msg-bubble ul,
+.ai-tutor-msg-bubble ol,
+.ai-tutor-msg-bubble table,
+.ai-tutor-msg-bubble pre,
+.ai-tutor-msg-bubble blockquote {
+    margin: 0.55rem 0;
+}
+
+.ai-tutor-msg-bubble ul,
+.ai-tutor-msg-bubble ol {
+    padding-left: 1.2rem;
+}
+
+.ai-tutor-msg-bubble li + li {
+    margin-top: 0.25rem;
+}
+
+.ai-tutor-msg-bubble h1,
+.ai-tutor-msg-bubble h2,
+.ai-tutor-msg-bubble h3,
+.ai-tutor-msg-bubble h4 {
+    margin: 0.75rem 0 0.35rem;
+    line-height: 1.25;
+    color: inherit;
+}
+
+.ai-tutor-msg-bubble code {
+    padding: 0.1rem 0.36rem;
+    border-radius: 0.42rem;
+    background: rgba(15, 23, 42, 0.08);
+    font-family: "Fira Code", Consolas, monospace;
+    font-size: 0.82em;
+}
+
+.ai-tutor-msg-bubble pre {
+    overflow-x: auto;
+    padding: 0.85rem 0.95rem;
+    border-radius: 0.95rem;
+    background: rgba(15, 23, 42, 0.92);
+    color: #e2e8f0;
+}
+
+.ai-tutor-msg-bubble pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.ai-tutor-msg-bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.ai-tutor-msg-bubble th,
+.ai-tutor-msg-bubble td {
+    padding: 0.55rem 0.6rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    text-align: left;
+    vertical-align: top;
+}
+
+.ai-tutor-msg-bubble th {
+    background: rgba(79, 70, 229, 0.08);
+    font-weight: 800;
+}
+
+.ai-tutor-msg-bubble blockquote {
+    padding: 0.65rem 0.85rem;
+    border-left: 3px solid rgba(79, 70, 229, 0.5);
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 0 0.9rem 0.9rem 0;
+}
+
+.ai-tutor-msg-bubble .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.2rem;
 }
 
 .ai-tutor-msg--assistant .ai-tutor-msg-bubble {
@@ -257,6 +347,29 @@
     color: #fff;
     border-color: transparent;
     border-top-right-radius: 8px;
+}
+
+.ai-tutor-msg-bubble.is-streaming::after {
+    content: "";
+    display: inline-block;
+    width: 0.6rem;
+    height: 1.1rem;
+    margin-left: 0.2rem;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.65;
+    animation: aiTutorBlinkCaret 0.8s ease-in-out infinite;
+    vertical-align: -0.12rem;
+}
+
+.ai-tutor-caret {
+    display: inline-block;
+    width: 0.65rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.7;
+    animation: aiTutorBlinkCaret 0.8s ease-in-out infinite;
 }
 
 .ai-tutor-form {
@@ -377,6 +490,15 @@
     color: #f8fafc;
 }
 
+.ai-tutor-shell--lesson-studio .ai-tutor-msg-bubble code {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ai-tutor-shell--lesson-studio .ai-tutor-msg-bubble blockquote,
+.ai-tutor-shell--lesson-studio .ai-tutor-msg-bubble th {
+    background: rgba(59, 130, 246, 0.12);
+}
+
 .ai-tutor-shell--garden {
     right: 18px;
     bottom: 152px;
@@ -454,8 +576,26 @@
     font-size: 0.98rem;
 }
 
+.ai-tutor-shell--garden .ai-tutor-msg-bubble code {
+    background: rgba(90, 57, 39, 0.12);
+}
+
+.ai-tutor-shell--garden .ai-tutor-msg-bubble pre {
+    background: rgba(63, 43, 31, 0.96);
+}
+
 .ai-tutor-shell--garden .ai-tutor-panel {
     border-radius: 24px;
+}
+
+@keyframes aiTutorBlinkCaret {
+    0%,
+    100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.8;
+    }
 }
 
 @media (max-width: 1024px) {

@@ -235,7 +235,7 @@ const canAnswer = !!user && questionStatus !== 'closed';
                     <div class="qa-related-list">
                         <% safeRelatedQuestions.forEach((item) => { %>
                             <article class="qa-related-card">
-                                <a href="/qa/questions/<%= item._id %>">
+                                <a href="<%= item.href || ('/qa/questions/' + item._id) %>">
                                     <div class="qa-card-top">
                                         <span class="qa-badge qa-badge-subject"><%= item.subject || 'Khác' %></span>
                                         <span class="qa-badge qa-badge-grade">Lớp <%= item.grade || 'Chung' %></span>
