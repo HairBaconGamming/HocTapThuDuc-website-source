@@ -1,8 +1,4 @@
-/* ==========================================================================
-   PHẦN 1: CORE VARIABLES, LAYOUT SHELL, TOP HUD & BOTTOM TOOLBARS
-   ========================================================================== */
 :root {
-    /* Colors (Giữ nguyên bảng màu mộc mạc) */
     --garden-paper: #fffaf0;
     --garden-paper-soft: #f8efde;
     --garden-paper-warm: #efe0c2;
@@ -27,38 +23,24 @@
     --garden-ink: #3f2b1f;
     --garden-ink-soft: #6f5948;
     --garden-white: #fffdf7;
-
-    /* Nâng cấp Shadow mượt mà hơn */
-    --garden-shadow-soft: 0 4px 12px rgba(58, 37, 24, 0.08), 0 8px 24px rgba(58, 37, 24, 0.05);
-    --garden-shadow-panel: 0 12px 28px rgba(58, 37, 24, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
-    --garden-shadow-float: 0 8px 16px rgba(58, 37, 24, 0.18);
-    
-    /* Border Radius */
-    --garden-radius-xl: clamp(20px, 4vw, 28px);
-    --garden-radius-lg: clamp(16px, 3vw, 22px);
+    --garden-shadow-soft: 0 10px 24px rgba(58, 37, 24, 0.14);
+    --garden-shadow-panel: 0 18px 36px rgba(58, 37, 24, 0.2);
+    --garden-shadow-float: 0 8px 18px rgba(58, 37, 24, 0.18);
+    --garden-radius-xl: 28px;
+    --garden-radius-lg: 22px;
     --garden-radius-md: 16px;
     --garden-radius-sm: 12px;
     --garden-radius-pill: 999px;
-    
-    /* Accents */
     --accent-green: #7ca860;
     --accent-red: #b75646;
-    
-    /* Z-Index Hierarchy */
     --z-canvas: 1;
     --z-hud: 10;
     --z-floating: 20;
     --z-drawer: 40;
     --z-modal: 60;
     --z-tutorial: 9999;
-
-    /* Spacing linh hoạt (Chống đè màn hình nhỏ) */
-    --safe-pad-x: clamp(12px, 3vw, 24px);
-    --safe-pad-top: clamp(12px, 2vh, 24px);
-    --safe-pad-bottom: clamp(12px, 3vh, 24px);
 }
 
-/* Reset thông minh */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -67,11 +49,11 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html,
+body {
     width: 100%;
     height: 100%;
-    min-height: 100dvh; /* Hỗ trợ mobile tốt hơn 100vh */
-    -webkit-text-size-adjust: 100%; /* Tránh Safari tự phóng to text */
+    min-height: 100dvh;
 }
 
 body.garden-rustic-page {
@@ -82,42 +64,58 @@ body.garden-rustic-page {
         linear-gradient(180deg, #314a2b 0%, #1d2f1e 100%);
     color: var(--garden-ink);
     font-family: 'VT323', monospace;
-    font-size: clamp(18px, 2vw, 20px); /* Typo tự động co giãn */
+    font-size: 20px;
 }
 
-a { color: inherit; text-decoration: none; }
-button, input { font: inherit; outline: none; }
+a {
+    color: inherit;
+}
 
-/* Canvas Game */
+button,
+input {
+    font: inherit;
+}
+
 #garden-game-container {
     position: fixed;
     inset: 0;
+    width: 100%;
+    height: 100%;
     z-index: var(--z-canvas);
     image-rendering: pixelated;
     touch-action: none;
 }
-#garden-game-container canvas { touch-action: none; }
 
-/* ==========================================================================
-   SHELL & LAYOUT CHÍNH (Chống chèn ép nội dung)
-   ========================================================================== */
+#garden-game-container canvas {
+    touch-action: none;
+    user-select: none;
+}
+
 .pixel-ui.garden-shell {
     position: fixed;
     inset: 0;
     z-index: var(--z-hud);
     width: 100%;
     height: 100dvh;
-    padding: var(--safe-pad-top) var(--safe-pad-x) var(--safe-pad-bottom) calc(var(--safe-pad-x) + 80px); /* 80px chừa chỗ cho sidebar trái */
+    padding: 14px 18px 96px 96px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Đẩy Topbar lên trên, Bottom nav xuống dưới */
+    justify-content: space-between;
     pointer-events: none;
 }
 
-/* Kích hoạt pointer-events cho các element con */
-.garden-shell-backdrop, .garden-rail, .garden-shell-drawer, .hud-top.garden-topbar,
-.planting-ui, .coords-badge, .plant-info-panel, .garden-guide-widget, .hud-bottom,
-.garden-bottom-nav, .mobile-action-btn, .pixel-modal-overlay {
+.garden-shell-backdrop,
+.garden-rail,
+.garden-shell-drawer,
+.hud-top.garden-topbar,
+.planting-ui,
+.coords-badge,
+.plant-info-panel,
+.garden-guide-widget,
+.hud-bottom,
+.garden-bottom-nav,
+.mobile-action-btn,
+.pixel-modal-overlay {
     pointer-events: auto;
 }
 
@@ -125,12 +123,10 @@ button, input { font: inherit; outline: none; }
     position: fixed;
     inset: 0;
     z-index: calc(var(--z-drawer) - 1);
-    background: rgba(20, 12, 8, 0.4);
-    backdrop-filter: blur(2px); /* Hiệu ứng mờ nền hiện đại */
-    -webkit-backdrop-filter: blur(2px);
+    background: rgba(45, 27, 18, 0.28);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
 }
 
 .pixel-ui.garden-shell.sidebar-open .garden-shell-backdrop {
@@ -138,34 +134,66 @@ button, input { font: inherit; outline: none; }
     visibility: visible;
 }
 
-/* Hiệu ứng chìm HUD khi mở Shop */
-.pixel-ui.garden-shell.shop-open > *:not(.pixel-modal-overlay):not(.garden-shell-backdrop) {
-    opacity: 0.1;
+.pixel-ui.garden-shell.shop-open .garden-rail,
+.pixel-ui.garden-shell.shop-open .garden-topbar,
+.pixel-ui.garden-shell.shop-open .plant-info-panel,
+.pixel-ui.garden-shell.shop-open .garden-guide-widget,
+.pixel-ui.garden-shell.shop-open .hud-bottom,
+.pixel-ui.garden-shell.shop-open .coords-badge,
+.pixel-ui.garden-shell.shop-open .planting-ui {
+    opacity: 0.12;
     pointer-events: none;
-    transform: scale(0.98);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.985);
 }
 
-/* ==========================================================================
-   GLOBAL STYLES (Panels, Buttons, Typography)
-   ========================================================================== */
-.pixel-panel, .pixel-window, .garden-shell-drawer, .garden-scene-pill,
-.player-stats-compact, .resources.garden-resource-bar, .garden-dropdown-menu,
-.plant-info-panel, .garden-guide-panel, .toolbar, .garden-bottom-nav,
-.coords-badge, .planting-ui, .quest-card, .inventory-card, .guide-tip,
-.social-card, .drawer-empty-state, .quest-reward-chip {
+.pixel-panel,
+.pixel-window,
+.garden-shell-drawer,
+.garden-scene-pill,
+.player-stats-compact,
+.resources.garden-resource-bar,
+.garden-dropdown-menu,
+.plant-info-panel,
+.garden-guide-panel,
+.toolbar,
+.garden-bottom-nav,
+.coords-badge,
+.planting-ui,
+.quest-card,
+.inventory-card,
+.guide-tip,
+.social-card,
+.drawer-empty-state,
+.quest-reward-chip {
     background:
         linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(244, 234, 211, 0.98)),
-        repeating-linear-gradient(90deg, rgba(121, 83, 58, 0.03) 0, rgba(121, 83, 58, 0.03) 1px, transparent 1px, transparent 8px);
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
     border: 3px solid var(--garden-wood-900);
     border-radius: var(--garden-radius-lg);
     box-shadow: var(--garden-shadow-soft);
 }
 
-.pixel-btn, .garden-rail-btn, .drawer-tab, .drawer-close-btn, .garden-compact-btn,
-.garden-dropdown-btn, .garden-quick-btn, .toolbelt-toggle, .quest-panel-toggle,
-.guide-panel-action, .plant-action-btn, .quest-claim-btn, .pixel-btn-close,
-.pixel-tab, .btn-buy-action {
+.pixel-btn,
+.garden-rail-btn,
+.drawer-tab,
+.drawer-close-btn,
+.garden-compact-btn,
+.garden-dropdown-btn,
+.garden-quick-btn,
+.toolbelt-toggle,
+.quest-panel-toggle,
+.guide-panel-action,
+.plant-action-btn,
+.quest-claim-btn,
+.pixel-btn-close,
+.pixel-tab,
+.btn-buy-action {
     font-family: 'VT323', monospace;
     border: 3px solid var(--garden-wood-900);
     border-radius: var(--garden-radius-sm);
@@ -173,76 +201,604 @@ button, input { font: inherit; outline: none; }
     background: linear-gradient(180deg, #fffdf7, #eadabd);
     box-shadow: 0 4px 0 rgba(58, 37, 24, 0.18);
     cursor: pointer;
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s ease, filter 0.15s ease;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.16s ease;
 }
 
-.pixel-btn:hover, .garden-compact-btn:hover, .toolbelt-toggle:hover {
-    filter: brightness(1.05);
+.pixel-btn:hover,
+.garden-rail-btn:hover,
+.drawer-tab:hover,
+.drawer-close-btn:hover,
+.garden-compact-btn:hover,
+.garden-dropdown-btn:hover,
+.garden-quick-btn:hover,
+.toolbelt-toggle:hover,
+.quest-panel-toggle:hover,
+.guide-panel-action:hover,
+.plant-action-btn:hover,
+.quest-claim-btn:hover,
+.pixel-btn-close:hover,
+.pixel-tab:hover,
+.btn-buy-action:hover {
+    background: linear-gradient(180deg, #ffffff, #f1e5cf);
 }
 
-.pixel-btn:active, .garden-compact-btn:active, .toolbelt-toggle:active {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 rgba(58, 37, 24, 0);
+.pixel-btn:active,
+.garden-rail-btn:active,
+.drawer-tab:active,
+.drawer-close-btn:active,
+.garden-compact-btn:active,
+.garden-dropdown-btn:active,
+.garden-quick-btn:active,
+.toolbelt-toggle:active,
+.quest-panel-toggle:active,
+.guide-panel-action:active,
+.plant-action-btn:active,
+.quest-claim-btn:active,
+.pixel-btn-close:active,
+.pixel-tab:active,
+.btn-buy-action:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(58, 37, 24, 0.14);
 }
 
-.pixel-img, .pixel-icon, .tool-slot img {
+.pixel-img,
+.pixel-icon,
+.tool-slot img,
+.shop-card img,
+.detail-img,
+.npc-img-lg,
+.info-thumb img,
+.garden-guide-avatar img,
+.inventory-card img,
+.quest-reward-chip img,
+.farm-icon-bounce img {
     image-rendering: pixelated;
     object-fit: contain;
 }
 
-/* ==========================================================================
-   TOP HUD (Thông minh, chống flex tràn)
-   ========================================================================== */
+.text-blue { color: var(--garden-blue-600); }
+.text-green { color: var(--garden-moss-700); }
+.text-gold { color: var(--garden-gold-700); }
+
+#rustic-loading {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background:
+        linear-gradient(180deg, rgba(49, 74, 43, 0.86), rgba(29, 47, 30, 0.9)),
+        radial-gradient(circle at top, rgba(255, 246, 228, 0.1), transparent 34%);
+    transition: opacity 0.45s ease;
+}
+
+.farm-loader-box {
+    width: min(480px, calc(100vw - 24px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 24px;
+    text-align: center;
+    background:
+        linear-gradient(180deg, rgba(255, 251, 241, 0.98), rgba(244, 234, 211, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 4px solid var(--garden-wood-900);
+    border-radius: 30px;
+    box-shadow: var(--garden-shadow-panel);
+}
+
+.farm-icon-bounce {
+    width: 92px;
+    height: 92px;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle, rgba(255, 245, 220, 0.8), rgba(241, 229, 205, 0.42));
+    border: 3px solid rgba(58, 37, 24, 0.16);
+    border-radius: 50%;
+    animation: farmBounce 1.4s ease-in-out infinite;
+}
+
+.farm-icon-bounce img {
+    width: 64px;
+    height: 64px;
+}
+
+.farm-title {
+    font-size: 2.2rem;
+    letter-spacing: 0.04em;
+    color: var(--garden-wood-900);
+}
+
+.wood-progress-container {
+    width: 100%;
+    height: 22px;
+    padding: 3px;
+    background: #e1cfb0;
+    border: 3px solid var(--garden-wood-900);
+    border-radius: var(--garden-radius-pill);
+    overflow: hidden;
+}
+
+.leaf-progress-bar {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8bbd52, #c8d96a);
+    transition: width 0.2s ease;
+}
+
+.loading-text {
+    color: var(--garden-ink-soft);
+    font-size: 1.08rem;
+}
+
+.paper-tip {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.68);
+    border: 2px dashed rgba(58, 37, 24, 0.2);
+    border-radius: var(--garden-radius-md);
+}
+
+.paper-title {
+    color: var(--garden-wood-800);
+    font-size: 1rem;
+}
+
+.paper-content {
+    color: var(--garden-ink);
+    font-size: 1rem;
+}
+
+@keyframes farmBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.garden-rail {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    bottom: 108px;
+    z-index: var(--z-floating);
+    width: 66px;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background:
+        linear-gradient(180deg, rgba(255, 251, 241, 0.97), rgba(238, 224, 193, 0.96)),
+        repeating-linear-gradient(
+            180deg,
+            rgba(121, 83, 58, 0.06) 0,
+            rgba(121, 83, 58, 0.06) 2px,
+            transparent 2px,
+            transparent 14px
+        );
+    border: 4px solid var(--garden-wood-900);
+    border-radius: 28px;
+    box-shadow: var(--garden-shadow-panel);
+    overflow: hidden;
+    transition: width 0.18s ease;
+}
+
+.garden-rail:hover,
+.garden-rail:focus-within,
+.pixel-ui.garden-shell.sidebar-open .garden-rail {
+    width: 182px;
+}
+
+.garden-rail-btn {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    overflow: hidden;
+    background: rgba(255, 252, 245, 0.9);
+}
+
+.garden-rail-btn i {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.garden-rail-primary {
+    background: linear-gradient(180deg, #f6ead4, #e7d5b7);
+}
+
+.garden-rail-btn.is-active,
+.garden-rail-btn:hover,
+.garden-rail-btn:focus-visible {
+    background: linear-gradient(180deg, #fffaf0, #ecdcbc);
+}
+
+.rail-label {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: opacity 0.18s ease, max-width 0.18s ease;
+}
+
+.garden-rail:hover .rail-label,
+.garden-rail:focus-within .rail-label,
+.pixel-ui.garden-shell.sidebar-open .rail-label {
+    opacity: 1;
+    max-width: 120px;
+}
+
+.rail-counter {
+    margin-left: auto;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(58, 37, 24, 0.1);
+    border: 2px solid rgba(58, 37, 24, 0.18);
+    font-size: 0.82rem;
+}
+
+.garden-shell-drawer {
+    position: absolute;
+    top: 16px;
+    left: 92px;
+    bottom: 106px;
+    width: min(368px, calc(100vw - 144px));
+    z-index: var(--z-drawer);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    color: var(--garden-ink);
+    transform: translateX(-14px);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.2s ease, opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.drawer-header,
+.drawer-panel-header,
+.quest-panel-header,
+.window-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.drawer-header h2,
+.drawer-panel-header h3,
+.quest-panel-header h3 {
+    font-size: 1.6rem;
+    color: var(--garden-wood-900);
+    line-height: 1;
+}
+
+.drawer-kicker,
+.quest-panel-kicker,
+.guide-panel-kicker,
+.info-panel-kicker,
+.dropdown-item-header,
+.social-card-title,
+.quest-progress-label,
+.quest-desc,
+.inventory-card span,
+.guide-tip div,
+.plant-action-meta,
+.info-cell small,
+.stat-row label,
+.stat-val {
+    color: var(--garden-ink-soft);
+    font-size: 0.96rem;
+    letter-spacing: 0.01em;
+}
+
+.drawer-status,
+.quest-panel-toggle {
+    flex-shrink: 0;
+}
+
+.drawer-close-btn,
+.pixel-btn-close {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+}
+
+.pixel-btn-close.red {
+    color: #fff7ef;
+    background: linear-gradient(180deg, #cf7651, #b75646);
+}
+
+.drawer-tabs,
+.shop-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.drawer-tab,
+.pixel-tab {
+    padding: 10px 16px;
+    min-height: 44px;
+}
+
+.drawer-tab.active,
+.pixel-tab.active {
+    color: #fffdf7;
+    background: linear-gradient(180deg, #7fa462, #5f8249);
+    border-color: var(--garden-wood-900);
+}
+
+.drawer-body {
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.drawer-panel {
+    height: 100%;
+    display: none;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.drawer-panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.drawer-panel::-webkit-scrollbar,
+.shop-grid-container::-webkit-scrollbar,
+.toolbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.drawer-panel::-webkit-scrollbar-thumb,
+.shop-grid-container::-webkit-scrollbar-thumb,
+.toolbar::-webkit-scrollbar-thumb {
+    background: rgba(58, 37, 24, 0.22);
+    border-radius: 999px;
+}
+
+.drawer-empty-state {
+    min-height: 180px;
+    padding: 22px;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    text-align: center;
+    color: var(--garden-ink-soft);
+}
+
+.drawer-empty-state i {
+    font-size: 2rem;
+    color: var(--garden-moss-700);
+}
+
+.drawer-quest-panel.quest-panel {
+    padding: 18px;
+}
+
+.quest-list,
+.guide-list,
+.social-links,
+.inventory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quest-card,
+.guide-tip,
+.social-card,
+.inventory-card {
+    padding: 14px 16px;
+}
+
+.quest-topline,
+.quest-bottomline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.quest-title {
+    color: var(--garden-wood-900);
+    font-size: 1.22rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quest-progress {
+    width: 100%;
+    height: 14px;
+    padding: 2px;
+    margin: 10px 0;
+    background: rgba(58, 37, 24, 0.1);
+    border: 2px solid rgba(58, 37, 24, 0.12);
+    border-radius: 999px;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #7ba75c, #d2df72);
+}
+
+.quest-card.complete .quest-progress-fill {
+    background: linear-gradient(90deg, #5b94d0, #9f8ae8);
+}
+
+.quest-card.claimed {
+    opacity: 0.78;
+}
+
+.quest-reward {
+    display: inline-flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.quest-reward-chip {
+    min-height: 32px;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+}
+
+.quest-reward-chip img {
+    width: 20px;
+    height: 20px;
+}
+
+.quest-claim-btn {
+    padding: 8px 14px;
+}
+
+.quest-claim-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.quest-empty {
+    padding: 28px 14px;
+    text-align: center;
+    color: var(--garden-ink-soft);
+}
+
+.inventory-card,
+.social-link-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.inventory-card img {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.inventory-card strong,
+.social-card-value,
+.guide-tip strong {
+    display: block;
+    font-size: 1.2rem;
+    color: var(--garden-wood-900);
+}
+
+.social-links .social-card {
+    display: block;
+}
+
+.social-link-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--garden-shadow-float);
+}
+
 .hud-top.garden-topbar {
     width: 100%;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    flex-wrap: wrap; /* Cho phép rớt dòng trên màn nhỏ */
-    gap: clamp(10px, 2vw, 16px);
+    gap: 16px;
 }
 
-.garden-topbar-left, .garden-topbar-right {
+.garden-topbar-left,
+.garden-topbar-right {
     display: flex;
     align-items: center;
-    gap: clamp(8px, 1.5vw, 12px);
-    min-width: 0; /* Ngăn chặn flex con đẩy vỡ layout */
+    gap: 12px;
 }
 
-.garden-topbar-left { flex: 1 1 50%; }
-.garden-topbar-right { flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
+.garden-topbar-left {
+    min-width: 0;
+    flex: 1;
+}
+
+.garden-topbar-right {
+    flex-shrink: 0;
+}
+
+.mobile-only {
+    display: none;
+}
+
+.garden-compact-btn,
+.garden-quick-btn,
+.btn-back {
+    min-width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+}
 
 .garden-scene-pill {
-    flex: 1;
-    min-width: 120px;
-    max-width: 320px;
+    min-width: 0;
+    max-width: 310px;
     padding: 10px 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
 }
 
 .garden-scene-main {
+    display: block;
     color: var(--garden-wood-900);
-    font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+    font-size: 1.5rem;
+    line-height: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .garden-scene-sub {
+    display: block;
+    margin-top: 4px;
     color: var(--garden-ink-soft);
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Stats Header */
 .player-stats-compact {
-    flex: 2;
-    min-width: 200px;
-    max-width: 340px;
+    min-width: 0;
+    max-width: 330px;
     padding: 8px 12px;
     display: flex;
     align-items: center;
@@ -250,8 +806,8 @@ button, input { font: inherit; outline: none; }
 }
 
 .stat-level-box {
-    width: clamp(46px, 10vw, 54px);
-    height: clamp(46px, 10vw, 54px);
+    width: 54px;
+    height: 54px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -259,8 +815,18 @@ button, input { font: inherit; outline: none; }
     justify-content: center;
     background: linear-gradient(180deg, #fff7e0, #efd296);
     border: 3px solid var(--garden-wood-900);
-    border-radius: var(--garden-radius-md);
+    border-radius: 16px;
     box-shadow: inset 0 -4px 0 rgba(58, 37, 24, 0.12);
+}
+
+.stat-level-box .lbl {
+    font-size: 0.78rem;
+    color: var(--garden-ink-soft);
+}
+
+.stat-level-box .val {
+    font-size: 1.4rem;
+    color: var(--garden-wood-900);
 }
 
 .stat-info-col {
@@ -271,105 +837,492 @@ button, input { font: inherit; outline: none; }
     gap: 6px;
 }
 
-/* Resources Header */
-.resources.garden-resource-bar {
-    padding: 6px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap; /* Tránh đè nhau khi nhiều tài nguyên */
-}
-
-.res-item {
-    padding: 4px 10px;
+.realm-badge {
     display: inline-flex;
+    align-self: flex-start;
+    min-height: 28px;
+    padding: 2px 10px;
     align-items: center;
-    gap: 6px;
-    border-radius: var(--garden-radius-sm);
-    background: rgba(255, 255, 255, 0.5);
-    border: 2px solid rgba(58, 37, 24, 0.1);
-    font-weight: bold;
+    border-radius: 999px;
+    background: rgba(124, 168, 96, 0.18);
+    border: 2px solid rgba(84, 120, 68, 0.28);
+    color: var(--garden-moss-700);
+    font-size: 0.92rem;
 }
 
-/* ==========================================================================
-   BOTTOM HUD & TOOLBARS (Xử lý chống che)
-   ========================================================================== */
-.hud-bottom {
-    /* Loại bỏ absolute, sử dụng flex của shell để căn dưới cùng */
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto; /* Đẩy sát xuống dưới cùng của flex container */
+.xp-progress-wrapper {
     position: relative;
-    z-index: var(--z-floating);
+    width: min(100%, 170px);
+    height: 18px;
+    padding: 2px;
+    background: rgba(58, 37, 24, 0.12);
+    border: 2px solid rgba(58, 37, 24, 0.16);
+    border-radius: 999px;
+    overflow: hidden;
 }
 
-.planting-ui, .coords-badge {
-    position: relative; /* Bỏ absolute để nó tự xếp chồng mượt mà */
-    top: auto;
-    left: auto;
-    transform: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
+.xp-fill {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #7fa462, #d8e07f);
 }
 
-.toolbar-wrapper {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    width: 100%;
-    justify-content: center;
-}
-
-.toolbelt-toggle {
-    width: clamp(40px, 8vw, 48px);
-    height: clamp(40px, 8vw, 48px);
+.xp-text {
+    position: absolute;
+    inset: 0;
     display: grid;
     place-items: center;
-    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: var(--garden-wood-900);
 }
 
-.toolbar {
-    max-width: min(90vw, 600px);
+.resources.garden-resource-bar {
     padding: 8px 10px;
     display: flex;
     align-items: center;
     gap: 8px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    /* Ẩn scrollbar thô */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
-.toolbar::-webkit-scrollbar { display: none; }
+
+.res-item {
+    min-width: 58px;
+    min-height: 42px;
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.45);
+    border: 2px solid rgba(58, 37, 24, 0.1);
+    color: var(--garden-wood-900);
+}
+
+.pixel-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.garden-status-dropdown-container {
+    position: relative;
+}
+
+.garden-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(280px, calc(100vw - 32px));
+    padding: 14px;
+    display: none;
+    z-index: calc(var(--z-floating) + 2);
+}
+
+.garden-dropdown-menu[aria-hidden="false"] {
+    display: block;
+}
+
+.dropdown-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dropdown-divider {
+    height: 1px;
+    margin: 10px 0;
+    background: rgba(58, 37, 24, 0.12);
+}
+
+.dropdown-item,
+.dropdown-item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--garden-wood-900);
+}
+
+.dropdown-label {
+    color: var(--garden-ink-soft);
+}
+
+.dropdown-value,
+.dropdown-garden-name {
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.garden-quick-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.planting-ui,
+.coords-badge {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-floating);
+    min-height: 44px;
+    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.planting-ui {
+    top: 82px;
+}
+
+.coords-badge {
+    top: 140px;
+    font-size: 0.95rem;
+}
+
+.planting-label {
+    color: var(--garden-red-600);
+}
+
+.planting-item-name {
+    color: var(--garden-wood-900);
+}
+
+.btn-cancel-plant {
+    min-height: 36px;
+    padding: 6px 14px;
+}
+
+.mobile-action-btn {
+    position: absolute;
+    right: 16px;
+    bottom: 168px;
+    z-index: var(--z-floating);
+    width: 50px;
+    height: 50px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    border: 3px solid var(--garden-wood-900);
+    background: linear-gradient(180deg, #fff8ea, #e8d7b8);
+    color: var(--garden-wood-900);
+    box-shadow: var(--garden-shadow-float);
+}
+
+.mobile-action-btn.active {
+    background: linear-gradient(180deg, #dbe8ba, #a8c66c);
+}
+
+.plant-info-panel {
+    position: absolute;
+    top: 92px;
+    right: 18px;
+    width: min(320px, calc(100vw - 130px));
+    z-index: var(--z-floating);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+}
+
+.plant-info-panel.active {
+    display: flex;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.info-thumb {
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.56);
+    border: 2px solid rgba(58, 37, 24, 0.12);
+    border-radius: 16px;
+}
+
+.info-thumb img {
+    width: 48px;
+    height: 48px;
+}
+
+.info-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.info-text h3 {
+    color: var(--garden-wood-900);
+    font-size: 1.46rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pixel-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 2px solid rgba(58, 37, 24, 0.16);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--garden-wood-900);
+    font-size: 0.9rem;
+}
+
+.pixel-badge.green {
+    background: rgba(124, 168, 96, 0.18);
+    color: var(--garden-moss-700);
+}
+
+.pixel-badge.yellow {
+    background: rgba(232, 154, 36, 0.18);
+    color: var(--garden-gold-700);
+}
+
+.pixel-badge.grey {
+    background: rgba(111, 89, 72, 0.12);
+    color: var(--garden-ink-soft);
+}
+
+.info-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.pixel-progress-track {
+    width: 100%;
+    height: 14px;
+    padding: 2px;
+    background: rgba(58, 37, 24, 0.12);
+    border: 2px solid rgba(58, 37, 24, 0.12);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.pixel-progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+}
+
+.pixel-progress-fill.fill-water {
+    background: linear-gradient(90deg, #71b8e7, #9dd8ff);
+}
+
+.pixel-progress-fill.fill-growth {
+    background: linear-gradient(90deg, #85ba68, #dce07e);
+}
+
+.pixel-progress-fill.fill-warning {
+    background: linear-gradient(90deg, #f0c363, #ef9b48);
+}
+
+.pixel-progress-fill.fill-danger {
+    background: linear-gradient(90deg, #e6816d, #bf4f49);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.info-cell {
+    min-height: 70px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.42);
+    border: 2px solid rgba(58, 37, 24, 0.1);
+    border-radius: 14px;
+}
+
+.info-cell strong {
+    color: var(--garden-wood-900);
+    font-size: 1.05rem;
+}
+
+.info-footer {
+    min-height: 38px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.44);
+    border: 2px dashed rgba(58, 37, 24, 0.14);
+    border-radius: 14px;
+}
+
+.plant-action-row {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 6px;
+}
+
+.plant-action-row.active {
+    display: flex;
+}
+
+.plant-action-btn {
+    min-height: 42px;
+    padding: 8px 14px;
+}
+
+.plant-action-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.garden-guide-widget {
+    position: absolute;
+    left: 18px;
+    bottom: 156px;
+    z-index: var(--z-floating);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.garden-guide-avatar {
+    width: 66px;
+    height: 66px;
+    display: grid;
+    place-items: center;
+    border-radius: 22px;
+    border: 4px solid var(--garden-wood-900);
+    background: linear-gradient(180deg, #fff9ed, #efe0c2);
+    box-shadow: var(--garden-shadow-panel);
+    overflow: hidden;
+}
+
+.garden-guide-avatar img {
+    width: 100%;
+    height: 100%;
+}
+
+.garden-guide-panel {
+    position: relative;
+    width: min(320px, calc(100vw - 150px));
+    padding: 18px 18px 16px;
+}
+
+.garden-guide-panel::after {
+    content: "";
+    position: absolute;
+    left: -12px;
+    bottom: 18px;
+    width: 18px;
+    height: 18px;
+    background: var(--garden-paper-soft);
+    border-left: 3px solid var(--garden-wood-900);
+    border-bottom: 3px solid var(--garden-wood-900);
+    transform: rotate(45deg);
+}
+
+.garden-guide-panel p {
+    color: var(--garden-wood-900);
+    line-height: 1.2;
+}
+
+.guide-panel-action {
+    margin-top: 12px;
+    min-height: 40px;
+    padding: 8px 14px;
+}
+
+.pixel-ui.garden-shell.dialog-minimized .garden-guide-panel {
+    display: none;
+}
+
+.hud-bottom {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: var(--z-floating);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.toolbelt-toggle {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+}
+
+.toolbar {
+    max-width: min(92vw, 720px);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.toolbar::-webkit-scrollbar {
+    display: none;
+}
 
 .tool-slot {
-    width: clamp(44px, 10vw, 54px);
-    height: clamp(44px, 10vw, 54px);
-    flex: 0 0 auto;
+    position: relative;
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
     display: grid;
     place-items: center;
     border: 3px solid var(--garden-wood-900);
-    border-radius: var(--garden-radius-md);
+    border-radius: 16px;
     background: linear-gradient(180deg, #fff9ed, #eadabc);
     box-shadow: inset 0 -3px 0 rgba(58, 37, 24, 0.14);
+    transition: transform 0.14s ease, background 0.16s ease, opacity 0.16s ease;
     cursor: pointer;
-    transition: transform 0.1s ease, background 0.15s ease;
-    position: relative;
+}
+
+.tool-slot:hover {
+    transform: translateY(-2px);
+}
+
+.tool-slot img {
+    width: 30px;
+    height: 30px;
 }
 
 .tool-slot.active {
     background: linear-gradient(180deg, #dbe8ba, #a8c66c);
-    box-shadow: inset 0 -3px 0 rgba(58, 37, 24, 0.1), 0 0 0 3px rgba(255, 251, 241, 0.8);
-    transform: translateY(-4px);
+    box-shadow: inset 0 -3px 0 rgba(58, 37, 24, 0.1), 0 0 0 3px rgba(255, 251, 241, 0.55);
 }
 
-.tool-slot img {
-    width: 60%;
-    height: 60%;
+.tool-slot.shop-slot {
+    background: linear-gradient(180deg, #fff4e4, #ecc688);
+}
+
+.tool-slot.disabled-tool {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 .key-hint {
@@ -378,280 +1331,787 @@ button, input { font: inherit; outline: none; }
     bottom: 2px;
     font-size: 0.65rem;
     color: var(--garden-ink-soft);
-    background: rgba(255,255,255,0.6);
-    padding: 0 3px;
-    border-radius: 4px;
 }
 
-/* ==========================================================================
-   LEFT RAIL (Cố định thông minh)
-   ========================================================================== */
-.garden-rail {
-    position: absolute;
-    top: var(--safe-pad-top);
-    left: var(--safe-pad-x);
-    bottom: var(--safe-pad-bottom);
-    z-index: var(--z-floating);
-    width: 66px;
-    padding: 12px 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    border: 4px solid var(--garden-wood-900);
-    border-radius: var(--garden-radius-xl);
+.disabled-toolbar {
+    opacity: 0.68;
+}
+
+.disabled-toolbar .tool-slot:not(.active):not(.shop-slot) {
+    pointer-events: none;
+}
+
+.pixel-ui.garden-shell.toolbelt-collapsed .toolbar {
+    max-width: 0;
+    padding: 0;
+    border-width: 0;
     overflow: hidden;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
 }
 
-.garden-rail:hover, .pixel-ui.garden-shell.sidebar-open .garden-rail {
-    width: 180px;
-    padding: 12px;
+.pixel-ui.garden-shell.toolbelt-collapsed .toolbelt-toggle i {
+    transform: rotate(180deg);
 }
 
-.garden-rail-btn {
-    width: 100%;
-    min-height: 46px;
+.garden-bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    z-index: var(--z-floating);
+    width: min(94vw, 520px);
     padding: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.rail-label {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.garden-rail:hover .rail-label, .pixel-ui.garden-shell.sidebar-open .rail-label {
-    opacity: 1;
-}
-
-/* Ẩn bớt trên mobile, để nhường chỗ cho Drawer */
-@media (max-width: 768px) {
-    .pixel-ui.garden-shell {
-        padding: var(--safe-pad-top) var(--safe-pad-x) calc(var(--safe-pad-bottom) + 60px) var(--safe-pad-x);
-    }
-    .garden-rail { display: none; }
-    .hud-bottom { margin-top: auto; }
-}
-
-/* ==========================================================================
-   PHẦN 2: DRAWER, MODALS, INFO PANELS & RESPONSIVE DESIGN
-   ========================================================================== */
-
-/* ==========================================================================
-   SIDEBAR DRAWER (Bảng Nhiệm vụ / Kho / Xã hội)
-   ========================================================================== */
-.garden-shell-drawer {
-    position: absolute;
-    /* Tự động căn lề bám theo Left Rail */
-    top: var(--safe-pad-top);
-    left: calc(var(--safe-pad-x) + 80px); 
-    bottom: calc(var(--safe-pad-bottom) + 70px); /* Chừa khoảng trống cho Bottom Nav */
-    width: clamp(300px, 30vw, 380px); /* Co giãn thông minh */
-    z-index: var(--z-drawer);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 18px;
-    color: var(--garden-ink);
-    transform: translateX(-20px);
-    opacity: 0;
-    visibility: hidden;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, visibility 0.25s ease;
-}
-
-.pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
-    transform: translateX(0);
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Header & Typography của Drawer */
-.drawer-header, .drawer-panel-header, .quest-panel-header, .window-header {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-}
-.drawer-header h2, .drawer-panel-header h3, .quest-panel-header h3 {
-    font-size: clamp(1.4rem, 2.5vw, 1.6rem);
-    color: var(--garden-wood-900); line-height: 1;
-}
-.drawer-kicker, .quest-panel-kicker, .guide-panel-kicker, .info-panel-kicker,
-.dropdown-item-header, .social-card-title, .quest-progress-label, .quest-desc,
-.inventory-card span, .guide-tip div, .plant-action-meta, .info-cell small,
-.stat-row label, .stat-val {
-    color: var(--garden-ink-soft); font-size: 0.95rem; letter-spacing: 0.01em;
-}
-
-/* Tabs & List trong Drawer */
-.drawer-tabs, .shop-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
-.drawer-body { min-height: 0; flex: 1; overflow: hidden; }
-.drawer-panel { height: 100%; display: none; overflow-y: auto; padding-right: 6px; }
-.drawer-panel.active { display: flex; flex-direction: column; gap: 16px; }
-.drawer-panel::-webkit-scrollbar, .shop-grid-container::-webkit-scrollbar, .plant-info-panel::-webkit-scrollbar {
-    width: 6px; height: 6px;
-}
-.drawer-panel::-webkit-scrollbar-thumb, .shop-grid-container::-webkit-scrollbar-thumb, .plant-info-panel::-webkit-scrollbar-thumb {
-    background: rgba(58, 37, 24, 0.2); border-radius: 999px;
-}
-
-/* Quest & Inventory Cards */
-.quest-list, .guide-list, .social-links, .inventory-list { display: flex; flex-direction: column; gap: 12px; }
-.quest-card, .guide-tip, .social-card, .inventory-card { padding: 14px 16px; transition: transform 0.15s ease; }
-.inventory-card:hover, .social-card:hover { transform: translateY(-2px); box-shadow: var(--garden-shadow-float); }
-.quest-progress {
-    width: 100%; height: 14px; padding: 2px; margin: 10px 0;
-    background: rgba(58, 37, 24, 0.1); border: 2px solid rgba(58, 37, 24, 0.12); border-radius: 999px;
-}
-.quest-progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7ba75c, #d2df72); transition: width 0.3s ease; }
-.quest-card.complete .quest-progress-fill { background: linear-gradient(90deg, #5b94d0, #9f8ae8); }
-
-/* ==========================================================================
-   PLANT INFO PANEL (Bảng thông số cây)
-   ========================================================================== */
-.plant-info-panel {
-    position: absolute;
-    top: calc(var(--safe-pad-top) + 85px); /* Tránh Topbar */
-    right: var(--safe-pad-x);
-    width: clamp(280px, 25vw, 340px);
-    max-height: calc(100dvh - var(--safe-pad-top) - var(--safe-pad-bottom) - 100px);
-    z-index: var(--z-floating);
     display: none;
-    flex-direction: column;
-    gap: 14px;
-    padding: 16px;
-    overflow-y: auto; /* Cho phép cuộn nếu quá dài */
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
-.plant-info-panel.active { display: flex; }
 
-.info-header { display: flex; align-items: center; gap: 12px; }
-.info-thumb { width: 60px; height: 60px; flex-shrink: 0; display: grid; place-items: center; background: rgba(255, 255, 255, 0.5); border: 2px solid rgba(58, 37, 24, 0.1); border-radius: 14px; }
-.info-text h3 { color: var(--garden-wood-900); font-size: 1.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bottom-nav-link {
+    flex: 1;
+    min-width: 0;
+    min-height: 50px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-radius: 16px;
+    text-decoration: none;
+    color: var(--garden-ink-soft);
+}
 
-/* Grid thông số */
-.info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.info-cell { padding: 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; background: rgba(255, 255, 255, 0.4); border: 2px solid rgba(58, 37, 24, 0.1); border-radius: 12px; }
+.bottom-nav-link.active {
+    color: var(--garden-wood-900);
+    background: rgba(255, 255, 255, 0.46);
+    border: 2px solid rgba(58, 37, 24, 0.1);
+}
 
-/* ==========================================================================
-   SHOP WINDOW (Tàng Bảo Các - Modal Mua sắm)
-   ========================================================================== */
 .pixel-modal-overlay {
-    position: fixed; inset: 0; z-index: var(--z-modal);
-    display: none; align-items: center; justify-content: center;
-    padding: var(--safe-pad-x);
-    background: rgba(20, 12, 8, 0.65);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(33, 20, 13, 0.45);
 }
 
 .shop-window {
-    width: 100%; max-width: 1100px;
-    height: 85dvh; max-height: 700px;
-    display: flex; flex-direction: column;
-    border-width: 4px; border-radius: var(--garden-radius-xl);
-    box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+    width: min(1140px, calc(100vw - 36px));
+    max-height: min(720px, calc(100dvh - 36px));
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    border-width: 4px;
+    border-radius: 22px;
+    box-shadow: 0 26px 44px rgba(32, 20, 13, 0.28);
+}
+
+.window-header {
+    padding: 14px 18px;
+    background:
+        linear-gradient(180deg, rgba(255, 250, 238, 0.98), rgba(243, 232, 206, 0.98)),
+        repeating-linear-gradient(
+            180deg,
+            rgba(121, 83, 58, 0.06) 0,
+            rgba(121, 83, 58, 0.06) 2px,
+            transparent 2px,
+            transparent 14px
+        );
+    border-bottom: 4px solid var(--garden-wood-900);
+}
+
+.win-title {
+    color: var(--garden-wood-900);
+    font-size: 1.7rem;
 }
 
 .window-body {
-    min-height: 0; flex: 1;
+    min-height: 0;
+    flex: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); /* Tỉ lệ 2 cột */
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
     background: rgba(255, 250, 242, 0.96);
 }
 
 .shop-list-col {
-    padding: 18px; border-right: 4px solid var(--garden-wood-900);
-    display: flex; flex-direction: column;
+    min-width: 0;
+    padding: 18px;
+    border-right: 4px solid var(--garden-wood-900);
+    background:
+        linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(248, 240, 222, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
 }
 
 .shop-grid-container {
-    flex: 1; margin-top: 16px; overflow-y: auto; padding-right: 6px;
+    margin-top: 16px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding-right: 6px;
 }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+    gap: 12px;
+}
 
 .shop-card {
-    min-height: 110px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px;
-    background: linear-gradient(180deg, #fffdf7, #f2e7cf);
-    border: 3px solid rgba(58, 37, 24, 0.2); border-radius: 16px;
-    cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease;
+    position: relative;
+    min-height: 116px;
+    padding: 12px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    background:
+        linear-gradient(180deg, #fffdf7, #f2e7cf),
+        repeating-linear-gradient(
+            180deg,
+            rgba(121, 83, 58, 0.04) 0,
+            rgba(121, 83, 58, 0.04) 2px,
+            transparent 2px,
+            transparent 12px
+        );
+    border: 3px solid rgba(58, 37, 24, 0.28);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.shop-card:hover { transform: translateY(-3px); box-shadow: var(--garden-shadow-float); }
-.shop-card.selected { border-color: var(--garden-moss-700); box-shadow: 0 0 0 4px rgba(124, 168, 96, 0.25); }
-.shop-card.locked { filter: grayscale(0.5); opacity: 0.8; }
-.shop-card img { width: 50px; height: 50px; }
+
+.shop-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--garden-shadow-float);
+}
+
+.shop-card.selected {
+    border-color: var(--garden-moss-700);
+    box-shadow: 0 0 0 3px rgba(124, 168, 96, 0.18), var(--garden-shadow-soft);
+}
+
+.shop-card.locked {
+    opacity: 0.72;
+}
+
+.shop-card img {
+    width: 52px;
+    height: 52px;
+}
+
+.shop-card .name {
+    max-width: 100%;
+    color: var(--garden-wood-900);
+    font-size: 1.1rem;
+    line-height: 1.02;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.shop-card .price {
+    color: var(--garden-gold-700);
+    font-size: 1rem;
+}
+
+.lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(58, 37, 24, 0.18);
+    color: var(--garden-white);
+    font-size: 1.1rem;
+    border-radius: inherit;
+}
+
+.req-level {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(183, 86, 70, 0.9);
+    color: #fffdf7;
+    font-size: 0.78rem;
+}
 
 .shop-detail-col {
-    padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 16px;
-    background: linear-gradient(180deg, rgba(236, 244, 223, 0.95), rgba(222, 236, 197, 0.92));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    min-width: 0;
+    padding: 18px 18px 24px;
+    background:
+        linear-gradient(180deg, rgba(236, 244, 223, 0.95), rgba(222, 236, 197, 0.92)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(95, 139, 76, 0.05) 0,
+            rgba(95, 139, 76, 0.05) 1px,
+            transparent 1px,
+            transparent 10px
+        );
 }
 
-/* ==========================================================================
-   ANIMATIONS & EFFECTS
-   ========================================================================== */
+.npc-state,
+.item-detail-state {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.item-detail-state {
+    display: none;
+}
+
+.npc-dialog {
+    position: relative;
+    width: min(300px, 100%);
+    padding: 16px 18px;
+    text-align: center;
+    background: #fffdf7;
+    border: 3px solid var(--garden-wood-900);
+    border-radius: 18px;
+    color: var(--garden-wood-900);
+    line-height: 1.05;
+}
+
+.npc-dialog::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -11px;
+    width: 20px;
+    height: 20px;
+    background: #fffdf7;
+    border-right: 3px solid var(--garden-wood-900);
+    border-bottom: 3px solid var(--garden-wood-900);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.npc-img-lg {
+    width: min(220px, 100%);
+    max-height: 320px;
+    aspect-ratio: 4 / 5;
+}
+
+.detail-header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.detail-img {
+    width: 96px;
+    height: 96px;
+}
+
+.detail-name {
+    max-width: 100%;
+    color: var(--garden-wood-900);
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.detail-type {
+    min-height: 30px;
+    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: rgba(95, 139, 76, 0.16);
+    border: 2px solid rgba(95, 139, 76, 0.22);
+    color: var(--garden-moss-700);
+}
+
+.detail-body-wrapper {
+    width: min(320px, 100%);
+    padding: 18px;
+    background:
+        linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(245, 236, 216, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 3px solid var(--garden-wood-900);
+    border-radius: 18px;
+    box-shadow: var(--garden-shadow-soft);
+}
+
+.detail-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.d-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.d-label {
+    color: var(--garden-ink-soft);
+}
+
+.d-val {
+    color: var(--garden-wood-900);
+}
+
+.d-val.time {
+    color: var(--garden-blue-600);
+}
+
+.d-val.xp {
+    color: var(--garden-moss-700);
+}
+
+.detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn-buy-action {
+    min-height: 46px;
+    padding: 10px 16px;
+    font-size: 1.18rem;
+    color: #fffdf7;
+    background: linear-gradient(180deg, #80aa64, #62844b);
+}
+
+.btn-buy-action:disabled {
+    opacity: 0.72;
+    cursor: default;
+}
+
+.user-balance {
+    text-align: center;
+    color: var(--garden-ink-soft);
+}
+
+.garden-bottom-nav,
+.garden-shell-drawer,
+.plant-info-panel,
+.garden-guide-panel,
+.shop-window,
+.drawer-panel,
+.shop-grid-container,
+.toolbar {
+    scrollbar-width: thin;
+}
+
 @keyframes panelPop {
-    0% { opacity: 0; transform: translateY(16px) scale(0.96); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .pixel-modal-overlay[style*="display: flex"] .shop-window,
 .plant-info-panel.active,
 .pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
-    animation: panelPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); /* Hiệu ứng nảy nhẹ (spring) */
+    animation: panelPop 0.18s ease;
 }
 
-/* ==========================================================================
-   RESPONSIVE (CO GIÃN CHO ĐIỆN THOẠI & TABLET)
-   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
 
 @media (max-width: 1024px) {
-    .window-body { grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr); }
+    .pixel-ui.garden-shell {
+        padding: 14px 16px 96px 84px;
+    }
+
+    .garden-topbar {
+        flex-wrap: wrap;
+    }
+
+    .garden-topbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .plant-info-panel {
+        width: min(300px, calc(100vw - 110px));
+    }
+
+    .shop-window {
+        width: calc(100vw - 28px);
+    }
+
+    .window-body {
+        grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+    }
+
+    .shop-grid {
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    }
 }
 
 @media (max-width: 768px) {
-    /* Drawer bám full viền thay vì lơ lửng */
-    .garden-shell-drawer {
-        top: var(--safe-pad-top);
-        left: var(--safe-pad-x);
-        right: var(--safe-pad-x);
-        bottom: calc(var(--safe-pad-bottom) + 90px);
-        width: auto; max-width: none;
+    .pixel-ui.garden-shell {
+        padding: 12px 12px 104px;
     }
 
-    /* Plant Info nằm dưới cùng thay vì bên phải (tránh che map) */
+    .garden-rail {
+        display: none;
+    }
+
+    .garden-shell-drawer {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        bottom: 88px;
+        width: auto;
+        max-width: none;
+        transform: translateY(12px);
+    }
+
+    .pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
+        transform: translateY(0);
+    }
+
+    .mobile-only {
+        display: inline-flex;
+    }
+
+    .btn-back {
+        display: none;
+    }
+
+    .garden-topbar-left,
+    .garden-topbar-right {
+        width: 100%;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .garden-scene-pill,
+    .player-stats-compact,
+    .resources.garden-resource-bar {
+        width: 100%;
+        max-width: none;
+    }
+
+    .resources.garden-resource-bar {
+        justify-content: space-between;
+    }
+
+    .res-item {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .garden-quick-actions {
+        margin-left: auto;
+    }
+
+    .planting-ui {
+        top: 116px;
+        width: calc(100vw - 24px);
+        max-width: 340px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .coords-badge {
+        top: auto;
+        left: 12px;
+        bottom: 184px;
+        transform: none;
+    }
+
     .plant-info-panel {
         top: auto;
-        bottom: calc(var(--safe-pad-bottom) + 80px);
-        left: var(--safe-pad-x);
-        right: var(--safe-pad-x);
+        right: 12px;
+        left: 12px;
+        bottom: 170px;
         width: auto;
-        max-height: 40dvh;
+        max-height: min(45dvh, 360px);
+        overflow-y: auto;
     }
 
-    /* Shop Window biến thành 1 cột */
-    .shop-window {
-        height: 95dvh; max-height: none;
+    .garden-guide-widget {
+        left: 12px;
+        right: 12px;
+        bottom: 178px;
+        align-items: flex-end;
     }
+
+    .garden-guide-panel {
+        width: calc(100vw - 108px);
+    }
+
+    .garden-guide-panel::after {
+        left: 18px;
+        bottom: -10px;
+    }
+
+    .hud-bottom {
+        left: 12px;
+        right: 12px;
+        bottom: 80px;
+        transform: none;
+        justify-content: center;
+    }
+
+    .toolbelt-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .toolbar {
+        max-width: calc(100vw - 76px);
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .tool-slot {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        border-radius: 14px;
+    }
+
+    .tool-slot img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .key-hint {
+        font-size: 0.56rem;
+    }
+
+    .garden-bottom-nav {
+        display: flex;
+    }
+
+    .mobile-action-btn {
+        display: inline-flex;
+    }
+
+    .pixel-modal-overlay {
+        padding: 10px;
+    }
+
+    .shop-window {
+        width: calc(100vw - 20px);
+        max-height: calc(100dvh - 20px);
+    }
+
     .window-body {
         grid-template-columns: 1fr;
         overflow-y: auto;
     }
-    .shop-list-col { border-right: none; border-bottom: 4px solid var(--garden-wood-900); }
-    .shop-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
-    
-    /* Guide Widget */
-    .garden-guide-widget {
-        bottom: calc(var(--safe-pad-bottom) + 90px);
-        left: var(--safe-pad-x);
+
+    .shop-list-col {
+        border-right: 0;
+        border-bottom: 4px solid var(--garden-wood-900);
     }
-    .garden-guide-panel { width: calc(100vw - var(--safe-pad-x)*2 - 70px); }
+
+    .shop-detail-col {
+        padding-top: 18px;
+    }
+
+    .npc-img-lg {
+        width: min(190px, 100%);
+    }
+
+    .detail-body-wrapper,
+    .npc-dialog {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
-    /* Tối ưu size font & padding cho màn hình quá bé (iPhone Mini...) */
-    .drawer-header h2, .win-title { font-size: 1.3rem; }
-    .shop-card { min-height: 90px; padding: 8px; }
-    .shop-card img { width: 40px; height: 40px; }
-    .info-grid { grid-template-columns: 1fr; /* 1 Cột cho info */ }
+    body.garden-rustic-page {
+        font-size: 18px;
+    }
+
+    .pixel-ui.garden-shell {
+        padding: 10px 10px 100px;
+    }
+
+    .garden-shell-drawer {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 82px;
+        padding: 14px;
+    }
+
+    .drawer-header h2,
+    .drawer-panel-header h3,
+    .quest-panel-header h3 {
+        font-size: 1.36rem;
+    }
+
+    .garden-scene-main {
+        font-size: 1.3rem;
+    }
+
+    .drawer-kicker,
+    .quest-panel-kicker,
+    .guide-panel-kicker,
+    .info-panel-kicker,
+    .dropdown-item-header,
+    .social-card-title,
+    .quest-progress-label,
+    .quest-desc,
+    .inventory-card span,
+    .guide-tip div,
+    .plant-action-meta,
+    .info-cell small,
+    .stat-row label,
+    .stat-val {
+        font-size: 0.86rem;
+    }
+
+    .player-stats-compact {
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .stat-level-box {
+        width: 48px;
+        height: 48px;
+    }
+
+    .xp-progress-wrapper {
+        width: 100%;
+    }
+
+    .garden-topbar-right {
+        gap: 8px;
+    }
+
+    .resources.garden-resource-bar {
+        gap: 6px;
+    }
+
+    .res-item {
+        min-height: 38px;
+        padding: 4px 8px;
+    }
+
+    .pixel-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .coords-badge {
+        bottom: 170px;
+        max-width: calc(100vw - 20px);
+    }
+
+    .plant-info-panel {
+        bottom: 156px;
+        padding: 14px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .garden-guide-widget {
+        bottom: 164px;
+        gap: 8px;
+    }
+
+    .garden-guide-avatar {
+        width: 58px;
+        height: 58px;
+    }
+
+    .garden-guide-panel {
+        width: calc(100vw - 88px);
+        padding: 14px;
+    }
+
+    .hud-bottom {
+        bottom: 74px;
+        gap: 6px;
+    }
+
+    .toolbar {
+        max-width: calc(100vw - 62px);
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .tool-slot {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .window-header {
+        padding: 12px 14px;
+    }
+
+    .win-title {
+        font-size: 1.38rem;
+    }
+
+    .shop-list-col,
+    .shop-detail-col {
+        padding: 14px;
+    }
+
+    .shop-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .shop-card {
+        min-height: 108px;
+    }
+
+    .shop-card .name {
+        font-size: 1rem;
+    }
+
+    .detail-name {
+        font-size: 1.46rem;
+    }
+
+    .garden-bottom-nav {
+        width: calc(100vw - 20px);
+        padding: 6px;
+    }
+
+    .bottom-nav-link span {
+        font-size: 0.72rem;
+    }
 }
