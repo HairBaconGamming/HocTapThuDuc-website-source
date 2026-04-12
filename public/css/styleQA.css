@@ -610,6 +610,163 @@ body.qa::after {
 }
 .qa-toast.is-visible { transform: translateY(0) scale(1); opacity: 1; visibility: visible; }
 
+/* ==========================================================================
+   15. THREADED COMMENTS (BÌNH LUẬN LỜI GIẢI)
+   ========================================================================== */
+
+/* Khung bọc toàn bộ Comments */
+.qa-comments-wrapper {
+    margin-top: 20px;
+    background: var(--qa-bg-body); /* Nền xám nhạt để tách biệt với nền trắng của Card */
+    border-radius: var(--qa-radius-md);
+    padding: 16px 20px;
+    border-left: 4px solid var(--qa-primary-200); /* Đường kẻ dọc định vị */
+    animation: fadeIn 0.3s ease;
+}
+
+/* Danh sách Comments */
+.qa-comments-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Từng Item Comment */
+.qa-comment-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--qa-border);
+}
+.qa-comment-item:last-child {
+    border-bottom: none;
+    padding-bottom: 16px; /* Cách ra một chút trước khi đến form */
+}
+
+/* Avatar Micro gọn gàng */
+.qa-avatar-micro {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--qa-border);
+    flex-shrink: 0;
+}
+
+/* Body của Comment */
+.qa-comment-body {
+    flex-grow: 1;
+    min-width: 0; /* Tránh tràn layout */
+}
+
+/* Tên & Thời gian */
+.qa-comment-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+.qa-comment-author {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--qa-text-main);
+    text-decoration: none;
+    transition: color var(--qa-transition);
+}
+.qa-comment-author:hover {
+    color: var(--qa-primary);
+}
+.qa-comment-time {
+    font-size: 0.8rem;
+    color: var(--qa-text-muted);
+}
+
+/* Nội dung Text Comment */
+.qa-comment-text {
+    font-size: 0.95rem;
+    color: var(--qa-text-main);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* Trạng thái trống (Chưa có comment) */
+.qa-comment-empty {
+    padding: 16px 0;
+    font-size: 0.9rem;
+    color: var(--qa-text-muted);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Form Reply Inline */
+.qa-comment-form {
+    margin-top: 8px;
+    border-top: 1px dashed var(--qa-border);
+    padding-top: 16px;
+}
+.qa-comment-input-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.qa-comment-input-box {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    background: var(--qa-bg-surface);
+    border: 1px solid var(--qa-border-strong);
+    border-radius: var(--qa-radius-md);
+    transition: var(--qa-transition);
+    overflow: hidden;
+}
+.qa-comment-input-box:focus-within {
+    border-color: var(--qa-primary);
+    box-shadow: 0 0 0 3px var(--qa-primary-alpha);
+}
+
+.qa-input-reply {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 40px 10px 16px; /* Chừa chỗ cho nút Gửi bên phải */
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--qa-text-main);
+    resize: none; /* Không cho kéo to nhỏ */
+    outline: none;
+    line-height: 1.5;
+    min-height: 42px;
+}
+.qa-input-reply::placeholder {
+    color: var(--qa-text-muted);
+}
+
+/* Nút Gửi (Mũi tên Paper Plane) */
+.qa-btn-reply {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--qa-primary-50);
+    color: var(--qa-primary);
+    border-radius: var(--qa-radius-sm);
+    cursor: pointer;
+    transition: var(--qa-transition);
+}
+.qa-btn-reply:hover {
+    background: var(--qa-primary);
+    color: white;
+}
+
 /* --------------------------------------------------------------------------
    14. RESPONSIVE / MOBILE FIXES (RẤT QUAN TRỌNG)
    -------------------------------------------------------------------------- */

@@ -150,20 +150,55 @@ const canAnswer = !!user && questionStatus !== 'closed';
                                             </div>
                                         </div>
 
-                                        <!-- Box Comments -->
+                                        <!-- Box Comments (Threaded Style) -->
                                         <div class="qa-comments-wrapper" id="comments-<%= answer._id %>" hidden>
-                                            <div class="qa-comments-inner">
-                                                <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Tính năng hiển thị bình luận sẽ được load tại đây...</p>
-                                                <!-- Form bình luận mini -->
-                                                <% if (user) { %>
-                                                    <form class="qa-comment-form mt-3" data-answer-id="<%= answer._id %>">
-                                                        <div class="d-flex gap-2">
-                                                            <textarea class="qa-input-mini flex-grow-1" rows="1" placeholder="Thêm bình luận phản biện..." required></textarea>
-                                                            <button type="submit" class="qa-btn-prime-sm">Gửi</button>
+                                            
+                                            <!-- Danh sách bình luận -->
+                                            <div class="qa-comments-list">
+                                                <% if (Array.isArray(answer.comments) && answer.comments.length > 0) { %>
+                                                    <% answer.comments.forEach((comment) => { %>
+                                                        <div class="qa-comment-item">
+                                                            <!-- Avatar Commenter -->
+                                                            <img src="<%= comment.author?.avatar || '/default.png' %>" class="qa-avatar-micro" alt="Ava">
+                                                            
+                                                            <!-- Nội dung Comment -->
+                                                            <div class="qa-comment-body">
+                                                                <div class="qa-comment-meta">
+                                                                    <a href="/profile/view/<%= comment.author?.userId || comment.author?._id %>" class="qa-comment-author">
+                                                                        <%= comment.author?.username || 'Thành viên' %>
+                                                                    </a>
+                                                                    <span class="qa-comment-time">
+                                                                        <time data-relative-time datetime="<%= comment.createdAt %>"><%= new Date(comment.createdAt).toLocaleString('vi-VN') %></time>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="qa-comment-text">
+                                                                    <!-- Giả sử comment chỉ là text thuần hoặc HTML cơ bản -->
+                                                                    <%= comment.content %>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </form>
+                                                    <% }) %>
+                                                <% } else { %>
+                                                    <div class="qa-comment-empty">
+                                                        <i class="fas fa-comments text-muted"></i> Chưa có thảo luận nào. Hãy là người đầu tiên nêu ý kiến!
+                                                    </div>
                                                 <% } %>
                                             </div>
+
+                                            <!-- Form viết bình luận (Inline Style) -->
+                                            <% if (user) { %>
+                                                <form class="qa-comment-form" data-answer-id="<%= answer._id %>">
+                                                    <div class="qa-comment-input-row">
+                                                        <img src="<%= user.avatar || '/default.png' %>" class="qa-avatar-micro" alt="You">
+                                                        <div class="qa-comment-input-box">
+                                                            <textarea class="qa-input-reply" rows="1" placeholder="Thêm bình luận phản biện (Nhấn Enter để gửi)..." required></textarea>
+                                                            <button type="submit" class="qa-btn-reply" title="Gửi bình luận">
+                                                                <i class="fas fa-paper-plane"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            <% } %>
                                         </div>
 
                                     </div>
