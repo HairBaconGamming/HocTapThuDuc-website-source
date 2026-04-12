@@ -8,6 +8,7 @@ const { isLoggedIn, hasProAccess } = require("../middlewares/auth");
 const { getJwtSecret } = require("../utils/secrets");
 const { achievementChecker } = require("../utils/achievementUtils");
 const { getGoogleOAuthConfig } = require("../utils/googleOAuth");
+const { classifyGoogleOAuthCallbackFailure } = require("../utils/googleOAuthCallback");
 const {
     sanitizeInternalRedirect,
     getSafeRefererPath,
@@ -152,7 +153,21 @@ router.get("/auth/google/callback", (req, res, next) => {
         return res.redirect("/login");
     }
 
+    const preflightFailure = classifyGoogleOAuthCallbackFailure({ query: req.query });
+    if (preflightFailure) {
+        console[preflightFailure.logLevel || "warn"](`[auth/google/callback] ${preflightFailure.logMessage}`);
+        req.flash("error", preflightFailure.userMessage);
+        return res.redirect("/login");
+    }
+
     return passport.authenticate("google", (err, user, info = {}) => {
+        const callbackFailure = classifyGoogleOAuthCallbackFailure({ query: req.query, err });
+        if (callbackFailure) {
+            console[callbackFailure.logLevel || "warn"](`[auth/google/callback] ${callbackFailure.logMessage}`);
+            req.flash("error", callbackFailure.userMessage);
+            return res.redirect("/login");
+        }
+
         if (err) return next(err);
         if (!user) {
             req.flash("error", info.message || "ÄÄƒng nháº­p Google tháº¥t báº¡i.");

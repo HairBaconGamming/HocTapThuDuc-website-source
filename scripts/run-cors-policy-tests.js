@@ -2,7 +2,8 @@ const assert = require('assert');
 
 const {
     buildCorsOptions,
-    isSafeNullOriginRequest
+    isSafeNullOriginRequest,
+    isNullOriginDocumentNavigation
 } = require('../utils/corsPolicy');
 
 function withEnv(patch, fn) {
@@ -125,6 +126,48 @@ runTest('null origin preflight for unsafe method is blocked', () => {
     withEnv({ NODE_ENV: 'production' }, () => {
         const options = buildCorsOptions(req);
         assert.strictEqual(options.origin, false);
+    });
+});
+
+runTest('null origin document navigation POST is allowed for standard HTML forms', () => {
+    const req = mockRequest({
+        origin: 'null',
+        method: 'POST',
+        path: '/login'
+    });
+
+    req.headers.accept = 'text/html,application/xhtml+xml';
+    req.headers['content-type'] = 'application/x-www-form-urlencoded';
+    req.headers['sec-fetch-mode'] = 'navigate';
+    req.headers['sec-fetch-dest'] = 'document';
+
+    assert.strictEqual(isNullOriginDocumentNavigation(req), true);
+
+    withEnv({ NODE_ENV: 'production' }, () => {
+        const options = buildCorsOptions(req);
+        assert.strictEqual(options.origin, true);
+        assert.strictEqual(options.credentials, true);
+    });
+});
+
+runTest('null origin XHR-style POST stays blocked', () => {
+    const req = mockRequest({
+        origin: 'null',
+        method: 'POST',
+        path: '/api/auth/login'
+    });
+
+    req.headers.accept = 'application/json';
+    req.headers['content-type'] = 'application/json';
+    req.headers['sec-fetch-mode'] = 'cors';
+    req.headers['sec-fetch-dest'] = 'empty';
+
+    assert.strictEqual(isNullOriginDocumentNavigation(req), false);
+
+    withEnv({ NODE_ENV: 'production' }, () => {
+        const options = buildCorsOptions(req);
+        assert.strictEqual(options.origin, false);
+        assert.strictEqual(options.credentials, false);
     });
 });
 

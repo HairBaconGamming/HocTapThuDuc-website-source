@@ -1,5 +1,6 @@
 const DEFAULT_PRODUCTION_ORIGINS = ['https://hoctapthuduc.onrender.com'];
 const SAFE_NULL_ORIGIN_METHODS = new Set(['GET', 'HEAD']);
+const NULL_ORIGIN_NAVIGATION_METHODS = new Set(['GET', 'HEAD', 'POST']);
 
 function splitOrigins(value) {
     return String(value || '')
@@ -41,6 +42,31 @@ function isSafeNullOriginRequest(req) {
     return SAFE_NULL_ORIGIN_METHODS.has(method) && !hasSensitiveAuthContext(req);
 }
 
+function isNullOriginDocumentNavigation(req) {
+    const method = String(req.method || 'GET').toUpperCase();
+    const accept = String(req.get('accept') || '').toLowerCase();
+    const contentType = String(req.get('content-type') || '').toLowerCase();
+    const fetchMode = String(req.get('sec-fetch-mode') || '').toLowerCase();
+    const fetchDest = String(req.get('sec-fetch-dest') || '').toLowerCase();
+
+    const standardFormEncoding =
+        !contentType ||
+        contentType.includes('application/x-www-form-urlencoded') ||
+        contentType.includes('multipart/form-data') ||
+        contentType.includes('text/plain');
+
+    const looksLikeDocumentNavigation =
+        fetchMode === 'navigate' ||
+        fetchDest === 'document' ||
+        accept.includes('text/html');
+
+    return (
+        NULL_ORIGIN_NAVIGATION_METHODS.has(method) &&
+        standardFormEncoding &&
+        looksLikeDocumentNavigation
+    );
+}
+
 function buildCorsOptions(req) {
     const origin = req.get('origin');
 
@@ -76,6 +102,14 @@ function buildCorsOptions(req) {
         };
     }
 
+    if (origin === 'null' && isNullOriginDocumentNavigation(req)) {
+        return {
+            origin: true,
+            credentials: true,
+            optionsSuccessStatus: 204
+        };
+    }
+
     return {
         origin: false,
         credentials: false,
@@ -99,6 +133,7 @@ module.exports = {
     getRequestedMethod,
     hasSensitiveAuthContext,
     isSafeNullOriginRequest,
+    isNullOriginDocumentNavigation,
     buildCorsOptions,
     corsOptionsDelegate
 };
