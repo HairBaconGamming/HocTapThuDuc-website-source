@@ -723,26 +723,50 @@
                 4. Nhấn nút <b>Nhập JSON</b> ở bảng điều khiển để load thẳng bài học vào hệ thống!
             </div>
 
-            <textarea id="aiPromptText" readonly style="width: 100%; height: 350px; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; background: #1e293b; color: #a5b4fc; font-family: 'Consolas', monospace; font-size: 13px; resize: none; line-height: 1.6; white-space: pre-wrap;">Đóng vai một Chuyên gia Giáo dục xuất sắc. Hãy soạn một bài học cực kỳ chi tiết về chủ đề: "[CHỦ ĐỀ BÀI HỌC CỦA BẠN]".
+            <textarea id="aiPromptText" readonly style="width: 100%; height: 500px; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; background: #1e293b; color: #a5b4fc; font-family: 'Consolas', monospace; font-size: 13px; resize: none; line-height: 1.6; white-space: pre-wrap;">Đóng vai một Chuyên gia Giáo dục xuất sắc và Kỹ sư Dữ liệu. Hãy soạn một bài học cực kỳ chi tiết, lôi cuốn và chuẩn sư phạm về chủ đề: "[CHỦ ĐỀ BÀI HỌC CỦA BẠN]".
 
-LUẬT TỐI THƯỢNG: KẾT QUẢ TRẢ VỀ CHỈ ĐƯỢC PHÉP LÀ MỘT CHUỖI JSON HỢP LỆ. KHÔNG CÓ MARKDOWN WRAPPER (NHƯ ```json), KHÔNG LỜI CHÀO.
+LUẬT TỐI THƯỢNG (KẾT QUẢ SẼ BỊ HỦY NẾU VI PHẠM):
+1. KẾT QUẢ TRẢ VỀ CHỈ ĐƯỢC PHÉP LÀ MỘT CHUỖI JSON HỢP LỆ, BẮT ĐẦU BẰNG { VÀ KẾT THÚC BẰNG }.
+2. TUYỆT ĐỐI KHÔNG bọc JSON trong Markdown (KHÔNG dùng ```json ... ```).
+3. TUYỆT ĐỐI KHÔNG có bất kỳ lời chào hỏi, giải thích hay văn bản nào ngoài JSON.
+4. Xử lý chuỗi JSON an toàn: Phải escape (thêm \) các dấu ngoặc kép (") bên trong nội dung text.
+5. Định dạng Toán học (KaTeX): Mọi công thức toán học phải dùng $...$ cho inline và $$...$$ cho block. Trong JSON, dấu backslash phải được double-escape (Ví dụ: viết \\frac thay vì \frac).
 
-Hệ thống hỗ trợ các dạng khối (blocks) nội dung:
-1. "header" (level 2,3), "text" (Hỗ trợ KaTeX $..$, $$..$$), "callout", "image", "video", "html_preview", "code", "resource".
-2. "question" (Quiz): Phải nằm cuối bài. Hỗ trợ 5 DẠNG BÀI TẬP:
-- "choice": Trắc nghiệm (có isMulti=true/false).
-- "fill": Điền khuyết (đặt đáp án trong ngoặc vuông, vd: 1+1=[2]).
-- "essay": Tự luận (có modelAnswer).
-- "matching": Nối ý cột Trái với cột Phải.
-- "ordering": Sắp xếp lại thứ tự đúng (Kéo thả).
+CẤU TRÚC JSON VÀ CÁC BLOCK HỖ TRỢ:
+Hệ thống hỗ trợ mảng "blocks". Mỗi block có định dạng: { "type": "...", "data": { ... } }. Dưới đây là TẤT CẢ các block được hỗ trợ:
 
-CẤU TRÚC JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
+1. header: { "type": "header", "data": { "text": "Tiêu đề", "level": 2 } } (level 2 hoặc 3).
+2. text: { "type": "text", "data": { "text": "Nội dung văn bản (hỗ trợ in đậm, in nghiêng, KaTeX)." } }
+3. callout: { "type": "callout", "data": { "text": "Ghi chú quan trọng", "style": "info|warning|success" } }
+4. image: { "type": "image", "data": { "url": "https://example.com/img.jpg", "caption": "Mô tả ảnh" } }
+5. video: { "type": "video", "data": { "url": "https://youtube.com/...", "provider": "youtube" } }
+6. code: { "type": "code", "data": { "code": "console.log('Hello');", "language": "javascript" } }
+7. html_preview: { "type": "html_preview", "data": { "html": "<div style='color:red;'>Demo</div>" } }
+8. resource: { "type": "resource", "data": { "title": "Tài liệu tham khảo", "url": "https://link..." } }
+
+🎯 CẤU TRÚC BLOCK "question" (BÀI TẬP/QUIZ):
+Phải nằm ở cuối bài học. Hỗ trợ 5 DẠNG BÀI TẬP:
+- choice: Trắc nghiệm ("correct" là mảng chứa index của đáp án đúng, bắt đầu từ 0).
+- fill: Điền khuyết (đặt đáp án đúng trong ngoặc vuông, vd: "1 + 1 = [2]").
+- essay: Tự luận (cung cấp "modelAnswer" làm đáp án mẫu).
+- matching: Nối ý ("pairs" chứa các cặp "left" và "right").
+- ordering: Sắp xếp thứ tự ("items" chứa mảng chuỗi đã sắp xếp theo TỰ ĐÚNG chuẩn).
+
+JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
 {
-  "title": "Tên bài học",
+  "title": "Tên bài học hấp dẫn",
   "blocks": [
     {
+      "type": "header",
+      "data": { "text": "1. Giới thiệu khái niệm", "level": 2 }
+    },
+    {
+      "type": "callout",
+      "data": { "text": "Mục tiêu bài học: Hiểu và nắm vững các nguyên lý cơ bản.", "style": "success" }
+    },
+    {
       "type": "text",
-      "data": { "text": "Lý thuyết chi tiết ở đây..." }
+      "data": { "text": "Nội dung diễn giải chi tiết, logic. Phân tích sâu vấn đề. Công thức $E = mc^2$." }
     },
     {
       "type": "question",
@@ -751,7 +775,7 @@ CẤU TRÚC JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
         "questions": [
           {
             "type": "choice",
-            "question": "Thủ đô của Pháp?",
+            "question": "Thủ đô của Pháp là gì?",
             "options": ["London", "Paris", "Berlin", "Rome"],
             "correct": [1],
             "isMulti": false,
@@ -760,23 +784,28 @@ CẤU TRÚC JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
           {
             "type": "fill",
             "content": "Nước sôi ở [100] độ C trong điều kiện tiêu chuẩn.",
-            "explanation": "Kiến thức vật lý cơ bản."
+            "explanation": "Dựa theo thang đo Celsius."
+          },
+          {
+            "type": "essay",
+            "question": "Hãy giải thích ngắn gọn tại sao bầu trời có màu xanh?",
+            "modelAnswer": "Do hiện tượng tán xạ Rayleigh, ánh sáng xanh lam có bước sóng ngắn bị tán xạ nhiều nhất.",
+            "explanation": "Giáo viên sẽ chấm điểm dựa trên ý chính: tán xạ Rayleigh."
           },
           {
             "type": "matching",
             "question": "Nối các nguyên tố hóa học với ký hiệu đúng:",
             "pairs": [
               { "left": "Oxy", "right": "O" },
-              { "left": "Sắt", "right": "Fe" },
-              { "left": "Vàng", "right": "Au" }
+              { "left": "Sắt", "right": "Fe" }
             ],
-            "explanation": "Dựa vào bảng tuần hoàn hóa học."
+            "explanation": "Dựa vào bảng tuần hoàn."
           },
           {
             "type": "ordering",
-            "question": "Sắp xếp các bước luộc trứng:",
-            "items": ["Bật bếp đun sôi nước", "Thả trứng vào", "Đợi 5 phút", "Vớt ra bóc vỏ"],
-            "explanation": "Trình tự logic phải là đun sôi nước trước."
+            "question": "Sắp xếp các bước luộc trứng theo trình tự thời gian:",
+            "items": ["Bật bếp đun sôi nước", "Thả trứng vào", "Đợi 5-7 phút", "Vớt ra bóc vỏ"],
+            "explanation": "Nước phải sôi trước khi thả trứng để dễ bóc vỏ."
           }
         ]
       }
@@ -784,7 +813,11 @@ CẤU TRÚC JSON MẪU BẮT BUỘC PHẢI TUÂN THEO:
   ]
 }
 
-Hãy chia bài học thành nhiều phần dẫn dắt logic. Phần bài tập cuối cùng PHẢI CÓ ÍT NHẤT 5 CÂU HỎI TRỘN LẪN ĐỦ CÁC DẠNG (choice, fill, matching, ordering).</textarea>
+NHIỆM VỤ CỦA BẠN:
+1. Viết bài học thật dài, chia nhỏ thành nhiều "header" và "text".
+2. Sử dụng linh hoạt các block "callout", "code" (nếu là bài IT) hoặc "image" (tạo url placeholder phù hợp) để bài học sinh động.
+3. Phần "question" ở cuối PHẢI CÓ ÍT NHẤT 5 CÂU HỎI, trộn lẫn đủ 5 dạng bài tập đã nêu trên.
+4. BẮT ĐẦU TRẢ VỀ CHUỖI JSON NGAY BÂY GIỜ!</textarea>
 
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
                 <button type="button" class="btn-secondary" onclick="document.getElementById('aiPromptModal').style.display='none'">Đóng</button>
