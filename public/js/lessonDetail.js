@@ -20,6 +20,10 @@ const LessonWorkspace = {
         document.body.classList.add('lesson-detail-mode');
         this.bindGlobalEvents();
         this.applySavedLayout();
+        if (this.isAiTutorOpen()) {
+            this.setToolsDrawerState(false, false);
+        }
+        this.syncAiTutorBodyState(this.isAiTutorOpen());
         this.initLessonContent();
         this.initNotes();
         this.maybeShowResumeBanner();
@@ -39,6 +43,50 @@ const LessonWorkspace = {
 
     getToolsDrawer() {
         return document.getElementById('lessonToolsDrawer');
+    },
+
+    getAiTutorApi() {
+        return window.AITutorUI || null;
+    },
+
+    isAiTutorOpen() {
+        const api = this.getAiTutorApi();
+        return !!(api && typeof api.isOpen === 'function' && api.isOpen());
+    },
+
+    syncAiTutorBodyState(isOpen) {
+        document.body.classList.toggle('lesson-ai-open', !!isOpen);
+    },
+
+    setAiTutorSidebarState(isOpen) {
+        const api = this.getAiTutorApi();
+        if (!api) return;
+
+        if (isOpen) {
+            this.setToolsDrawerState(false);
+            if (typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
+                window.lessonCommentsSystem.closeCommentsModal();
+            }
+            if (this.isMobileLayout()) {
+                this.setMobileRailState('left', false);
+            }
+        }
+
+        if (isOpen && typeof api.open === 'function') {
+            api.open();
+        }
+
+        if (!isOpen && typeof api.close === 'function') {
+            api.close();
+        }
+
+        this.syncAiTutorBodyState(this.isAiTutorOpen());
+        this.closeFabMenu();
+        this.syncOverlay();
+    },
+
+    toggleAiTutorSidebar() {
+        this.setAiTutorSidebarState(!this.isAiTutorOpen());
     },
 
     getReadingSurface() {
@@ -153,6 +201,7 @@ const LessonWorkspace = {
                     this.setMobileRailState('left', false);
                 }
                 this.setToolsDrawerState(false);
+                this.setAiTutorSidebarState(false);
                 if (typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
                     window.lessonCommentsSystem.closeCommentsModal();
                 }
@@ -166,6 +215,7 @@ const LessonWorkspace = {
             if (event.key === 'Escape') {
                 this.closePreviewFullscreen();
                 this.setToolsDrawerState(false);
+                this.setAiTutorSidebarState(false);
                 this.closeFabMenu();
             }
         });
@@ -176,11 +226,28 @@ const LessonWorkspace = {
             }
             this.syncOverlay();
         });
+
+        window.addEventListener('ai-tutor:statechange', (event) => {
+            const isOpen = !!event.detail?.open;
+            if (isOpen) {
+                this.setToolsDrawerState(false);
+                if (typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
+                    window.lessonCommentsSystem.closeCommentsModal();
+                }
+                if (this.isMobileLayout()) {
+                    this.setMobileRailState('left', false);
+                }
+                this.closeFabMenu();
+            }
+            this.syncAiTutorBodyState(isOpen);
+            this.syncOverlay();
+        });
     },
 
     handleAction(action) {
         if (action === 'toggle-left-rail') this.toggleRail('left');
         if (action === 'toggle-tools') this.toggleToolsDrawer();
+        if (action === 'toggle-ai-tutor') this.toggleAiTutorSidebar();
         if (action === 'toggle-fab-menu') this.toggleFabMenu();
     },
 
@@ -239,6 +306,9 @@ const LessonWorkspace = {
         if (isOpen && typeof window.lessonCommentsSystem?.closeCommentsModal === 'function') {
             window.lessonCommentsSystem.closeCommentsModal();
         }
+        if (isOpen && this.isAiTutorOpen()) {
+            this.setAiTutorSidebarState(false);
+        }
         if (isOpen && this.isMobileLayout()) {
             this.setMobileRailState('left', false);
         }
@@ -259,9 +329,10 @@ const LessonWorkspace = {
         if (!overlay) return;
         const leftOpen = document.getElementById('lessonSidebar')?.dataset.railState === 'open';
         const toolsOpen = this.getToolsDrawer()?.dataset.drawerState === 'open';
+        const aiOpen = this.isAiTutorOpen();
         const commentsOpen = document.body.classList.contains('lesson-comments-open');
         const previewOpen = !!this.activeFullscreenPreview;
-        const shouldShow = commentsOpen || previewOpen || toolsOpen || (this.isMobileLayout() && leftOpen);
+        const shouldShow = commentsOpen || previewOpen || toolsOpen || aiOpen || (this.isMobileLayout() && leftOpen);
         overlay.classList.toggle('hidden', !shouldShow);
     },
 

@@ -7,6 +7,7 @@
 
     const bootstrap = window.AI_TUTOR_BOOTSTRAP || {};
     const toggleBtn = shell.querySelector("[data-ai-tutor-toggle]");
+    const externalToggles = Array.from(document.querySelectorAll("[data-ai-tutor-external-toggle]"));
     const closeBtn = shell.querySelector("[data-ai-tutor-close]");
     const panel = shell.querySelector("[data-ai-tutor-panel]");
     const thread = shell.querySelector("[data-ai-tutor-thread]");
@@ -394,11 +395,24 @@
             toggleBtn.setAttribute("aria-expanded", state.open ? "true" : "false");
         }
 
+        externalToggles.forEach((button) => {
+            button.setAttribute("aria-expanded", state.open ? "true" : "false");
+            button.classList.toggle("is-active", state.open);
+        });
+
         try {
             window.localStorage.setItem(storageKey, state.open ? "1" : "0");
         } catch (error) {
             // Ignore storage errors.
         }
+
+        window.dispatchEvent(new CustomEvent("ai-tutor:statechange", {
+            detail: {
+                open: state.open,
+                pageType,
+                variant
+            }
+        }));
     }
 
     function restoreOpenState() {
@@ -617,6 +631,7 @@
         document.addEventListener("click", (event) => {
             if (!state.open) return;
             if (shell.contains(event.target)) return;
+            if (event.target.closest("[data-ai-tutor-external-toggle]")) return;
             syncOpenState(false);
         });
 
@@ -631,6 +646,16 @@
     renderQuickActions();
     updateContextLabel();
     updateSelectionStatus();
+    window.AITutorUI = {
+        open: () => syncOpenState(true),
+        close: () => syncOpenState(false),
+        toggle: () => syncOpenState(!state.open),
+        isOpen: () => state.open,
+        refreshContext: () => {
+            updateContextLabel();
+            updateSelectionStatus();
+        }
+    };
     restoreOpenState();
     renderThreadNow();
     bindEvents();

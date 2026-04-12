@@ -13,16 +13,17 @@
     --ai-tutor-radius-md: 12px;
     --ai-tutor-radius-pill: 999px;
     
-    /* [CẬP NHẬT] Tăng chiều rộng từ 340px lên 400px để không gian chat thoáng hơn */
-    --ai-tutor-width: min(400px, calc(100vw - 32px));
+    /* [LINH HOẠT HƠN] Tự động co giãn từ 320px đến 400px tùy màn hình */
+    --ai-tutor-width: clamp(320px, calc(100vw - 32px), 400px);
     --ai-tutor-z: 1260;
     --ai-tutor-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ai-tutor-shell {
     position: fixed;
-    right: 20px;
-    bottom: 20px;
+    /* [CHUẨN MOBILE] Né thanh điều hướng hệ thống (iPhone Home Indicator) */
+    right: clamp(12px, 2vw, 20px);
+    bottom: calc(clamp(12px, 2vw, 20px) + env(safe-area-inset-bottom, 0px));
     z-index: var(--ai-tutor-z);
     width: var(--ai-tutor-width);
     display: flex;
@@ -30,6 +31,7 @@
     align-items: flex-end;
     gap: 10px;
     pointer-events: none;
+    isolation: isolate; /* Ngăn chặn z-index leak */
 }
 
 .ai-tutor-shell * {
@@ -50,13 +52,14 @@
     padding: 8px 16px 8px 8px;
     border: 1px solid var(--ai-tutor-border);
     border-radius: var(--ai-tutor-radius-pill);
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: var(--ai-tutor-ink);
     box-shadow: var(--ai-tutor-shadow-sm);
     cursor: pointer;
     transition: all var(--ai-tutor-transition);
+    will-change: transform; /* Tối ưu hiệu ứng */
 }
 
 .ai-tutor-fab:hover,
@@ -98,11 +101,10 @@
 /* Chat Panel */
 .ai-tutor-panel {
     width: 100%;
-    /* [CẬP NHẬT] Đổi từ grid sang flex column để kiểm soát overflow hoàn hảo */
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 14px;
+    padding: clamp(10px, 3vw, 14px);
     border-radius: var(--ai-tutor-radius-xl);
     border: 1px solid var(--ai-tutor-border);
     background: var(--ai-tutor-surface);
@@ -110,7 +112,11 @@
     box-shadow: var(--ai-tutor-shadow-lg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    max-height: min(80dvh, 650px); /* Tăng nhẹ max-height để phù hợp width mới */
+    
+    /* [LINH HOẠT HƠN] Khống chế chiều cao thông minh để không bao giờ lố màn hình */
+    max-height: calc(100dvh - 80px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    height: 650px; /* Sẽ co lại nếu màn hình nhỏ hơn max-height */
+    
     overflow: hidden;
     transform-origin: bottom right;
     transition: opacity var(--ai-tutor-transition), transform var(--ai-tutor-transition);
@@ -123,13 +129,12 @@
 }
 
 .ai-tutor-panel-head {
-    /* [CẬP NHẬT] Ép không cho shrink, thu nhỏ padding/gap */
     flex-shrink: 0;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
-    padding-bottom: 6px; 
+    padding-bottom: 8px; 
     border-bottom: 1px solid var(--ai-tutor-border);
 }
 
@@ -139,7 +144,6 @@
     gap: 4px;
     margin-bottom: 2px;
     color: var(--ai-tutor-accent);
-    /* [CẬP NHẬT] Thu nhỏ font size */
     font-size: 0.65rem; 
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -148,13 +152,11 @@
 
 .ai-tutor-panel-head h3 {
     margin: 0;
-    /* [CẬP NHẬT] Thu nhỏ Header */
-    font-size: 0.95rem; 
+    font-size: clamp(0.9rem, 2vw, 0.95rem); 
     font-weight: 600;
 }
 
 .ai-tutor-panel-head p {
-    /* [CẬP NHẬT] Thu nhỏ text phụ */
     margin: 2px 0 0;
     font-size: 0.75rem; 
     color: var(--ai-tutor-muted);
@@ -171,12 +173,13 @@
 }
 
 .ai-tutor-mini-btn {
-    width: 28px; /* [CẬP NHẬT] Thu nhỏ nút mini */
+    width: 28px;
     height: 28px;
     border-radius: var(--ai-tutor-radius-md);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     color: var(--ai-tutor-muted);
     background: rgba(15, 23, 42, 0.04);
 }
@@ -190,13 +193,12 @@
 .ai-tutor-action {
     display: inline-flex;
     align-items: center;
-    /* [CẬP NHẬT] Thu nhỏ gap, padding, font-size */
     gap: 4px;
-    padding: 4px 10px;
+    padding: 6px 10px;
     border-radius: var(--ai-tutor-radius-pill);
     font-size: 0.7rem; 
     font-weight: 600;
-    white-space: nowrap; /* Tránh rớt dòng xấu xí */
+    white-space: nowrap; 
 }
 
 .ai-tutor-context-pill {
@@ -205,7 +207,6 @@
 }
 
 .ai-tutor-quick-actions {
-    /* [CẬP NHẬT] Đảm bảo phần này không bị méo */
     flex-shrink: 0; 
     display: flex;
     gap: 6px;
@@ -233,17 +234,15 @@
 
 /* Khu vực Chat */
 .ai-tutor-thread {
-    /* [CẬP NHẬT QUAN TRỌNG] Flex 1 giúp khung chat chiếm hết phần trống, 
-       tự động đẩy Header lên trên và Form xuống đáy */
     flex: 1; 
     min-height: 120px; 
-    max-height: none; /* Xoá max height tĩnh vì flex đã lo việc này */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding-right: 4px;
     scroll-behavior: smooth;
+    overscroll-behavior-y: contain; /* Ngăn cuộn trang web khi cuộn hết khung chat */
 }
 
 /* Custom Scrollbar cho gọn gàng */
@@ -276,7 +275,7 @@
     color: var(--ai-tutor-ink);
 }
 
-/* Tối ưu Đa phương tiện trong bong bóng chat */
+/* Đa phương tiện trong bong bóng chat */
 .ai-tutor-msg-bubble img,
 .ai-tutor-msg-bubble video,
 .ai-tutor-msg-bubble iframe {
@@ -340,19 +339,18 @@
 
 /* Form Input */
 .ai-tutor-form {
-    /* [CẬP NHẬT QUAN TRỌNG] flex-shrink: 0 đảm bảo form KHÔNG BAO GIỜ bị ép nhỏ
-       hay tràn ra ngoài khi khung chat phía trên dài ra */
     flex-shrink: 0; 
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: auto; /* Ghim sát đáy */
+    margin-top: auto; 
 }
 
 .ai-tutor-input-wrap {
     display: flex;
-    align-items: center;
-    padding: 6px 12px; /* Thu nhỏ padding chút để gọn hơn */
+    align-items: center; /* Đổi thành flex-end nếu muốn nút gửi nằm dưới cùng khi khung textarea mở rộng */
+    align-items: flex-end; 
+    padding: 6px 6px 6px 12px; 
     border-radius: var(--ai-tutor-radius-lg);
     background: rgba(248, 250, 252, 0.8);
     border: 1px solid var(--ai-tutor-border);
@@ -366,8 +364,8 @@
 
 .ai-tutor-input {
     width: 100%;
-    min-height: 36px; /* [CẬP NHẬT] Gọn hơn */
-    max-height: 100px;
+    min-height: 36px;
+    max-height: 120px; /* Giới hạn chiều cao tự động nở */
     resize: none; 
     border: 0;
     outline: 0;
@@ -375,6 +373,9 @@
     font-size: 0.85rem;
     color: var(--ai-tutor-ink);
     padding: 8px 0;
+    
+    /* [TÍNH NĂNG MỚI] Auto-grow textarea không cần JS (hỗ trợ Chrome 121+) */
+    field-sizing: content; 
 }
 
 .ai-tutor-form-foot {
@@ -385,19 +386,22 @@
 }
 
 .ai-tutor-status {
-    font-size: 0.7rem; /* Gọn hơn */
+    font-size: 0.7rem; 
     color: var(--ai-tutor-muted);
 }
 
 .ai-tutor-send {
-    min-height: 32px; /* [CẬP NHẬT] Gọn hơn */
+    min-height: 32px; 
     padding: 0 14px;
     border-radius: var(--ai-tutor-radius-pill);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    font-size: 0.75rem; /* Gọn hơn */
+    font-size: 0.75rem; 
     font-weight: 600;
+    flex-shrink: 0;
+    margin-left: 6px;
 }
 
 .ai-tutor-send:hover {
@@ -435,13 +439,56 @@
     50% { opacity: 0.5; }
 }
 
-
 /* ========================================================
-   CÁC PHIÊN BẢN (THEMES) - Giữ nguyên logic cũ
+   CÁC PHIÊN BẢN (THEMES)
    ======================================================== */
 .ai-tutor-shell--lesson-detail {
     --ai-tutor-z: 1295;
-    bottom: 90px;
+    top: 74px;
+    right: 18px;
+    bottom: 18px;
+    width: min(390px, calc(100vw - 36px));
+    align-items: stretch;
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-fab {
+    display: none;
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-panel {
+    height: 100%;
+    max-height: none;
+    padding: 16px;
+    border-radius: 28px;
+    background: rgba(248, 251, 255, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 22px 50px rgba(15, 23, 42, 0.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-panel-head {
+    padding-bottom: 12px;
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-context {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.98));
+    border: 1px solid rgba(191, 219, 254, 0.95);
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-context-line {
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: #475569;
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.ai-tutor-shell--lesson-detail .ai-tutor-action {
+    min-height: 40px;
+    justify-content: center;
+    text-align: center;
 }
 .ai-tutor-shell--lesson-detail .ai-tutor-fab-orb,
 .ai-tutor-shell--lesson-detail .ai-tutor-send,
@@ -485,7 +532,7 @@
 
 .ai-tutor-shell--garden {
     --ai-tutor-z: 55;
-    bottom: 120px;
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 .ai-tutor-shell--garden .ai-tutor-fab,
 .ai-tutor-shell--garden .ai-tutor-panel {
@@ -513,32 +560,41 @@
 }
 
 /* ========================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN (Linh hoạt tối đa)
    ======================================================== */
-@media (max-width: 768px) {
-    .ai-tutor-shell {
-        right: 16px;
-        bottom: 16px;
-        --ai-tutor-width: calc(100vw - 32px);
-    }
-    
-    .ai-tutor-fab-copy small {
-        display: none;
+@media (max-width: 1180px) {
+    .ai-tutor-shell--lesson-detail {
+        top: 74px;
+        right: 12px;
+        left: 12px;
+        bottom: 88px;
+        width: auto;
     }
 
-    .ai-tutor-panel {
-        max-height: min(85dvh, 600px);
+    .ai-tutor-shell--lesson-detail .ai-tutor-panel {
+        border-radius: 24px;
     }
 }
 
 @media (max-width: 480px) {
+    .ai-tutor-shell--lesson-detail .ai-tutor-quick-actions {
+        grid-template-columns: 1fr;
+    }
+
+    /* Đẩy nút Send xuống dưới hoặc dàn ngang linh hoạt */
     .ai-tutor-form-foot {
         flex-direction: column;
         align-items: stretch;
     }
-    
     .ai-tutor-send {
+        width: 100%;
         justify-content: center;
+        margin-left: 0;
+        margin-top: 4px;
+    }
+    
+    .ai-tutor-fab-copy small {
+        display: none;
     }
 }
 
