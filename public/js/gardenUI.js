@@ -71,7 +71,6 @@
         const backdrop = document.getElementById('gardenShellBackdrop');
         const sidebar = document.getElementById('gardenSidebar');
         const toolbeltToggle = document.getElementById('toggleToolbeltBtn');
-        const guideToggle = document.getElementById('gardenGuideToggle');
         const menuToggles = [
             document.getElementById('gardenMenuToggle'),
             document.getElementById('gardenTopMenuBtn')
@@ -93,9 +92,6 @@
         }
         if (toolbeltToggle) {
             toolbeltToggle.setAttribute('aria-expanded', shellState.toolbeltCollapsed ? 'false' : 'true');
-        }
-        if (guideToggle) {
-            guideToggle.setAttribute('aria-expanded', shellState.dialogMinimized ? 'false' : 'true');
         }
 
         menuToggles.forEach((toggle) => {
@@ -614,7 +610,6 @@
         if (!overlay) return;
 
         closeSidebar();
-        closeGardenDropdown();
         hidePlantStats();
         toggleGuideWidget(false);
         setShopOpenState(true);
@@ -847,10 +842,6 @@
             toggleToolbelt();
         });
 
-        document.getElementById('gardenGuideToggle')?.addEventListener('click', () => {
-            toggleGuideWidget(shellState.dialogMinimized);
-        });
-
         document.getElementById('cancelPlantingBtn')?.addEventListener('click', () => {
             window.cancelPlanting?.();
         });
@@ -905,75 +896,8 @@
             });
         });
 
-        // Garden dropdown toggle
-        document.getElementById('gardenStatusDropdownBtn')?.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleGardenDropdown();
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (event) => {
-            const dropdown = document.getElementById('gardenStatusDropdownMenu');
-            const btn = document.getElementById('gardenStatusDropdownBtn');
-            if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
-                closeGardenDropdown();
-            }
-        });
 
         window.addEventListener('resize', handleViewportMode);
-    }
-
-    function toggleGardenDropdown() {
-        const dropdown = document.getElementById('gardenStatusDropdownMenu');
-        if (!dropdown) return;
-
-        const isOpen = dropdown.getAttribute('aria-hidden') === 'false';
-        if (isOpen) {
-            closeGardenDropdown();
-        } else {
-            openGardenDropdown();
-        }
-    }
-
-    function openGardenDropdown() {
-        const dropdown = document.getElementById('gardenStatusDropdownMenu');
-        const btn = document.getElementById('gardenStatusDropdownBtn');
-        if (!dropdown || !btn) return;
-
-        dropdown.setAttribute('aria-hidden', 'false');
-        btn.setAttribute('aria-expanded', 'true');
-    }
-
-    function closeGardenDropdown() {
-        const dropdown = document.getElementById('gardenStatusDropdownMenu');
-        const btn = document.getElementById('gardenStatusDropdownBtn');
-        if (!dropdown || !btn) return;
-
-        dropdown.setAttribute('aria-hidden', 'true');
-        btn.setAttribute('aria-expanded', 'false');
-    }
-
-    function updateGardenDropdownContent(gardenInfo = {}) {
-        // Update visitor count or owner name based on context
-        const visitorCountEl = document.getElementById('dropdownVisitorCount');
-        if (visitorCountEl && gardenInfo.visitorCount !== undefined) {
-            visitorCountEl.textContent = String(gardenInfo.visitorCount);
-        }
-
-        const ownerNameEl = document.getElementById('dropdownOwnerName');
-        if (ownerNameEl && gardenInfo.ownerName !== undefined) {
-            ownerNameEl.textContent = gardenInfo.ownerName;
-        }
-
-        const gardenNameEl = document.getElementById('dropdownGardenName');
-        if (gardenNameEl && gardenInfo.gardenName !== undefined) {
-            gardenNameEl.textContent = gardenInfo.gardenName;
-        }
-
-        const guildNameEl = document.getElementById('dropdownGuildName');
-        if (guildNameEl && gardenInfo.guildName !== undefined) {
-            guildNameEl.textContent = gardenInfo.guildName;
-        }
     }
 
     function toggleQuestDrawer() {
@@ -990,56 +914,6 @@
     function openQuestDrawer() {
         shellState.questDrawerOpen = true;
         openPanel('quests');
-        return;
-
-        const drawer = document.getElementById('questSideDrawer');
-        if (!drawer) return;
-
-        shellState.questDrawerOpen = true;
-        drawer.setAttribute('aria-hidden', 'false');
-        document.getElementById('gardenShellBackdrop')?.removeAttribute('hidden');
-        syncShellState();
-
-        // Populate quest list in drawer
-        const questDrawerList = document.getElementById('questDrawerList');
-        if (questDrawerList) {
-            const quests = Array.isArray(gardenData.dailyQuests) ? gardenData.dailyQuests : [];
-            questDrawerList.innerHTML = quests.length > 0
-                ? quests.map((quest) => {
-                    const pct = quest.target > 0 ? Math.min(100, Math.round((quest.progress / quest.target) * 100)) : 0;
-                    const cardClass = [
-                        'quest-card',
-                        quest.claimed ? 'claimed' : '',
-                        (!quest.claimed && quest.complete) ? 'complete' : ''
-                    ].filter(Boolean).join(' ');
-
-                    let buttonLabel = 'Đang làm';
-                    if (quest.claimed) buttonLabel = 'Đã nhận';
-                    else if (quest.complete) buttonLabel = 'Nhận thưởng';
-
-                    return `
-                        <div class="${cardClass}">
-                            <div class="quest-topline">
-                                <strong class="quest-title">${escapeHtml(quest.title)}</strong>
-                                <span class="quest-progress-label">${quest.progress}/${quest.target}</span>
-                            </div>
-                            <div class="quest-desc">${escapeHtml(quest.description)}</div>
-                            <div class="quest-progress">
-                                <div class="quest-progress-fill" style="width:${pct}%"></div>
-                            </div>
-                            <div class="quest-bottomline">
-                                <span class="quest-reward">${formatQuestReward(quest.rewards)}</span>
-                                <button
-                                    class="quest-claim-btn"
-                                    data-quest-id="${quest.id}"
-                                    ${quest.complete && !quest.claimed ? '' : 'disabled'}
-                                >${buttonLabel}</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')
-                : '<div style="padding:20px; text-align:center; color:#8d6e63;">Hôm nay chưa có nhiệm vụ</div>';
-        }
     }
 
     function closeQuestDrawer() {
@@ -1048,14 +922,6 @@
             closeSidebar();
             return;
         }
-        syncShellState();
-        return;
-
-        const drawer = document.getElementById('questSideDrawer');
-        if (!drawer) return;
-
-        shellState.questDrawerOpen = false;
-        drawer.setAttribute('aria-hidden', 'true');
         syncShellState();
     }
 
@@ -1172,7 +1038,6 @@
     window.renderDailyQuests = renderDailyQuests;
     window.renderGardenInventory = renderInventory;
     window.openGardenPanel = openPanel;
-    window.updateGardenDropdownContent = updateGardenDropdownContent;
     window.toggleQuestDrawer = toggleQuestDrawer;
     window.openQuestDrawer = openQuestDrawer;
     window.closeQuestDrawer = closeQuestDrawer;
