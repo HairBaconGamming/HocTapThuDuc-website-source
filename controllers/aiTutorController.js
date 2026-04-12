@@ -12,32 +12,25 @@ const requestConfig = {
   max_tokens: 2200
 };
 
+// Đã tối ưu ngắn gọn, tập trung vào nhiệm vụ cốt lõi
 const pageGuides = {
-  default:
-    "Ngu canh la toan bo website hoc tap. Hay dong vai tro ly hoc tap gon gang: tom tat, giai thich, chi dan thao tac tren web, va goi y buoc tiep theo that cu the.",
-  "lesson-detail":
-    "Ngu canh la trang hoc bai. Uu tien giai thich de hieu, tom tat y chinh, ra goi y theo tung nac, tao mini quiz, va khong lo dap an qua truc dien neu nguoi hoc chi muon goi y.",
-  "lesson-studio":
-    "Ngu canh la studio bien soan bai hoc. Hay hanh xu nhu instructional designer va bien tap vien: goi y cau truc, do ro rang, luong quiz, microcopy, do mo bai, va checklist truoc khi publish.",
-  garden:
-    "Ngu canh la game nong trai hoc tap. Hay tu van nhu quan gia thong minh cua khu vuon: giai thich UI, chi huong uu tien tai nguyen, va goi y cach hoc de doi loot/phan thuong.",
-  qa: "Ngu canh la khu hoi dap hoc thuat. Hay giup nguoi dung dat cau hoi ro hon, tach bai giai thanh tung buoc, va giu giong dieu than thien nhu mot mentor hoc tap.",
-  guild:
-    "Ngu canh la workspace Tong Mon/Bang Hoi. Hay giai thich buff, muc tieu tuan, donation, leaderboard, va cach dong gop de ca nhan va tap the cung di len."
+  default: "Vai trò: Trợ lý học tập. Nhiệm vụ: Tóm tắt, giải thích, chỉ dẫn thao tác web ngắn gọn.",
+  "lesson-detail": "Vai trò: Gia sư Socratic. Nhiệm vụ: Gợi ý từng bước, không đưa đáp án trực tiếp, tạo mini-quiz kiểm tra hiểu bài.",
+  "lesson-studio": "Vai trò: Chuyên gia thiết kế bài giảng (Instructional Designer). Nhiệm vụ: Góp ý cấu trúc, tinh chỉnh nội dung, tạo checklist trước khi xuất bản.",
+  garden: "Vai trò: Quản gia nông trại. Nhiệm vụ: Hướng dẫn quản lý tài nguyên, gợi ý tối ưu cày cuốc đổi thưởng.",
+  qa: "Vai trò: Mentor học thuật. Nhiệm vụ: Phân tích câu hỏi, chia nhỏ bài giải thành các bước dễ hiểu.",
+  guild: "Vai trò: Cố vấn bang hội. Nhiệm vụ: Giải thích cơ chế quyên góp, buff, và chiến lược leo rank tập thể."
 };
 
-const platformKnowledge = [
-  "Nen tang nay co Dashboard ca nhan, Kho bi kip theo mon, trang chi tiet khoa hoc, trang hoc bai, flashcard review, thanh tich, profile, leaderboard, khu hoi dap, Tin tuc, nong trai Garden, Tong Mon/Bang Hoi, Lesson Studio cho giao vien, va kho anh PRO.",
-  "Dashboard tap trung vao tien do hoc, course dang hoc, level/xp, chart hoat dong, va lien ket nhanh sang Garden, Tong Mon, thanh tich.",
-  "Trang course hien roadmap hoc, loot preview, flashcard deck, phan thuong theo level, va nut tiep tuc hoc.",
-  "Trang lesson co reading workspace, quiz, ghi chu, highlight, comment theo doan trich, flashcard checkpoint, phan thuong hoc ben bi, AI Tutor, va co-presence thoi gian thuc.",
-  "Lesson Studio dung de bien soan lesson/course/unit/tree, draft/publish, quiz block, media block, va review noi dung truoc khi dang.",
-  "Garden la nong trai hoc tap, co tai nguyen nuoc/phan bon/vang, cay trong, shop, nhiem vu, va huong dan theo phong cach game.",
-  "Tong Mon/Bang Hoi co cay Linh Thu, donation, buff, muc tieu tuan, leaderboard, thanh vien, quan tri, va dong gop anh huong den xep hang.",
-  "Khu hoi dap QA co dat cau hoi, treo bounty vang, tra loi, upvote, chap nhan dap an, contributor board, va hot tags.",
-  "Thanh tich, diem cong hien, xp, vang, va phan thuong trong garden/guild lien thong voi nhau de tao gamification xuyen suot.",
-  "Neu nguoi dung hoi cach dung mot tinh nang, hay tra loi dua tren he thong nay, neu thieu du lieu thi noi ro dang suy luan tu giao dien hien tai."
-].join("\n");
+// Chia nhỏ kiến thức để "Gọi trang nào - Load context trang đó", cực kỳ tiết kiệm Token
+const platformKnowledge = {
+  default: "Hệ thống có: Dashboard, Khóa học, Flashcard, Game Nông trại (Garden), Bang hội (Tông Môn), Hỏi đáp (QA), và Lesson Studio.",
+  "lesson-detail": "Trang bài học có: Reading workspace, quiz, ghi chú, highlight, flashcard checkpoint, AI Tutor.",
+  "lesson-studio": "Lesson Studio: Dùng để soạn lesson/course/unit, có quiz/media block, draft/publish.",
+  garden: "Nông trại học tập (Garden): Có tài nguyên nước/phân bón/vàng, trồng cây, shop, nhiệm vụ. XP và vàng liên thông với khóa học.",
+  qa: "Khu Hỏi đáp: Đặt câu hỏi, treo thưởng bằng Vàng (bounty), trả lời, upvote, contributor board.",
+  guild: "Tông Môn/Bang hội: Cây Linh Thú, quyên góp, buff sức mạnh, mục tiêu tuần, leaderboard."
+};
 
 function cleanText(value, limit = 5000) {
   if (value === null || value === undefined) return "";
@@ -54,7 +47,6 @@ function cleanText(value, limit = 5000) {
 
 function stringifyMetadata(metadata) {
   if (!metadata || typeof metadata !== "object") return "";
-
   try {
     return cleanText(JSON.stringify(metadata, null, 2), 3200);
   } catch (error) {
@@ -64,11 +56,10 @@ function stringifyMetadata(metadata) {
 
 function formatHistory(history) {
   if (!Array.isArray(history) || history.length === 0) return "";
-
   return history
     .slice(-6)
     .map((item) => {
-      const role = item?.role === "assistant" ? "AI" : "Nguoi dung";
+      const role = item?.role === "assistant" ? "AI" : "User";
       const content = cleanText(item?.content, 900);
       return content ? `${role}: ${content}` : "";
     })
@@ -76,7 +67,8 @@ function formatHistory(history) {
     .join("\n");
 }
 
-function buildSystemPrompt({
+// HÀM MỚI: Tách biệt System Role (Quy tắc) và User Role (Ngữ cảnh + Câu hỏi)
+function buildMessages({
   pageType,
   pageTitle,
   prompt,
@@ -86,50 +78,52 @@ function buildSystemPrompt({
   user,
   history
 }) {
-  const guide = pageGuides[pageType] || pageGuides.default;
-  const userSummary = user
-    ? `Nguoi dung hien tai: ${cleanText(user.username || "Hoc vien", 60)} | level ${Math.max(
-        0,
-        Number(user.level) || 0
-      )} | vai tro: ${user.isAdmin ? "admin" : user.isTeacher ? "teacher" : "student"}`
-    : "Nguoi dung hien tai: khach hoac chua dang nhap.";
+  const safePageType = pageGuides[pageType] ? pageType : "default";
 
-  const safePageTitle = cleanText(pageTitle, 180);
-  const safePrompt = cleanText(prompt, 1400);
-  const safeSelection = cleanText(selection, 1800);
-  const safeSummary = cleanText(contextSummary, 3400);
-  const safeMetadata = stringifyMetadata(metadata);
-  const safeHistory = formatHistory(history);
+  // 1. SYSTEM PROMPT: Nhẹ nhàng, logic, định hình nhân vật
+  const systemInstructions = [
+    "Bạn là AI Tutor của Học Tập Thủ Đức. Luôn giao tiếp bằng Tiếng Việt thân thiện, dễ hiểu, phù hợp học sinh.",
+    "",
+    "### QUY TẮC PHẢN HỒI:",
+    "- Cấu trúc: 1 dòng mở bài -> Gạch đầu dòng (3-5 ý chính) -> Gợi ý bước tiếp theo cực kỳ cụ thể.",
+    "- Format: Dùng Markdown (tiêu đề, bullet list, in đậm).",
+    "- Công thức: Trình bày Toán/Lý/Hóa bằng LaTeX ($...$ hoặc $$...$$).",
+    "- Trung thực: Chỉ trả lời dựa trên ngữ cảnh giao diện được cung cấp, tuyệt đối không bịa đặt tính năng.",
+    "",
+    "### VAI TRÒ & NHIỆM VỤ HIỆN TẠI:",
+    pageGuides[safePageType],
+    "",
+    "### THÔNG TIN HỆ THỐNG HIỆN TẠI:",
+    platformKnowledge[safePageType]
+  ].join("\n");
 
-  return [
-    "Ban la AI Tutor cua Hoc Tap Thu Duc.",
-    "Hay luon phan hoi bang tieng Viet thuan tuy, de hieu, phu hop voi hoc sinh.",
-    "Ban duoc phep va duoc khuyen khich dung Markdown ro rang: tieu de ngan, bullet list, bang, blockquote, checklist, code block neu can.",
-    "Khi co cong thuc Toan/Ly/Hoa, hay dung cu phap LaTeX voi $...$ hoac $$...$$ thay vi mo ta bang van ban thuong.",
-    "Neu du lieu trang khong du, hay noi ro ban dang suy luan tu giao dien hien tai; khong bia dat tinh nang, so lieu, hoac ket qua.",
-    "Tra loi nen uu tien cau truc sau: 1 dong mo dau ngan, 3-5 bullet hay buoc, va ket thuc bang buoc tiep theo cuc ky cu the neu phu hop.",
-    "Neu nguoi dung muon goi y thay vi dap an, hay giu theo kieu Socratic: goi y theo tung nac, khong spoil qua nhanh.",
-    guide,
-    `Kien thuc he thong de tham chieu:\n${platformKnowledge}`,
-    userSummary,
-    safePageTitle ? `Tieu de trang: ${safePageTitle}` : "",
-    safeSelection ? `Doan nguoi dung dang chon:\n${safeSelection}` : "",
-    safeSummary ? `Tom tat ngu canh hien tai:\n${safeSummary}` : "",
-    safeMetadata ? `Metadata bo sung:\n${safeMetadata}` : "",
-    safeHistory ? `Hoi thoai gan day:\n${safeHistory}` : "",
-    `Yeu cau moi cua nguoi dung:\n${safePrompt}`
+  // 2. USER CONTEXT: Chứa dữ liệu thực tế
+  const userInfo = user
+    ? `Học viên: ${cleanText(user.username || "Ẩn danh", 60)} | Level ${Math.max(0, Number(user.level) || 0)} | Vai trò: ${user.isAdmin ? "Admin" : user.isTeacher ? "Teacher" : "Student"}`
+    : "Người dùng: Khách (Chưa đăng nhập)";
+
+  const userContent = [
+    `[NGỮ CẢNH HỆ THỐNG]`,
+    userInfo,
+    pageTitle ? `- Tiêu đề trang: ${cleanText(pageTitle, 180)}` : "",
+    selection ? `- Đoạn văn bản đang bôi đen:\n"${cleanText(selection, 1800)}"` : "",
+    contextSummary ? `- Tóm tắt nội dung trang:\n${cleanText(contextSummary, 3400)}` : "",
+    metadata ? `- Metadata bổ sung: ${stringifyMetadata(metadata)}` : "",
+    history && history.length > 0 ? `\n[LỊCH SỬ TRÒ CHUYỆN GẦN ĐÂY]\n${formatHistory(history)}` : "",
+    `\n[YÊU CẦU MỚI TỪ NGƯỜI DÙNG]\n${cleanText(prompt, 1400)}`
   ]
     .filter(Boolean)
-    .join("\n\n");
+    .join("\n");
+
+  return [
+    { role: "system", content: systemInstructions },
+    { role: "user", content: userContent }
+  ];
 }
 
 function extractReplyFromChoices(payload) {
   const content = payload?.choices?.[0]?.message?.content;
-
-  if (typeof content === "string") {
-    return content;
-  }
-
+  if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     return content
       .map((item) => {
@@ -140,17 +134,12 @@ function extractReplyFromChoices(payload) {
       .filter(Boolean)
       .join("\n");
   }
-
   return "";
 }
 
 function extractDeltaText(payload) {
   const deltaContent = payload?.choices?.[0]?.delta?.content;
-
-  if (typeof deltaContent === "string") {
-    return deltaContent;
-  }
-
+  if (typeof deltaContent === "string") return deltaContent;
   if (Array.isArray(deltaContent)) {
     return deltaContent
       .map((item) => {
@@ -161,11 +150,11 @@ function extractDeltaText(payload) {
       .filter(Boolean)
       .join("");
   }
-
   return "";
 }
 
-async function requestTutorReply(finalPrompt) {
+// CẬP NHẬT: Nhận mảng messagesPayload thay vì finalPrompt
+async function requestTutorReply(messagesPayload) {
   const response = await fetch("https://api.siliconflow.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -174,12 +163,7 @@ async function requestTutorReply(finalPrompt) {
     },
     body: JSON.stringify({
       model: modelName,
-      messages: [
-        {
-          role: "user",
-          content: finalPrompt
-        }
-      ],
+      messages: messagesPayload,
       ...requestConfig
     })
   });
@@ -190,7 +174,7 @@ async function requestTutorReply(finalPrompt) {
     const remoteError =
       payload?.error?.message ||
       payload?.message ||
-      "SiliconFlow khong tra ve phan hoi hop le.";
+      "SiliconFlow không trả về phản hồi hợp lệ.";
     const error = new Error(remoteError);
     error.statusCode = response.status;
     throw error;
@@ -213,7 +197,8 @@ function setSseHeaders(res) {
   }
 }
 
-async function streamTutorReply(finalPrompt, res) {
+// CẬP NHẬT: Nhận mảng messagesPayload
+async function streamTutorReply(messagesPayload, res) {
   const response = await fetch("https://api.siliconflow.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -222,12 +207,7 @@ async function streamTutorReply(finalPrompt, res) {
     },
     body: JSON.stringify({
       model: modelName,
-      messages: [
-        {
-          role: "user",
-          content: finalPrompt
-        }
-      ],
+      messages: messagesPayload,
       stream: true,
       ...requestConfig
     })
@@ -238,14 +218,14 @@ async function streamTutorReply(finalPrompt, res) {
     const remoteError =
       payload?.error?.message ||
       payload?.message ||
-      "SiliconFlow khong the stream phan hoi luc nay.";
+      "SiliconFlow không thể stream phản hồi lúc này.";
     const error = new Error(remoteError);
     error.statusCode = response.status;
     throw error;
   }
 
   if (!response.body) {
-    const fallbackReply = await requestTutorReply(finalPrompt);
+    const fallbackReply = await requestTutorReply(messagesPayload);
     sendStreamPacket(res, { type: "delta", delta: fallbackReply });
     sendStreamPacket(res, { type: "done", reply: fallbackReply });
     return;
@@ -297,18 +277,18 @@ function buildPromptFromRequest(req) {
   const safePrompt = cleanText(prompt, 1400);
 
   if (!safePrompt) {
-    const error = new Error("Ban chua nhap cau hoi cho AI Tutor.");
+    const error = new Error("Bạn chưa nhập câu hỏi cho AI Tutor.");
     error.statusCode = 400;
     throw error;
   }
 
   if (!apiKey) {
-    const error = new Error("AI Tutor chua duoc cau hinh khoa SiliconFlow tren server.");
+    const error = new Error("AI Tutor chưa được cấu hình khóa API trên server.");
     error.statusCode = 503;
     throw error;
   }
 
-  return buildSystemPrompt({
+  return buildMessages({
     pageType: cleanText(pageType, 80) || "default",
     pageTitle,
     prompt: safePrompt,
@@ -328,19 +308,20 @@ function resolveErrorStatus(error) {
 
 function resolvePublicErrorMessage(error, statusCode) {
   return statusCode >= 500
-    ? "AI Tutor dang hoi qua tai. Ban thu lai sau it phut nhe."
-    : cleanText(error?.message, 260) || "Khong the lay phan hoi tu AI Tutor.";
+    ? "AI Tutor đang hơi quá tải. Bạn thử lại sau ít phút nhé."
+    : cleanText(error?.message, 260) || "Không thể lấy phản hồi từ AI Tutor.";
 }
 
+// CONTROLLERS
 exports.askTutor = async (req, res) => {
   try {
-    const finalPrompt = buildPromptFromRequest(req);
-    const reply = await requestTutorReply(finalPrompt);
+    const messagesPayload = buildPromptFromRequest(req);
+    const reply = await requestTutorReply(messagesPayload);
 
     if (!reply) {
       return res.status(502).json({
         success: false,
-        error: "AI Tutor chua tao duoc phan hoi phu hop."
+        error: "AI Tutor chưa tạo được phản hồi phù hợp."
       });
     }
 
@@ -360,10 +341,11 @@ exports.askTutor = async (req, res) => {
 
 exports.streamTutor = async (req, res) => {
   try {
-    const finalPrompt = buildPromptFromRequest(req);
+    const messagesPayload = buildPromptFromRequest(req);
     setSseHeaders(res);
     sendStreamPacket(res, { type: "ready", model: modelName });
-    await streamTutorReply(finalPrompt, res);
+    
+    await streamTutorReply(messagesPayload, res);
     res.end();
   } catch (error) {
     console.error("AI Tutor stream error:", error);

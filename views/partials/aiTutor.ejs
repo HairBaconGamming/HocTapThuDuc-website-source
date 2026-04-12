@@ -1,28 +1,32 @@
 <%
+    // Khởi tạo các biến môi trường cho AI Tutor
     const tutorVariant = typeof aiTutorVariant !== 'undefined' ? aiTutorVariant : 'default';
     const tutorPage = typeof aiTutorPage !== 'undefined' ? aiTutorPage : tutorVariant;
+    
     const tutorTitle = typeof aiTutorTitle !== 'undefined'
         ? aiTutorTitle
         : (tutorVariant === 'garden'
-            ? 'Nong Trai AI'
+            ? 'Nông Trại AI'
             : tutorVariant === 'lesson-studio'
                 ? 'Studio AI'
                 : tutorVariant === 'lesson-detail'
-                    ? 'Gia su AI'
-                    : 'AI Tutor');
+                    ? 'Gia Sư AI'
+                    : 'Trợ lý AI');
+                    
     const tutorSubtitle = typeof aiTutorSubtitle !== 'undefined'
         ? aiTutorSubtitle
         : (tutorVariant === 'garden'
-            ? 'Goi y nuoc di tiep theo trong vuon'
+            ? 'Gợi ý nước đi tiếp theo trong vườn'
             : tutorVariant === 'lesson-studio'
-                ? 'Bien tap, ra soat va len y tuong bai hoc'
+                ? 'Biên tập, rà soát và lên ý tưởng'
                 : tutorVariant === 'lesson-detail'
-                    ? 'Giai thich ngan gon ngay luc dang hoc'
-                    : 'Tom tat, giai thich va dan duong hoc tap');
+                    ? 'Giải thích ngắn gọn ngay lúc học'
+                    : 'Tóm tắt, giải thích và dẫn đường');
+                    
     const tutorUser = user
         ? {
             id: String(user._id || ''),
-            username: user.username || 'Ban',
+            username: user.username || 'Bạn',
             level: Number(user.level) || 0,
             isAdmin: !!user.isAdmin,
             isTeacher: !!user.isTeacher,
@@ -31,22 +35,13 @@
         : null;
 %>
 
+<!-- Load CSS cho công thức Toán học -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 
-<div
-    class="ai-tutor-shell ai-tutor-shell--<%= tutorVariant %>"
-    id="aiTutorShell"
-    data-ai-tutor-shell
-    data-variant="<%= tutorVariant %>"
-    data-page-type="<%= tutorPage %>"
->
-    <button
-        type="button"
-        class="ai-tutor-fab"
-        data-ai-tutor-toggle
-        aria-expanded="false"
-        aria-controls="aiTutorPanel"
-    >
+<div class="ai-tutor-shell ai-tutor-shell--<%= tutorVariant %>" id="aiTutorShell" data-ai-tutor-shell data-variant="<%= tutorVariant %>" data-page-type="<%= tutorPage %>">
+    
+    <!-- NÚT GỌI AI (FAB) -->
+    <button type="button" class="ai-tutor-fab" data-ai-tutor-toggle aria-expanded="false" aria-controls="aiTutorPanel" title="Chat với <%= tutorTitle %>">
         <span class="ai-tutor-fab-orb">
             <i class="fas fa-robot"></i>
         </span>
@@ -56,60 +51,66 @@
         </span>
     </button>
 
-    <section
-        class="ai-tutor-panel"
-        id="aiTutorPanel"
-        data-ai-tutor-panel
-        hidden
-        aria-live="polite"
-    >
+    <!-- BẢNG CHAT AI -->
+    <section class="ai-tutor-panel" id="aiTutorPanel" data-ai-tutor-panel hidden aria-live="polite">
+        
         <header class="ai-tutor-panel-head">
             <div>
-                <span class="ai-tutor-kicker">AI huong dan</span>
+                <span class="ai-tutor-kicker"><i class="fas fa-sparkles"></i> AI Hỗ Trợ</span>
                 <h3><%= tutorTitle %></h3>
                 <p><%= tutorSubtitle %></p>
             </div>
-            <button type="button" class="ai-tutor-mini-btn" data-ai-tutor-close aria-label="Dong AI Tutor">
+            <button type="button" class="ai-tutor-mini-btn" data-ai-tutor-close aria-label="Đóng AI Tutor" title="Thu gọn">
                 <i class="fas fa-xmark"></i>
             </button>
         </header>
 
+        <!-- Trạng thái ngữ cảnh -->
         <div class="ai-tutor-context" data-ai-tutor-context>
-            <span class="ai-tutor-context-pill" data-ai-tutor-context-label>Dang doc ngu canh trang</span>
-            <span class="ai-tutor-context-line" data-ai-tutor-selection-status>Chua co doan chon rieng.</span>
+            <span class="ai-tutor-context-pill" data-ai-tutor-context-label>
+                <i class="fas fa-eye"></i> Đang đọc ngữ cảnh trang
+            </span>
+            <span class="ai-tutor-context-line" data-ai-tutor-selection-status>Chưa có đoạn chọn riêng.</span>
         </div>
 
+        <!-- Các nút gợi ý nhanh -->
         <div class="ai-tutor-quick-actions" data-ai-tutor-actions></div>
 
+        <!-- Luồng tin nhắn -->
         <div class="ai-tutor-thread" data-ai-tutor-thread>
             <article class="ai-tutor-msg ai-tutor-msg--assistant">
                 <div class="ai-tutor-msg-bubble ai-tutor-msg-bubble--rich" data-ai-tutor-welcome>
-                    Minh dang bam theo noi dung trang nay. Ban cu hoi ngan gon, minh se giai thich bang Markdown va cong thuc LaTeX neu can.
+                    Mình đang bám theo nội dung trang này. Bạn cứ hỏi ngắn gọn, mình sẽ giải thích bằng Markdown và công thức LaTeX nếu cần nhé. ✌️
                 </div>
             </article>
         </div>
 
+        <!-- Form nhập liệu -->
         <form class="ai-tutor-form" data-ai-tutor-form>
             <label class="ai-tutor-input-wrap" for="aiTutorInput">
                 <textarea
                     id="aiTutorInput"
                     class="ai-tutor-input"
                     data-ai-tutor-input
-                    rows="2"
-                    placeholder="Hoi AI Tutor dieu ban dang can..."
+                    rows="1"
+                    placeholder="Hỏi AI Tutor điều bạn đang thắc mắc..."
+                    aria-label="Khung nhập tin nhắn"
                 ></textarea>
             </label>
             <div class="ai-tutor-form-foot">
-                <span class="ai-tutor-status" data-ai-tutor-status>San sang ho tro</span>
-                <button type="submit" class="ai-tutor-send">
+                <span class="ai-tutor-status" data-ai-tutor-status>
+                    <i class="fas fa-circle-check text-success" style="color: #10b981;"></i> Sẵn sàng hỗ trợ
+                </span>
+                <button type="submit" class="ai-tutor-send" title="Gửi tin nhắn">
+                    <span>Gửi</span>
                     <i class="fas fa-paper-plane"></i>
-                    <span>Gui</span>
                 </button>
             </div>
         </form>
     </section>
 </div>
 
+<!-- Khởi tạo dữ liệu Bootstrap cho JS -->
 <script>
     window.AI_TUTOR_BOOTSTRAP = Object.assign({}, window.AI_TUTOR_BOOTSTRAP || {}, {
         variant: <%- JSON.stringify(tutorVariant) %>,
@@ -118,9 +119,37 @@
         subtitle: <%- JSON.stringify(tutorSubtitle) %>,
         user: <%- JSON.stringify(tutorUser) %>
     });
+
+    // Auto-resize cho textarea (Vì CSS mới set resize: none)
+    document.addEventListener('DOMContentLoaded', () => {
+        const aiInput = document.getElementById('aiTutorInput');
+        const sendBtn = document.querySelector('.ai-tutor-send');
+
+        if (aiInput) {
+            // Tự động co giãn chiều cao
+            aiInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                
+                // UX: Nếu ô input rỗng thì làm mờ nhẹ nút gửi
+                if (sendBtn) {
+                    if (this.value.trim() === "") {
+                        sendBtn.style.opacity = "0.5";
+                    } else {
+                        sendBtn.style.opacity = "1";
+                    }
+                }
+            });
+            // Khởi tạo trạng thái ban đầu
+            if (sendBtn) sendBtn.style.opacity = "0.5";
+        }
+    });
 </script>
+
+<!-- Load các thư viện phụ trợ (Markdown, DOMPurify, KaTeX) -->
 <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.5/dist/purify.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-<script src="/js/aiTutor.js"></script>
+<!-- Logic điều khiển chính -->
+<script defer src="/js/aiTutor.js"></script>
