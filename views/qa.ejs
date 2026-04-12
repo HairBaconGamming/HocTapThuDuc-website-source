@@ -1,23 +1,25 @@
 <%- include('partials/header') %>
+<!-- Import KaTeX cho hiển thị Toán học -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <link rel="stylesheet" href="/css/styleQA.css">
 
 <%
-// Giữ nguyên logic xử lý dữ liệu an toàn
+// Xử lý dữ liệu an toàn (Chống crash ứng dụng nếu thiếu data)
 const safeQuestions = Array.isArray(questions) ? questions : [];
 const safeSubjects = Array.isArray(subjects) ? subjects : [];
 const safeGrades = Array.isArray(grades) ? grades : [];
 const safeFilters = filters || {};
 const safeSidebar = sidebar || {};
 const safeContributorWeekly = Array.isArray(safeSidebar.contributors?.weekly) ? safeSidebar.contributors.weekly : [];
-const safeHotTags = Array.isArray(safeSidebar.hotTags) ? safeSidebar.hotTags : [];
 const sidebarStats = safeSidebar.stats || {};
+
+// Trạng thái bộ lọc hiện tại
 const currentSort = ['newest', 'hot', 'unanswered', 'mine'].includes(safeFilters.sort) ? safeFilters.sort : 'newest';
 const currentSubject = safeSubjects.includes(safeFilters.subject) ? safeFilters.subject : '';
 const currentGrade = safeGrades.includes(safeFilters.grade) ? safeFilters.grade : '';
 const currentQuery = String(safeFilters.q || '').trim();
 
-// Hàm tạo query string
+// Hàm Helper: Tạo URL query string linh hoạt
 const queryFor = (overrides = {}) => {
     const params = new URLSearchParams();
     const next = { sort: currentSort, subject: currentSubject, grade: currentGrade, q: currentQuery, ...overrides };
@@ -27,181 +29,217 @@ const queryFor = (overrides = {}) => {
 };
 %>
 
-<div class="qa-shell">
-    <section class="qa-hero">
-        <div class="qa-hero-content">
-            <span class="qa-kicker"><i class="fas fa-life-ring"></i> Bảng Cầu Cứu HTTD</span>
-            <h1 class="qa-hero-title">Giải bài khó, nhận thưởng vàng, khẳng định vị thế.</h1>
+<div class="qa-main-container">
+    
+    <!-- 1. HERO SECTION (BENTO GRID DESIGN) -->
+    <section class="qa-bento-hero">
+        <div class="qa-bento-primary qa-glass-panel">
+            <div class="qa-hero-badge">
+                <span class="qa-pulse-dot"></span> Bảng Cầu Cứu HTTD
+            </div>
+            <h1 class="qa-hero-title">Tri thức là sức mạnh.<br><span class="qa-text-gradient">Hãy chung tay giải cứu.</span></h1>
             <p class="qa-hero-desc">
-                Nơi những thắc mắc hóc búa nhất được cộng đồng chung tay giải quyết. Thảo luận từng bước, treo thưởng để thu hút cao thủ và đóng góp điểm danh vọng cho Tông Môn của bạn.
+                Hỏi đáp đa chiều, gỡ rối học thuật. Tích lũy điểm danh vọng để xưng bá trên Bảng Phong Thần toàn server.
             </p>
-
-            <div class="qa-hero-actions">
-                <% if (user) { %>
-                    <a href="/qa/ask" class="qa-btn qa-btn-primary">
-                        <i class="fas fa-plus"></i> Đăng câu hỏi ngay
-                    </a>
-                <% } else { %>
-                    <a href="/login" class="qa-btn qa-btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Đăng nhập để hỏi
-                    </a>
-                <% } %>
-                <a href="/qa/community" class="qa-btn qa-btn-secondary">
-                    <i class="fas fa-chart-line"></i> Bảng Phong Thần
+            <div class="qa-hero-action-group">
+                <a href="<%= user ? '/qa/ask' : '/login' %>" class="qa-btn-prime">
+                    <i class="fas fa-feather-pointed"></i> Trình bày câu hỏi
+                </a>
+                <a href="/qa/community" class="qa-btn-ghost">
+                    <i class="fas fa-trophy"></i> Xem Bảng Phong Thần
                 </a>
             </div>
         </div>
 
-        <div class="qa-hero-stats">
-            <div class="qa-hero-stat">
-                <strong><%= safeQuestions.length %></strong>
-                <span>Bài đang hiện</span>
+        <div class="qa-bento-stats">
+            <div class="qa-stat-box qa-glass-panel">
+                <div class="qa-stat-icon text-primary"><i class="fas fa-layer-group"></i></div>
+                <div class="qa-stat-data">
+                    <span class="qa-stat-num"><%= safeQuestions.length %></span>
+                    <span class="qa-stat-label">Bài đang hiển thị</span>
+                </div>
             </div>
-            <div class="qa-hero-stat">
-                <strong><%= Number(sidebarStats.openCount || 0).toLocaleString('vi-VN') %></strong>
-                <span>Đang chờ giải</span>
+            <div class="qa-stat-box qa-glass-panel warning-tint">
+                <div class="qa-stat-icon text-warning"><i class="fas fa-fire"></i></div>
+                <div class="qa-stat-data">
+                    <span class="qa-stat-num"><%= Number(sidebarStats.openCount || 0).toLocaleString('vi-VN') %></span>
+                    <span class="qa-stat-label">Đang cấp cứu</span>
+                </div>
             </div>
-            <div class="qa-hero-stat">
-                <strong><%= Number(sidebarStats.resolvedCount || 0).toLocaleString('vi-VN') %></strong>
-                <span>Đã giải cứu</span>
+            <div class="qa-stat-box qa-glass-panel success-tint">
+                <div class="qa-stat-icon text-success"><i class="fas fa-check-double"></i></div>
+                <div class="qa-stat-data">
+                    <span class="qa-stat-num"><%= Number(sidebarStats.resolvedCount || 0).toLocaleString('vi-VN') %></span>
+                    <span class="qa-stat-label">Đã chốt hạ</span>
+                </div>
             </div>
         </div>
     </section>
 
-    <div class="qa-mobile-filter-toggle" style="display: none; margin-bottom: 16px;">
-        <button class="qa-btn qa-btn-secondary" style="width: 100%; color: var(--qa-text); background: var(--qa-surface-glass);" onclick="document.querySelector('.qa-layout').classList.toggle('show-sidebar')">
+    <!-- MOBILE FILTER TOGGLE -->
+    <div class="qa-mobile-trigger">
+        <button class="qa-btn-ghost w-100" onclick="document.getElementById('qa-layout-wrapper').classList.toggle('mobile-filters-open')">
             <i class="fas fa-sliders-h"></i> Hiện / Ẩn bộ lọc
         </button>
     </div>
 
-    <div class="qa-layout">
-        <aside class="qa-rail">
-            <section class="qa-rail-card">
-                <h2 class="qa-panel-title">Phân loại</h2>
-                <div class="qa-filter-list">
-                    <a href="<%= queryFor({ sort: 'newest' }) %>" class="qa-filter-link <%= currentSort === 'newest' ? 'is-active' : '' %>">
-                        <span>Mới nhất</span> <i class="fas fa-bolt"></i>
-                    </a>
-                    <a href="<%= queryFor({ sort: 'hot' }) %>" class="qa-filter-link <%= currentSort === 'hot' ? 'is-active' : '' %>">
-                        <span>Đang hot</span> <i class="fas fa-fire" style="color: #ef4444;"></i>
-                    </a>
-                    <a href="<%= queryFor({ sort: 'unanswered' }) %>" class="qa-filter-link <%= currentSort === 'unanswered' ? 'is-active' : '' %>">
-                        <span>Cần giải cứu</span> <i class="far fa-life-ring"></i>
-                    </a>
-                    <% if (user) { %>
-                        <a href="<%= queryFor({ sort: 'mine' }) %>" class="qa-filter-link <%= currentSort === 'mine' ? 'is-active' : '' %>">
-                            <span>Bài của tôi</span> <i class="fas fa-user-edit"></i>
+    <!-- 2. MAIN LAYOUT GRID -->
+    <div class="qa-grid-layout" id="qa-layout-wrapper">
+        
+        <!-- LEFT RAIL: NAVIGATION & FILTERS -->
+        <aside class="qa-sidebar-left">
+            <nav class="qa-nav-widget qa-glass-panel">
+                <h3 class="qa-widget-title">Góc nhìn</h3>
+                <ul class="qa-nav-list">
+                    <li>
+                        <a href="<%= queryFor({ sort: 'newest' }) %>" class="qa-nav-link <%= currentSort === 'newest' ? 'active' : '' %>">
+                            <div class="qa-nav-icon"><i class="fas fa-clock"></i></div>
+                            <span>Mới nhất</span>
                         </a>
+                    </li>
+                    <li>
+                        <a href="<%= queryFor({ sort: 'hot' }) %>" class="qa-nav-link <%= currentSort === 'hot' ? 'active' : '' %>">
+                            <div class="qa-nav-icon text-danger"><i class="fas fa-arrow-trend-up"></i></div>
+                            <span>Đang Hot</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<%= queryFor({ sort: 'unanswered' }) %>" class="qa-nav-link <%= currentSort === 'unanswered' ? 'active' : '' %>">
+                            <div class="qa-nav-icon text-warning"><i class="far fa-life-ring"></i></div>
+                            <span>Cần giải cứu</span>
+                        </a>
+                    </li>
+                    <% if (user) { %>
+                    <li>
+                        <a href="<%= queryFor({ sort: 'mine' }) %>" class="qa-nav-link <%= currentSort === 'mine' ? 'active' : '' %>">
+                            <div class="qa-nav-icon text-primary"><i class="fas fa-user-pen"></i></div>
+                            <span>Bài của tôi</span>
+                        </a>
+                    </li>
                     <% } %>
-                </div>
-            </section>
+                </ul>
+            </nav>
 
-            <section class="qa-rail-card">
-                <h2 class="qa-panel-title">Môn học</h2>
-                <div class="qa-filter-list">
-                    <a href="<%= queryFor({ subject: '' }) %>" class="qa-chip-link <%= !currentSubject ? 'is-active' : '' %>">
-                        Tất cả môn
+            <div class="qa-nav-widget qa-glass-panel">
+                <h3 class="qa-widget-title">Phân loại Môn học</h3>
+                <div class="qa-pill-grid">
+                    <a href="<%= queryFor({ subject: '' }) %>" class="qa-pill <%= !currentSubject ? 'active' : '' %>">
+                        Tất cả
                     </a>
                     <% safeSubjects.forEach((subject) => { %>
-                        <a href="<%= queryFor({ subject }) %>" class="qa-chip-link <%= currentSubject === subject ? 'is-active' : '' %>">
+                        <a href="<%= queryFor({ subject }) %>" class="qa-pill <%= currentSubject === subject ? 'active' : '' %>">
                             <%= subject %>
                         </a>
                     <% }) %>
                 </div>
-            </section>
+            </div>
         </aside>
 
-        <section class="qa-feed">
-            <div class="qa-feed-head qa-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <h2 style="margin: 0;">Feed Học Thuật</h2>
-                    <div class="qa-metrics">
-                        <% if (currentSubject) { %><span><i class="fas fa-book"></i> <%= currentSubject %></span><% } %>
-                        <% if (currentGrade) { %><span><i class="fas fa-layer-group"></i> Khối <%= currentGrade %></span><% } %>
-                    </div>
-                </div>
+        <!-- CENTER: FEED CONTENT -->
+        <main class="qa-feed-zone">
+            <!-- Feed Header -->
+            <div class="qa-feed-header">
+                <h2 class="qa-feed-title">
+                    <%= currentSubject ? `Đang xem: ${currentSubject}` : 'Tất cả câu hỏi' %>
+                </h2>
+                <% if (currentGrade) { %>
+                    <span class="qa-badge-soft">Khối <%= currentGrade %></span>
+                <% } %>
             </div>
 
+            <!-- Question Cards -->
             <% if (safeQuestions.length > 0) { %>
-                <div class="qa-feed-list" style="display: grid; gap: 20px;">
+                <div class="qa-card-stack">
                     <% safeQuestions.forEach((question) => { %>
-                        <a href="<%= question.href || ('/qa/questions/' + question._id) %>" class="qa-feed-card">
-                            <div class="qa-card-top">
-                                <span class="qa-badge qa-badge-subject"><%= question.subject || 'Khác' %></span>
-                                <span class="qa-badge qa-badge-grade">Lớp <%= question.grade || 'Chung' %></span>
-                                <% if (Number(question.bountyAmount || 0) > 0) { %>
-                                    <span class="qa-badge qa-badge-bounty"><i class="fas fa-gem"></i> <%= Number(question.bountyAmount).toLocaleString('vi-VN') %></span>
-                                <% } %>
+                        <a href="<%= question.href || ('/qa/questions/' + question._id) %>" class="qa-question-card qa-glass-panel">
+                            
+                            <!-- Card Header -->
+                            <div class="qa-card-head">
+                                <div class="qa-user-mini">
+                                    <img src="<%= question.author?.avatar || '/default.png' %>" class="qa-avatar-xs" alt="Ava">
+                                    <span class="qa-username"><%= question.author?.username || 'Ẩn danh' %></span>
+                                    <time class="qa-time-relative" data-relative-time datetime="<%= question.createdAt %>"><%= new Date(question.createdAt).toLocaleDateString('vi-VN') %></time>
+                                </div>
+                                <div class="qa-card-badges">
+                                    <span class="qa-tag-subject"><%= question.subject || 'Khác' %></span>
+                                    <span class="qa-tag-grade">L.<%= question.grade || 'Chung' %></span>
+                                </div>
                             </div>
 
-                            <div class="qa-card-content">
-                                <h3 class="qa-card-title"><%= question.title || 'Câu hỏi ẩn danh' %></h3>
-                                <p class="qa-card-preview"><%= question.previewText || 'Không có mô tả tóm tắt.' %></p>
+                            <!-- Card Body -->
+                            <div class="qa-card-body">
+                                <h3 class="qa-q-title"><%= question.title || 'Câu hỏi ẩn danh' %></h3>
+                                <p class="qa-q-excerpt"><%= question.previewText || 'Bấm vào để xem mô tả chi tiết...' %></p>
                             </div>
 
-                            <div class="qa-card-meta">
-                                <div class="qa-author-row">
-                                    <img class="qa-avatar-sm" src="<%= question.author?.avatar || '/default.png' %>" alt="Avatar">
-                                    <div class="qa-author-meta">
-                                        <div class="qa-author-name"><%= question.author?.username || 'Ẩn danh' %></div>
-                                        <div class="qa-author-sub"><time data-relative-time datetime="<%= question.createdAt %>"><%= new Date(question.createdAt).toLocaleString('vi-VN') %></time></div>
+                            <!-- Card Footer -->
+                            <div class="qa-card-foot">
+                                <div class="qa-metrics-group">
+                                    <div class="qa-metric <%= question.answerCount > 0 ? 'has-answers' : '' %>">
+                                        <i class="fas fa-comment-dots"></i> 
+                                        <span><%= Number(question.answerCount || 0) %> lời giải</span>
+                                    </div>
+                                    <div class="qa-metric">
+                                        <i class="fas fa-eye"></i> 
+                                        <span><%= Number(question.viewCount || 0) %></span>
                                     </div>
                                 </div>
-                                <div class="qa-metrics">
-                                    <span><i class="fas fa-comment"></i> <%= Number(question.answerCount || 0) %></span>
-                                    <span><i class="fas fa-eye"></i> <%= Number(question.viewCount || 0) %></span>
-                                </div>
+                                
+                                <% if (Number(question.bountyAmount || 0) > 0) { %>
+                                    <div class="qa-bounty-tag">
+                                        <i class="fas fa-gem"></i> <%= Number(question.bountyAmount).toLocaleString('vi-VN') %>
+                                    </div>
+                                <% } else { %>
+                                    <div class="qa-read-more">Giải bài <i class="fas fa-arrow-right"></i></div>
+                                <% } %>
                             </div>
                         </a>
                     <% }) %>
                 </div>
             <% } else { %>
-                <div class="qa-panel qa-empty">
-                    <i class="fas fa-wind" style="font-size: 3rem; color: var(--qa-muted); margin-bottom: 16px; opacity: 0.5;"></i>
-                    <strong>Không tìm thấy câu hỏi nào.</strong>
-                    <p>Hãy thử xóa bộ lọc hoặc trở thành người đầu tiên đặt câu hỏi trong nhóm này!</p>
+                <!-- Empty State -->
+                <div class="qa-empty-state qa-glass-panel">
+                    <div class="qa-empty-icon"><i class="fas fa-wind"></i></div>
+                    <h3>Chưa có câu hỏi nào ở đây!</h3>
+                    <p>Hãy thử xóa bộ lọc hoặc trở thành người đầu tiên đặt câu hỏi.</p>
+                    <a href="/qa/ask" class="qa-btn-prime mt-3">Đăng câu hỏi ngay</a>
                 </div>
             <% } %>
-        </section>
+        </main>
 
-        <aside class="qa-sidebar">
-            <section class="qa-sidebar-card">
-                <h2 class="qa-panel-title">Top Giải Cứu Tuần</h2>
-                <div class="qa-contributor-list">
+        <!-- RIGHT RAIL: MINI LEADERBOARD -->
+        <aside class="qa-sidebar-right">
+            <div class="qa-widget qa-glass-panel">
+                <div class="qa-widget-header">
+                    <h3 class="qa-widget-title"><i class="fas fa-crown text-warning"></i> Cao Thủ Tuần</h3>
+                </div>
+                <div class="qa-leaderboard-list">
                     <% if (safeContributorWeekly.length > 0) { %>
-                        <% safeContributorWeekly.forEach((contributor) => { %>
-                            <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <img class="qa-avatar-sm" src="<%= contributor.avatar || '/default.png' %>" alt="Avatar">
-                                    <div>
-                                        <div class="qa-author-name" style="font-size: 0.9rem;">#<%= contributor.rank %> <%= contributor.username %></div>
-                                        <div class="qa-author-sub"><%= contributor.tier?.label || 'Tân Binh' %></div>
-                                    </div>
+                        <% safeContributorWeekly.forEach((user, index) => { %>
+                            <a href="/profile/view/<%= user.userId %>" class="qa-lb-item">
+                                <div class="qa-lb-rank rank-<%= index + 1 %>">#<%= user.rank %></div>
+                                <img src="<%= user.avatar || '/default.png' %>" class="qa-lb-avatar" alt="Ava">
+                                <div class="qa-lb-info">
+                                    <span class="qa-lb-name"><%= user.username %></span>
+                                    <span class="qa-lb-tier"><%= user.tier?.label || 'Tân Binh' %></span>
                                 </div>
-                                <strong style="color: var(--qa-primary);"><%= Number(contributor.score || 0) %> pt</strong>
+                                <div class="qa-lb-score"><%= Number(user.score || 0) %></div>
                             </a>
                         <% }) %>
                     <% } else { %>
-                        <div class="qa-empty" style="padding: 16px 0;">
-                            <p style="margin: 0; font-size: 0.9rem;">Tuần này chưa có ai bùng nổ.</p>
-                        </div>
+                        <div class="qa-empty-mini">Tuần này chưa có ai ghi danh.</div>
                     <% } %>
                 </div>
-            </section>
+                <a href="/qa/community" class="qa-widget-footer-link">Xem toàn bộ Bảng Phong Thần <i class="fas fa-chevron-right"></i></a>
+            </div>
         </aside>
+
     </div>
 </div>
 
+<!-- Scripts -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script src="/js/qa.js"></script>
-
-<style>
-    @media (max-width: 1024px) {
-        .qa-mobile-filter-toggle { display: block !important; }
-        .qa-rail, .qa-sidebar { display: none; }
-        .show-sidebar .qa-rail, .show-sidebar .qa-sidebar { display: flex; flex-direction: column; }
-    }
-</style>
 
 <%- include('partials/footer') %>

@@ -1,136 +1,226 @@
 <%- include('partials/header') %>
+<!-- Import KaTeX -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <link rel="stylesheet" href="/css/styleQA.css">
 
 <%
-// Logic xử lý dữ liệu chi tiết
+// Xử lý dữ liệu an toàn
 const detailQuestion = question || {};
 const safeAnswers = Array.isArray(answers) ? answers : [];
 const questionStatus = detailQuestion.status || 'open';
 const canAnswer = !!user && questionStatus !== 'closed';
 %>
 
-<div class="qa-detail-shell">
-    <a href="/qa" class="qa-btn qa-btn-secondary" style="margin-bottom: 24px; display: inline-flex; color: var(--qa-text); background: var(--qa-surface-glass);"><i class="fas fa-arrow-left"></i> Quay lại danh sách</a>
+<div class="qa-main-container">
+    
+    <!-- THANH ĐIỀU HƯỚNG TRỞ VỀ -->
+    <div class="qa-page-nav">
+        <a href="/qa" class="qa-btn-back">
+            <i class="fas fa-arrow-left"></i> Trở về Bảng Cầu Cứu
+        </a>
+    </div>
 
-    <div class="qa-detail-layout">
-        <section class="qa-thread">
+    <div class="qa-thread-layout">
+        
+        <!-- CỘT CHÍNH: NỘI DUNG CÂU HỎI & TRẢ LỜI -->
+        <main class="qa-thread-main">
             
-            <article class="qa-panel qa-question-card" style="margin-bottom: 32px;">
-                <div class="qa-card-top" style="margin-bottom: 16px;">
-                    <span class="qa-badge qa-badge-subject"><%= detailQuestion.subject || 'Khác' %></span>
-                    <span class="qa-badge qa-badge-grade">Lớp <%= detailQuestion.grade || 'Chung' %></span>
-                    <span class="qa-badge qa-badge-status-<%= questionStatus %>">
-                        <%= questionStatus === 'resolved' ? 'Đã giải quyết' : questionStatus === 'closed' ? 'Đã đóng' : 'Đang chờ giải' %>
-                    </span>
-                    <% if (Number(detailQuestion.bountyAmount || 0) > 0) { %>
-                        <span class="qa-badge qa-badge-bounty" style="margin-left: auto;"><i class="fas fa-gem"></i> Treo thưởng <%= Number(detailQuestion.bountyAmount).toLocaleString('vi-VN') %></span>
-                    <% } %>
-                </div>
-
-                <h1 class="qa-question-title" style="font-size: clamp(1.5rem, 4vw, 2.2rem); margin-bottom: 24px;"><%= detailQuestion.title || 'Chi tiết câu hỏi' %></h1>
+            <!-- ====== 1. BÀI ĐĂNG CÂU HỎI ====== -->
+            <article class="qa-post-card qa-glass-panel">
                 
-                <div class="qa-author-row" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--qa-border);">
-                    <img class="qa-avatar" src="<%= detailQuestion.author?.avatar || '/default.png' %>" alt="Avatar">
-                    <div class="qa-author-meta">
-                        <div class="qa-author-name"><%= detailQuestion.author?.username || 'Ẩn danh' %></div>
-                        <div class="qa-author-sub">
-                            Đã hỏi lúc <time data-relative-time datetime="<%= detailQuestion.createdAt %>"><%= new Date(detailQuestion.createdAt).toLocaleString('vi-VN') %></time>
+                <!-- Bố cục 2 cột (Vote Sidebar + Post Content) -->
+                <div class="qa-post-grid">
+                    
+                    <!-- Cột Vote (Chỉ hiển thị cho đẹp ở câu hỏi, chức năng vote thật thường nằm ở câu trả lời) -->
+                    <aside class="qa-vote-col">
+                        <button class="qa-vote-arrow up disabled"><i class="fas fa-caret-up"></i></button>
+                        <span class="qa-vote-count"><%= Number(detailQuestion.viewCount || 0) %></span>
+                        <span class="qa-vote-label">Views</span>
+                    </aside>
+
+                    <!-- Nội dung câu hỏi -->
+                    <div class="qa-post-content">
+                        <!-- Badges & Bounty -->
+                        <div class="qa-post-meta-top">
+                            <span class="qa-tag-subject"><%= detailQuestion.subject || 'Khác' %></span>
+                            <span class="qa-tag-grade">Lớp <%= detailQuestion.grade || 'Chung' %></span>
+                            <span class="qa-badge-status status-<%= questionStatus %>">
+                                <%= questionStatus === 'resolved' ? 'Đã giải quyết' : questionStatus === 'closed' ? 'Đã đóng' : 'Đang chờ giải' %>
+                            </span>
                         </div>
+
+                        <h1 class="qa-post-title"><%= detailQuestion.title || 'Chi tiết câu hỏi' %></h1>
+                        
+                        <!-- User Info -->
+                        <div class="qa-post-author-row">
+                            <img src="<%= detailQuestion.author?.avatar || '/default.png' %>" class="qa-avatar-sm" alt="Ava">
+                            <div class="qa-author-details">
+                                <span class="qa-username"><%= detailQuestion.author?.username || 'Ẩn danh' %></span>
+                                <span class="qa-time-stamp">
+                                    đã hỏi <time data-relative-time datetime="<%= detailQuestion.createdAt %>"><%= new Date(detailQuestion.createdAt).toLocaleString('vi-VN') %></time>
+                                </span>
+                            </div>
+                            
+                            <% if (Number(detailQuestion.bountyAmount || 0) > 0) { %>
+                                <div class="qa-bounty-badge ms-auto">
+                                    <i class="fas fa-gem fa-bounce"></i> Treo thưởng <%= Number(detailQuestion.bountyAmount).toLocaleString('vi-VN') %> Vàng
+                                </div>
+                            <% } %>
+                        </div>
+
+                        <!-- Nội dung Markdown + Math -->
+                        <div class="qa-richtext qa-math qa-post-body">
+                            <%- marked(detailQuestion.content || '') %>
+                        </div>
+
+                        <!-- Gallery Hình ảnh -->
+                        <% if (Array.isArray(detailQuestion.images) && detailQuestion.images.length > 0) { %>
+                            <div class="qa-image-gallery mt-4">
+                                <% detailQuestion.images.forEach((imageUrl) => { %>
+                                    <a href="<%= imageUrl %>" target="_blank" rel="noopener noreferrer" class="qa-gallery-item">
+                                        <img src="<%= imageUrl %>" alt="Hình đính kèm">
+                                    </a>
+                                <% }) %>
+                            </div>
+                        <% } %>
                     </div>
                 </div>
-
-                <div class="qa-richtext qa-math qa-question-summary" style="font-size: 1.05rem;">
-                    <%- marked(detailQuestion.content || '') %>
-                </div>
-
-                <% if (Array.isArray(detailQuestion.images) && detailQuestion.images.length > 0) { %>
-                    <div class="qa-image-grid" style="margin-top: 24px;">
-                        <% detailQuestion.images.forEach((imageUrl) => { %>
-                            <a href="<%= imageUrl %>" target="_blank" rel="noopener noreferrer">
-                                <img src="<%= imageUrl %>" alt="Hình đính kèm" style="border-radius: var(--qa-radius-md);">
-                            </a>
-                        <% }) %>
-                    </div>
-                <% } %>
             </article>
 
-            <section class="qa-answer-list">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-                    <h2 style="margin: 0; font-size: 1.4rem;"><%= safeAnswers.length %> Lời giải từ cộng đồng</h2>
+            <!-- ====== 2. KHU VỰC TRẢ LỜI ====== -->
+            <section class="qa-answers-section">
+                <div class="qa-section-header">
+                    <h2><%= safeAnswers.length %> Lời giải từ Cộng đồng</h2>
                 </div>
 
                 <% if (safeAnswers.length > 0) { %>
-                    <div style="display: grid; gap: 24px;">
+                    <div class="qa-answers-stack">
                         <% safeAnswers.forEach((answer) => { %>
-                            <article class="qa-panel qa-answer-card" id="answer-<%= answer._id %>" style="border-left: <%= answer.isAccepted ? '4px solid var(--qa-success)' : '1px solid var(--qa-border)' %>;">
+                            <!-- Nếu là lời giải được chốt, thêm class 'is-accepted' -->
+                            <article class="qa-post-card qa-glass-panel <%= answer.isAccepted ? 'is-accepted' : '' %>" id="answer-<%= answer._id %>">
                                 
                                 <% if (answer.isAccepted) { %>
-                                    <div style="color: var(--qa-success); font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                                        <i class="fas fa-check-circle"></i> Đáp án đã được chốt
-                                    </div>
+                                    <div class="qa-accepted-ribbon"><i class="fas fa-check-circle"></i> Tác giả đã chốt đúng</div>
                                 <% } %>
 
-                                <div class="qa-author-row" style="margin-bottom: 16px;">
-                                    <img class="qa-avatar-sm" src="<%= answer.author?.avatar || '/default.png' %>" alt="Avatar">
-                                    <div class="qa-author-meta">
-                                        <div class="qa-author-name"><%= answer.author?.username || 'Thành viên' %></div>
-                                        <div class="qa-author-sub"><time data-relative-time datetime="<%= answer.createdAt %>"><%= new Date(answer.createdAt).toLocaleString('vi-VN') %></time></div>
-                                    </div>
-                                </div>
-
-                                <div class="qa-richtext qa-math qa-answer-content">
-                                    <%- marked(answer.content || '') %>
-                                </div>
-
-                                <div class="qa-answer-toolbar" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--qa-border); display: flex; gap: 12px; flex-wrap: wrap;">
-                                    <% if (user) { %>
-                                        <button class="qa-btn qa-btn-secondary qa-upvote-btn" style="color: var(--qa-text); padding: 8px 16px;" data-action-url="/qa/answers/<%= answer._id %>/upvote">
-                                            <i class="fas fa-arrow-up"></i> <%= Number(answer.upvoteCount || 0) %> Upvote
-                                        </button>
-                                        <button class="qa-btn qa-btn-secondary" style="color: var(--qa-text); padding: 8px 16px;" data-toggle-comments="comments-<%= answer._id %>">
-                                            <i class="fas fa-comment"></i> Thảo luận (<%= Array.isArray(answer.comments) ? answer.comments.length : 0 %>)
-                                        </button>
-
-                                        <% if (String(detailQuestion.author?._id || detailQuestion.author) === String(user._id) && !detailQuestion.acceptedAnswer && !answer.isAccepted) { %>
-                                            <button class="qa-btn qa-btn-primary qa-accept-btn" style="padding: 8px 16px; margin-left: auto;" data-action-url="/qa/answers/<%= answer._id %>/accept">
-                                                <i class="fas fa-award"></i> Chốt đúng
+                                <div class="qa-post-grid">
+                                    
+                                    <!-- Cột Vote -->
+                                    <aside class="qa-vote-col">
+                                        <% if (user) { %>
+                                            <button class="qa-vote-arrow up qa-upvote-btn" data-action-url="/qa/answers/<%= answer._id %>/upvote">
+                                                <i class="fas fa-caret-up"></i>
                                             </button>
+                                        <% } else { %>
+                                            <button class="qa-vote-arrow up disabled"><i class="fas fa-caret-up"></i></button>
                                         <% } %>
-                                    <% } %>
-                                </div>
+                                        <span class="qa-vote-count text-primary"><%= Number(answer.upvoteCount || 0) %></span>
+                                        <% if (answer.isAccepted) { %>
+                                            <div class="qa-vote-check text-success"><i class="fas fa-check"></i></div>
+                                        <% } %>
+                                    </aside>
 
-                                <div class="qa-comments-wrap" id="comments-<%= answer._id %>" style="margin-top: 16px; background: var(--qa-bg); padding: 16px; border-radius: var(--qa-radius-md);" hidden>
-                                    <p style="color: var(--qa-muted); font-size: 0.9rem; margin: 0;">Hiển thị bình luận tại đây...</p>
+                                    <!-- Nội dung câu trả lời -->
+                                    <div class="qa-post-content">
+                                        <div class="qa-richtext qa-math qa-post-body">
+                                            <%- marked(answer.content || '') %>
+                                        </div>
+
+                                        <!-- Footer Tương tác & Author -->
+                                        <div class="qa-post-footer mt-4">
+                                            <div class="qa-action-buttons">
+                                                <button class="qa-btn-ghost-sm" data-toggle-comments="comments-<%= answer._id %>">
+                                                    <i class="fas fa-comment"></i> Thảo luận (<%= Array.isArray(answer.comments) ? answer.comments.length : 0 %>)
+                                                </button>
+
+                                                <!-- Nút Chốt đúng (Chỉ chủ bài viết mới thấy) -->
+                                                <% if (user && String(detailQuestion.author?._id || detailQuestion.author) === String(user._id) && !detailQuestion.acceptedAnswer && !answer.isAccepted) { %>
+                                                    <button class="qa-btn-prime-sm qa-accept-btn ms-2" data-action-url="/qa/answers/<%= answer._id %>/accept">
+                                                        <i class="fas fa-award"></i> Chốt đúng & Trao thưởng
+                                                    </button>
+                                                <% } %>
+                                            </div>
+
+                                            <div class="qa-post-author-box">
+                                                <span class="qa-time-stamp">Trả lời <time data-relative-time datetime="<%= answer.createdAt %>"></time></span>
+                                                <div class="qa-user-mini mt-1">
+                                                    <img src="<%= answer.author?.avatar || '/default.png' %>" class="qa-avatar-xs" alt="Ava">
+                                                    <span class="qa-username text-primary"><%= answer.author?.username || 'Thành viên' %></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Box Comments -->
+                                        <div class="qa-comments-wrapper" id="comments-<%= answer._id %>" hidden>
+                                            <div class="qa-comments-inner">
+                                                <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Tính năng hiển thị bình luận sẽ được load tại đây...</p>
+                                                <!-- Form bình luận mini -->
+                                                <% if (user) { %>
+                                                    <form class="qa-comment-form mt-3" data-answer-id="<%= answer._id %>">
+                                                        <div class="d-flex gap-2">
+                                                            <textarea class="qa-input-mini flex-grow-1" rows="1" placeholder="Thêm bình luận phản biện..." required></textarea>
+                                                            <button type="submit" class="qa-btn-prime-sm">Gửi</button>
+                                                        </div>
+                                                    </form>
+                                                <% } %>
+                                            </div>
+                                        </div>
+
+                                    </div>
                                 </div>
                             </article>
                         <% }) %>
                     </div>
                 <% } else { %>
-                    <div class="qa-panel qa-empty">
-                        <i class="far fa-paper-plane" style="font-size: 2.5rem; color: var(--qa-muted); margin-bottom: 16px; opacity: 0.5;"></i>
-                        <strong>Chưa có ai giải bài này.</strong>
-                        <p>Hãy là người hùng đầu tiên mở bát lấy trọn phần thưởng nhé!</p>
+                    <!-- Empty State Answers -->
+                    <div class="qa-empty-state qa-glass-panel mt-3">
+                        <div class="qa-empty-icon text-muted"><i class="far fa-paper-plane"></i></div>
+                        <h3>Câu hỏi này vẫn đang chờ cao thủ.</h3>
+                        <p>Hãy là người hùng đầu tiên mở bát lấy trọn phần thưởng Vàng nhé!</p>
                     </div>
                 <% } %>
             </section>
 
+            <!-- ====== 3. TRÌNH SOẠN THẢO LỜI GIẢI ====== -->
             <% if (canAnswer) { %>
-                <section class="qa-panel" id="qaAnswerComposer" style="margin-top: 32px; border: 2px solid var(--qa-primary);">
-                    <h3 style="margin-top: 0; margin-bottom: 16px;"><i class="fas fa-pen-nib"></i> Viết lời giải của bạn</h3>
-                    <form id="qaAnswerForm" style="display: flex; flex-direction: column; gap: 16px;">
+                <section class="qa-composer-card mt-5">
+                    <div class="qa-composer-header">
+                        <img src="<%= user.avatar || '/default.png' %>" class="qa-avatar-sm" alt="You">
+                        <h3 class="m-0">Viết lời giải của bạn</h3>
+                    </div>
+                    <form id="qaAnswerForm" class="qa-composer-body">
                         <input type="hidden" name="questionId" value="<%= detailQuestion._id %>">
-                        <textarea name="content" rows="6" placeholder="Viết rõ ràng từng bước. Hỗ trợ Toán học LaTeX..." style="width: 100%; padding: 16px; border-radius: var(--qa-radius-md); border: 1px solid var(--qa-border);" required></textarea>
-                        <div style="display: flex; justify-content: flex-end;">
-                            <button type="submit" class="qa-btn qa-btn-primary"><i class="fas fa-paper-plane"></i> Gửi câu trả lời</button>
+                        <textarea name="content" class="qa-editor-textarea" rows="6" placeholder="Viết rõ ràng từng bước. Hỗ trợ Toán học LaTeX (ví dụ: $x^2 + y^2 = z^2$)..." required></textarea>
+                        
+                        <div class="qa-composer-footer">
+                            <span class="qa-help-text"><i class="fab fa-markdown"></i> Hỗ trợ Markdown & KaTeX</span>
+                            <button type="submit" class="qa-btn-prime">
+                                <i class="fas fa-paper-plane"></i> Đăng lời giải
+                            </button>
                         </div>
                     </form>
                 </section>
             <% } %>
-        </section>
+
+        </main>
+
+        <!-- CỘT PHẢI: THÔNG TIN PHỤ TÙY CHỌN (Tạm để trống lấy không gian) -->
+        <!-- Nếu sau này bạn muốn gắn quảng cáo, bài viết liên quan thì nhét vào đây -->
+        <aside class="qa-sidebar-right hidden-lg-down">
+            <div class="qa-widget qa-glass-panel">
+                <h3 class="qa-widget-title"><i class="fas fa-info-circle text-primary"></i> Trạng thái bài viết</h3>
+                <ul class="qa-post-stats-list">
+                    <li><span>Ngày hỏi:</span> <strong><%= new Date(detailQuestion.createdAt).toLocaleDateString('vi-VN') %></strong></li>
+                    <li><span>Lượt xem:</span> <strong><%= Number(detailQuestion.viewCount || 0) %></strong></li>
+                    <li><span>Môn học:</span> <strong><%= detailQuestion.subject || 'Khác' %></strong></li>
+                </ul>
+            </div>
+        </aside>
+
     </div>
 </div>
 
+<!-- Scripts -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script src="/js/qa.js"></script>

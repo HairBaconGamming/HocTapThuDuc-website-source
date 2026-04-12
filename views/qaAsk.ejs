@@ -1,226 +1,153 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleQA.css">
 
-<style>
-    .tiptap-wrapper {
-        border: 1px solid var(--qa-border);
-        border-radius: var(--qa-radius-md);
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.9);
-        transition: all 0.2s;
-    }
-    .tiptap-wrapper:focus-within {
-        border-color: var(--qa-primary);
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    }
-    
-    .tiptap-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        padding: 10px;
-        background: var(--qa-soft);
-        border-bottom: 1px solid var(--qa-border);
-    }
-    
-    .tiptap-toolbar button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border: none;
-        background: transparent;
-        border-radius: 8px;
-        color: var(--qa-muted);
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 1rem;
-    }
-    
-    .tiptap-toolbar button:hover {
-        background: rgba(79, 70, 229, 0.08);
-        color: var(--qa-primary);
-    }
-    
-    .tiptap-toolbar button.is-active {
-        background: rgba(79, 70, 229, 0.15);
-        color: var(--qa-primary);
-        font-weight: bold;
-    }
-
-    .tiptap-toolbar .divider {
-        width: 1px;
-        background: var(--qa-border);
-        margin: 0 4px;
-    }
-
-    /* Core Editor Styles */
-    .tiptap-editor {
-        padding: 16px;
-        min-height: 250px;
-        cursor: text;
-        font-size: 1rem;
-        line-height: 1.7;
-        color: var(--qa-text);
-    }
-    
-    .tiptap-editor:focus {
-        outline: none;
-    }
-    
-    .ProseMirror p.is-editor-empty:first-child::before {
-        content: attr(data-placeholder);
-        float: left;
-        color: #94a3b8;
-        pointer-events: none;
-        height: 0;
-    }
-
-    /* Tiptap Content Typography */
-    .ProseMirror img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid var(--qa-border);
-        margin: 12px 0;
-    }
-    .ProseMirror pre {
-        background: #1e293b;
-        color: #f8fafc;
-        padding: 16px;
-        border-radius: 12px;
-        font-family: 'Consolas', monospace;
-        margin: 12px 0;
-        overflow-x: auto;
-    }
-    .ProseMirror code {
-        font-family: 'Consolas', monospace;
-        background: rgba(15, 23, 42, 0.06);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.9em;
-    }
-    .ProseMirror pre code {
-        background: transparent;
-        padding: 0;
-    }
-    .ProseMirror blockquote {
-        border-left: 4px solid var(--qa-primary);
-        padding-left: 16px;
-        margin-left: 0;
-        color: var(--qa-muted);
-        font-style: italic;
-    }
-    .ProseMirror ul, .ProseMirror ol {
-        padding-left: 24px;
-    }
-</style>
-
 <%
+// Xử lý dữ liệu an toàn
 const safeSubjects = Array.isArray(subjects) ? subjects : [];
 const safeGrades = Array.isArray(grades) ? grades : [];
 %>
 
-<div class="qa-shell">
-    <section class="qa-hero">
-        <div class="qa-hero-content">
-            <span class="qa-kicker"><i class="fas fa-feather-pointed"></i> Đăng bài cầu cứu</span>
-            <h1 class="qa-hero-title">Trình bày gãy gọn. Giải bài siêu tốc.</h1>
-            <p class="qa-hero-desc">
-                Cung cấp đầy đủ đề bài, môn học và đính kèm ảnh bằng công cụ soạn thảo bên dưới. Đừng quên treo thưởng vàng để thu hút cao thủ nhé.
-            </p>
+<div class="qa-main-container">
+    
+    <!-- THANH ĐIỀU HƯỚNG TRỞ VỀ -->
+    <div class="qa-page-nav mb-4">
+        <a href="/qa" class="qa-btn-back">
+            <i class="fas fa-arrow-left"></i> Trở về Bảng Cầu Cứu
+        </a>
+    </div>
 
-            <div class="qa-hero-actions">
-                <a href="/qa" class="qa-btn qa-btn-secondary"><i class="fas fa-arrow-left"></i> Quay về bảng chính</a>
-                <a href="/qa/community" class="qa-btn qa-btn-secondary"><i class="fas fa-people-group"></i> Xem cộng đồng</a>
-            </div>
-        </div>
-    </section>
+    <!-- LAYOUT: FORM BÊN TRÁI, TIPS BÊN PHẢI -->
+    <div class="qa-editor-layout">
+        
+        <!-- MAIN FORM COLUMN -->
+        <main class="qa-editor-main qa-glass-panel">
+            <form id="qaQuestionForm" class="qa-super-form">
+                
+                <!-- 1. Tiêu đề kiểu Notion (Massive Input) -->
+                <div class="qa-form-group mb-4">
+                    <input type="text" name="title" class="qa-input-massive" maxlength="180" placeholder="Tiêu đề câu hỏi của bạn là gì?" required autocomplete="off">
+                </div>
 
-    <div class="qa-layout" style="grid-template-columns: 1fr minmax(300px, 340px);">
-        <section class="qa-feed">
-            <div class="qa-panel qa-form-panel">
-                <form id="qaQuestionForm" class="qa-form-stack">
-                    <div class="qa-form-field">
-                        <label style="font-weight: 700; margin-bottom: 8px; display: block;">Tiêu đề câu hỏi <span style="color: #ef4444;">*</span></label>
-                        <input type="text" name="title" maxlength="180" placeholder="Ví dụ: Giúp em hiểu nguyên lý ở bước 3 với ạ?" required>
-                    </div>
-
-                    <div class="qa-form-row">
-                        <div class="qa-form-field">
-                            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Môn học <span style="color: #ef4444;">*</span></label>
-                            <select name="subject" required>
+                <!-- 2. Phân loại Môn & Khối (Grid 2 cột) -->
+                <div class="qa-input-grid mb-4">
+                    <div class="qa-input-group">
+                        <label class="qa-label">Môn học <span class="text-danger">*</span></label>
+                        <div class="qa-select-wrapper">
+                            <select name="subject" class="qa-select-pro" required>
                                 <option value="" disabled selected>-- Chọn môn --</option>
                                 <% safeSubjects.forEach((subject) => { %>
                                     <option value="<%= subject %>"><%= subject %></option>
                                 <% }) %>
                             </select>
+                            <i class="fas fa-chevron-down qa-select-icon"></i>
                         </div>
+                    </div>
 
-                        <div class="qa-form-field">
-                            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Khối lớp <span style="color: #ef4444;">*</span></label>
-                            <select name="grade" required>
+                    <div class="qa-input-group">
+                        <label class="qa-label">Khối lớp <span class="text-danger">*</span></label>
+                        <div class="qa-select-wrapper">
+                            <select name="grade" class="qa-select-pro" required>
                                 <option value="" disabled selected>-- Chọn khối --</option>
                                 <% safeGrades.forEach((grade) => { %>
                                     <option value="<%= grade %>"><%= grade === 'Chung' ? 'Chung mọi khối' : ('Lớp ' + grade) %></option>
                                 <% }) %>
                             </select>
+                            <i class="fas fa-chevron-down qa-select-icon"></i>
                         </div>
                     </div>
-
-                    <div class="qa-form-field">
-                        <label style="font-weight: 700; margin-bottom: 8px; display: block;">Mô tả chi tiết <span style="color: #ef4444;">*</span></label>
-                        <div class="tiptap-wrapper">
-                            <div class="tiptap-toolbar" id="tiptapToolbar">
-                                <button type="button" data-action="bold" title="In đậm"><i class="fas fa-bold"></i></button>
-                                <button type="button" data-action="italic" title="In nghiêng"><i class="fas fa-italic"></i></button>
-                                <button type="button" data-action="strike" title="Gạch ngang"><i class="fas fa-strikethrough"></i></button>
-                                <button type="button" data-action="code" title="Code Inline"><i class="fas fa-terminal"></i></button>
-                                <div class="divider"></div>
-                                <button type="button" data-action="h2" title="Tiêu đề lớn">H2</button>
-                                <button type="button" data-action="h3" title="Tiêu đề nhỏ">H3</button>
-                                <div class="divider"></div>
-                                <button type="button" data-action="bulletList" title="Danh sách chấm"><i class="fas fa-list-ul"></i></button>
-                                <button type="button" data-action="orderedList" title="Danh sách số"><i class="fas fa-list-ol"></i></button>
-                                <button type="button" data-action="blockquote" title="Trích dẫn"><i class="fas fa-quote-right"></i></button>
-                                <button type="button" data-action="codeBlock" title="Khối Code"><i class="fas fa-code"></i></button>
-                                <div class="divider"></div>
-                                <button type="button" data-action="image" title="Chèn ảnh (URL)"><i class="fas fa-image" style="color: var(--qa-primary);"></i></button>
-                            </div>
-                            <div class="tiptap-editor" id="tiptapEditor"></div>
-                        </div>
-                        <input type="hidden" name="content" id="qaHiddenContent">
-                    </div>
-
-                    <div class="qa-form-field">
-                        <label style="font-weight: 700; margin-bottom: 8px; display: block;"><i class="fas fa-coins" style="color: var(--qa-warning);"></i> Treo thưởng vàng</label>
-                        <input type="number" name="bountyAmount" min="0" max="50000" step="10" value="0" placeholder="0">
-                    </div>
-
-                    <div class="qa-form-actions">
-                        <button type="submit" class="qa-btn qa-btn-primary" id="submitBtn"><i class="fas fa-paper-plane"></i> Đăng lên Bảng Cầu Cứu</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <aside class="qa-sidebar">
-            <section class="qa-sidebar-card">
-                <h2 class="qa-panel-title">Checklist bài hỏi tốt</h2>
-                <div class="qa-filter-list">
-                    <div class="qa-filter-link is-static"><span>Nêu rõ đang bí ở đâu</span><span>01</span></div>
-                    <div class="qa-filter-link is-static"><span>Gắn đúng môn và khối</span><span>02</span></div>
-                    <div class="qa-filter-link is-static"><span>Có thể gõ LaTeX (VD: $x^2$)</span><span>03</span></div>
-                    <div class="qa-filter-link is-static"><span>Chèn ảnh từ URL qua editor</span><span>04</span></div>
                 </div>
-            </section>
+
+                <!-- 3. Khung soạn thảo Tiptap -->
+                <div class="qa-input-group mb-4">
+                    <label class="qa-label">Nội dung chi tiết <span class="text-danger">*</span></label>
+                    
+                    <div class="qa-tiptap-wrapper">
+                        <!-- Toolbar -->
+                        <div class="qa-tiptap-toolbar" id="tiptapToolbar">
+                            <button type="button" class="qa-tt-btn" data-action="bold" title="In đậm (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="italic" title="In nghiêng (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="strike" title="Gạch ngang"><i class="fas fa-strikethrough"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="code" title="Code Inline"><i class="fas fa-terminal"></i></button>
+                            <div class="qa-tt-divider"></div>
+                            <button type="button" class="qa-tt-btn" data-action="h2" title="Tiêu đề 2">H2</button>
+                            <button type="button" class="qa-tt-btn" data-action="h3" title="Tiêu đề 3">H3</button>
+                            <div class="qa-tt-divider"></div>
+                            <button type="button" class="qa-tt-btn" data-action="bulletList" title="Danh sách chấm"><i class="fas fa-list-ul"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="orderedList" title="Danh sách số"><i class="fas fa-list-ol"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="blockquote" title="Trích dẫn"><i class="fas fa-quote-right"></i></button>
+                            <button type="button" class="qa-tt-btn" data-action="codeBlock" title="Khối Code"><i class="fas fa-code"></i></button>
+                            <div class="qa-tt-divider"></div>
+                            <button type="button" class="qa-tt-btn text-primary" data-action="image" title="Chèn ảnh từ URL"><i class="fas fa-image"></i></button>
+                        </div>
+                        
+                        <!-- Editor Body -->
+                        <div class="qa-tiptap-body" id="tiptapEditor"></div>
+                    </div>
+                    
+                    <!-- Hidden input to store HTML for form submission -->
+                    <input type="hidden" name="content" id="qaHiddenContent">
+                </div>
+
+                <!-- 4. Footer Form (Bounty & Submit) -->
+                <div class="qa-form-bottom-bar">
+                    <div class="qa-bounty-input-wrap">
+                        <div class="qa-bounty-icon"><i class="fas fa-coins text-warning"></i></div>
+                        <input type="number" name="bountyAmount" class="qa-input-bounty" min="0" max="50000" step="10" placeholder="0" value="0">
+                        <span class="qa-bounty-suffix">Vàng (Tùy chọn)</span>
+                    </div>
+
+                    <button type="submit" class="qa-btn-prime qa-btn-lg" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Treo Bảng Ngay
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <!-- RIGHT SIDEBAR (TIPS CHECKLIST) -->
+        <aside class="qa-editor-sidebar hidden-md-down">
+            <div class="qa-sticky-card qa-glass-panel">
+                <div class="qa-widget-header">
+                    <h3 class="qa-widget-title"><i class="fas fa-lightbulb text-warning"></i> Bí kíp hỏi đáp</h3>
+                </div>
+                <ul class="qa-tips-list">
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <div>
+                            <strong>Tiêu đề rõ ràng</strong>
+                            <span>Tránh viết "Giúp em với", hãy viết "Làm sao để giải pt bậc 2 bằng Vi-ét?"</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <div>
+                            <strong>Gắn đúng Môn & Khối</strong>
+                            <span>Giúp các cao thủ đúng chuyên môn tìm thấy bài của bạn nhanh hơn.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <div>
+                            <strong>Toán học bằng KaTeX</strong>
+                            <span>Bao bọc công thức bởi dấu `$`. Ví dụ: `$x^2 + y^2 = z^2$` sẽ hiển thị rất đẹp.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <div>
+                            <strong>Treo thưởng xứng đáng</strong>
+                            <span>Dùng số dư Vàng của bạn để lôi kéo các Thần Bài nhảy vào giải cứu tốc độ cao.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </aside>
+
     </div>
 </div>
 
 <script src="/js/qa.js"></script>
 
+<!-- TIPTAP EDITOR SCRIPT -->
 <script type="module">
     import { Editor } from 'https://esm.sh/@tiptap/core@2.2.4';
     import StarterKit from 'https://esm.sh/@tiptap/starter-kit@2.2.4';
@@ -241,12 +168,12 @@ const safeGrades = Array.isArray(grades) ? grades : [];
                     allowBase64: true,
                 }),
                 Placeholder.configure({
-                    placeholder: 'Trình bày đề bài, chỗ mắc kẹt hoặc chèn ảnh minh họa. Bạn có thể gõ Toán học bằng LaTeX như: $x^2 + y^2 = z^2$...',
+                    placeholder: 'Trình bày đề bài hoặc chỗ bạn đang mắc kẹt. Bạn có thể kéo thả ảnh vào đây, hoặc gõ LaTeX để viết Toán...',
                 }),
             ],
             content: '',
             onUpdate: ({ editor }) => {
-                // Đồng bộ nội dung HTML sinh ra từ Tiptap vào thẻ input ẩn
+                // Sync to hidden input
                 hiddenInput.value = editor.isEmpty ? '' : editor.getHTML();
             },
             onSelectionUpdate: ({ editor }) => {
@@ -254,8 +181,8 @@ const safeGrades = Array.isArray(grades) ? grades : [];
             }
         });
 
-        // Xử lý sự kiện click cho thanh công cụ
-        document.querySelectorAll('#tiptapToolbar button').forEach(btn => {
+        // Xử lý click thanh công cụ
+        document.querySelectorAll('#tiptapToolbar .qa-tt-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const action = btn.dataset.action;
@@ -271,7 +198,7 @@ const safeGrades = Array.isArray(grades) ? grades : [];
                 if (action === 'blockquote') editor.chain().focus().toggleBlockquote().run();
                 if (action === 'codeBlock') editor.chain().focus().toggleCodeBlock().run();
                 if (action === 'image') {
-                    const url = window.prompt('Nhập URL ảnh (Ví dụ: link từ Cloudinary hoặc Imgur):');
+                    const url = window.prompt('Nhập URL ảnh (VD: https://imgur.com/...):');
                     if (url) {
                         editor.chain().focus().setImage({ src: url }).run();
                     }
@@ -279,7 +206,7 @@ const safeGrades = Array.isArray(grades) ? grades : [];
             });
         });
 
-        // Đổi màu nút công cụ khi vị trí con trỏ tương ứng với định dạng
+        // Cập nhật trạng thái (đổi màu nút) khi bôi đen chữ
         function updateToolbarActiveStates(editor) {
             const map = {
                 bold: 'bold', italic: 'italic', strike: 'strike', code: 'code',
@@ -288,7 +215,7 @@ const safeGrades = Array.isArray(grades) ? grades : [];
                 blockquote: 'blockquote', codeBlock: 'codeBlock'
             };
             
-            document.querySelectorAll('#tiptapToolbar button').forEach(btn => {
+            document.querySelectorAll('#tiptapToolbar .qa-tt-btn').forEach(btn => {
                 const action = btn.dataset.action;
                 if(action === 'image') return;
                 
@@ -296,16 +223,22 @@ const safeGrades = Array.isArray(grades) ? grades : [];
                     ? editor.isActive(map[action]) 
                     : editor.isActive(Object.keys(map[action])[0], Object.values(map[action])[0]);
                     
-                btn.classList.toggle('is-active', isActive);
+                btn.classList.toggle('active', isActive);
             });
         }
 
-        // Bắt lỗi rỗng khi submit (Vì hidden input không dùng thuộc tính "required" của HTML5 được)
+        // Bắt lỗi rỗng khi submit
         form.addEventListener('submit', (e) => {
             if (!hiddenInput.value.trim() || hiddenInput.value === '<p></p>') {
-                e.preventDefault(); // Ngăn chặn nếu chưa nhập nội dung
-                e.stopImmediatePropagation(); // Chặn qa.js thực hiện fetch API
-                alert('Vui lòng nhập mô tả chi tiết cho câu hỏi của bạn!');
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                // Hiển thị toast (Sử dụng hàm showToast từ qa.js nếu có)
+                if(typeof showToast === 'function') {
+                    showToast('Vui lòng nhập nội dung chi tiết cho câu hỏi!', true);
+                } else {
+                    alert('Vui lòng nhập nội dung chi tiết cho câu hỏi!');
+                }
                 editor.commands.focus();
             }
         });
