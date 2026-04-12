@@ -2115,3 +2115,29 @@ input {
         font-size: 0.72rem;
     }
 }
+
+
+/* Điều chỉnh container chính của sidebar */
+.garden-rail {
+    background: transparent !important; /* Xóa gradient nền cũ [cite: 41, 42] */
+    box-shadow: none !important; /* Xóa bóng viền shadow-panel [cite: 42] */
+    border-radius: 999px !important; /* Bo tròn hoàn toàn 2 đầu thay vì 28px [cite: 42] */
+}
+
+/* Tắt tính năng tự động mở rộng thanh rail khi đưa chuột vào */
+.garden-rail:hover,
+.garden-rail:focus-within,
+.pixel-ui.garden-shell.sidebar-open .garden-rail {
+    width: 66px !important; /* Cố định kích thước thay vì kéo dài ra 182px [cite: 43] */
+}
+
+/* Căn chỉnh lại các nút bấm bên trong */
+.garden-rail-btn {
+    padding: 0 !important; /* Xóa khoảng cách padding gốc [cite: 44] */
+    justify-content: center !important; /* Đẩy icon ra chính giữa nút */
+}
+
+/* Ẩn hoàn toàn nhãn chữ do thanh rail đã được cố định kích thước */
+.rail-label {
+    display: none !important; 
+}
