@@ -2,72 +2,149 @@
 <link rel="stylesheet" href="/css/styleQA.css">
 
 <%
+// Xử lý dữ liệu an toàn
 const safeSidebar = sidebar || {};
 const weekly = Array.isArray(safeSidebar.contributors?.weekly) ? safeSidebar.contributors.weekly : [];
+const hotTags = Array.isArray(safeSidebar.hotTags) ? safeSidebar.hotTags : [];
 %>
 
-<div class="qa-shell">
-    <div class="qa-hero-banner hero-gold">
-        <div class="hero-content">
-            <h1>Bảng Phong Thần</h1>
-            <p>Nơi vinh danh những trụ cột học thuật mang tri thức giải cứu toàn Server.</p>
+<div class="qa-main-container">
+    
+    <!-- THANH ĐIỀU HƯỚNG TRỞ VỀ -->
+    <div class="qa-page-nav mb-4">
+        <a href="/qa" class="qa-btn-back">
+            <i class="fas fa-arrow-left"></i> Trở về Bảng Cầu Cứu
+        </a>
+        <% if (user) { %>
+            <a href="/qa/ask" class="qa-btn-prime ms-auto"><i class="fas fa-plus"></i> Đặt câu hỏi</a>
+        <% } %>
+    </div>
+
+    <!-- HERO SECTION (Đã bọc Glassmorphism) -->
+    <div class="qa-community-hero qa-glass-panel">
+        <div class="qa-hero-content text-center">
+            <div class="qa-hero-badge mx-auto mb-3"><i class="fas fa-medal text-warning"></i> Bảng Phong Thần HTTD</div>
+            <h1 class="qa-hero-title mb-3">Tôn vinh những <span class="qa-text-gradient">Đại Cao Thủ</span></h1>
+            <p class="qa-hero-desc mx-auto" style="max-width: 600px;">
+                Cùng nhìn lại những gương mặt vàng trong làng giải bài tập tuần qua. Đóng góp tri thức, nhận ngàn điểm thưởng.
+            </p>
         </div>
     </div>
 
-    <!-- PODIUM CHO TOP 3 -->
-    <% if (weekly.length >= 3) { %>
-    <div class="qa-podium-container">
-        <!-- TOP 2 -->
-        <div class="qa-podium-spot spot-2">
-            <div class="podium-avatar-wrap"><img src="<%= weekly[1].avatar %>" alt="Ava"><div class="podium-medal">2</div></div>
-            <div class="podium-name"><%= weekly[1].username %></div>
-            <div class="podium-score"><%= weekly[1].score %> pt</div>
-            <div class="podium-base base-2"></div>
-        </div>
-        <!-- TOP 1 -->
-        <div class="qa-podium-spot spot-1">
-            <div class="podium-avatar-wrap"><img src="<%= weekly[0].avatar %>" alt="Ava"><div class="podium-medal"><i class="fas fa-crown"></i></div></div>
-            <div class="podium-name"><%= weekly[0].username %></div>
-            <div class="podium-score"><%= weekly[0].score %> pt</div>
-            <div class="podium-base base-1"></div>
-        </div>
-        <!-- TOP 3 -->
-        <div class="qa-podium-spot spot-3">
-            <div class="podium-avatar-wrap"><img src="<%= weekly[2].avatar %>" alt="Ava"><div class="podium-medal">3</div></div>
-            <div class="podium-name"><%= weekly[2].username %></div>
-            <div class="podium-score"><%= weekly[2].score %> pt</div>
-            <div class="podium-base base-3"></div>
-        </div>
-    </div>
-    <% } %>
-
-    <!-- LIST TOP 4 TRỞ XUỐNG -->
-    <div class="qa-lb-table-container">
-        <table class="qa-lb-table">
-            <thead>
-                <tr>
-                    <th>Hạng</th>
-                    <th>Cao thủ</th>
-                    <th>Danh hiệu</th>
-                    <th class="text-right">Công trạng (Điểm)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% weekly.slice(3).forEach((user) => { %>
-                <tr>
-                    <td><strong>#<%= user.rank %></strong></td>
-                    <td>
-                        <div class="qa-user-inline">
-                            <img src="<%= user.avatar %>" class="qa-avatar-sm" alt="ava">
-                            <span><%= user.username %></span>
+    <!-- LAYOUT CHIA CỘT -->
+    <div class="qa-grid-layout mt-5" id="qa-layout-wrapper">
+        
+        <!-- MAIN CONTENT: PODIUM & LEADERBOARD -->
+        <main class="qa-feed-zone">
+            
+            <!-- BỤC VINH QUANG PODIUM (TOP 3) -->
+            <% if (weekly.length >= 3) { %>
+                <div class="qa-podium-wrapper qa-glass-panel mb-5">
+                    <h2 class="qa-feed-title text-center w-100 mb-4"><i class="fas fa-crown text-warning"></i> Tam Tiên Tuần Này</h2>
+                    
+                    <div class="qa-podium-stage">
+                        <!-- TOP 2 -->
+                        <div class="qa-podium-spot spot-2">
+                            <div class="qa-podium-avatar">
+                                <img src="<%= weekly[1].avatar || '/default.png' %>" alt="Ava">
+                                <div class="qa-medal medal-silver">2</div>
+                            </div>
+                            <div class="qa-podium-name"><%= weekly[1].username %></div>
+                            <div class="qa-podium-score"><%= Number(weekly[1].score).toLocaleString() %> pt</div>
+                            <div class="qa-podium-base base-silver"></div>
                         </div>
-                    </td>
-                    <td><span class="qa-badge tier"><%= user.tier?.label || 'Tân Binh' %></span></td>
-                    <td class="text-right"><strong class="qa-text-primary"><%= user.score %> pt</strong></td>
-                </tr>
-                <% }) %>
-            </tbody>
-        </table>
+
+                        <!-- TOP 1 -->
+                        <div class="qa-podium-spot spot-1">
+                            <div class="qa-podium-avatar">
+                                <img src="<%= weekly[0].avatar || '/default.png' %>" alt="Ava">
+                                <div class="qa-medal medal-gold"><i class="fas fa-crown"></i></div>
+                            </div>
+                            <div class="qa-podium-name qa-text-gradient" style="font-size: 1.2rem;"><%= weekly[0].username %></div>
+                            <div class="qa-podium-score text-warning"><%= Number(weekly[0].score).toLocaleString() %> pt</div>
+                            <div class="qa-podium-base base-gold"></div>
+                        </div>
+
+                        <!-- TOP 3 -->
+                        <div class="qa-podium-spot spot-3">
+                            <div class="qa-podium-avatar">
+                                <img src="<%= weekly[2].avatar || '/default.png' %>" alt="Ava">
+                                <div class="qa-medal medal-bronze">3</div>
+                            </div>
+                            <div class="qa-podium-name"><%= weekly[2].username %></div>
+                            <div class="qa-podium-score"><%= Number(weekly[2].score).toLocaleString() %> pt</div>
+                            <div class="qa-podium-base base-bronze"></div>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- BẢNG XẾP HẠNG CHI TIẾT (TOP 4 TRỞ XUỐNG) -->
+            <div class="qa-glass-panel p-0 overflow-hidden">
+                <div class="qa-widget-header p-4 border-bottom">
+                    <h3 class="qa-widget-title m-0">Bảng Xếp Hạng Đầy Đủ</h3>
+                </div>
+                
+                <div class="qa-table-responsive">
+                    <table class="qa-lb-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; text-align: center;">Hạng</th>
+                                <th>Thành viên</th>
+                                <th>Danh hiệu</th>
+                                <th class="text-end">Công trạng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (weekly.length > 0) { %>
+                                <% weekly.forEach((user, index) => { %>
+                                    <tr>
+                                        <td class="text-center">
+                                            <span class="qa-rank-badge rank-<%= index + 1 %>">#<%= user.rank || (index + 1) %></span>
+                                        </td>
+                                        <td>
+                                            <a href="/profile/view/<%= user.userId %>" class="qa-user-mini" style="text-decoration: none;">
+                                                <img src="<%= user.avatar || '/default.png' %>" class="qa-avatar-xs" alt="Ava">
+                                                <strong class="qa-username text-main"><%= user.username %></strong>
+                                            </a>
+                                        </td>
+                                        <td><span class="qa-tag-grade"><%= user.tier?.label || 'Tân Binh' %></span></td>
+                                        <td class="text-end"><strong class="qa-text-primary"><%= Number(user.score).toLocaleString() %> pt</strong></td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">Chưa có dữ liệu xếp hạng tuần này.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- RIGHT SIDEBAR: HOT TAGS -->
+        <aside class="qa-sidebar-right">
+            <div class="qa-widget qa-glass-panel">
+                <div class="qa-widget-header">
+                    <h3 class="qa-widget-title"><i class="fas fa-fire text-danger"></i> Chủ đề đang cháy</h3>
+                </div>
+                <div class="qa-hot-tags">
+                    <% if (hotTags.length > 0) { %>
+                        <% hotTags.forEach((tag) => { %>
+                            <a href="<%= tag.url %>" class="qa-tag-item">
+                                <span class="tag-name"><%= tag.label %></span>
+                                <span class="tag-count"><%= Number(tag.count || 0) %></span>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="qa-empty-mini">Chưa có chủ đề nổi bật.</div>
+                    <% } %>
+                </div>
+            </div>
+        </aside>
+
     </div>
 </div>
 
