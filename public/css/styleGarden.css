@@ -1196,7 +1196,7 @@ input {
 .garden-guide-widget {
     position: absolute;
     left: 18px;
-    bottom: 156px;
+    bottom: 0;
     z-index: var(--z-floating);
     display: flex;
     align-items: flex-end;
@@ -1866,7 +1866,7 @@ input {
     .garden-guide-widget {
         left: 12px;
         right: 12px;
-        bottom: 178px;
+        bottom: 10%;
         align-items: flex-end;
     }
 
@@ -2046,7 +2046,7 @@ input {
     }
 
     .garden-guide-widget {
-        bottom: 164px;
+        bottom: 10%;
         gap: 8px;
     }
 

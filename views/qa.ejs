@@ -3,31 +3,25 @@
 <link rel="stylesheet" href="/css/styleQA.css">
 
 <%
+// Giữ nguyên logic xử lý dữ liệu an toàn
 const safeQuestions = Array.isArray(questions) ? questions : [];
 const safeSubjects = Array.isArray(subjects) ? subjects : [];
 const safeGrades = Array.isArray(grades) ? grades : [];
 const safeFilters = filters || {};
 const safeSidebar = sidebar || {};
 const safeContributorWeekly = Array.isArray(safeSidebar.contributors?.weekly) ? safeSidebar.contributors.weekly : [];
-const safeContributorMonthly = Array.isArray(safeSidebar.contributors?.monthly) ? safeSidebar.contributors.monthly : [];
 const safeHotTags = Array.isArray(safeSidebar.hotTags) ? safeSidebar.hotTags : [];
 const sidebarStats = safeSidebar.stats || {};
 const currentSort = ['newest', 'hot', 'unanswered', 'mine'].includes(safeFilters.sort) ? safeFilters.sort : 'newest';
 const currentSubject = safeSubjects.includes(safeFilters.subject) ? safeFilters.subject : '';
 const currentGrade = safeGrades.includes(safeFilters.grade) ? safeFilters.grade : '';
 const currentQuery = String(safeFilters.q || '').trim();
+
+// Hàm tạo query string
 const queryFor = (overrides = {}) => {
     const params = new URLSearchParams();
-    const next = {
-        sort: currentSort,
-        subject: currentSubject,
-        grade: currentGrade,
-        q: currentQuery,
-        ...overrides
-    };
-    Object.entries(next).forEach(([key, value]) => {
-        if (value) params.set(key, String(value));
-    });
+    const next = { sort: currentSort, subject: currentSubject, grade: currentGrade, q: currentQuery, ...overrides };
+    Object.entries(next).forEach(([key, value]) => { if (value) params.set(key, String(value)); });
     const queryString = params.toString();
     return queryString ? `?${queryString}` : '';
 };
@@ -35,29 +29,25 @@ const queryFor = (overrides = {}) => {
 
 <div class="qa-shell">
     <section class="qa-hero">
-        <div>
-            <span class="qa-kicker"><i class="fas fa-life-ring"></i> Bảng Cầu Cứu</span>
-            <h1 class="qa-hero-title">Đăng bài khó, treo thưởng, gọi cao thủ vào giải.</h1>
+        <div class="qa-hero-content">
+            <span class="qa-kicker"><i class="fas fa-life-ring"></i> Bảng Cầu Cứu HTTD</span>
+            <h1 class="qa-hero-title">Giải bài khó, nhận thưởng vàng, khẳng định vị thế.</h1>
             <p class="qa-hero-desc">
-                Đây là khu hỏi đáp học thuật của HTTD: bạn có thể nhờ giải bài, thảo luận từng bước,
-                treo thưởng vàng để thu hút lời giải chất lượng, và góp điểm danh vọng cho chính mình lẫn Tông Môn.
+                Nơi những thắc mắc hóc búa nhất được cộng đồng chung tay giải quyết. Thảo luận từng bước, treo thưởng để thu hút cao thủ và đóng góp điểm danh vọng cho Tông Môn của bạn.
             </p>
 
             <div class="qa-hero-actions">
                 <% if (user) { %>
                     <a href="/qa/ask" class="qa-btn qa-btn-primary">
-                        <i class="fas fa-plus"></i> Đăng câu hỏi mới
+                        <i class="fas fa-plus"></i> Đăng câu hỏi ngay
                     </a>
                 <% } else { %>
                     <a href="/login" class="qa-btn qa-btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Đăng nhập để hỏi bài
+                        <i class="fas fa-sign-in-alt"></i> Đăng nhập để hỏi
                     </a>
                 <% } %>
-                <a href="<%= queryFor({ sort: 'hot' }) %>" class="qa-btn qa-btn-secondary">
-                    <i class="fas fa-fire"></i> Xem bài đang hot
-                </a>
                 <a href="/qa/community" class="qa-btn qa-btn-secondary">
-                    <i class="fas fa-people-group"></i> Vào khu cộng đồng
+                    <i class="fas fa-chart-line"></i> Bảng Phong Thần
                 </a>
             </div>
         </div>
@@ -65,72 +55,56 @@ const queryFor = (overrides = {}) => {
         <div class="qa-hero-stats">
             <div class="qa-hero-stat">
                 <strong><%= safeQuestions.length %></strong>
-                <span>Bài đang hiển thị</span>
+                <span>Bài đang hiện</span>
             </div>
             <div class="qa-hero-stat">
                 <strong><%= Number(sidebarStats.openCount || 0).toLocaleString('vi-VN') %></strong>
-                <span>Câu hỏi còn mở</span>
+                <span>Đang chờ giải</span>
             </div>
             <div class="qa-hero-stat">
                 <strong><%= Number(sidebarStats.resolvedCount || 0).toLocaleString('vi-VN') %></strong>
-                <span>Đã được giải cứu</span>
+                <span>Đã giải cứu</span>
             </div>
         </div>
     </section>
 
+    <div class="qa-mobile-filter-toggle" style="display: none; margin-bottom: 16px;">
+        <button class="qa-btn qa-btn-secondary" style="width: 100%; color: var(--qa-text); background: var(--qa-surface-glass);" onclick="document.querySelector('.qa-layout').classList.toggle('show-sidebar')">
+            <i class="fas fa-sliders-h"></i> Hiện / Ẩn bộ lọc
+        </button>
+    </div>
+
     <div class="qa-layout">
         <aside class="qa-rail">
             <section class="qa-rail-card">
-                <h2 class="qa-panel-title">Lối đi nhanh</h2>
+                <h2 class="qa-panel-title">Phân loại</h2>
                 <div class="qa-filter-list">
                     <a href="<%= queryFor({ sort: 'newest' }) %>" class="qa-filter-link <%= currentSort === 'newest' ? 'is-active' : '' %>">
-                        <span>Mới nhất</span>
-                        <span><i class="fas fa-clock"></i></span>
+                        <span>Mới nhất</span> <i class="fas fa-bolt"></i>
                     </a>
                     <a href="<%= queryFor({ sort: 'hot' }) %>" class="qa-filter-link <%= currentSort === 'hot' ? 'is-active' : '' %>">
-                        <span>Đang hot</span>
-                        <span><i class="fas fa-fire"></i></span>
+                        <span>Đang hot</span> <i class="fas fa-fire" style="color: #ef4444;"></i>
                     </a>
                     <a href="<%= queryFor({ sort: 'unanswered' }) %>" class="qa-filter-link <%= currentSort === 'unanswered' ? 'is-active' : '' %>">
-                        <span>Chưa có lời giải</span>
-                        <span><i class="far fa-comment-dots"></i></span>
+                        <span>Cần giải cứu</span> <i class="far fa-life-ring"></i>
                     </a>
                     <% if (user) { %>
                         <a href="<%= queryFor({ sort: 'mine' }) %>" class="qa-filter-link <%= currentSort === 'mine' ? 'is-active' : '' %>">
-                            <span>Bài của tôi</span>
-                            <span><i class="fas fa-user-edit"></i></span>
+                            <span>Bài của tôi</span> <i class="fas fa-user-edit"></i>
                         </a>
                     <% } %>
                 </div>
             </section>
 
             <section class="qa-rail-card">
-                <h2 class="qa-panel-title">Lọc theo môn</h2>
+                <h2 class="qa-panel-title">Môn học</h2>
                 <div class="qa-filter-list">
                     <a href="<%= queryFor({ subject: '' }) %>" class="qa-chip-link <%= !currentSubject ? 'is-active' : '' %>">
-                        <span>Tất cả môn</span>
-                        <span>∞</span>
+                        Tất cả môn
                     </a>
                     <% safeSubjects.forEach((subject) => { %>
                         <a href="<%= queryFor({ subject }) %>" class="qa-chip-link <%= currentSubject === subject ? 'is-active' : '' %>">
-                            <span><%= subject %></span>
-                            <span>#</span>
-                        </a>
-                    <% }) %>
-                </div>
-            </section>
-
-            <section class="qa-rail-card">
-                <h2 class="qa-panel-title">Khối lớp</h2>
-                <div class="qa-filter-list">
-                    <a href="<%= queryFor({ grade: '' }) %>" class="qa-chip-link <%= !currentGrade ? 'is-active' : '' %>">
-                        <span>Tất cả</span>
-                        <span>∞</span>
-                    </a>
-                    <% safeGrades.forEach((grade) => { %>
-                        <a href="<%= queryFor({ grade }) %>" class="qa-chip-link <%= currentGrade === grade ? 'is-active' : '' %>">
-                            <span>Lớp <%= grade %></span>
-                            <span><%= grade === 'Chung' ? 'All' : grade %></span>
+                            <%= subject %>
                         </a>
                     <% }) %>
                 </div>
@@ -139,235 +113,95 @@ const queryFor = (overrides = {}) => {
 
         <section class="qa-feed">
             <div class="qa-feed-head qa-panel">
-                <div>
-                    <h2>Feed câu hỏi học thuật</h2>
-                    <p>
-                        <% if (currentQuery) { %>
-                            Đang lọc theo từ khóa "<strong><%= currentQuery %></strong>".
-                        <% } else if (currentSubject || currentGrade) { %>
-                            Đang xem các câu hỏi phù hợp bộ lọc hiện tại.
-                        <% } else { %>
-                            Từ bài toán khó, đoạn văn khó hiểu cho tới công thức loằng ngoằng, mọi thứ đều có thể được “cầu cứu” tại đây.
-                        <% } %>
-                    </p>
-                </div>
-                <div class="qa-metrics">
-                    <span><i class="fas fa-filter"></i> <%= currentSort === 'hot' ? 'Hot nhất' : currentSort === 'unanswered' ? 'Chưa có lời giải' : currentSort === 'mine' ? 'Bài của tôi' : 'Mới nhất' %></span>
-                    <% if (currentSubject) { %><span><i class="fas fa-book"></i> <%= currentSubject %></span><% } %>
-                    <% if (currentGrade) { %><span><i class="fas fa-layer-group"></i> Lớp <%= currentGrade %></span><% } %>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <h2 style="margin: 0;">Feed Học Thuật</h2>
+                    <div class="qa-metrics">
+                        <% if (currentSubject) { %><span><i class="fas fa-book"></i> <%= currentSubject %></span><% } %>
+                        <% if (currentGrade) { %><span><i class="fas fa-layer-group"></i> Khối <%= currentGrade %></span><% } %>
+                    </div>
                 </div>
             </div>
 
             <% if (safeQuestions.length > 0) { %>
-                <% safeQuestions.forEach((question) => { %>
-                    <a href="<%= question.href || ('/qa/questions/' + question._id) %>" class="qa-feed-card">
-                        <div class="qa-card-top">
-                            <span class="qa-badge qa-badge-subject"><%= question.subject || 'Khác' %></span>
-                            <span class="qa-badge qa-badge-grade">Lớp <%= question.grade || 'Chung' %></span>
-                            <% if (Number(question.bountyAmount || 0) > 0) { %>
-                                <span class="qa-badge qa-badge-bounty"><i class="fas fa-coins"></i> Treo thưởng <%= Number(question.bountyAmount || 0).toLocaleString('vi-VN') %></span>
-                            <% } %>
-                            <span class="qa-badge qa-badge-status-<%= question.status || 'open' %>">
-                                <%= question.status === 'resolved' ? 'Đã có lời giải' : question.status === 'closed' ? 'Đã đóng' : 'Đang mở' %>
-                            </span>
-                        </div>
+                <div class="qa-feed-list" style="display: grid; gap: 20px;">
+                    <% safeQuestions.forEach((question) => { %>
+                        <a href="<%= question.href || ('/qa/questions/' + question._id) %>" class="qa-feed-card">
+                            <div class="qa-card-top">
+                                <span class="qa-badge qa-badge-subject"><%= question.subject || 'Khác' %></span>
+                                <span class="qa-badge qa-badge-grade">Lớp <%= question.grade || 'Chung' %></span>
+                                <% if (Number(question.bountyAmount || 0) > 0) { %>
+                                    <span class="qa-badge qa-badge-bounty"><i class="fas fa-gem"></i> <%= Number(question.bountyAmount).toLocaleString('vi-VN') %></span>
+                                <% } %>
+                            </div>
 
-                        <div>
-                            <h3 class="qa-card-title"><%= question.title || 'Câu hỏi chưa đặt tên' %></h3>
-                            <p class="qa-card-preview"><%= question.previewText || 'Chưa có nội dung tóm tắt.' %></p>
-                        </div>
+                            <div class="qa-card-content">
+                                <h3 class="qa-card-title"><%= question.title || 'Câu hỏi ẩn danh' %></h3>
+                                <p class="qa-card-preview"><%= question.previewText || 'Không có mô tả tóm tắt.' %></p>
+                            </div>
 
-                        <div class="qa-card-meta">
-                            <div class="qa-author-row">
-                                <img class="qa-avatar" src="<%= question.author?.avatar || '/default.png' %>" alt="Avatar <%= question.author?.username || 'ẩn danh' %>">
-                                <div class="qa-author-meta">
-                                    <div class="qa-author-name qa-ellipsis">
-                                        <span class="qa-ellipsis"><%= question.author?.username || 'Ẩn danh' %></span>
-                                        <% if (question.author?.isPro) { %><i class="fas fa-crown" style="color:#f59e0b;"></i><% } %>
+                            <div class="qa-card-meta">
+                                <div class="qa-author-row">
+                                    <img class="qa-avatar-sm" src="<%= question.author?.avatar || '/default.png' %>" alt="Avatar">
+                                    <div class="qa-author-meta">
+                                        <div class="qa-author-name"><%= question.author?.username || 'Ẩn danh' %></div>
+                                        <div class="qa-author-sub"><time data-relative-time datetime="<%= question.createdAt %>"><%= new Date(question.createdAt).toLocaleString('vi-VN') %></time></div>
                                     </div>
-                                    <div class="qa-author-sub qa-ellipsis"><%= question.tier?.icon || '🌱' %> <%= question.tier?.label || 'Tân Binh' %></div>
+                                </div>
+                                <div class="qa-metrics">
+                                    <span><i class="fas fa-comment"></i> <%= Number(question.answerCount || 0) %></span>
+                                    <span><i class="fas fa-eye"></i> <%= Number(question.viewCount || 0) %></span>
                                 </div>
                             </div>
-
-                            <div class="qa-metrics">
-                                <span><i class="fas fa-comment-dots"></i> <%= Number(question.answerCount || 0).toLocaleString('vi-VN') %> lời giải</span>
-                                <span><i class="fas fa-eye"></i> <%= Number(question.viewCount || 0).toLocaleString('vi-VN') %> lượt xem</span>
-                                <span><i class="fas fa-clock"></i> <time data-relative-time datetime="<%= question.createdAt %>"><%= new Date(question.createdAt).toLocaleString('vi-VN') %></time></span>
-                            </div>
-                        </div>
-                    </a>
-                <% }) %>
+                        </a>
+                    <% }) %>
+                </div>
             <% } else { %>
-                <div class="qa-empty">
-                    <strong>Feed đang yên ắng.</strong>
-                    <p>Chưa có câu hỏi nào khớp bộ lọc hiện tại. Thử đổi môn, đổi khối hoặc là người đầu tiên treo bài khó lên bảng nhé.</p>
+                <div class="qa-panel qa-empty">
+                    <i class="fas fa-wind" style="font-size: 3rem; color: var(--qa-muted); margin-bottom: 16px; opacity: 0.5;"></i>
+                    <strong>Không tìm thấy câu hỏi nào.</strong>
+                    <p>Hãy thử xóa bộ lọc hoặc trở thành người đầu tiên đặt câu hỏi trong nhóm này!</p>
                 </div>
             <% } %>
         </section>
 
         <aside class="qa-sidebar">
             <section class="qa-sidebar-card">
-                <div class="qa-feed-head" style="padding: 0; box-shadow: none; border: none;">
-                    <div>
-                        <h2>Phong Thần người giải</h2>
-                        <p>Những người đang kéo team đi lên bằng lời giải chất lượng.</p>
-                    </div>
-                </div>
-
-                <div class="qa-segment" data-segment>
-                    <button class="qa-segment-btn is-active" type="button" data-segment-button="weekly">Tuần này</button>
-                    <button class="qa-segment-btn" type="button" data-segment-button="monthly">Tháng này</button>
-                </div>
-
-                <div class="qa-segment-panel is-active" data-segment-panel="weekly">
-                    <div class="qa-contributor-list">
-                        <% if (safeContributorWeekly.length > 0) { %>
-                            <% safeContributorWeekly.forEach((contributor) => { %>
-                                <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
-                                    <div class="qa-contributor-row" style="gap:12px; padding:0; border:none;">
-                                        <img class="qa-contributor-avatar" src="<%= contributor.avatar || '/default.png' %>" alt="Avatar <%= contributor.username || 'thành viên' %>">
-                                        <div class="qa-contributor-meta">
-                                            <div class="qa-contributor-name qa-ellipsis">
-                                                <span class="qa-ellipsis">#<%= contributor.rank %> <%= contributor.username || 'Thành viên' %></span>
-                                            </div>
-                                            <div class="qa-contributor-sub qa-ellipsis"><%= contributor.tier?.icon || '🌱' %> <%= contributor.tier?.label || 'Tân Binh' %></div>
-                                        </div>
+                <h2 class="qa-panel-title">Top Giải Cứu Tuần</h2>
+                <div class="qa-contributor-list">
+                    <% if (safeContributorWeekly.length > 0) { %>
+                        <% safeContributorWeekly.forEach((contributor) => { %>
+                            <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img class="qa-avatar-sm" src="<%= contributor.avatar || '/default.png' %>" alt="Avatar">
+                                    <div>
+                                        <div class="qa-author-name" style="font-size: 0.9rem;">#<%= contributor.rank %> <%= contributor.username %></div>
+                                        <div class="qa-author-sub"><%= contributor.tier?.label || 'Tân Binh' %></div>
                                     </div>
-                                    <div class="qa-contributor-score"><%= Number(contributor.score || 0).toLocaleString('vi-VN') %> điểm giải</div>
-                                </a>
-                            <% }) %>
-                        <% } else { %>
-                            <div class="qa-empty" style="padding: 24px 8px;">
-                                <strong>Tuần này chưa ai bùng nổ.</strong>
-                                <p>Trả lời một câu hỏi hay là bạn có thể leo thẳng lên bảng này.</p>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-
-                <div class="qa-segment-panel" data-segment-panel="monthly">
-                    <div class="qa-contributor-list">
-                        <% if (safeContributorMonthly.length > 0) { %>
-                            <% safeContributorMonthly.forEach((contributor) => { %>
-                                <a href="/profile/view/<%= contributor.userId %>" class="qa-contributor-row" style="text-decoration:none; color:inherit;">
-                                    <div class="qa-contributor-row" style="gap:12px; padding:0; border:none;">
-                                        <img class="qa-contributor-avatar" src="<%= contributor.avatar || '/default.png' %>" alt="Avatar <%= contributor.username || 'thành viên' %>">
-                                        <div class="qa-contributor-meta">
-                                            <div class="qa-contributor-name qa-ellipsis">
-                                                <span class="qa-ellipsis">#<%= contributor.rank %> <%= contributor.username || 'Thành viên' %></span>
-                                            </div>
-                                            <div class="qa-contributor-sub qa-ellipsis"><%= contributor.tier?.icon || '🌱' %> <%= contributor.tier?.label || 'Tân Binh' %></div>
-                                        </div>
-                                    </div>
-                                    <div class="qa-contributor-score"><%= Number(contributor.score || 0).toLocaleString('vi-VN') %> điểm giải</div>
-                                </a>
-                            <% }) %>
-                        <% } else { %>
-                            <div class="qa-empty" style="padding: 24px 8px;">
-                                <strong>Tháng này bảng còn trống.</strong>
-                                <p>Cuộc đua danh vọng học thuật vừa mới bắt đầu.</p>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-            </section>
-
-            <section class="qa-sidebar-card">
-                <h2 class="qa-panel-title">Hot Tags</h2>
-                <div class="qa-tag-list">
-                    <% if (safeHotTags.length > 0) { %>
-                        <% safeHotTags.forEach((tag) => { %>
-                            <a href="<%= tag.url %>" class="qa-tag-chip">
-                                <span><%= tag.label %></span>
-                                <small><%= Number(tag.count || 0).toLocaleString('vi-VN') %> bài</small>
+                                </div>
+                                <strong style="color: var(--qa-primary);"><%= Number(contributor.score || 0) %> pt</strong>
                             </a>
                         <% }) %>
                     <% } else { %>
-                        <div class="qa-empty" style="padding: 24px 8px;">
-                            <strong>Chưa có chủ đề nổi bật.</strong>
-                            <p>Khi cộng đồng hỏi nhiều hơn, khu này sẽ tự nóng lên rất nhanh.</p>
+                        <div class="qa-empty" style="padding: 16px 0;">
+                            <p style="margin: 0; font-size: 0.9rem;">Tuần này chưa có ai bùng nổ.</p>
                         </div>
                     <% } %>
-                </div>
-            </section>
-
-            <section class="qa-sidebar-card">
-                <h2 class="qa-panel-title">Luật chơi nhanh</h2>
-                <div class="qa-stat-list">
-                    <div class="qa-chip-link"><span>1. Nêu rõ môn, khối và đề bài</span></div>
-                    <div class="qa-chip-link"><span>2. Có thể dán ảnh Cloudinary nếu đề quá dài</span></div>
-                    <div class="qa-chip-link"><span>3. Upvote lời giải hay để người giải nhận thưởng</span></div>
-                    <div class="qa-chip-link"><span>4. Chốt đáp án đúng để trao bounty và điểm lớn</span></div>
                 </div>
             </section>
         </aside>
     </div>
 </div>
 
-<% if (user) { %>
-    <div class="qa-modal" data-modal="ask-question">
-        <div class="qa-modal-card">
-            <div class="qa-modal-head">
-                <div>
-                    <h3>Treo câu hỏi mới</h3>
-                    <p>Viết rõ đề bài, đính link ảnh nếu cần, và đặt bounty để hút cao thủ vào giải nhanh hơn.</p>
-                </div>
-                <button type="button" class="qa-modal-close" data-close-modal aria-label="Đóng"><i class="fas fa-times"></i></button>
-            </div>
-
-            <form id="qaQuestionForm" class="qa-form-grid">
-                <div class="qa-form-field qa-span-2">
-                    <label for="qaQuestionTitle">Tiêu đề câu hỏi</label>
-                    <input id="qaQuestionTitle" type="text" name="title" maxlength="220" placeholder="Ví dụ: Vì sao dòng này lại suy ra được giới hạn bằng 2?" required>
-                </div>
-
-                <div class="qa-form-field">
-                    <label for="qaQuestionSubject">Môn học</label>
-                    <select id="qaQuestionSubject" name="subject">
-                        <% safeSubjects.forEach((subject) => { %>
-                            <option value="<%= subject %>"><%= subject %></option>
-                        <% }) %>
-                    </select>
-                </div>
-
-                <div class="qa-form-field">
-                    <label for="qaQuestionGrade">Khối lớp</label>
-                    <select id="qaQuestionGrade" name="grade">
-                        <% safeGrades.forEach((grade) => { %>
-                            <option value="<%= grade %>"><%= grade === 'Chung' ? 'Chung mọi khối' : `Lớp ${grade}` %></option>
-                        <% }) %>
-                    </select>
-                </div>
-
-                <div class="qa-form-field">
-                    <label for="qaQuestionBounty">Treo thưởng vàng</label>
-                    <input id="qaQuestionBounty" type="number" name="bountyAmount" min="0" step="1" value="0" placeholder="0">
-                </div>
-
-                <div class="qa-form-field">
-                    <label for="qaQuestionImages">Ảnh minh họa</label>
-                    <textarea id="qaQuestionImages" name="images" rows="4" placeholder="Dán link Cloudinary, mỗi dòng một ảnh."></textarea>
-                </div>
-
-                <div class="qa-form-field qa-span-2">
-                    <label for="qaQuestionContent">Mô tả chi tiết</label>
-                    <textarea id="qaQuestionContent" name="content" placeholder="Bạn đã thử cách nào rồi? Kẹt ở bước nào? Có thể dùng cú pháp LaTeX như $x^2 + y^2$." required></textarea>
-                </div>
-
-                <div class="qa-form-actions qa-span-2">
-                    <div class="qa-helper-text">
-                        Gợi ý: nếu đề bài nhiều hình, hãy upload ảnh ở Kho ảnh xịn rồi dán link vào đây để trình bày sạch hơn.
-                    </div>
-                    <button type="submit" class="qa-btn qa-btn-primary">
-                        <i class="fas fa-paper-plane"></i> Đăng câu hỏi
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-<% } %>
-
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script src="/js/qa.js"></script>
+
+<style>
+    @media (max-width: 1024px) {
+        .qa-mobile-filter-toggle { display: block !important; }
+        .qa-rail, .qa-sidebar { display: none; }
+        .show-sidebar .qa-rail, .show-sidebar .qa-sidebar { display: flex; flex-direction: column; }
+    }
+</style>
+
 <%- include('partials/footer') %>
