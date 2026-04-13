@@ -158,20 +158,40 @@
         if (questionForm) {
             questionForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
+                
+                // 1. Lấy dữ liệu an toàn (Nếu field không tồn tại thì gán rỗng, không bị crash)
+                const title = questionForm.title?.value || '';
+                const subject = questionForm.subject?.value || '';
+                const grade = questionForm.grade?.value || '';
+                const bountyAmount = Number(questionForm.bountyAmount?.value || 0);
+                const content = questionForm.content?.value || '';
+
+                // 2. Validate nhanh (Tránh gửi nội dung Tiptap rỗng)
+                if (!content || content.trim() === '' || content === '<p></p>') {
+                    showToast('Vui lòng nhập mô tả chi tiết cho câu hỏi!', true);
+                    return; // Chặn không cho gửi API
+                }
+
                 const submitButton = questionForm.querySelector('[type="submit"]');
                 toggleButtonLoading(submitButton, true);
 
                 try {
+                    // 3. Gửi Request (Đã loại bỏ field 'images' vì Tiptap nhúng ảnh vào content)
                     const data = await request('/qa/questions', {
-                        title: questionForm.title.value,
-                        subject: questionForm.subject.value,
-                        grade: questionForm.grade.value,
-                        bountyAmount: questionForm.bountyAmount.value,
-                        images: questionForm.images.value,
-                        content: questionForm.content.value
+                        title: title,
+                        subject: subject,
+                        grade: grade,
+                        bountyAmount: bountyAmount,
+                        content: content
                     });
-                    showToast('Đã treo câu hỏi lên Bảng Cầu Cứu.');
-                    window.location.href = data.redirectUrl || '/qa';
+                    
+                    showToast('Tuyệt vời! Đã treo câu hỏi lên Bảng Cầu Cứu.');
+                    
+                    // Delay 1 giây để user kịp nhìn thấy thông báo thành công trước khi chuyển trang
+                    setTimeout(() => {
+                        window.location.href = data.redirectUrl || '/qa';
+                    }, 1000);
+
                 } catch (error) {
                     showToast(error.message, true);
                     toggleButtonLoading(submitButton, false);
