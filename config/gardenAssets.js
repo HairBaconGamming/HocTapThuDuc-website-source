@@ -12,7 +12,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '5 phút/cấp',
             totalTime: '20 phút',
-            witherTime: '60 phút', 
+            witherTime: '72 giờ', 
             stages: [
                 '/api/pro-images/1767282830562-cb26a4.png',
                 '/api/pro-images/1767283026974-wmnw2v.png',
@@ -32,7 +32,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '6 phút/cấp',
             totalTime: '30 phút',
-            witherTime: '40 phút',
+            witherTime: '48 giờ',
             stages: [
                 '/api/pro-images/1767344323984-uvbj9k.png',
                 '/api/pro-images/1767344484389-wozd1r.png',
@@ -53,7 +53,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '15 phút/cấp',
             totalTime: '60 phút',
-            witherTime: '900 phút',
+            witherTime: '96 giờ',
             stages: [
                 'https://i.ibb.co/M5cGgrn7/Gemini-Generated-Image-n7bna6n7bna6n7bn-removebg-preview.png',
                 'https://i.ibb.co/KzcfKq8T/Gemini-Generated-Image-h8vwrzh8vwrzh8vw-removebg-preview.png',
@@ -74,7 +74,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '10 phút/cấp',
             totalTime: '70 phút',
-            witherTime: '120 phút',
+            witherTime: '120 giờ',
             isMultiHarvest: true,
             stages: [
                 'https://i.ibb.co/5yZqtnn/stage0.png',
@@ -85,6 +85,60 @@ module.exports = {
                 'https://i.ibb.co/MySkCjCC/fruit-early-removebg-preview.png',
                 'https://i.ibb.co/S1fMKqw/fruit-middle-removebg-preview.png',
                 'https://i.ibb.co/KRdHSc9/fruit-ripe-removebg-preview.png'
+            ]
+        },
+        'watermelon': {
+            name: 'Dưa Hấu',
+            type: 'plant',
+            price: 10000,
+            maxStage: 5, // Có 6 trạng thái (0, 1, 2, 3, 4, 5)
+            afterharvestStage: 4, 
+            isMultiHarvest: true, 
+            harvestIcon: 'https://i.ibb.co/CdjJ36Y/image-removebg-preview-26.png',
+            rewardGold: { min: 2500, max: 3500 },
+            unlockLevel: 21,
+            rewardXP: 25000,
+            size: { w: 1, h: 1 }, 
+            growthTime: '72 phút/cấp', // 72 x 5 = 360 phút (6 tiếng)
+            totalTime: '360 phút',
+            witherTime: '1440 phút', // Héo sau 24 tiếng nếu không thu hoạch
+            stages: [
+                'https://i.ibb.co/RmYQMCr/image-removebg-preview-20.png', // Hạt
+                'https://i.ibb.co/N291bTVq/image-removebg-preview-21.png', // Mầm
+                'https://i.ibb.co/vSYSVFD/image-removebg-preview-22.png', // Dây non
+                'https://i.ibb.co/5xtH4khH/image-removebg-preview-23.png', // Ra hoa
+                'https://i.ibb.co/vCB8Z91T/image-removebg-preview-24.png', // Quả non
+                'https://i.ibb.co/4wN56tZL/image-removebg-preview-25.png'  // Quả chín (Thu hoạch)
+            ]
+        },
+        'chili_pepper': {
+            name: 'Ớt Siêu Cay',
+            type: 'plant',
+            price: 15000,           // Giá hạt giống khá cao để tạo rủi ro
+            maxStage: 4,            // 5 trạng thái (0 đến 4)
+            afterharvestStage: 2, 
+            isMultiHarvest: true,  // Chỉ thu hoạch 1 lần
+            harvestIcon: 'https://i.ibb.co/Sw9HLkwf/image-removebg-preview-32.png',
+            
+            // Phần thưởng cực khủng so với thời gian bỏ ra
+            rewardGold: { min: 1000, max: 1500 }, 
+            rewardXP: 5000,
+            
+            unlockLevel: 23,        // Yêu cầu Level 25
+            size: { w: 1, h: 1 }, 
+            
+            growthTime: '5 phút/cấp', // 5 x 4 = 20 phút (Lớn cực nhanh)
+            totalTime: '20 phút',
+            
+            // ĐIỂM NHẤN: Thời gian héo siêu ngắn
+            witherTime: '1440 phút', // Chỉ có đúng 5 phút để thu hoạch sau khi chín!
+            
+            stages: [
+                'https://i.ibb.co/FqqQtwdB/image-removebg-preview-27.png', // Hạt giống
+                'https://i.ibb.co/FqyxJwd8/image-removebg-preview-29.png', // Nảy mầm
+                'https://i.ibb.co/Xfs8NhYQ/image-removebg-preview-28.png', // Bụi lá
+                'https://i.ibb.co/0RzbSQkp/image-removebg-preview-30.png', // Quả xanh
+                'https://i.ibb.co/PZGXYLzt/image-removebg-preview-31.png'  // Quả đỏ (Thu hoạch)
             ]
         }
     },
