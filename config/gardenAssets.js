@@ -95,9 +95,9 @@ module.exports = {
             afterharvestStage: 4, 
             isMultiHarvest: true, 
             harvestIcon: 'https://i.ibb.co/CdjJ36Y/image-removebg-preview-26.png',
-            rewardGold: { min: 2500, max: 3500 },
+            rewardGold: { min: 3500, max: 5000 },
             unlockLevel: 21,
-            rewardXP: 25000,
+            rewardXP: 30000,
             size: { w: 1, h: 1 }, 
             growthTime: '72 phút/cấp', // 72 x 5 = 360 phút (6 tiếng)
             totalTime: '360 phút',
@@ -121,8 +121,8 @@ module.exports = {
             harvestIcon: 'https://i.ibb.co/Sw9HLkwf/image-removebg-preview-32.png',
             
             // Phần thưởng cực khủng so với thời gian bỏ ra
-            rewardGold: { min: 1000, max: 1500 }, 
-            rewardXP: 5000,
+            rewardGold: { min: 900, max: 1800 }, 
+            rewardXP: 15000,
             
             unlockLevel: 23,        // Yêu cầu Level 25
             size: { w: 1, h: 1 }, 
