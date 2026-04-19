@@ -4,10 +4,20 @@
     function parseDuration(value) {
         if (!value) return 5 * 60 * 1000;
 
-        const amount = parseInt(value, 10);
+        const strVal = String(value).toLowerCase();
+        const amount = parseFloat(strVal);
         if (!Number.isFinite(amount)) return 5 * 60 * 1000;
 
-        return amount * (String(value).includes('giờ') ? 60 * 60 * 1000 : 60 * 1000);
+        if (strVal.includes('ngày') || strVal.includes('day')) {
+            return amount * 24 * 60 * 60 * 1000;
+        } else if (strVal.includes('giờ') || strVal.includes('hour') || strVal.includes('h')) {
+            return amount * 60 * 60 * 1000;
+        } else if (strVal.includes('giây') || strVal.includes('sec') || strVal.includes('s')) {
+            return amount * 1000;
+        }
+        
+        // Mặc định là phút
+        return amount * 60 * 1000;
     }
 
     function formatTime(ms) {

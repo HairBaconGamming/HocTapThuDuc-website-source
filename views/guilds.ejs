@@ -9,158 +9,247 @@
         invite: 'Mật lệnh'
     };
 
-    // User stats an toàn
     const uLvl = user.level || 0;
     const uStreak = user.currentStreak || 0;
     const uPts = Math.max(user.points || 0, user.totalPoints || 0);
+    const totalGuilds = guilds.length;
+    const openGuilds = guilds.filter((entry) => (entry.settings?.joinMode || 'open') === 'open').length;
+    const approvalGuilds = guilds.filter((entry) => entry.settings?.joinMode === 'approval').length;
+    const inviteGuilds = guilds.filter((entry) => entry.settings?.joinMode === 'invite').length;
+    const highestBuff = guilds.reduce((max, entry) => Math.max(max, Number(entry.buffSnapshot?.lessonXpPct || 0)), 0);
 %>
 
-<div class="gh-wrapper">
-    
-    <!-- 1. HERO & CREATE SECTION -->
-    <div class="gh-hero-grid">
-        <div class="gh-hero-card">
+<div class="gh-shell">
+    <section class="gh-poster">
+        <div class="gh-poster__story">
             <span class="gh-kicker"><i class="fas fa-network-wired"></i> Liên Minh Học Tập</span>
-            <h1>Tông Môn & Bang Hội</h1>
-            <p>Không chỉ là nơi hội tụ anh tài, Tông Môn còn cộng hưởng sức mạnh, buff thêm XP học bài và bảo vệ khu vườn của bạn. Lập team ngay!</p>
-            
-            <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
-                <span class="gh-status-pill">
-                    <i class="fas fa-user-circle text-warning"></i> Bạn đang ở: Cấp <%= uLvl %>
-                </span>
-                <span class="gh-status-pill">
-                    <i class="fas fa-star text-warning"></i> Yêu cầu lập Bang: Cấp <%= minCreateLevel %>
-                </span>
+            <h1>Đại sảnh Tông Môn</h1>
+            <p>
+                Từ nơi này bạn có thể nhìn toàn cảnh các bang hội đang hoạt động, chọn đúng môn phái hợp nhịp học,
+                hoặc tự khai sơn lập phái để gom những người học khỏe nhất về chung một cờ hiệu.
+            </p>
+
+            <div class="gh-story-metrics">
+                <article class="gh-story-metric">
+                    <span>Tổng guild</span>
+                    <strong><%= totalGuilds %></strong>
+                    <small>đang hoạt động</small>
+                </article>
+                <article class="gh-story-metric">
+                    <span>Buff XP cao nhất</span>
+                    <strong>+<%= highestBuff %>%</strong>
+                    <small>trong hệ thống</small>
+                </article>
+                <article class="gh-story-metric">
+                    <span>Open guild</span>
+                    <strong><%= openGuilds %></strong>
+                    <small>vào trực tiếp</small>
+                </article>
+                <article class="gh-story-metric">
+                    <span>Approval / Invite</span>
+                    <strong><%= approvalGuilds %> / <%= inviteGuilds %></strong>
+                    <small>lọc đầu vào</small>
+                </article>
             </div>
         </div>
 
-        <div class="gh-create-card">
-            <h2>Khai Sơn Lập Phái</h2>
-            <p>Tạo Tông Môn của riêng bạn (Yêu cầu Lv.<%= minCreateLevel %>)</p>
-            
-            <form action="/guilds" method="POST">
-                <input type="text" name="name" class="gh-input" maxlength="60" minlength="3" placeholder="Tên Tông Môn (Ví dụ: Thanh Vân Môn)" required <%= !canCreateGuild ? 'disabled' : '' %>>
-                <textarea name="description" class="gh-textarea" maxlength="260" placeholder="Slogan hoặc lời hứa của Tông Môn..." <%= !canCreateGuild ? 'disabled' : '' %>></textarea>
-                
-                <button type="submit" class="btn-create" <%= !canCreateGuild ? 'disabled' : '' %>>
-                    <%= canCreateGuild ? 'Lập Tông Môn Ngay 🚀' : `Cần cày thêm đến Lv.${minCreateLevel} 🔒` %>
-                </button>
-            </form>
-        </div>
-    </div>
+        <aside class="gh-poster__forge">
+            <div class="gh-forge-card">
+                <div class="gh-forge-card__head">
+                    <div>
+                        <span class="gh-mini">Bảng hồ sơ hiện tại</span>
+                        <h2>Dữ kiện của bạn</h2>
+                    </div>
+                </div>
 
-    <!-- 2. DIRECTORY GRID -->
-    <div class="gh-section-header">
-        <h2>Danh Sách Tông Môn</h2>
-        <span class="gh-count"><%= guilds.length %> Đang hoạt động</span>
-    </div>
+                <div class="gh-user-grid">
+                    <div class="gh-user-pill">
+                        <span>Level</span>
+                        <strong><%= uLvl %></strong>
+                    </div>
+                    <div class="gh-user-pill">
+                        <span>Streak</span>
+                        <strong><%= uStreak %> ngày</strong>
+                    </div>
+                    <div class="gh-user-pill">
+                        <span>Điểm học</span>
+                        <strong><%= uPts %></strong>
+                    </div>
+                    <div class="gh-user-pill">
+                        <span>Mở guild</span>
+                        <strong><%= canCreateGuild ? 'Sẵn sàng' : `Lv.${minCreateLevel}` %></strong>
+                    </div>
+                </div>
+            </div>
 
-    <div class="gh-grid">
-        <% guilds.forEach((entry) => { 
-            // LẤY ĐIỀU KIỆN TỪ DATABASE CỦA GUILD
-            const thresholds = entry.settings?.joinThresholds || {};
-            const reqLevel = thresholds.minLevel || entry.levelRequirement || 0;
-            const reqStreak = thresholds.minStreak || 0;
-            const reqPoints = thresholds.minTotalPoints || 0;
-            const reqMins = thresholds.minWeeklyMinutes || 0;
-            
-            // ĐÁNH GIÁ ĐIỀU KIỆN
-            let isEligible = true;
-            let reqsHTML = '';
+            <div class="gh-forge-card gh-forge-card--create">
+                <div class="gh-forge-card__head">
+                    <div>
+                        <span class="gh-mini">Khai sơn lập phái</span>
+                        <h2>Tạo Tông Môn mới</h2>
+                    </div>
+                </div>
 
-            // 1. Check Level
-            if (reqLevel > 0) {
-                const pass = uLvl >= reqLevel;
-                if(!pass) isEligible = false;
-                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu Level"><i class="fas ${pass ? 'fa-check' : 'fa-times'}"></i> Lv.${reqLevel}</span>`;
-            }
-            
-            // 2. Check Streak
-            if (reqStreak > 0) {
-                const pass = uStreak >= reqStreak;
-                if(!pass) isEligible = false;
-                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu chuỗi học liên tiếp"><i class="fas fa-fire"></i> ${reqStreak} ngày</span>`;
-            }
+                <p>Chọn một cái tên gãy gọn, viết một lời hiệu triệu, rồi mở ra không gian riêng cho đội học của bạn.</p>
 
-            // 3. Check Points
-            if (reqPoints > 0) {
-                const pass = uPts >= reqPoints;
-                if(!pass) isEligible = false;
-                reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}" title="Yêu cầu tổng điểm"><i class="fas fa-star"></i> ${reqPoints} pts</span>`;
-            }
+                <form action="/guilds" method="POST" class="gh-create-form">
+                    <input type="text" name="name" class="gh-input" maxlength="60" minlength="3" placeholder="Tên Tông Môn" required <%= !canCreateGuild ? 'disabled' : '' %>>
+                    <textarea name="description" class="gh-textarea" maxlength="260" placeholder="Slogan hoặc tôn chỉ hoạt động..." <%= !canCreateGuild ? 'disabled' : '' %>></textarea>
 
-            // 4. Check Minutes (Backend sẽ check kỹ, FE chỉ hiển thị)
-            if (reqMins > 0) {
-                // Ta ko tính trực tiếp phút ở EJS được, nên mặc định coi như màu vàng (cảnh báo)
-                reqsHTML += `<span class="req-badge" style="border-color:#fbd38d; background:#fefcbf; color:#975a16;" title="Yêu cầu học trong tuần"><i class="far fa-clock"></i> ${reqMins}p/tuần</span>`;
-            }
+                    <button type="submit" class="btn-create" <%= !canCreateGuild ? 'disabled' : '' %>>
+                        <%= canCreateGuild ? 'Dựng đại điện ngay' : `Cần cày lên Lv.${minCreateLevel}` %>
+                    </button>
+                </form>
+            </div>
+        </aside>
+    </section>
 
-            // Nếu không có điều kiện nào đặc biệt
-            if (reqsHTML === '') {
-                reqsHTML = `<span class="req-badge pass"><i class="fas fa-check-circle"></i> Tự do gia nhập</span>`;
-            }
+    <section class="gh-directory-shell">
+        <aside class="gh-directory-side">
+            <div class="gh-side-card">
+                <span class="gh-mini">Cách đọc guild</span>
+                <h3>Ba tầng lọc nhanh</h3>
+                <ul class="gh-side-list">
+                    <li>Nhìn buff XP để biết guild nào hợp mục tiêu cày kiến thức.</li>
+                    <li>Nhìn chế độ tuyển sinh để biết tốc độ vào đội.</li>
+                    <li>Nhìn điều kiện gia nhập để tránh click vào guild quá sức hiện tại.</li>
+                </ul>
+            </div>
 
-            // Chữ hiển thị nút bấm
-            let btnText = 'Gia nhập';
-            let actionUrl = `/guilds/${entry.slug}/join`;
-            
-            if (entry.settings?.joinMode === 'approval') { btnText = 'Nộp đơn'; actionUrl = `/guilds/${entry.slug}`; }
-            else if (entry.settings?.joinMode === 'invite') { btnText = 'Nhập mã'; actionUrl = `/guilds/${entry.slug}`; }
+            <div class="gh-side-card">
+                <span class="gh-mini">Tín hiệu hệ thống</span>
+                <div class="gh-mode-stack">
+                    <div class="gh-mode-chip">
+                        <strong><%= openGuilds %></strong>
+                        <span>Mở cửa</span>
+                    </div>
+                    <div class="gh-mode-chip">
+                        <strong><%= approvalGuilds %></strong>
+                        <span>Xét duyệt</span>
+                    </div>
+                    <div class="gh-mode-chip">
+                        <strong><%= inviteGuilds %></strong>
+                        <span>Mật lệnh</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
 
-            // Vô hiệu hóa nút nếu không đủ điều kiện (trừ khi là Invite/Approval thì cứ cho vô trang chi tiết xem)
-            const disableJoin = !isEligible && entry.settings?.joinMode === 'open';
-        %>
-            <article class="guild-card">
-                
-                <div class="gc-header">
-                    <div class="gc-avatar"><%= entry.name.charAt(0).toUpperCase() %></div>
-                    <div class="gc-info">
-                        <h3 class="gc-name" title="<%= entry.name %>"><%= entry.name %></h3>
-                        <div class="gc-leader">
-                            <img src="<%= entry.leader?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>">
-                            Tông chủ: <b><%= entry.leader?.username || 'Ẩn danh' %></b>
+        <div class="gh-directory-main">
+            <div class="gh-section-header">
+                <div>
+                    <span class="gh-mini">Danh bạ tông môn</span>
+                    <h2>Chọn nơi bạn muốn đồng tu</h2>
+                </div>
+                <span class="gh-count"><%= guilds.length %> guild</span>
+            </div>
+
+            <div class="gh-grid">
+                <% guilds.forEach((entry) => { 
+                    const thresholds = entry.settings?.joinThresholds || {};
+                    const reqLevel = thresholds.minLevel || entry.levelRequirement || 0;
+                    const reqStreak = thresholds.minStreak || 0;
+                    const reqPoints = thresholds.minTotalPoints || 0;
+                    const reqMins = thresholds.minWeeklyMinutes || 0;
+                    let isEligible = true;
+                    let reqsHTML = '';
+
+                    if (reqLevel > 0) {
+                        const pass = uLvl >= reqLevel;
+                        if (!pass) isEligible = false;
+                        reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}"><i class="fas ${pass ? 'fa-check' : 'fa-times'}"></i> Lv.${reqLevel}</span>`;
+                    }
+
+                    if (reqStreak > 0) {
+                        const pass = uStreak >= reqStreak;
+                        if (!pass) isEligible = false;
+                        reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}"><i class="fas fa-fire"></i> ${reqStreak} ngày</span>`;
+                    }
+
+                    if (reqPoints > 0) {
+                        const pass = uPts >= reqPoints;
+                        if (!pass) isEligible = false;
+                        reqsHTML += `<span class="req-badge ${pass ? 'pass' : 'fail'}"><i class="fas fa-star"></i> ${reqPoints} pts</span>`;
+                    }
+
+                    if (reqMins > 0) {
+                        reqsHTML += `<span class="req-badge req-badge--warn"><i class="far fa-clock"></i> ${reqMins}p/tuần</span>`;
+                    }
+
+                    if (reqsHTML === '') {
+                        reqsHTML = `<span class="req-badge pass"><i class="fas fa-check-circle"></i> Tự do gia nhập</span>`;
+                    }
+
+                    let btnText = 'Gia nhập';
+                    let actionUrl = `/guilds/${entry.slug}/join`;
+
+                    if (entry.settings?.joinMode === 'approval') {
+                        btnText = 'Nộp đơn';
+                        actionUrl = `/guilds/${entry.slug}`;
+                    } else if (entry.settings?.joinMode === 'invite') {
+                        btnText = 'Nhập mã';
+                        actionUrl = `/guilds/${entry.slug}`;
+                    }
+
+                    const disableJoin = !isEligible && entry.settings?.joinMode === 'open';
+                    const guildInitial = entry.name.charAt(0).toUpperCase();
+                %>
+                    <article class="guild-card">
+                        <div class="gc-header">
+                            <div class="gc-avatar"><%= guildInitial %></div>
+                            <div class="gc-info">
+                                <div class="gc-topline">
+                                    <span class="gc-mode"><%= joinModeLabelMap[entry.settings?.joinMode || 'open'] %></span>
+                                    <span class="gc-capacity"><%= entry.memberCount %>/<%= entry.memberLimit %></span>
+                                </div>
+                                <h3 class="gc-name" title="<%= entry.name %>"><%= entry.name %></h3>
+                                <div class="gc-leader">
+                                    <img src="<%= entry.leader?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="">
+                                    Tông chủ: <b><%= entry.leader?.username || 'Ẩn danh' %></b>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <p class="gc-desc"><%= entry.description || 'Tông Môn này đang chiêu mộ những đồng môn muốn vừa học giỏi vừa nuôi Linh Thụ thật mạnh.' %></p>
+                        <p class="gc-desc"><%= entry.description || 'Tông Môn này đang chiêu mộ những đồng môn muốn vừa học giỏi vừa nuôi Linh Thụ thật mạnh.' %></p>
 
-                <div class="gc-stats">
-                    <div class="g-stat">
-                        <span>Thành viên</span>
-                        <strong><i class="fas fa-users text-primary"></i> <%= entry.memberCount %>/<%= entry.memberLimit %></strong>
-                    </div>
-                    <div class="g-stat">
-                        <span>Buff XP</span>
-                        <strong><i class="fas fa-bolt text-warning"></i> +<%= entry.buffSnapshot.lessonXpPct %>%</strong>
-                    </div>
-                </div>
+                        <div class="gc-stats">
+                            <div class="g-stat">
+                                <span>Buff XP</span>
+                                <strong>+<%= entry.buffSnapshot.lessonXpPct %>%</strong>
+                            </div>
+                            <div class="g-stat">
+                                <span>Buff vườn</span>
+                                <strong>+<%= entry.buffSnapshot.gardenGoldPct || 0 %>%</strong>
+                            </div>
+                        </div>
 
-                <div class="gc-reqs">
-                    <div class="req-title">
-                        <i class="fas fa-clipboard-list"></i> Điều kiện gia nhập (<%= joinModeLabelMap[entry.settings?.joinMode || 'open'] %>)
-                    </div>
-                    <div class="req-list">
-                        <%- reqsHTML %>
-                    </div>
-                </div>
+                        <div class="gc-reqs">
+                            <div class="req-title">
+                                <i class="fas fa-clipboard-list"></i> Điều kiện gia nhập
+                            </div>
+                            <div class="req-list">
+                                <%- reqsHTML %>
+                            </div>
+                        </div>
 
-                <div class="gc-actions">
-                    <a href="/guilds/<%= entry.slug %>" class="btn-gc view"><i class="fas fa-eye"></i> Chi tiết</a>
-                    
-                    <% if (entry.settings?.joinMode === 'open') { %>
-                        <form action="<%= actionUrl %>" method="POST" style="flex: 1; margin: 0; display: flex;">
-                            <button type="submit" class="btn-gc join <%= disableJoin ? 'disabled' : '' %>" <%= disableJoin ? 'disabled' : '' %> style="flex:1">
-                                <%= disableJoin ? 'Chưa đủ ĐK 🔒' : btnText %>
-                            </button>
-                        </form>
-                    <% } else { %>
-                        <a href="<%= actionUrl %>" class="btn-gc join"><%= btnText %></a>
-                    <% } %>
-                </div>
-            </article>
-        <% }) %>
-    </div>
+                        <div class="gc-actions">
+                            <a href="/guilds/<%= entry.slug %>" class="btn-gc view"><i class="fas fa-eye"></i> Chi tiết</a>
+
+                            <% if (entry.settings?.joinMode === 'open') { %>
+                                <form action="<%= actionUrl %>" method="POST" style="flex: 1; margin: 0; display: flex;">
+                                    <button type="submit" class="btn-gc join <%= disableJoin ? 'disabled' : '' %>" <%= disableJoin ? 'disabled' : '' %> style="flex:1">
+                                        <%= disableJoin ? 'Chưa đủ điều kiện' : btnText %>
+                                    </button>
+                                </form>
+                            <% } else { %>
+                                <a href="<%= actionUrl %>" class="btn-gc join"><%= btnText %></a>
+                            <% } %>
+                        </div>
+                    </article>
+                <% }) %>
+            </div>
+        </div>
+    </section>
 </div>
 
 <%- include('partials/footer') %>

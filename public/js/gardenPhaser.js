@@ -42,8 +42,13 @@ const PHASER_CONFIG = {
 // --- 2. HELPER FUNCTIONS ---
 const parseDuration = GardenShared.parseDuration || function parseDurationFallback(str) {
     if (!str) return 5 * 60000;
-    const num = parseInt(str, 10);
-    return num * (str.includes('giờ') ? 3600000 : 60000);
+    const strVal = String(str).toLowerCase();
+    const num = parseFloat(strVal);
+    if (!Number.isFinite(num)) return 5 * 60000;
+    if (strVal.includes('ngày') || strVal.includes('day')) return num * 24 * 3600000;
+    if (strVal.includes('giờ') || strVal.includes('hour') || strVal.includes('h')) return num * 3600000;
+    if (strVal.includes('giây') || strVal.includes('sec') || strVal.includes('s')) return num * 1000;
+    return num * 60000;
 };
 
 const showToast = GardenShared.showToast || function showToastFallback(msg, type = 'info') {

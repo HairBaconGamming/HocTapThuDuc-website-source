@@ -237,8 +237,6 @@
 
         if (panel === 'quests') {
             setGuideLine('Theo dõi nhiệm vụ để nhận thêm nước, phân bón và vàng miễn phí mỗi ngày.');
-        } else if (panel === 'inventory') {
-            setGuideLine('Đây là kho nông sản vừa thu hoạch. Bạn có thể giữ lại hoặc đem quyên góp cho Tông Môn.');
         } else if (panel === 'guide') {
             setGuideLine('Mở các mẹo điều phối để tối ưu nhịp tưới nước, bón phân và thu hoạch.');
         } else if (panel === 'social') {
@@ -246,6 +244,31 @@
         }
 
         openSidebar(panel);
+    }
+
+    let inventoryFilterTab = 'all';
+    let inventorySearchText = '';
+    let inventorySortOrder = 'qty-desc';
+
+    function openInventoryModal() {
+        const overlay = document.getElementById('inventoryOverlay');
+        if (!overlay) return;
+        closeSidebar();
+        hidePlantStats();
+        toggleGuideWidget(false);
+        overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
+        setGuideLine('Kho đồ không gian đã mở. Bạn có thể tìm kiếm, lọc và xem thông số nông sản.');
+        renderInventory(gardenData.inventory || {});
+    }
+
+    function closeInventoryModal() {
+        const overlay = document.getElementById('inventoryOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        setGuideLine('Khu vườn đã sẵn sàng. Chọn công cụ ở thanh dưới hoặc mở bảng điều hướng để xem nhiệm vụ.');
     }
 
     function toggleSidebar() {
@@ -904,8 +927,36 @@
         document.querySelectorAll('[data-shell-target]').forEach((element) => {
             element.addEventListener('click', () => {
                 const target = element.getAttribute('data-shell-target') || 'quests';
-                openPanel(target);
+                if (target === 'inventory') {
+                    openInventoryModal();
+                } else {
+                    openPanel(target);
+                }
             });
+        });
+
+        document.getElementById('closeInventoryBtn')?.addEventListener('click', closeInventoryModal);
+        document.getElementById('inventoryOverlay')?.addEventListener('click', (event) => {
+            if (event.target?.id === 'inventoryOverlay') closeInventoryModal();
+        });
+
+        document.getElementById('inventorySearchInput')?.addEventListener('input', (e) => {
+            inventorySearchText = (e.target.value || '').toLowerCase();
+            renderInventory();
+        });
+
+        document.querySelectorAll('.pixel-tab[data-inv-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.pixel-tab[data-inv-tab]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                inventoryFilterTab = btn.getAttribute('data-inv-tab') || 'all';
+                renderInventory();
+            });
+        });
+
+        document.getElementById('inventorySortSelect')?.addEventListener('change', (e) => {
+            inventorySortOrder = e.target.value || 'qty-desc';
+            renderInventory();
         });
 
         document.getElementById('toggleToolbeltBtn')?.addEventListener('click', () => {
@@ -1195,6 +1246,12 @@
                         ${insight.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}
                     </ul>
                 </div>
+                
+                <div class="inventory-modal-actions">
+                    <button class="btn-inv-action btn-use" onclick="Swal.fire('Chức năng sắp ra mắt', 'Nông sản hiện tại dùng để Hiến Cống cho Tông Môn. Tính năng Nấu Ăn sẽ sớm được ra mắt!', 'info')" type="button">Sử Dụng</button>
+                    <button class="btn-inv-action btn-sell" onclick="Swal.fire('Tính năng đang phát triển', 'Chức năng bán vật phẩm đang được rèn luyện!', 'info')" type="button">Bán Đi</button>
+                    <button class="btn-inv-action btn-tribute" onclick="window.location.href='/guilds'" type="button">Hiến Cống</button>
+                </div>
             </div>
         `;
     }
@@ -1204,21 +1261,54 @@
         const summary = document.getElementById('gardenInventorySummary');
         if (!list) return;
 
-        const keys = getInventoryKeys();
-        const total = keys.reduce((sum, key) => sum + Number(inventory[key] || 0), 0);
-        const occupiedSlots = keys.filter((key) => Number(inventory[key] || 0) > 0);
+        let keys = getInventoryKeys();
+        
+        // Lọc vật phẩm đang sở hữu trước
+        const ownedKeys = keys.filter(key => Number(inventory[key] || 0) > 0);
+        
+        // Áp dụng bộ lọc (Filter & Search)
+        let filteredKeys = ownedKeys.filter(key => {
+            const config = gardenAssets.PLANTS?.[key] || {};
+            const name = (config.name || '').toLowerCase();
+            
+            if (inventorySearchText && !name.includes(inventorySearchText)) return false;
+            
+            if (inventoryFilterTab !== 'all') {
+                if (inventoryFilterTab === 'seed') return false; // Túi đồ chỉ chứa nông sản đã thu hoạch
+                if (inventoryFilterTab === 'harvest') return true;
+                if (inventoryFilterTab === 'decor') return false; // Hiện MyGarden chưa support lưu decor vào túi
+            }
+            return true;
+        });
 
-        if (!selectedInventoryKey || Number(inventory[selectedInventoryKey] || 0) <= 0) {
-            selectedInventoryKey = occupiedSlots[0] || null;
+        // Áp dụng Sắp xếp (Sort)
+        filteredKeys.sort((a, b) => {
+            const countA = Number(inventory[a] || 0);
+            const countB = Number(inventory[b] || 0);
+            if (inventorySortOrder === 'qty-desc') return countB - countA;
+            if (inventorySortOrder === 'qty-asc') return countA - countB;
+            if (inventorySortOrder === 'tier-desc') {
+                const tierScores = { 'legendary': 5, 'epic': 4, 'rare': 3, 'uncommon': 2, 'common': 1 };
+                const tierA = tierScores[getInventoryTier(gardenAssets.PLANTS?.[a] || {}).tone] || 0;
+                const tierB = tierScores[getInventoryTier(gardenAssets.PLANTS?.[b] || {}).tone] || 0;
+                return tierB - tierA || countB - countA;
+            }
+            return 0;
+        });
+
+        const total = filteredKeys.reduce((sum, key) => sum + Number(inventory[key] || 0), 0);
+
+        if (!selectedInventoryKey || !filteredKeys.includes(selectedInventoryKey)) {
+            selectedInventoryKey = filteredKeys[0] || null;
         }
 
         if (summary) {
             summary.innerText = total > 0
-                ? `${total} nông sản • ${occupiedSlots.length}/${keys.length} ô có hàng`
-                : `Túi đang trống • ${keys.length} ô sẵn sàng`;
+                ? `${total} vật phẩm • Đã hiển thị ${filteredKeys.length} loại`
+                : `Túi đang trống`;
         }
 
-        list.innerHTML = keys.map((key, index) => {
+        list.innerHTML = filteredKeys.map((key, index) => {
             const count = Math.max(0, Number(inventory[key] || 0));
             const config = gardenAssets.PLANTS?.[key] || {};
             const tier = getInventoryTier(config);
@@ -1342,6 +1432,8 @@
     window.togglePlantingUI = togglePlantingUI;
     window.showPlantStats = showPlantStats;
     window.hidePlantStats = hidePlantStats;
+    window.openInventoryModal = openInventoryModal;
+    window.closeInventoryModal = closeInventoryModal;
     window.openShopHTML = openShopHTML;
     window.closeShop = closeShop;
     window.renderShopItems = renderShopItems;

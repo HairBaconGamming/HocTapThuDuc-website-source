@@ -119,34 +119,7 @@
                     <% } %>
                 </section>
 
-                <section class="drawer-panel" data-sidebar-panel="inventory">
-                    <div class="drawer-panel-header">
-                        <div>
-                            <div class="drawer-kicker">Kho nông sản</div>
-                            <h3>Túi vật phẩm</h3>
-                        </div>
-                        <span class="drawer-status" id="gardenInventorySummary">Đang đồng bộ</span>
-                    </div>
-                    <div class="inventory-layout">
-                        <div class="inventory-grid-shell">
-                            <div class="inventory-grid-head">
-                                <span class="inventory-grid-kicker">Dạng ô kho</span>
-                                <p>Chạm vào ô đang sáng để mở hồ sơ vật phẩm thật chi tiết.</p>
-                            </div>
-                            <div class="inventory-list" id="gardenInventoryList" role="listbox" aria-label="Túi vật phẩm"></div>
-                        </div>
-
-                        <aside class="inventory-detail-panel" id="gardenInventoryDetail" aria-live="polite">
-                            <div class="inventory-detail-empty">
-                                <div class="inventory-detail-empty-icon">
-                                    <i class="fas fa-box-open"></i>
-                                </div>
-                                <strong>Chưa có vật phẩm để soi</strong>
-                                <p>Thu hoạch nông sản rồi bấm vào từng ô để xem hồ sơ tăng trưởng, mức thưởng, độ khó chăm và giá trị sử dụng của từng món.</p>
-                            </div>
-                        </aside>
-                    </div>
-                </section>
+                <!-- Inventory has been moved to a modal (inventoryOverlay) -->
 
                 <section class="drawer-panel" data-sidebar-panel="guide">
                     <div class="drawer-panel-header">
@@ -516,6 +489,55 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="inventoryOverlay" class="pixel-modal-overlay pixel-modal-overlay--rustic" style="display:none;" aria-hidden="true"
+        onwheel="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        
+        <div class="pixel-window shop-window shop-window--rustic inventory-modal" role="dialog" aria-modal="true" aria-labelledby="gardenInventoryTitle" style="max-width: 900px; height: 85vh;">
+            <div class="window-header">
+                <div class="win-title" id="gardenInventoryTitle">🎒 Túi Đồ Của Tôi</div>
+                <button id="closeInventoryBtn" class="pixel-btn-close red">X</button>
+            </div>
+
+            <div class="window-body" style="flex-direction: column; padding: 20px;">
+                <div class="inventory-toolbar">
+                    <div class="inventory-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="inventorySearchInput" placeholder="Tìm vật phẩm...">
+                    </div>
+                    <div class="inventory-tabs">
+                        <button class="pixel-tab active" data-inv-tab="all">Tất cả</button>
+                        <button class="pixel-tab" data-inv-tab="seed">Hạt giống</button>
+                        <button class="pixel-tab" data-inv-tab="harvest">Nông sản</button>
+                        <button class="pixel-tab" data-inv-tab="decor">Trang trí</button>
+                    </div>
+                    <div class="inventory-sort">
+                        <select id="inventorySortSelect" class="pixel-select">
+                            <option value="qty-desc">SL giảm dần</option>
+                            <option value="qty-asc">SL tăng dần</option>
+                            <option value="tier-desc">Độ hiếm giảm</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="inventory-modal-content" style="display: flex; flex: 1; min-height: 0; margin-top: 15px;">
+                    <div class="inventory-list-col" style="flex: 1.2; overflow-y: auto; padding-right: 15px;">
+                        <div class="inventory-grid-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span class="inventory-grid-kicker">Lưới Lưu Trữ</span>
+                            <span id="gardenInventorySummary" style="font-size: 0.85rem; color: #8d6e63; font-weight: bold;">Đang đồng bộ</span>
+                        </div>
+                        <div class="inventory-list grid-view" id="gardenInventoryList" role="listbox" aria-label="Túi vật phẩm" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px;"></div>
+                    </div>
+
+                    <div class="inventory-detail-col" style="flex: 1; border-left: 2px dashed #d7ccc8; padding-left: 15px; overflow-y: auto;">
+                        <aside class="inventory-detail-panel" id="gardenInventoryDetail" aria-live="polite" style="height: 100%;">
+                            <!-- Injected by JS -->
+                        </aside>
                     </div>
                 </div>
             </div>

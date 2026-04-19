@@ -10,10 +10,10 @@
     const segmentButtons = Array.from(document.querySelectorAll('[data-guild-segment]'));
     const segmentPanels = Array.from(document.querySelectorAll('[data-guild-segment-panel]'));
     const tabLabels = {
-        overview: 'Overview',
-        goal: 'Weekly Quests',
-        members: 'Members',
-        admin: 'Admin/Settings'
+        overview: 'Tong quan',
+        goal: 'Chien dich',
+        members: 'Thanh vien',
+        admin: 'Quan tri'
     };
 
     const donationForm = document.getElementById('guildDonationForm');
@@ -266,7 +266,7 @@
 
     tabButtons.forEach((button) => {
         const label = tabLabels[button.dataset.guildTab];
-        if (label) {
+        if (label && !button.textContent.trim()) {
             button.textContent = label;
         }
         button.addEventListener('click', () => setActiveTab(button.dataset.guildTab));

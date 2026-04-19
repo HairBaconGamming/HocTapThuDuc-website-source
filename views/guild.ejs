@@ -82,6 +82,30 @@ const topContributors = Array.isArray(ui.topContributors) ? ui.topContributors :
 const topThreeContributors = Array.isArray(ui.topThreeContributors) ? ui.topThreeContributors : [];
 const announcementCopy = String(ui.announcementCopy || '');
 const goalTargetLabel = String(ui.weeklyGoalTarget || 'Spirit Power');
+const guildInitial = safeGuildName.charAt(0).toUpperCase();
+const joinModeText = safeJoinMode === 'approval'
+    ? 'Xét duyệt'
+    : (safeJoinMode === 'invite' ? 'Mật lệnh' : 'Mở cửa');
+const membershipFillPct = safeMemberLimit > 0 ? clampPercent((safeMemberCount / safeMemberLimit) * 100) : 0;
+const weeklyHeadline = weeklyGoal?.title || ui.goalBanner?.title || 'Chưa mở chiến dịch tuần';
+const weeklyProgressText = ui.goalBanner?.progressText
+    || (weeklyGoal
+        ? `${formatDecimal(weeklyGoal.currentAmount || 0)} / ${formatDecimal(weeklyGoal.targetAmount || 0)} ${goalTargetLabel}`
+        : 'Trưởng môn chưa khởi động chiến dịch mới.');
+const heroSpotlight = topThreeContributors[0] || topContributors[0] || null;
+const viewerStatusText = isMember
+    ? 'Bạn đang đồng tu trong tông này'
+    : (pendingApplication
+        ? 'Đơn gia nhập đang chờ duyệt'
+        : (!viewerContext.guild && canJoin && safeJoinMode === 'open'
+            ? 'Cổng tuyển sinh đang mở tự do'
+            : (!viewerContext.guild && canJoin && safeJoinMode === 'approval'
+                ? 'Gia nhập qua xét duyệt'
+                : (!viewerContext.guild && canJoin && safeJoinMode === 'invite'
+                    ? 'Gia nhập qua mật lệnh chiêu mộ'
+                    : (!viewerContext.guild
+                        ? 'Bạn chưa đủ điều kiện gia nhập'
+                        : 'Bạn đang thuộc Tông Môn khác')))));
 guild.name = safeGuildName;
 guild.description = safeGuildDescription;
 guild.slug = guildSlug;
@@ -116,7 +140,7 @@ guildDetail.auditLogs = auditLogs;
 guildDetail.recentContributions = rightRailActivity;
 %>
 <main
-    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2 guild-workspace-v3 guild-workspace-v4"
+    class="guild-page-shell guild-page-shell--detail guild-workspace guild-workspace-v2 guild-workspace-v3 guild-workspace-v4 guild-citadel-shell"
     data-guild-page
     data-guild-slug="<%= guildSlug %>"
     data-viewer-id="<%= viewerUserId %>"
@@ -137,6 +161,29 @@ guildDetail.recentContributions = rightRailActivity;
                 <% if (!memberRows.length) { %>
                     <div class="guild-empty-copy guild-empty-copy--panel">No members yet. Invite the first learner to join this guild.</div>
                 <% } %>
+            </div>
+
+            <div class="guild-citadel-lens">
+                <article class="guild-citadel-lens__card">
+                    <span>Thành viên</span>
+                    <strong><%= safeMemberCount %>/<%= safeMemberLimit %></strong>
+                    <small><%= membershipFillPct %>% công suất</small>
+                </article>
+                <article class="guild-citadel-lens__card">
+                    <span>Cấp Linh Thụ</span>
+                    <strong>Stage <%= treeStage %></strong>
+                    <small><%= treePercent %>% cộng hưởng</small>
+                </article>
+                <article class="guild-citadel-lens__card">
+                    <span>Tuyển sinh</span>
+                    <strong><%= joinModeText %></strong>
+                    <small>Trưởng môn: <%= safeLeaderName %></small>
+                </article>
+                <article class="guild-citadel-lens__card">
+                    <span>Chiến dịch</span>
+                    <strong><%= weeklyGoal ? 'Đang chạy' : 'Chờ lệnh' %></strong>
+                    <small><%= weeklyGoalPercent %>% tiến độ tuần</small>
+                </article>
             </div>
         </div>
 
@@ -178,10 +225,36 @@ guildDetail.recentContributions = rightRailActivity;
 
                 <a href="/my-garden" class="guild-tertiary-link">Về khu vườn cá nhân</a>
             </div>
+
+            <div class="guild-citadel-command">
+                <div class="guild-citadel-command__block">
+                    <span class="guild-mini-kicker">Mật lệnh tuần</span>
+                    <strong><%= weeklyHeadline %></strong>
+                    <p><%= weeklyProgressText %></p>
+                    <div class="guild-progress-bar">
+                        <span style="width: <%= weeklyGoalPercent %>%"></span>
+                    </div>
+                </div>
+
+                <div class="guild-citadel-command__block">
+                    <span class="guild-mini-kicker">Người kéo nhịp</span>
+                    <% if (heroSpotlight) { %>
+                        <div class="guild-citadel-spotlight">
+                            <img src="<%= heroSpotlight.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= heroSpotlight.username %>">
+                            <div>
+                                <strong><%= heroSpotlight.username %></strong>
+                                <p>#<%= heroSpotlight.rank || 1 %> với <%= Number(heroSpotlight.totalContributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %> linh lực.</p>
+                            </div>
+                        </div>
+                    <% } else { %>
+                        <div class="guild-empty-copy guild-empty-copy--panel">Chưa có người dẫn nhịp. Hiến lễ đầu tiên sẽ mở bảng vàng cho tông môn.</div>
+                    <% } %>
+                </div>
+            </div>
         </div>
     </section>
 
-    <nav class="guild-v2-tabbar guild-v3-tabbar" aria-label="Điều hướng guild">
+    <nav class="guild-v2-tabbar guild-v3-tabbar guild-command-tabs" aria-label="Điều hướng guild">
         <button type="button" class="guild-v2-tab <%= activeTab === 'overview' ? 'is-active' : '' %>" data-guild-tab="overview">🌳 Tổng Quan</button>
         <button type="button" class="guild-v2-tab <%= activeTab === 'goal' ? 'is-active' : '' %>" data-guild-tab="goal">🎯 Mục Tiêu Tuần</button>
         <button type="button" class="guild-v2-tab <%= activeTab === 'members' ? 'is-active' : '' %>" data-guild-tab="members">👥 Thành Viên</button>
