@@ -11,11 +11,13 @@
     --garden-wood-700: #79533a;
     --garden-wood-500: #ab7e5e;
     --garden-wood-300: #dbc0a0;
+    --garden-moss-900: #314a2b;
     --garden-moss-700: #547844;
     --garden-moss-500: #7ca860;
     --garden-moss-300: #bdd39e;
     --garden-gold-700: #c77814;
     --garden-gold-500: #e89a24;
+    --garden-gold-300: #fcd34d;
     --garden-blue-600: #5b94d0;
     --garden-blue-400: #8ec3f0;
     --garden-red-600: #b75646;
@@ -26,6 +28,7 @@
     --garden-shadow-soft: 0 10px 24px rgba(58, 37, 24, 0.14);
     --garden-shadow-panel: 0 18px 36px rgba(58, 37, 24, 0.2);
     --garden-shadow-float: 0 8px 18px rgba(58, 37, 24, 0.18);
+    --garden-shadow-inset: inset 0 4px 12px rgba(58, 37, 24, 0.1);
     --garden-radius-xl: 28px;
     --garden-radius-lg: 22px;
     --garden-radius-md: 16px;
@@ -39,6 +42,9 @@
     --z-drawer: 40;
     --z-modal: 60;
     --z-tutorial: 9999;
+    --garden-anim-fast: 0.15s ease;
+    --garden-anim-med: 0.25s ease;
+    --garden-anim-bounce: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 * {
@@ -97,7 +103,7 @@ input {
     z-index: var(--z-hud);
     width: 100%;
     height: 100dvh;
-    padding: 14px 18px 96px 96px;
+    padding: 14px 18px 96px 18px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -105,7 +111,6 @@ input {
 }
 
 .garden-shell-backdrop,
-.garden-rail,
 .garden-shell-drawer,
 .hud-top.garden-topbar,
 .planting-ui,
@@ -115,6 +120,7 @@ input {
 .hud-bottom,
 .garden-bottom-nav,
 .mobile-action-btn,
+.fab-menu-btn,
 .pixel-modal-overlay {
     pointer-events: auto;
 }
@@ -134,16 +140,17 @@ input {
     visibility: visible;
 }
 
-.pixel-ui.garden-shell.shop-open .garden-rail,
 .pixel-ui.garden-shell.shop-open .garden-topbar,
 .pixel-ui.garden-shell.shop-open .plant-info-panel,
 .pixel-ui.garden-shell.shop-open .garden-guide-widget,
 .pixel-ui.garden-shell.shop-open .hud-bottom,
 .pixel-ui.garden-shell.shop-open .coords-badge,
-.pixel-ui.garden-shell.shop-open .planting-ui {
+.pixel-ui.garden-shell.shop-open .planting-ui,
+.pixel-ui.garden-shell.shop-open .fab-menu-btn {
     opacity: 0.12;
     pointer-events: none;
     transform: scale(0.985);
+    transition: opacity var(--garden-anim-med), transform var(--garden-anim-med);
 }
 
 .pixel-panel,
@@ -180,7 +187,6 @@ input {
 }
 
 .pixel-btn,
-.garden-rail-btn,
 .drawer-tab,
 .drawer-close-btn,
 .garden-compact-btn,
@@ -205,7 +211,6 @@ input {
 }
 
 .pixel-btn:hover,
-.garden-rail-btn:hover,
 .drawer-tab:hover,
 .drawer-close-btn:hover,
 .garden-compact-btn:hover,
@@ -223,7 +228,6 @@ input {
 }
 
 .pixel-btn:active,
-.garden-rail-btn:active,
 .drawer-tab:active,
 .drawer-close-btn:active,
 .garden-compact-btn:active,
@@ -364,117 +368,30 @@ input {
     50% { transform: translateY(-6px); }
 }
 
-.garden-rail {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    bottom: 108px;
-    z-index: var(--z-floating);
-    width: 66px;
-    padding: 12px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background:
-        linear-gradient(180deg, rgba(255, 251, 241, 0.97), rgba(238, 224, 193, 0.96)),
-        repeating-linear-gradient(
-            180deg,
-            rgba(121, 83, 58, 0.06) 0,
-            rgba(121, 83, 58, 0.06) 2px,
-            transparent 2px,
-            transparent 14px
-        );
-    border: 4px solid var(--garden-wood-900);
-    border-radius: 28px;
-    box-shadow: var(--garden-shadow-panel);
-    overflow: hidden;
-    transition: width 0.18s ease;
-}
-
-.garden-rail:hover,
-.garden-rail:focus-within,
-.pixel-ui.garden-shell.sidebar-open .garden-rail {
-    width: 182px;
-}
-
-.garden-rail-btn {
-    width: 100%;
-    min-height: 46px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    overflow: hidden;
-    background: rgba(255, 252, 245, 0.9);
-}
-
-.garden-rail-btn i {
-    width: 18px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.garden-rail-primary {
-    background: linear-gradient(180deg, #f6ead4, #e7d5b7);
-}
-
-.garden-rail-btn.is-active,
-.garden-rail-btn:hover,
-.garden-rail-btn:focus-visible {
-    background: linear-gradient(180deg, #fffaf0, #ecdcbc);
-}
-
-.rail-label {
-    opacity: 0;
-    max-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    transition: opacity 0.18s ease, max-width 0.18s ease;
-}
-
-.garden-rail:hover .rail-label,
-.garden-rail:focus-within .rail-label,
-.pixel-ui.garden-shell.sidebar-open .rail-label {
-    opacity: 1;
-    max-width: 120px;
-}
-
-.rail-counter {
-    margin-left: auto;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: rgba(58, 37, 24, 0.1);
-    border: 2px solid rgba(58, 37, 24, 0.18);
-    font-size: 0.82rem;
-}
+/* [REMOVED] .garden-rail — replaced by FAB menu + drawer */
 
 .garden-shell-drawer {
     position: absolute;
     top: 16px;
-    left: 92px;
+    left: 16px;
     bottom: 106px;
-    width: min(368px, calc(100vw - 144px));
+    width: min(368px, calc(100vw - 40px));
     z-index: var(--z-drawer);
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding: 18px;
     color: var(--garden-ink);
-    transform: translateX(-14px);
+    transform: translateX(-20px) scale(0.98);
     opacity: 0;
     visibility: hidden;
-    transition: transform 0.2s ease, opacity 0.2s ease, visibility 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.2s ease,
+                visibility 0.2s ease;
 }
 
 .pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
     opacity: 1;
     visibility: visible;
 }
@@ -1751,7 +1668,7 @@ input {
 
 @media (max-width: 1024px) {
     .pixel-ui.garden-shell {
-        padding: 14px 16px 96px 84px;
+        padding: 14px 16px 96px 16px;
     }
 
     .garden-topbar {
@@ -1783,10 +1700,6 @@ input {
 @media (max-width: 768px) {
     .pixel-ui.garden-shell {
         padding: 12px 12px 104px;
-    }
-
-    .garden-rail {
-        display: none;
     }
 
     .garden-shell-drawer {
@@ -2237,79 +2150,7 @@ input {
     }
 }
 
-/* --- PREMIUM INVENTORY REDESIGN --- */
-.inventory-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
-    padding: 8px 0;
-}
-
-.inventory-card {
-    background: rgba(255, 255, 255, 0.6);
-    border: 2px solid var(--garden-wood-300, #d7ccc8);
-    border-radius: 16px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(8px);
-    cursor: default;
-}
-
-.inventory-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 0.9);
-    border-color: var(--garden-green-500, #4caf50);
-}
-
-.inv-card-thumb {
-    width: 56px;
-    height: 56px;
-    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(245,245,245,0.5) 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.inv-card-thumb img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-}
-
-.inv-card-info {
-    text-align: center;
-    width: 100%;
-}
-
-.inv-card-info strong {
-    display: block;
-    font-size: 0.95rem;
-    color: var(--garden-wood-900, #3e2723);
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.inv-card-count {
-    display: inline-block;
-    background: var(--garden-green-100, #c8e6c9);
-    color: var(--garden-green-800, #2e7d32);
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 99px;
-}
+/* [REMOVED] Old .inventory-card + .inv-card-* styles — superseded by .inventory-slot system */
 
 .inventory-layout {
     display: grid;
@@ -2688,7 +2529,6 @@ input {
 .inventory-stat-card:nth-child(6) { animation-delay: 120ms; }
 .inventory-stat-card:nth-child(7) { animation-delay: 140ms; }
 .inventory-stat-card:nth-child(8) { animation-delay: 160ms; }
-}
 
 .inventory-stat-label {
     font-size: 0.74rem;
@@ -2794,5 +2634,450 @@ input {
     .inventory-detail-art {
         width: 78px;
         height: 78px;
+    }
+}
+
+
+/* =============================================================
+   MEGA POLISH PASS — Premium Upgrades
+   ============================================================= */
+
+/* --- 1. FAB Menu Button Premium --- */
+.fab-menu-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: var(--z-floating);
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    box-shadow: var(--garden-shadow-panel);
+    background: linear-gradient(180deg, #fffdf7, #efe0c2);
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast), background 0.2s ease;
+}
+
+.fab-menu-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 14px 28px rgba(58, 37, 24, 0.22);
+    background: linear-gradient(180deg, #ffffff, #f6ead4);
+}
+
+.pixel-ui.garden-shell.sidebar-open .fab-menu-btn {
+    background: linear-gradient(180deg, #dbe8ba, #a8c66c);
+    color: var(--garden-white);
+}
+
+/* --- 2. Topbar Islands Premium --- */
+.topbar-island {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 252, 245, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 3px solid var(--garden-wood-900);
+    border-radius: 20px;
+    padding: 6px 10px;
+    box-shadow: var(--garden-shadow-float);
+    pointer-events: auto;
+    transition: box-shadow var(--garden-anim-fast);
+}
+
+.topbar-island:hover {
+    box-shadow: 0 12px 24px rgba(58, 37, 24, 0.22);
+}
+
+.island-left {
+    margin-left: 68px;
+}
+
+/* --- 3. Drawer Premium Transitions --- */
+.garden-shell-drawer {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    bottom: 106px;
+    width: min(368px, calc(100vw - 40px));
+    z-index: var(--z-drawer);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    color: var(--garden-ink);
+    transform: translateX(-20px) scale(0.98);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.2s ease,
+                visibility 0.2s ease;
+}
+
+.pixel-ui.garden-shell.sidebar-open .garden-shell-drawer {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.garden-shell-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-drawer) - 1);
+    background: rgba(45, 27, 18, 0.35);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.pixel-ui.garden-shell.sidebar-open .garden-shell-backdrop {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Drawer tab active bar */
+.drawer-tab.active {
+    position: relative;
+    color: #fffdf7;
+    background: linear-gradient(180deg, #7fa462, #5f8249);
+    border-color: var(--garden-wood-900);
+}
+
+.drawer-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 4px;
+    background: var(--garden-gold-500);
+    border-radius: 999px;
+}
+
+/* --- 4. Quest Card Premium --- */
+.quest-card {
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast);
+}
+
+.quest-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--garden-shadow-float);
+}
+
+.quest-card.complete {
+    border-color: var(--garden-moss-500);
+    background:
+        linear-gradient(180deg, rgba(237, 243, 221, 0.98), rgba(219, 228, 191, 0.96)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(84, 120, 68, 0.04) 0,
+            rgba(84, 120, 68, 0.04) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+}
+
+/* --- 5. Loading Screen Premium --- */
+#rustic-loading {
+    background:
+        linear-gradient(180deg, rgba(49, 74, 43, 0.92), rgba(29, 47, 30, 0.95)),
+        radial-gradient(circle at top, rgba(255, 246, 228, 0.12), transparent 34%);
+}
+
+.farm-loader-box {
+    border: 4px solid var(--garden-wood-900);
+    border-radius: 28px;
+    box-shadow: var(--garden-shadow-panel), 0 0 80px rgba(124, 168, 96, 0.08);
+}
+
+.farm-icon-bounce {
+    animation: farmBounce 1.4s ease-in-out infinite;
+    box-shadow: 0 8px 20px rgba(58, 37, 24, 0.12);
+}
+
+.farm-title {
+    font-size: 2.4rem;
+    letter-spacing: 0.06em;
+    text-shadow: 1px 1px 0 rgba(58, 37, 24, 0.12);
+}
+
+.wood-progress-container {
+    box-shadow: var(--garden-shadow-inset);
+}
+
+.leaf-progress-bar {
+    background: linear-gradient(90deg, #7fa462, #c8d96a, #e8da6a);
+    box-shadow: inset 0 -2px 0 rgba(58, 37, 24, 0.1);
+}
+
+/* --- 6. Plant Info Panel Polish --- */
+.plant-info-panel {
+    width: 280px;
+    padding: 14px;
+    gap: 10px;
+    border-radius: 18px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.pixel-progress-track {
+    height: 16px;
+    padding: 2px;
+    background: rgba(58, 37, 24, 0.1);
+    border: 2px solid rgba(58, 37, 24, 0.14);
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: var(--garden-shadow-inset);
+}
+
+.pixel-progress-fill.fill-water {
+    background: linear-gradient(90deg, #5fa8d3, #91d5ff);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+}
+
+.pixel-progress-fill.fill-growth {
+    background: linear-gradient(90deg, #7fa462, #c8d96a);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* --- 7. Shop Premium --- */
+.shop-window {
+    border: 4px solid var(--garden-wood-900);
+    border-radius: 24px;
+    box-shadow: 0 30px 60px rgba(32, 20, 13, 0.32);
+    overflow: hidden;
+}
+
+.window-header {
+    border-bottom: 4px solid var(--garden-wood-900);
+    background:
+        linear-gradient(180deg, rgba(255, 250, 238, 0.98), rgba(243, 232, 206, 0.98)),
+        repeating-linear-gradient(
+            180deg,
+            rgba(121, 83, 58, 0.06) 0,
+            rgba(121, 83, 58, 0.06) 2px,
+            transparent 2px,
+            transparent 14px
+        );
+}
+
+.shop-card {
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast), border-color var(--garden-anim-fast);
+}
+
+.shop-card.selected {
+    border-color: var(--garden-moss-700);
+    box-shadow: 0 0 0 3px rgba(124, 168, 96, 0.2), var(--garden-shadow-float);
+    background:
+        linear-gradient(180deg, rgba(237, 243, 221, 0.98), rgba(219, 228, 191, 0.96)),
+        repeating-linear-gradient(
+            180deg,
+            rgba(84, 120, 68, 0.04) 0,
+            rgba(84, 120, 68, 0.04) 2px,
+            transparent 2px,
+            transparent 12px
+        );
+}
+
+.btn-buy-action {
+    font-size: 1.22rem;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 0 rgba(58, 37, 24, 0.2);
+}
+
+.npc-dialog {
+    box-shadow: 0 8px 20px rgba(58, 37, 24, 0.1);
+}
+
+/* --- 8. Toolbar Enhancements --- */
+.toolbar {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.tool-slot {
+    transition: transform var(--garden-anim-fast), background var(--garden-anim-fast), box-shadow var(--garden-anim-fast);
+}
+
+.tool-slot:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(58, 37, 24, 0.16);
+}
+
+.tool-slot.active {
+    background: linear-gradient(180deg, #dbe8ba, #a8c66c);
+    box-shadow: inset 0 -3px 0 rgba(58, 37, 24, 0.1), 0 0 0 3px rgba(168, 198, 108, 0.35);
+    transform: translateY(-1px);
+}
+
+/* --- 9. Inventory Slot Rustic Upgrade --- */
+.inventory-grid-shell,
+.inventory-detail-panel {
+    background:
+        linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(244, 234, 211, 0.94)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 2px solid rgba(58, 37, 24, 0.18);
+    border-radius: 22px;
+    box-shadow: var(--garden-shadow-soft);
+}
+
+.inventory-slot {
+    border: 2px solid rgba(58, 37, 24, 0.16);
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(244, 234, 211, 0.96)),
+        repeating-linear-gradient(90deg, rgba(121, 83, 58, 0.03) 0 1px, transparent 1px 16px),
+        repeating-linear-gradient(0deg, rgba(121, 83, 58, 0.03) 0 1px, transparent 1px 16px);
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast), border-color var(--garden-anim-fast);
+}
+
+.inventory-slot.is-owned:hover {
+    transform: translateY(-3px);
+    border-color: var(--garden-moss-500);
+    box-shadow: 0 10px 22px rgba(84, 120, 68, 0.16);
+}
+
+.inventory-slot.is-selected {
+    border-color: var(--garden-gold-500);
+    box-shadow: 0 0 0 3px rgba(232, 154, 36, 0.18), 0 12px 24px rgba(232, 154, 36, 0.14);
+    background:
+        linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 243, 205, 0.98)),
+        repeating-linear-gradient(90deg, rgba(232, 154, 36, 0.05) 0 1px, transparent 1px 16px);
+}
+
+.inventory-slot-count {
+    background: var(--garden-moss-500);
+    box-shadow: 0 4px 10px rgba(84, 120, 68, 0.25);
+}
+
+.inventory-detail-card {
+    padding-top: 14px;
+}
+
+.inventory-stat-card {
+    background: rgba(255, 253, 247, 0.8);
+    border: 1px solid rgba(58, 37, 24, 0.1);
+    border-radius: 16px;
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast);
+}
+
+.inventory-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(58, 37, 24, 0.1);
+}
+
+.inventory-detail-section {
+    background: rgba(255, 253, 247, 0.8);
+    border: 1px solid rgba(58, 37, 24, 0.1);
+    border-radius: 16px;
+}
+
+/* --- 10. Guide Widget Polish --- */
+.garden-guide-avatar {
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast);
+}
+
+.garden-guide-avatar:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 24px rgba(58, 37, 24, 0.22);
+}
+
+.garden-guide-panel {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* --- 11. Bottom Nav Premium --- */
+.garden-bottom-nav {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.bottom-nav-link {
+    transition: color var(--garden-anim-fast), background var(--garden-anim-fast), transform var(--garden-anim-fast);
+}
+
+.bottom-nav-link:hover {
+    color: var(--garden-wood-900);
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.bottom-nav-link.active {
+    color: var(--garden-wood-900);
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(58, 37, 24, 0.12);
+    box-shadow: 0 2px 8px rgba(58, 37, 24, 0.08);
+}
+
+/* --- 12. Dropdown Premium --- */
+.garden-dropdown-menu {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: panelPop 0.18s ease;
+}
+
+/* --- 13. Social Cards Premium --- */
+.social-link-card {
+    transition: transform var(--garden-anim-fast), box-shadow var(--garden-anim-fast), border-color var(--garden-anim-fast);
+}
+
+.social-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--garden-shadow-float);
+    border-color: var(--garden-moss-500);
+}
+
+/* --- 14. Coords Badge --- */
+.coords-badge {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 0.88rem;
+    opacity: 0.85;
+}
+
+/* --- 15. Planting UI --- */
+.planting-ui {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: panelPop 0.18s ease;
+}
+
+/* --- Mobile overrides for new styles --- */
+@media (max-width: 768px) {
+    .fab-menu-btn {
+        width: 48px;
+        height: 48px;
+        top: 12px;
+        left: 12px;
+        border-radius: 14px;
+    }
+
+    .island-left {
+        margin-left: 0;
+        margin-top: 56px;
+    }
+
+    .plant-info-panel {
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .fab-menu-btn {
+        width: 44px;
+        height: 44px;
+        top: 10px;
+        left: 10px;
+        font-size: 1.2rem;
     }
 }

@@ -43,6 +43,30 @@ router.get("/", async (req, res) => {
         const totalStudents = await User.countDocuments({ isAdmin: { $ne: true }, isTeacher: { $ne: true } });
         const totalLessons = await Lesson.countDocuments({}); 
 
+        let levelInfo = null;
+        let heatmapData = [];
+        
+        if (req.user) {
+            levelInfo = LevelUtils.getLevelInfo(req.user.level || 1, req.user.xp || 0);
+            
+            // Generate fake heatmap data for the last 60 days
+            const today = new Date();
+            for (let i = 59; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                
+                // Randomize activity level: 0 (none), 1 (low), 2 (medium), 3 (high)
+                // Make weekends more active perhaps, or just totally random, biased towards 0
+                const isActive = Math.random() > 0.4; // 60% chance to be active
+                const activityLevel = isActive ? Math.floor(Math.random() * 3) + 1 : 0;
+                
+                heatmapData.push({
+                    date: date.toISOString().split('T')[0],
+                    level: activityLevel
+                });
+            }
+        }
+
         res.render("index", {
             user: req.user,
             subjects,
@@ -50,11 +74,13 @@ router.get("/", async (req, res) => {
             totalCourses,
             totalStudents,
             totalLessons,
+            levelInfo,
+            heatmapData,
             activePage: 'home' 
         });
     } catch (e) {
         console.error("Home Error:", e);
-        res.render("index", { user: req.user, subjects: [], courses: [], totalCourses: 0, totalStudents: 0, totalLessons: 0, activePage: 'home' });
+        res.render("index", { user: req.user, subjects: [], courses: [], totalCourses: 0, totalStudents: 0, totalLessons: 0, levelInfo: null, heatmapData: [], activePage: 'home' });
     }
 });
 
