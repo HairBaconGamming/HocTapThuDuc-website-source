@@ -137,10 +137,10 @@ ul { list-style: none; }
 
 /* User Grid Layout */
 .user-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1.2fr;
     grid-template-rows: auto;
     grid-template-areas:
-        "main member heatmap";
+        "main member";
 }
 
 .bento-box {
@@ -773,8 +773,7 @@ ul { list-style: none; }
         grid-template-columns: 1fr;
         grid-template-areas:
             "main"
-            "member"
-            "heatmap";
+            "member";
     }
     
     .bento-box { padding: 30px; }
