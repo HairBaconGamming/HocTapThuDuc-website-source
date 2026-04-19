@@ -1,4 +1,10 @@
 const mongoose = require('mongoose');
+const ASSETS = require('../config/gardenAssets');
+
+const inventoryShape = Object.keys(ASSETS.PLANTS || {}).reduce((shape, key) => {
+    shape[key] = { type: Number, default: 0 };
+    return shape;
+}, {});
 
 const GardenSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -6,12 +12,7 @@ const GardenSchema = new mongoose.Schema({
     tutorialStep: { type: Number, default: 0 },
     water: { type: Number, default: 1 },
     fertilizer: { type: Number, default: 0 },
-    inventory: {
-        sunflower: { type: Number, default: 0 },
-        wheat: { type: Number, default: 0 },
-        carrot: { type: Number, default: 0 },
-        tomato: { type: Number, default: 0 }
-    },
+    inventory: inventoryShape,
 
     camera: {
         x: { type: Number, default: 2048 },

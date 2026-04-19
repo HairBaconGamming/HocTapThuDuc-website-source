@@ -1,0 +1,326 @@
+/* =========================================
+   GUILD HUB - RUSTIC GARDEN EDITION
+   ========================================= */
+
+:root {
+    --guild-paper: #fffaf0;
+    --guild-paper-soft: #f8efde;
+    --guild-paper-border: #c8b091;
+    --guild-wood-900: #3a2518;
+    --guild-wood-700: #79533a;
+    --guild-wood-500: #ab7e5e;
+    --guild-moss-700: #547844;
+    --guild-moss-500: #7ca860;
+    --guild-ink: #3f2b1f;
+    --guild-ink-soft: #6f5948;
+    
+    --guild-shadow-soft: 0 10px 24px rgba(58, 37, 24, 0.14);
+    --guild-radius-lg: 22px;
+    --guild-radius-md: 16px;
+    --guild-radius-sm: 12px;
+}
+
+body {
+    background-color: var(--guild-paper-soft);
+    color: var(--guild-ink);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    background-image: 
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+}
+
+.gh-wrapper {
+    max-width: 1200px;
+    margin: 40px auto 80px;
+    padding: 0 20px;
+}
+
+/* --- COMMON PANELS --- */
+.gh-hero-card,
+.gh-create-card,
+.guild-card {
+    background: linear-gradient(180deg, #fffdf7, #eadabd);
+    border: 3px solid var(--guild-wood-900);
+    border-radius: var(--guild-radius-lg);
+    box-shadow: var(--guild-shadow-soft);
+}
+
+/* --- HERO SECTION --- */
+.gh-hero-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.gh-hero-card {
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(84, 120, 68, 0.9), rgba(124, 168, 96, 0.9)), url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+    color: #fffdf7;
+    border-color: var(--guild-wood-900);
+}
+
+.gh-kicker {
+    display: inline-block; 
+    padding: 6px 16px; 
+    background: rgba(58, 37, 24, 0.4);
+    border-radius: var(--guild-radius-md); 
+    font-size: 1.2rem; 
+    font-weight: 400; 
+    letter-spacing: 1px;
+    margin-bottom: 20px; 
+    border: 2px solid var(--guild-wood-900);
+}
+
+.gh-hero-card h1 { 
+    font-size: 3.5rem; 
+    line-height: 1.1; 
+    margin: 0 0 15px; 
+    text-shadow: 2px 2px 0 var(--guild-wood-900);
+}
+
+.gh-hero-card p { 
+    font-size: 1.4rem; 
+    opacity: 0.95; 
+    line-height: 1.4; 
+    margin: 0; 
+    max-width: 90%; 
+    text-shadow: 1px 1px 0 var(--guild-wood-900);
+}
+
+/* CREATE GUILD FORM */
+.gh-create-card {
+    padding: 35px;
+}
+
+.gh-create-card h2 { 
+    font-size: 2rem; 
+    color: var(--guild-wood-900); 
+    margin: 0 0 5px; 
+}
+
+.gh-create-card p { 
+    color: var(--guild-ink-soft); 
+    font-size: 1.2rem; 
+    margin-bottom: 20px; 
+}
+
+.gh-input, .gh-textarea {
+    width: 100%; 
+    padding: 14px 16px; 
+    border: 3px solid var(--guild-wood-900);
+    border-radius: var(--guild-radius-md); 
+    font-family: inherit; 
+    font-size: 1.3rem;
+    background: var(--guild-paper); 
+    color: var(--guild-ink);
+    transition: 0.2s; 
+    outline: none; 
+    margin-bottom: 15px;
+}
+
+.gh-input:focus, .gh-textarea:focus { 
+    background: #ffffff; 
+    box-shadow: inset 0 2px 4px rgba(58, 37, 24, 0.1); 
+}
+
+.gh-textarea { 
+    resize: vertical; 
+    min-height: 80px; 
+}
+
+.btn-create, .btn-gc {
+    font-family: 'VT323', monospace;
+    border: 3px solid var(--guild-wood-900);
+    border-radius: var(--guild-radius-sm);
+    color: var(--guild-ink);
+    background: linear-gradient(180deg, #fffdf7, #eadabd);
+    box-shadow: 0 4px 0 rgba(58, 37, 24, 0.18);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.16s ease;
+    font-size: 1.4rem;
+    padding: 12px;
+}
+
+.btn-create { width: 100%; }
+
+.btn-create:hover:not(:disabled), .btn-gc:hover:not(.disabled) { 
+    background: linear-gradient(180deg, #ffffff, #f1e5cf);
+}
+
+.btn-create:active:not(:disabled), .btn-gc:active:not(.disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(58, 37, 24, 0.14);
+}
+
+.btn-create:disabled { 
+    background: #dbe4bf; 
+    color: var(--guild-ink-soft);
+    cursor: not-allowed; 
+    box-shadow: none; 
+}
+
+/* --- DIRECTORY GRID --- */
+.gh-section-header { 
+    margin-bottom: 25px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end; 
+}
+
+.gh-section-header h2 { 
+    font-size: 2.2rem; 
+    color: var(--guild-wood-900); 
+    margin: 0; 
+}
+
+.gh-count { 
+    font-weight: 400; 
+    color: var(--guild-paper); 
+    background: var(--guild-wood-900); 
+    padding: 4px 12px; 
+    border-radius: var(--guild-radius-md); 
+    font-size: 1.1rem; 
+}
+
+.gh-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 25px;
+}
+
+.guild-card {
+    padding: 25px;
+    display: flex; 
+    flex-direction: column;
+    position: relative; 
+    overflow: hidden;
+}
+
+/* Card Header */
+.gc-header { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+
+.gc-avatar {
+    width: 60px; height: 60px; 
+    background: var(--guild-paper);
+    border-radius: var(--guild-radius-md); 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; 
+    color: var(--guild-wood-900); 
+    flex-shrink: 0;
+    border: 3px solid var(--guild-wood-900); 
+}
+
+.gc-info { flex: 1; min-width: 0; }
+.gc-name { font-size: 1.8rem; color: var(--guild-wood-900); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gc-leader { font-size: 1.1rem; color: var(--guild-ink-soft); display: flex; align-items: center; gap: 5px; }
+.gc-leader img { width: 24px; height: 24px; border-radius: var(--guild-radius-sm); border: 2px solid var(--guild-wood-900); }
+
+.gc-desc { 
+    font-size: 1.2rem; 
+    color: var(--guild-ink); 
+    line-height: 1.3; 
+    margin-bottom: 20px; 
+    flex-grow: 1; 
+    display: -webkit-box; 
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+}
+
+/* Tags & Stats */
+.gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.g-stat { 
+    background: rgba(255, 255, 255, 0.4); 
+    padding: 10px; 
+    border-radius: var(--guild-radius-md); 
+    border: 2px solid var(--guild-wood-500); 
+    text-align: center; 
+}
+.g-stat span { display: block; font-size: 1rem; color: var(--guild-ink-soft); margin-bottom: 2px; }
+.g-stat strong { font-size: 1.5rem; color: var(--guild-wood-900); }
+
+/* Requirements Zone */
+.gc-reqs { 
+    background: var(--guild-paper-soft); 
+    border: 2px dashed var(--guild-wood-500); 
+    padding: 12px; 
+    border-radius: var(--guild-radius-md); 
+    margin-bottom: 20px; 
+}
+
+.req-title { 
+    font-size: 1.1rem; 
+    color: var(--guild-wood-900); 
+    margin-bottom: 8px; 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+}
+
+.req-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.req-badge { 
+    padding: 4px 10px; 
+    border-radius: var(--guild-radius-md); 
+    font-size: 1.1rem; 
+    background: var(--guild-paper); 
+    border: 2px solid var(--guild-wood-500); 
+    color: var(--guild-ink); 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+}
+
+.req-badge.pass { border-color: var(--guild-moss-700); color: var(--guild-moss-700); background: #edf3dd; }
+.req-badge.fail { border-color: #b75646; color: #b75646; background: #fae8e5; }
+
+/* Actions */
+.gc-actions { display: flex; gap: 10px; }
+.btn-gc { 
+    flex: 1; 
+    text-align: center; 
+    text-decoration: none; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; 
+}
+
+.btn-gc.view { 
+    background: linear-gradient(180deg, #fffaf0, #ecdcbc); 
+}
+
+.btn-gc.join { 
+    background: linear-gradient(180deg, #bdd39e, #7ca860);
+    color: #fffdf7;
+    text-shadow: 1px 1px 0 var(--guild-wood-900);
+}
+
+.btn-gc.join:hover {
+    background: linear-gradient(180deg, #cbe3ab, #8dbd6f);
+}
+
+.btn-gc.disabled { 
+    background: var(--guild-paper-border); 
+    color: var(--guild-ink-soft); 
+    cursor: not-allowed; 
+    box-shadow: none; 
+    text-shadow: none;
+}
+
+@media (max-width: 900px) {
+    .gh-hero-grid { grid-template-columns: 1fr; }
+    .gh-grid { grid-template-columns: 1fr; }
+}

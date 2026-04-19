@@ -128,7 +128,10 @@
 
         updateThirstyIcon(sprite, isThirsty) {
             if (isThirsty && !sprite.thirstyIcon) {
-                const icon = this.add.image(sprite.x, sprite.y - sprite.displayHeight - 20, 'water_drop').setOrigin(0.5, 1).setDepth(999999);
+                const icon = this.add.image(sprite.x, sprite.y - sprite.displayHeight - 20, 'water_drop')
+                    .setOrigin(0.5, 1)
+                    .setDepth(999999)
+                    .setDisplaySize(32, 32);
                 this.tweens.add({ targets: icon, y: '-=15', duration: 800, yoyo: true, repeat: -1 });
                 sprite.thirstyIcon = icon;
                 return;

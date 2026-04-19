@@ -50,47 +50,10 @@
     <div class="pixel-ui garden-shell">
         <div class="garden-shell-backdrop" id="gardenShellBackdrop"></div>
 
-        <aside class="garden-rail" aria-label="Điều hướng khu vườn">
-            <button id="gardenMenuToggle" class="garden-rail-btn garden-rail-primary" type="button" aria-controls="gardenSidebar" aria-expanded="false">
-                <i class="fas fa-bars"></i>
-                <span class="rail-label">Bảng điều hướng</span>
-            </button>
-
-            <a href="<%= backLink %>" class="garden-rail-btn" title="Quay lại">
-                <i class="fas fa-arrow-left"></i>
-                <span class="rail-label">Quay lại</span>
-            </a>
-
-            <% if (guildContext && guildContext.guild) { %>
-                <a href="/guilds/<%= guildContext.guild.slug %>" class="garden-rail-btn" title="Tông môn">
-                    <i class="fas fa-people-group"></i>
-                    <span class="rail-label">Tông môn</span>
-                </a>
-            <% } else if (isOwner) { %>
-                <a href="/guilds" class="garden-rail-btn" title="Tông môn">
-                    <i class="fas fa-people-group"></i>
-                    <span class="rail-label">Tông môn</span>
-                </a>
-            <% } %>
-
-            <button class="garden-rail-btn" type="button" data-shell-target="quests">
-                <i class="fas fa-list-check"></i>
-                <span class="rail-label">Nhiệm vụ</span>
-                <span class="rail-counter" id="questSummaryCount">0</span>
-            </button>
-            <button class="garden-rail-btn" type="button" data-shell-target="inventory">
-                <i class="fas fa-box-open"></i>
-                <span class="rail-label">Vật phẩm</span>
-            </button>
-            <button class="garden-rail-btn" type="button" data-shell-target="guide">
-                <i class="fas fa-compass"></i>
-                <span class="rail-label">Hướng dẫn</span>
-            </button>
-            <button class="garden-rail-btn" type="button" data-shell-target="social">
-                <i class="fas fa-user-group"></i>
-                <span class="rail-label">Kết nối</span>
-            </button>
-        </aside>
+        <!-- FAB Menu Button (replaces garden-rail) -->
+        <button id="gardenMenuToggle" class="pixel-btn fab-menu-btn" type="button" aria-controls="gardenSidebar" aria-expanded="false" title="Mở bảng điều hướng">
+            <i class="fas fa-bars"></i>
+        </button>
 
         <aside class="garden-shell-drawer" id="gardenSidebar" aria-hidden="true">
             <div class="drawer-header">
@@ -101,6 +64,21 @@
                 <button id="gardenMenuClose" class="drawer-close-btn" type="button" aria-label="Đóng bảng điều hướng">
                     <i class="fas fa-xmark"></i>
                 </button>
+            </div>
+
+            <div class="drawer-quick-nav">
+                <a href="<%= backLink %>" class="pixel-btn drawer-nav-btn">
+                    <i class="fas fa-arrow-left"></i> Thoát
+                </a>
+                <% if (guildContext && guildContext.guild) { %>
+                    <a href="/guilds/<%= guildContext.guild.slug %>" class="pixel-btn drawer-nav-btn">
+                        <i class="fas fa-people-group"></i> Tông môn
+                    </a>
+                <% } else if (isOwner) { %>
+                    <a href="/guilds" class="pixel-btn drawer-nav-btn">
+                        <i class="fas fa-people-group"></i> Tông môn
+                    </a>
+                <% } %>
             </div>
 
             <div class="drawer-tabs">
@@ -149,7 +127,25 @@
                         </div>
                         <span class="drawer-status" id="gardenInventorySummary">Đang đồng bộ</span>
                     </div>
-                    <div class="inventory-list" id="gardenInventoryList"></div>
+                    <div class="inventory-layout">
+                        <div class="inventory-grid-shell">
+                            <div class="inventory-grid-head">
+                                <span class="inventory-grid-kicker">Dạng ô kho</span>
+                                <p>Chạm vào ô đang sáng để mở hồ sơ vật phẩm thật chi tiết.</p>
+                            </div>
+                            <div class="inventory-list" id="gardenInventoryList" role="listbox" aria-label="Túi vật phẩm"></div>
+                        </div>
+
+                        <aside class="inventory-detail-panel" id="gardenInventoryDetail" aria-live="polite">
+                            <div class="inventory-detail-empty">
+                                <div class="inventory-detail-empty-icon">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <strong>Chưa có vật phẩm để soi</strong>
+                                <p>Thu hoạch nông sản rồi bấm vào từng ô để xem hồ sơ tăng trưởng, mức thưởng, độ khó chăm và giá trị sử dụng của từng món.</p>
+                            </div>
+                        </aside>
+                    </div>
                 </section>
 
                 <section class="drawer-panel" data-sidebar-panel="guide">
@@ -201,8 +197,8 @@
         </aside>
 
         <div class="hud-top garden-topbar">
-            <div class="garden-topbar-left">
-
+            <!-- Đảo nổi bên trái -->
+            <div class="topbar-island island-left">
                 <div class="garden-scene-pill">
                     <span class="garden-scene-main"><%= isOwner ? 'My Garden' : (garden.user ? garden.user.username + "'s Garden" : 'Neighbor Garden') %></span>
                     <span class="garden-scene-sub">
@@ -231,8 +227,8 @@
                 </div>
             </div>
 
-            <div class="garden-topbar-right">
-
+            <!-- Đảo nổi bên phải -->
+            <div class="topbar-island island-right">
                 <div class="pixel-panel resources garden-resource-bar">
                     <div class="res-item" title="Nước">
                         <img src="<%= resourceIcons.water %>" class="pixel-icon" alt="Nước">

@@ -97,59 +97,45 @@ function normalizeGuildTab(tab, showAdminTab) {
 function buildDonationCatalog(viewerResources) {
     const inventory = viewerResources.inventory || {};
     const resourceIcons = gardenAssets.UI?.resourceIcons || {};
-    const harvestIcons = gardenAssets.UI?.harvestIcons || {};
 
-    return [
+    const catalog = [
         {
             key: 'water',
             label: 'Nước',
-            symbol: DONATION_SYMBOLS.water,
+            symbol: DONATION_SYMBOLS.water || '💧',
             iconUrl: resourceIcons.water || '',
             amount: viewerResources.water || 0
         },
         {
             key: 'fertilizer',
             label: 'Phân bón',
-            symbol: DONATION_SYMBOLS.fertilizer,
+            symbol: DONATION_SYMBOLS.fertilizer || '🌿',
             iconUrl: resourceIcons.fertilizer || '',
             amount: viewerResources.fertilizer || 0
         },
         {
             key: 'gold',
             label: 'Tiền vàng',
-            symbol: DONATION_SYMBOLS.gold,
+            symbol: DONATION_SYMBOLS.gold || '🪙',
             iconUrl: resourceIcons.gold || '',
             amount: viewerResources.gold || 0
-        },
-        {
-            key: 'tomato',
-            label: 'Cà chua',
-            symbol: DONATION_SYMBOLS.tomato,
-            iconUrl: harvestIcons.tomato || '',
-            amount: inventory.tomato || 0
-        },
-        {
-            key: 'wheat',
-            label: 'Lúa mì',
-            symbol: DONATION_SYMBOLS.wheat,
-            iconUrl: harvestIcons.wheat || '',
-            amount: inventory.wheat || 0
-        },
-        {
-            key: 'carrot',
-            label: 'Cà rốt',
-            symbol: DONATION_SYMBOLS.carrot,
-            iconUrl: harvestIcons.carrot || '',
-            amount: inventory.carrot || 0
-        },
-        {
-            key: 'sunflower',
-            label: 'Hướng dương',
-            symbol: DONATION_SYMBOLS.sunflower,
-            iconUrl: harvestIcons.sunflower || '',
-            amount: inventory.sunflower || 0
         }
     ];
+
+    if (gardenAssets.PLANTS) {
+        Object.keys(gardenAssets.PLANTS).forEach(key => {
+            const plant = gardenAssets.PLANTS[key];
+            catalog.push({
+                key: key,
+                label: plant.name || key,
+                symbol: DONATION_SYMBOLS[key] || '🌱',
+                iconUrl: plant.harvestIcon || '',
+                amount: inventory[key] || 0
+            });
+        });
+    }
+
+    return catalog;
 }
 
 function buildHeroMetaChips(guild) {

@@ -1,4 +1,6 @@
-const INVENTORY_KEYS = ['sunflower', 'wheat', 'carrot', 'tomato'];
+const ASSETS = require('../config/gardenAssets');
+
+const INVENTORY_KEYS = Object.keys(ASSETS.PLANTS || {});
 
 function ensureInventoryShape(garden) {
     if (!garden.inventory || typeof garden.inventory !== 'object') {

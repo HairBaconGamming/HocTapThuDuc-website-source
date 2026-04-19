@@ -10,6 +10,7 @@
     const showToast = helpers.showToast || ((msg) => console.log(msg));
 
     let selectedShopItem = null;
+    let selectedInventoryKey = null;
     let statsInterval = null;
     let domActionsBound = false;
     let keyboardBound = false;
@@ -33,6 +34,13 @@
         'Mở túi vật phẩm để xem nông sản vừa thu được và chuẩn bị quyên góp cho Tông Môn.'
     ];
 
+    const inventoryContributionValues = Object.freeze({
+        sunflower: 20,
+        wheat: 35,
+        carrot: 60,
+        tomato: 120
+    });
+
     function getGardenItems() {
         return Array.isArray(gardenData.items) ? gardenData.items : [];
     }
@@ -55,6 +63,94 @@
             || gardenAssets.PLANTS?.[itemKey]?.stages?.[gardenAssets.PLANTS[itemKey].stages.length - 1]
             || resourceIcons.gold
             || '';
+    }
+
+    function getInventoryKeys() {
+        return Object.keys(gardenAssets.PLANTS || {});
+    }
+
+    function formatDurationLong(value) {
+        const ms = typeof value === 'number' ? value : parseDuration(value);
+        const totalMinutes = Math.max(0, Math.round(ms / 60000));
+        const days = Math.floor(totalMinutes / (24 * 60));
+        const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+        const minutes = totalMinutes % 60;
+        const parts = [];
+
+        if (days > 0) parts.push(`${days} ngày`);
+        if (hours > 0) parts.push(`${hours} giờ`);
+        if (minutes > 0 || !parts.length) parts.push(`${minutes} phút`);
+
+        return parts.join(' ');
+    }
+
+    function getInventoryStageCount(config = {}) {
+        if (Array.isArray(config.stages) && config.stages.length) {
+            return config.stages.length;
+        }
+        return Math.max(1, Number(config.maxStage || 0) + 1);
+    }
+
+    function getAverageGold(config = {}) {
+        const min = Number(config.rewardGold?.min || 0);
+        const max = Number(config.rewardGold?.max || 0);
+        if (!min && !max) return 0;
+        return Math.round((min + max) / 2);
+    }
+
+    function getInventoryTier(config = {}) {
+        const unlockLevel = Number(config.unlockLevel || 1);
+        const avgGold = getAverageGold(config);
+
+        if (unlockLevel >= 21 || avgGold >= 2500) {
+            return { label: 'Huyền thoại', tone: 'legendary' };
+        }
+        if (unlockLevel >= 15 || avgGold >= 700) {
+            return { label: 'Sử thi', tone: 'epic' };
+        }
+        if (unlockLevel >= 8 || avgGold >= 250) {
+            return { label: 'Hiếm', tone: 'rare' };
+        }
+        if (unlockLevel >= 3 || avgGold >= 120) {
+            return { label: 'Khá hiếm', tone: 'uncommon' };
+        }
+        return { label: 'Phổ thông', tone: 'common' };
+    }
+
+    function getCareDifficulty(config = {}) {
+        const totalMs = parseDuration(config.totalTime || config.growthTime);
+        const witherMs = parseDuration(config.witherTime || '30 phut');
+        const ratio = totalMs > 0 ? witherMs / totalMs : 0;
+
+        if (ratio <= 1) return 'Canh sát, dễ lỡ nhịp';
+        if (ratio <= 2) return 'Cần để mắt thường xuyên';
+        if (ratio <= 6) return 'Chăm vừa tay';
+        return 'Rất dễ duy trì';
+    }
+
+    function getRotationProfile(config = {}) {
+        const totalMinutes = Math.max(1, Math.round(parseDuration(config.totalTime || config.growthTime) / 60000));
+
+        if (totalMinutes <= 25) return 'Xoay vòng cực nhanh';
+        if (totalMinutes <= 70) return 'Luân canh cân bằng';
+        if (totalMinutes <= 240) return 'Đầu tư trung hạn';
+        return 'Farm dài hơi';
+    }
+
+    function getUsageRole(config = {}) {
+        if (config.isMultiHarvest && Number(config.unlockLevel || 0) >= 15) {
+            return 'Trụ cột tái thu hoạch';
+        }
+        if (config.isMultiHarvest) {
+            return 'Nhịp farm bền bỉ';
+        }
+        if (Number(config.unlockLevel || 0) <= 2) {
+            return 'Món mở kho đầu game';
+        }
+        if (Number(config.rewardXP || 0) >= 5000) {
+            return 'Nguồn đột phá kinh nghiệm';
+        }
+        return 'Nguồn thu hoạch ổn định';
     }
 
     function escapeHtml(value = '') {
@@ -179,32 +275,6 @@
         } else {
             statusEl.innerText = `${complete}/${quests.length} nhiệm vụ đã hoàn tất`;
         }
-    }
-
-    function renderInventory(inventory = gardenData.inventory || {}) {
-        const list = document.getElementById('gardenInventoryList');
-        const summary = document.getElementById('gardenInventorySummary');
-        if (!list) return;
-
-        const keys = ['sunflower', 'wheat', 'carrot', 'tomato'];
-        const total = keys.reduce((sum, key) => sum + Number(inventory[key] || 0), 0);
-
-        if (summary) {
-            summary.innerText = total > 0 ? `${total} nông sản trong túi` : 'Túi đang trống';
-        }
-
-        list.innerHTML = keys.map((key) => {
-            const count = Number(inventory[key] || 0);
-            return `
-                <div class="inventory-card">
-                    <img src="${escapeHtml(getHarvestIcon(key))}" alt="${escapeHtml(getDisplayNameForItem(key))}">
-                    <div>
-                        <strong>${escapeHtml(getDisplayNameForItem(key))}</strong>
-                        <span>${count} vật phẩm</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
     }
 
     function renderGuideTips() {
@@ -878,6 +948,15 @@
             claimQuest(button.getAttribute('data-quest-id'));
         });
 
+        document.getElementById('gardenInventoryList')?.addEventListener('click', (event) => {
+            const slot = event.target.closest('.inventory-slot[data-item-key]');
+            if (!slot || slot.disabled) return;
+
+            selectedInventoryKey = slot.getAttribute('data-item-key');
+            renderInventory(gardenData.inventory || {});
+            setGuideLine(`Đang soi hồ sơ ${getDisplayNameForItem(selectedInventoryKey)}. Kéo xuống phần phân tích để xem nhịp tăng trưởng, mức thưởng và độ khó chăm.`);
+        });
+
         document.querySelectorAll('.tool-slot[data-tool]').forEach((element) => {
             element.addEventListener('click', () => {
                 const tool = element.getAttribute('data-tool');
@@ -935,6 +1014,241 @@
                 console.warn('Keep-alive failed:', error);
             });
         }, interval);
+    }
+
+    function buildInventoryInsight(itemKey, count = 0) {
+        const config = gardenAssets.PLANTS?.[itemKey];
+        if (!config) return null;
+
+        const ownedCount = Math.max(0, Number(count || 0));
+        const growthStageMs = parseDuration(config.growthTime);
+        const totalGrowthMs = parseDuration(config.totalTime || config.growthTime);
+        const witherMs = parseDuration(config.witherTime || '30 phut');
+        const averageGold = getAverageGold(config);
+        const harvestYield = Math.max(1, Number(config.harvestYield || 1));
+        const stageCount = getInventoryStageCount(config);
+        const tier = getInventoryTier(config);
+        const unitContribution = Number(inventoryContributionValues[itemKey] || 0);
+        const totalContribution = unitContribution > 0 ? unitContribution * ownedCount : 0;
+        const cycleHours = Math.max(totalGrowthMs / (60 * 60 * 1000), 1 / 60);
+        const goldPerHour = Math.round(averageGold / cycleHours);
+        const xpPerHour = Math.round(Number(config.rewardXP || 0) / cycleHours);
+        const stashValueEstimate = averageGold * ownedCount;
+        const regrowStage = Number.isFinite(Number(config.afterharvestStage))
+            ? Number(config.afterharvestStage)
+            : null;
+
+        return {
+            key: itemKey,
+            config,
+            count: ownedCount,
+            icon: getHarvestIcon(itemKey),
+            tier,
+            harvestMode: config.isMultiHarvest ? 'Thu nhiều đợt' : 'Thu một lần',
+            stageCount,
+            stageTime: formatDurationLong(growthStageMs),
+            totalTime: formatDurationLong(totalGrowthMs),
+            witherTime: formatDurationLong(witherMs),
+            averageGold,
+            goldRange: `${Number(config.rewardGold?.min || 0)} - ${Number(config.rewardGold?.max || 0)} vàng`,
+            xpReward: Number(config.rewardXP || 0),
+            harvestYield,
+            unlockLevel: Number(config.unlockLevel || 1),
+            size: `${Number(config.size?.w || 1)} x ${Number(config.size?.h || 1)} ô`,
+            careDifficulty: getCareDifficulty(config),
+            rotationProfile: getRotationProfile(config),
+            usageRole: getUsageRole(config),
+            goldPerHour,
+            xpPerHour,
+            stashValueEstimate,
+            regrowStage,
+            contribution: unitContribution > 0 ? `${unitContribution} / vật phẩm` : 'Chưa hỗ trợ',
+            totalContribution: totalContribution > 0 ? `${totalContribution} linh lực` : 'Chưa khả dụng',
+            description: `${config.name} thuộc nhóm ${tier.label.toLowerCase()}, thiên về ${getUsageRole(config).toLowerCase()} và hợp với nhịp ${getRotationProfile(config).toLowerCase()}.`,
+            notes: [
+                `${config.name} mất khoảng ${formatDurationLong(totalGrowthMs)} để hoàn tất chu kỳ thu hoạch, với mỗi cấp tăng trưởng dài khoảng ${formatDurationLong(growthStageMs)}.`,
+                config.isMultiHarvest
+                    ? `Giống cây này tái sinh sau thu hoạch${regrowStage !== null ? ` từ mốc ${regrowStage}` : ''}, rất hợp cho người muốn giữ một ô farm vận hành liên tục.`
+                    : 'Giống cây này kết thúc luôn sau khi thu hoạch, phù hợp để xoay vòng ô đất thật nhanh.',
+                `Cửa sổ héo ở mức ${formatDurationLong(witherMs)}, nên độ khó chăm hiện được xếp vào nhóm "${getCareDifficulty(config)}".`,
+                `Hiệu suất quy đổi đang ở khoảng ${goldPerHour} vàng/giờ và ${xpPerHour} XP/giờ nếu giữ nhịp thu hoạch đều.`,
+                unitContribution > 0
+                    ? `Mỗi đơn vị có thể hiến cống khoảng ${unitContribution} linh lực cho Linh Thụ; số bạn đang giữ tương đương gần ${totalContribution} linh lực.`
+                    : 'Vật phẩm này hiện chưa nằm trong nhóm nông sản hiến cống mặc định của Tông Môn.',
+                ownedCount > 0
+                    ? `Bạn đang có sẵn ${ownedCount} ${config.name.toLowerCase()} trong túi, tương đương khoảng ${stashValueEstimate} vàng giá trị thu hoạch trung bình.`
+                    : `Hiện bạn chưa có ${config.name.toLowerCase()} nào trong túi.`
+            ]
+        };
+    }
+
+    function renderInventoryDetail(itemKey, inventory = gardenData.inventory || {}) {
+        const panel = document.getElementById('gardenInventoryDetail');
+        if (!panel) return;
+
+        const ownedKeys = getInventoryKeys().filter((key) => Number(inventory[key] || 0) > 0);
+        const safeKey = ownedKeys.includes(itemKey) ? itemKey : (ownedKeys[0] || null);
+
+        if (!safeKey) {
+            panel.innerHTML = `
+                <div class="inventory-detail-empty">
+                    <div class="inventory-detail-empty-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <strong>Túi đồ đang trống</strong>
+                    <p>Hãy thu hoạch vài luống cây trước. Khi có nông sản, bấm vào đúng ô chứa vật phẩm là hồ sơ chi tiết sẽ hiện đầy đủ ở đây.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const insight = buildInventoryInsight(safeKey, inventory[safeKey]);
+        if (!insight) {
+            panel.innerHTML = `
+                <div class="inventory-detail-empty">
+                    <div class="inventory-detail-empty-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <strong>Không đọc được dữ liệu vật phẩm</strong>
+                    <p>Món đồ này chưa có đủ cấu hình để hiển thị hồ sơ chi tiết.</p>
+                </div>
+            `;
+            return;
+        }
+
+        panel.innerHTML = `
+            <div class="inventory-detail-card tone-${escapeHtml(insight.tier.tone)}">
+                <div class="inventory-detail-hero">
+                    <div class="inventory-detail-art">
+                        <img src="${escapeHtml(insight.icon)}" alt="${escapeHtml(insight.config.name)}">
+                    </div>
+                    <div class="inventory-detail-copy">
+                        <div class="inventory-detail-kicker">Hồ sơ vật phẩm</div>
+                        <h4>${escapeHtml(insight.config.name)}</h4>
+                        <p>${escapeHtml(insight.description)}</p>
+                        <div class="inventory-detail-chips">
+                            <span class="inventory-detail-chip tone-${escapeHtml(insight.tier.tone)}">${escapeHtml(insight.tier.label)}</span>
+                            <span class="inventory-detail-chip">${escapeHtml(insight.harvestMode)}</span>
+                            <span class="inventory-detail-chip">Sở hữu ${escapeHtml(String(insight.count))}</span>
+                            <span class="inventory-detail-chip">Mở khóa LV ${escapeHtml(String(insight.unlockLevel))}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="inventory-stat-grid">
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Vàng mỗi lần</span>
+                        <strong>${escapeHtml(insight.goldRange)}</strong>
+                        <small>Trung bình ${escapeHtml(String(insight.averageGold))} vàng</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Kinh nghiệm</span>
+                        <strong>${escapeHtml(String(insight.xpReward))} XP</strong>
+                        <small>${escapeHtml(insight.usageRole)}</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Chu kỳ hoàn chỉnh</span>
+                        <strong>${escapeHtml(insight.totalTime)}</strong>
+                        <small>${escapeHtml(insight.rotationProfile)}</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Cửa sổ héo</span>
+                        <strong>${escapeHtml(insight.witherTime)}</strong>
+                        <small>${escapeHtml(insight.careDifficulty)}</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Sản lượng kho</span>
+                        <strong>${escapeHtml(String(insight.count))} đang cất</strong>
+                        <small>${escapeHtml(String(insight.harvestYield))} đơn vị / lần thu</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Nhịp lợi nhuận</span>
+                        <strong>${escapeHtml(String(insight.goldPerHour))} vàng/giờ</strong>
+                        <small>${escapeHtml(String(insight.xpPerHour))} XP/giờ nếu farm đều</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Hiến cống</span>
+                        <strong>${escapeHtml(insight.contribution)}</strong>
+                        <small>${escapeHtml(insight.totalContribution)}</small>
+                    </div>
+                    <div class="inventory-stat-card">
+                        <span class="inventory-stat-label">Giá trị ước tính</span>
+                        <strong>${escapeHtml(String(insight.stashValueEstimate))} vàng</strong>
+                        <small>Giá trị trung bình của lượng đang giữ</small>
+                    </div>
+                </div>
+
+                <div class="inventory-detail-section">
+                    <div class="inventory-detail-section-title">Thông số canh tác</div>
+                    <div class="inventory-detail-facts">
+                        <div class="inventory-fact-row"><span>Thời gian mỗi cấp</span><strong>${escapeHtml(insight.stageTime)}</strong></div>
+                        <div class="inventory-fact-row"><span>Số giai đoạn</span><strong>${escapeHtml(String(insight.stageCount))} mốc</strong></div>
+                        <div class="inventory-fact-row"><span>Kích thước chiếm chỗ</span><strong>${escapeHtml(insight.size)}</strong></div>
+                        <div class="inventory-fact-row"><span>Kiểu vận hành</span><strong>${escapeHtml(insight.harvestMode)}</strong></div>
+                        <div class="inventory-fact-row"><span>Mốc tái sinh</span><strong>${escapeHtml(insight.regrowStage !== null ? `Stage ${insight.regrowStage}` : 'Không có')}</strong></div>
+                    </div>
+                </div>
+
+                <div class="inventory-detail-section">
+                    <div class="inventory-detail-section-title">Phân tích sử dụng</div>
+                    <ul class="inventory-detail-notes">
+                        ${insight.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderInventory(inventory = gardenData.inventory || {}) {
+        const list = document.getElementById('gardenInventoryList');
+        const summary = document.getElementById('gardenInventorySummary');
+        if (!list) return;
+
+        const keys = getInventoryKeys();
+        const total = keys.reduce((sum, key) => sum + Number(inventory[key] || 0), 0);
+        const occupiedSlots = keys.filter((key) => Number(inventory[key] || 0) > 0);
+
+        if (!selectedInventoryKey || Number(inventory[selectedInventoryKey] || 0) <= 0) {
+            selectedInventoryKey = occupiedSlots[0] || null;
+        }
+
+        if (summary) {
+            summary.innerText = total > 0
+                ? `${total} nông sản • ${occupiedSlots.length}/${keys.length} ô có hàng`
+                : `Túi đang trống • ${keys.length} ô sẵn sàng`;
+        }
+
+        list.innerHTML = keys.map((key, index) => {
+            const count = Math.max(0, Number(inventory[key] || 0));
+            const config = gardenAssets.PLANTS?.[key] || {};
+            const tier = getInventoryTier(config);
+            const isOwned = count > 0;
+            const selectedClass = selectedInventoryKey === key ? ' is-selected' : '';
+            const stateClass = isOwned ? ' is-owned' : ' is-empty';
+
+            return `
+                <button
+                    type="button"
+                    class="inventory-slot${selectedClass}${stateClass}"
+                    data-item-key="${escapeHtml(key)}"
+                    style="--slot-order:${index};"
+                    ${isOwned ? '' : 'disabled aria-disabled="true"'}
+                    aria-selected="${selectedInventoryKey === key ? 'true' : 'false'}"
+                >
+                    <span class="inventory-slot-tier tone-${escapeHtml(tier.tone)}">${escapeHtml(tier.label)}</span>
+                    <span class="inventory-slot-count">${escapeHtml(String(count))}</span>
+                    <span class="inventory-slot-art">
+                        <img src="${escapeHtml(getHarvestIcon(key))}" alt="${escapeHtml(getDisplayNameForItem(key))}">
+                    </span>
+                    <span class="inventory-slot-meta">
+                        <strong>${escapeHtml(getDisplayNameForItem(key))}</strong>
+                        <small>${isOwned ? 'Bấm để xem hồ sơ' : 'Ô trống'}</small>
+                    </span>
+                </button>
+            `;
+        }).join('');
+
+        renderInventoryDetail(selectedInventoryKey, inventory);
     }
 
     function initLoadingSystem() {

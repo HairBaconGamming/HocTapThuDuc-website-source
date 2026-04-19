@@ -29,7 +29,7 @@
         if (!data.inventory || typeof data.inventory !== 'object') {
             data.inventory = {};
         }
-        ['sunflower', 'wheat', 'carrot', 'tomato'].forEach((key) => {
+        Object.keys(window.gardenAssets?.PLANTS || {}).forEach((key) => {
             const value = Number(data.inventory[key] || 0);
             data.inventory[key] = Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
         });
