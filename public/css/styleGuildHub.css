@@ -1,54 +1,18 @@
 /* =========================================
-   GUILD HUB - RUSTIC GARDEN EDITION
+   GUILD HUB - GARDEN RUSTIC EDITION
    ========================================= */
 
-:root {
-    --guild-paper: #fffaf0;
-    --guild-paper-soft: #f8efde;
-    --guild-paper-border: #c8b091;
-    --guild-wood-900: #3a2518;
-    --guild-wood-700: #79533a;
-    --guild-wood-500: #ab7e5e;
-    --guild-moss-700: #547844;
-    --guild-moss-500: #7ca860;
-    --guild-ink: #3f2b1f;
-    --guild-ink-soft: #6f5948;
-    
-    --guild-shadow-soft: 0 10px 24px rgba(58, 37, 24, 0.14);
-    --guild-radius-lg: 22px;
-    --guild-radius-md: 16px;
-    --guild-radius-sm: 12px;
-}
-
 body {
-    background-color: var(--guild-paper-soft);
-    color: var(--guild-ink);
+    background-color: var(--garden-paper, #fffaf0);
+    color: var(--garden-ink, #3f2b1f);
     font-family: 'VT323', monospace;
     font-size: 20px;
-    background-image: 
-        repeating-linear-gradient(
-            90deg,
-            rgba(121, 83, 58, 0.03) 0,
-            rgba(121, 83, 58, 0.03) 1px,
-            transparent 1px,
-            transparent 8px
-        );
 }
 
 .gh-wrapper {
     max-width: 1200px;
     margin: 40px auto 80px;
     padding: 0 20px;
-}
-
-/* --- COMMON PANELS --- */
-.gh-hero-card,
-.gh-create-card,
-.guild-card {
-    background: linear-gradient(180deg, #fffdf7, #eadabd);
-    border: 3px solid var(--guild-wood-900);
-    border-radius: var(--guild-radius-lg);
-    box-shadow: var(--guild-shadow-soft);
 }
 
 /* --- HERO SECTION --- */
@@ -59,139 +23,180 @@ body {
     margin-bottom: 50px;
 }
 
+.gh-hero-card,
+.gh-create-card,
+.guild-card {
+    background: linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(244, 234, 211, 0.98)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(121, 83, 58, 0.03) 0,
+            rgba(121, 83, 58, 0.03) 1px,
+            transparent 1px,
+            transparent 8px
+        );
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    border-radius: 22px;
+    box-shadow: 0 10px 24px rgba(58, 37, 24, 0.14);
+    padding: 35px;
+    color: var(--garden-ink, #3f2b1f);
+}
+
 .gh-hero-card {
-    padding: 40px;
-    position: relative;
-    overflow: hidden;
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center;
-    background: linear-gradient(180deg, rgba(84, 120, 68, 0.9), rgba(124, 168, 96, 0.9)), url('https://www.transparenttextures.com/patterns/wood-pattern.png');
-    color: #fffdf7;
-    border-color: var(--guild-wood-900);
+    background: linear-gradient(180deg, #c7d2fe, #e0e7ff);
+    border-color: var(--garden-wood-900, #3a2518);
 }
 
 .gh-kicker {
-    display: inline-block; 
-    padding: 6px 16px; 
-    background: rgba(58, 37, 24, 0.4);
-    border-radius: var(--guild-radius-md); 
-    font-size: 1.2rem; 
-    font-weight: 400; 
-    letter-spacing: 1px;
-    margin-bottom: 20px; 
-    border: 2px solid var(--guild-wood-900);
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    border: 2px solid var(--garden-wood-900, #3a2518);
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 20px;
 }
 
-.gh-hero-card h1 { 
-    font-size: 3.5rem; 
-    line-height: 1.1; 
-    margin: 0 0 15px; 
-    text-shadow: 2px 2px 0 var(--guild-wood-900);
+.gh-hero-card h1 {
+    font-size: 2.8rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin: 0 0 15px;
+    color: var(--garden-wood-900, #3a2518);
 }
 
-.gh-hero-card p { 
-    font-size: 1.4rem; 
-    opacity: 0.95; 
-    line-height: 1.4; 
-    margin: 0; 
-    max-width: 90%; 
-    text-shadow: 1px 1px 0 var(--guild-wood-900);
+.gh-hero-card p,
+.gh-create-card p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin: 0 0 20px;
+    color: var(--garden-ink-soft, #6f5948);
+}
+
+.gh-status-pill {
+    background: rgba(255, 255, 255, 0.6);
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--garden-wood-900, #3a2518);
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* CREATE GUILD FORM */
-.gh-create-card {
-    padding: 35px;
+.gh-create-card h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--garden-wood-900, #3a2518);
+    margin: 0 0 5px;
 }
 
-.gh-create-card h2 { 
-    font-size: 2rem; 
-    color: var(--guild-wood-900); 
-    margin: 0 0 5px; 
-}
-
-.gh-create-card p { 
-    color: var(--guild-ink-soft); 
-    font-size: 1.2rem; 
-    margin-bottom: 20px; 
-}
-
-.gh-input, .gh-textarea {
-    width: 100%; 
-    padding: 14px 16px; 
-    border: 3px solid var(--guild-wood-900);
-    border-radius: var(--guild-radius-md); 
-    font-family: inherit; 
-    font-size: 1.3rem;
-    background: var(--guild-paper); 
-    color: var(--guild-ink);
-    transition: 0.2s; 
-    outline: none; 
+.gh-input,
+.gh-textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1.2rem;
+    background: #fffdf7;
     margin-bottom: 15px;
+    transition: 0.2s;
+    outline: none;
+    color: var(--garden-ink, #3f2b1f);
 }
 
-.gh-input:focus, .gh-textarea:focus { 
-    background: #ffffff; 
-    box-shadow: inset 0 2px 4px rgba(58, 37, 24, 0.1); 
+.gh-input:focus,
+.gh-textarea:focus {
+    background: white;
+    box-shadow: 0 0 0 4px rgba(121, 83, 58, 0.2);
 }
 
-.gh-textarea { 
-    resize: vertical; 
-    min-height: 80px; 
+.gh-textarea {
+    resize: vertical;
+    min-height: 80px;
 }
 
-.btn-create, .btn-gc {
+.btn-create,
+.btn-gc {
     font-family: 'VT323', monospace;
-    border: 3px solid var(--guild-wood-900);
-    border-radius: var(--guild-radius-sm);
-    color: var(--guild-ink);
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    border-radius: 12px;
+    color: var(--garden-ink, #3f2b1f);
     background: linear-gradient(180deg, #fffdf7, #eadabd);
     box-shadow: 0 4px 0 rgba(58, 37, 24, 0.18);
     cursor: pointer;
     transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.16s ease;
     font-size: 1.4rem;
-    padding: 12px;
+    padding: 12px 20px;
+    text-align: center;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
 }
 
-.btn-create { width: 100%; }
+.btn-create {
+    width: 100%;
+}
 
-.btn-create:hover:not(:disabled), .btn-gc:hover:not(.disabled) { 
+.btn-create:hover:not(:disabled),
+.btn-gc:hover:not(.disabled) {
     background: linear-gradient(180deg, #ffffff, #f1e5cf);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(58, 37, 24, 0.18);
 }
 
-.btn-create:active:not(:disabled), .btn-gc:active:not(.disabled) {
+.btn-create:active:not(:disabled),
+.btn-gc:active:not(.disabled) {
     transform: translateY(2px);
     box-shadow: 0 1px 0 rgba(58, 37, 24, 0.14);
 }
 
-.btn-create:disabled { 
-    background: #dbe4bf; 
-    color: var(--guild-ink-soft);
-    cursor: not-allowed; 
-    box-shadow: none; 
+.btn-create:disabled,
+.btn-gc.disabled {
+    background: #dbe4bf;
+    color: #6f5948;
+    cursor: not-allowed;
+    box-shadow: 0 2px 0 rgba(58, 37, 24, 0.1);
+}
+
+.btn-gc.join {
+    background: linear-gradient(180deg, #bdd39e, #7ca860);
+    color: #fffdf7;
+}
+
+.btn-gc.join:hover:not(.disabled) {
+    background: linear-gradient(180deg, #dbe4bf, #bdd39e);
 }
 
 /* --- DIRECTORY GRID --- */
-.gh-section-header { 
-    margin-bottom: 25px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-end; 
+.gh-section-header {
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
 }
 
-.gh-section-header h2 { 
-    font-size: 2.2rem; 
-    color: var(--guild-wood-900); 
-    margin: 0; 
+.gh-section-header h2 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--garden-wood-900, #3a2518);
+    margin: 0;
 }
 
-.gh-count { 
-    font-weight: 400; 
-    color: var(--guild-paper); 
-    background: var(--guild-wood-900); 
-    padding: 4px 12px; 
-    border-radius: var(--guild-radius-md); 
-    font-size: 1.1rem; 
+.gh-count {
+    font-weight: 700;
+    color: var(--garden-wood-900, #3a2518);
+    background: #dbe4bf;
+    padding: 6px 16px;
+    border-radius: 16px;
+    border: 2px solid var(--garden-wood-900, #3a2518);
+    font-size: 1.2rem;
 }
 
 .gh-grid {
@@ -202,125 +207,179 @@ body {
 
 .guild-card {
     padding: 25px;
-    display: flex; 
+    transition: 0.2s ease;
+    display: flex;
     flex-direction: column;
-    position: relative; 
-    overflow: hidden;
+}
+
+.guild-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(58, 37, 24, 0.18);
 }
 
 /* Card Header */
-.gc-header { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
-
-.gc-avatar {
-    width: 60px; height: 60px; 
-    background: var(--guild-paper);
-    border-radius: var(--guild-radius-md); 
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2rem; 
-    color: var(--guild-wood-900); 
-    flex-shrink: 0;
-    border: 3px solid var(--guild-wood-900); 
+.gc-header {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.gc-info { flex: 1; min-width: 0; }
-.gc-name { font-size: 1.8rem; color: var(--guild-wood-900); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gc-leader { font-size: 1.1rem; color: var(--guild-ink-soft); display: flex; align-items: center; gap: 5px; }
-.gc-leader img { width: 24px; height: 24px; border-radius: var(--guild-radius-sm); border: 2px solid var(--guild-wood-900); }
+.gc-avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--garden-wood-900, #3a2518);
+    flex-shrink: 0;
+    border: 3px solid var(--garden-wood-900, #3a2518);
+    box-shadow: 0 4px 0 rgba(58, 37, 24, 0.15);
+}
 
-.gc-desc { 
-    font-size: 1.2rem; 
-    color: var(--guild-ink); 
-    line-height: 1.3; 
-    margin-bottom: 20px; 
-    flex-grow: 1; 
-    display: -webkit-box; 
-    -webkit-line-clamp: 2; 
-    -webkit-box-orient: vertical; 
-    overflow: hidden; 
+.gc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-name {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--garden-wood-900, #3a2518);
+    margin: 0 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gc-leader {
+    font-size: 1.1rem;
+    color: var(--garden-ink-soft, #6f5948);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gc-leader img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--garden-wood-900, #3a2518);
+}
+
+.gc-desc {
+    font-size: 1.2rem;
+    color: var(--garden-ink, #3f2b1f);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Tags & Stats */
-.gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.g-stat { 
-    background: rgba(255, 255, 255, 0.4); 
-    padding: 10px; 
-    border-radius: var(--guild-radius-md); 
-    border: 2px solid var(--guild-wood-500); 
-    text-align: center; 
+.gc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
 }
-.g-stat span { display: block; font-size: 1rem; color: var(--guild-ink-soft); margin-bottom: 2px; }
-.g-stat strong { font-size: 1.5rem; color: var(--guild-wood-900); }
+
+.g-stat {
+    background: rgba(255, 255, 255, 0.6);
+    padding: 10px;
+    border-radius: 12px;
+    border: 2px solid var(--garden-wood-900, #3a2518);
+    text-align: center;
+}
+
+.g-stat span {
+    display: block;
+    font-size: 1rem;
+    color: var(--garden-ink-soft, #6f5948);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.g-stat strong {
+    font-size: 1.4rem;
+    color: var(--garden-wood-900, #3a2518);
+    font-weight: 900;
+}
 
 /* Requirements Zone */
-.gc-reqs { 
-    background: var(--guild-paper-soft); 
-    border: 2px dashed var(--guild-wood-500); 
-    padding: 12px; 
-    border-radius: var(--guild-radius-md); 
-    margin-bottom: 20px; 
+.gc-reqs {
+    background: #fffbeb;
+    border: 2px dashed #e89a24;
+    padding: 14px;
+    border-radius: 14px;
+    margin-bottom: 20px;
 }
 
-.req-title { 
-    font-size: 1.1rem; 
-    color: var(--guild-wood-900); 
-    margin-bottom: 8px; 
-    display: flex; 
-    align-items: center; 
-    gap: 5px; 
+.req-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #c77814;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.req-list { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.req-badge { 
-    padding: 4px 10px; 
-    border-radius: var(--guild-radius-md); 
-    font-size: 1.1rem; 
-    background: var(--guild-paper); 
-    border: 2px solid var(--guild-wood-500); 
-    color: var(--guild-ink); 
-    display: flex; 
-    align-items: center; 
-    gap: 5px; 
+.req-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.req-badge.pass { border-color: var(--guild-moss-700); color: var(--guild-moss-700); background: #edf3dd; }
-.req-badge.fail { border-color: #b75646; color: #b75646; background: #fae8e5; }
+.req-badge {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: white;
+    border: 2px solid #e89a24;
+    color: #c77814;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.req-badge.pass {
+    border-color: #7ca860;
+    color: #547844;
+    background: #edf3dd;
+}
+
+.req-badge.fail {
+    border-color: #d98a76;
+    color: #b75646;
+    background: #fff5f5;
+}
 
 /* Actions */
-.gc-actions { display: flex; gap: 10px; }
-.btn-gc { 
-    flex: 1; 
-    text-align: center; 
-    text-decoration: none; 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 8px; 
+.gc-actions {
+    display: flex;
+    gap: 12px;
 }
 
-.btn-gc.view { 
-    background: linear-gradient(180deg, #fffaf0, #ecdcbc); 
-}
-
-.btn-gc.join { 
-    background: linear-gradient(180deg, #bdd39e, #7ca860);
-    color: #fffdf7;
-    text-shadow: 1px 1px 0 var(--guild-wood-900);
-}
-
-.btn-gc.join:hover {
-    background: linear-gradient(180deg, #cbe3ab, #8dbd6f);
-}
-
-.btn-gc.disabled { 
-    background: var(--guild-paper-border); 
-    color: var(--guild-ink-soft); 
-    cursor: not-allowed; 
-    box-shadow: none; 
-    text-shadow: none;
+.btn-gc {
+    flex: 1;
 }
 
 @media (max-width: 900px) {
-    .gh-hero-grid { grid-template-columns: 1fr; }
-    .gh-grid { grid-template-columns: 1fr; }
+    .gh-hero-grid {
+        grid-template-columns: 1fr;
+    }
+    .gh-grid {
+        grid-template-columns: 1fr;
+    }
 }
