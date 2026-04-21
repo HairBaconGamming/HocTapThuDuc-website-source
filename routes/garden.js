@@ -10,6 +10,7 @@ router.post('/interact', isLoggedIn, gardenController.interactItem);
 router.post('/remove', isLoggedIn, gardenController.removeItem);
 router.post('/save-camera', isLoggedIn, gardenController.saveCamera);
 router.post('/claim-quest', isLoggedIn, gardenController.claimDailyQuest);
+router.post('/batch', isLoggedIn, gardenController.processBatch);
 
 router.get('/visit/:userId', isLoggedIn, gardenController.visitGarden);
 

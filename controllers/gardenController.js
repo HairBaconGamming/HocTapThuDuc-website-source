@@ -17,7 +17,8 @@ const {
     interactItem,
     removeItem,
     saveCamera,
-    updateTutorialStep
+    updateTutorialStep,
+    processBatchActions
 } = require('../services/gardenMutationService');
 const { claimDailyQuest } = require('../services/gardenQuestService');
 
@@ -186,6 +187,20 @@ exports.claimDailyQuest = async (req, res) => {
             return res.status(400).json(result);
         }
 
+        res.json(result);
+    } catch (error) {
+        handleGardenError(res, error);
+    }
+};
+
+exports.processBatch = async (req, res) => {
+    try {
+        const actions = req.body.actions;
+        if (!Array.isArray(actions)) {
+            return res.status(400).json({ success: false, msg: 'Danh sach hanh dong khong hop le.' });
+        }
+
+        const result = await processBatchActions(req.user._id, actions);
         res.json(result);
     } catch (error) {
         handleGardenError(res, error);

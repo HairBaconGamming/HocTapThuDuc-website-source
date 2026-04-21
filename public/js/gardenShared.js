@@ -214,6 +214,102 @@
         }
     }
 
+    // =========================================================================
+    // ActionQueue — Batches actions, sends a single /my-garden/batch request
+    // =========================================================================
+    const ActionQueue = {
+        _queue: [],        // pending actions: { action, payload, resolve, reject, rollback }
+        _timer: null,
+        _flushing: false,
+        DEBOUNCE_MS: 600,  // wait 600ms after last action before flushing
+        MAX_QUEUE: 30,
+
+        /**
+         * Push an action onto the queue. Returns a Promise that resolves
+         * when the batch response arrives for this specific action.
+         *
+         * @param {string} action  - 'water' | 'buy' | 'harvest' | 'move' | 'remove' | 'fertilize'
+         * @param {object} payload - per-action parameters
+         * @param {function} [rollback] - called if the server rejects this action
+         * @returns {Promise<object>}
+         */
+        enqueue(action, payload, rollback) {
+            return new Promise((resolve, reject) => {
+                this._queue.push({ action, payload, rollback, resolve, reject });
+
+                // If queue is full, flush immediately
+                if (this._queue.length >= this.MAX_QUEUE) {
+                    this._flushNow();
+                    return;
+                }
+
+                // Otherwise, debounce
+                clearTimeout(this._timer);
+                this._timer = setTimeout(() => this._flushNow(), this.DEBOUNCE_MS);
+            });
+        },
+
+        /**
+         * Force-flush whatever is in the queue right now.
+         */
+        async _flushNow() {
+            clearTimeout(this._timer);
+            if (this._flushing || this._queue.length === 0) return;
+
+            this._flushing = true;
+            const batch = this._queue.splice(0, this.MAX_QUEUE);
+
+            try {
+                const body = { actions: batch.map(b => ({ action: b.action, payload: b.payload })) };
+                const res = await apiCall('/my-garden/batch', body);
+
+                if (res.success && Array.isArray(res.results)) {
+                    // Apply the authoritative garden state from the server
+                    if (res.garden) {
+                        updateHUD(res.garden);
+                    }
+
+                    // Resolve each item
+                    res.results.forEach((result, i) => {
+                        if (batch[i]) {
+                            if (result.success) {
+                                batch[i].resolve(result);
+                            } else {
+                                // Call rollback if provided
+                                if (typeof batch[i].rollback === 'function') {
+                                    try { batch[i].rollback(result); } catch (_) {}
+                                }
+                                batch[i].resolve(result); // still resolve so UI can handle
+                            }
+                        }
+                    });
+                } else {
+                    // Whole batch failed — rollback everything
+                    const errMsg = res.msg || 'Batch failed';
+                    batch.forEach(b => {
+                        if (typeof b.rollback === 'function') {
+                            try { b.rollback({ success: false, msg: errMsg }); } catch (_) {}
+                        }
+                        b.resolve({ success: false, msg: errMsg });
+                    });
+                }
+            } catch (err) {
+                batch.forEach(b => {
+                    if (typeof b.rollback === 'function') {
+                        try { b.rollback({ success: false, msg: 'Mất kết nối!' }); } catch (_) {}
+                    }
+                    b.resolve({ success: false, msg: 'Mất kết nối!' });
+                });
+            } finally {
+                this._flushing = false;
+                // If more items accumulated while we were flushing, flush again
+                if (this._queue.length > 0) {
+                    this._flushNow();
+                }
+            }
+        }
+    };
+
     window.GardenShared = {
         parseDuration,
         formatTime,
@@ -225,6 +321,7 @@
         updateCoords,
         addGardenItem,
         removeGardenItem,
-        moveGardenItem
+        moveGardenItem,
+        ActionQueue
     };
 })(window);
