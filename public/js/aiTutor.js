@@ -32,13 +32,15 @@
     const actionSets = {
         default: [
             { label: "Tóm tắt trang", prompt: "Tóm tắt nhanh nội dung quan trọng nhất trên trang này cho tôi." },
-            { label: "Bước tiếp theo", prompt: "Với trang này, tôi nên làm gì tiếp theo để học hiệu quả hơn?" },
-            { label: "Ôn tập nhanh", prompt: "Tạo 3 câu hỏi ôn nhanh dựa trên nội dung trang này." }
+            { label: "Hỏi về Web", prompt: "Tôi muốn hỏi về lập trình web. Bạn có thể giúp gì cho tôi về HTML, CSS, JavaScript, hoặc backend?" },
+            { label: "Ôn tập nhanh", prompt: "Tạo 3 câu hỏi ôn nhanh dựa trên nội dung trang này." },
+            { label: "Code mẫu", prompt: "Cho tôi một code mẫu minh họa cho nội dung đang học, có comment giải thích từng dòng." }
         ],
         "lesson-detail": [
             { label: "Tóm tắt bài", prompt: "Tóm tắt bài học này thật ngắn gọn, dễ nhớ." },
             { label: "Giải thích chậm", prompt: "Giải thích nội dung này theo cách chậm hơn và rõ hơn." },
-            { label: "Tạo mini quiz", prompt: "Tạo 3 câu hỏi mini để tôi tự kiểm tra lại bài này." }
+            { label: "Tạo mini quiz", prompt: "Tạo 3 câu hỏi mini để tôi tự kiểm tra lại bài này." },
+            { label: "Code ví dụ", prompt: "Cho tôi ví dụ code thực tế liên quan đến nội dung bài học này, có giải thích chi tiết." }
         ],
         "lesson-studio": [
             { label: "Rà soát bài", prompt: "Rà soát bài học đang soạn và chỉ ra 3 điểm cần nâng chất lượng." },
@@ -53,6 +55,7 @@
         qa: [
             { label: "Đặt câu hỏi rõ hơn", prompt: "Giúp tôi viết lại câu hỏi theo cách rõ, gọn và dễ được giải hơn." },
             { label: "Tách bài giải", prompt: "Nếu trả lời bài này, nên tách thành mấy bước để dễ theo dõi nhất?" },
+            { label: "Debug code", prompt: "Giúp tôi debug và giải thích lỗi trong đoạn code liên quan đến câu hỏi này." },
             { label: "Ý tưởng bounty", prompt: "Khi nào nên treo bounty và cần mô tả thêm gì để thu hút người giải?" }
         ]
     };
@@ -283,12 +286,12 @@
         const message = {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             role,
-            content: clampText(content, 12000),
+            content: clampText(content, 16000),
             streaming: !!options?.streaming
         };
         state.messages.push(message);
-        if (state.messages.length > 12) {
-            state.messages = state.messages.slice(-12);
+        if (state.messages.length > 20) {
+            state.messages = state.messages.slice(-20);
         }
         return message;
     }
@@ -325,17 +328,66 @@
         });
     }
 
+    function injectCopyButtons(container) {
+        if (!container) return;
+        container.querySelectorAll("pre > code, pre").forEach((block) => {
+            if (block.parentElement?.querySelector(".ai-tutor-copy-btn")) return;
+            const pre = block.tagName === "PRE" ? block : block.parentElement;
+            if (!pre || pre.querySelector(".ai-tutor-copy-btn")) return;
+            pre.style.position = "relative";
+            const btn = document.createElement("button");
+            btn.className = "ai-tutor-copy-btn";
+            btn.type = "button";
+            btn.title = "Copy code";
+            btn.innerHTML = '<i class="fas fa-copy"></i>';
+            btn.addEventListener("click", () => {
+                const text = (block.tagName === "CODE" ? block : block.querySelector("code") || block).textContent || "";
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
+                }).catch(() => {});
+            });
+            pre.appendChild(btn);
+        });
+    }
+
+    function bindFollowUpClicks(container) {
+        if (!container) return;
+        container.querySelectorAll(".ai-tutor-msg-bubble--rich").forEach((bubble) => {
+            if (bubble.dataset.followupBound) return;
+            bubble.dataset.followupBound = "1";
+            bubble.addEventListener("click", (e) => {
+                const li = e.target.closest("li");
+                if (!li) return;
+                const hr = bubble.querySelector("hr");
+                if (!hr) return;
+                let node = hr.nextElementSibling;
+                let isFollowUpSection = false;
+                while (node) {
+                    if (node.contains(li)) { isFollowUpSection = true; break; }
+                    node = node.nextElementSibling;
+                }
+                if (!isFollowUpSection) return;
+                const text = li.textContent.replace(/^[-•*]\s*/, "").trim();
+                if (text && !state.busy) {
+                    if (input) { input.value = text; input.focus(); }
+                    askTutor(text);
+                }
+            });
+        });
+    }
+
     function renderThreadNow() {
         if (!thread) return;
 
         const welcome = shell.querySelector("[data-ai-tutor-welcome]");
         if (welcome) {
             const introMap = {
-                default: "Mình bám theo nội dung trang này để tóm tắt, giải thích và gợi ý bước tiếp theo cho bạn.",
-                "lesson-detail": "Mình đang đọc cùng bài học với bạn. Bạn có thể nhờ tóm tắt, giải thích chậm hơn, hoặc tạo mini quiz có công thức LaTeX.",
+                default: "Chào bạn! 👋 Mình là **AI Tutor** — trợ lý đa năng có thể giúp bạn:\n- 🌐 **Lập trình web** (HTML/CSS/JS/Node/React/DB...)\n- 📐 **Toán, Lý, Hóa, Sinh** (giải bài + LaTeX)\n- 📝 **Văn, Sử, Anh** (phân tích, nghị luận)\n- 💻 **Tin học** (thuật toán, cấu trúc dữ liệu)\n\nCứ hỏi bất cứ điều gì, mình sẽ trả lời cặn kẽ kèm ví dụ!",
+                "lesson-detail": "Mình đang đọc cùng bài học với bạn. Có thể nhờ: tóm tắt, giải thích chậm, tạo mini quiz, hoặc **hỏi bất kỳ kiến thức web/môn học** nào liên quan!",
                 "lesson-studio": "Mình đang theo snapshot studio để gợi ý cấu trúc, quality và checklist publish cho bài học bạn đang soạn.",
                 garden: "Mình đang nhìn trạng thái khu vườn hiện tại để gợi ý tài nguyên, nhiệm vụ và bước tiếp theo.",
-                qa: "Mình đang bám theo khu hỏi đáp để giúp đặt câu hỏi rõ hơn, tách bài giải theo từng bước và hướng dẫn cách thảo luận."
+                qa: "Mình sẵn sàng: đặt câu hỏi rõ hơn, tách bài giải từng bước, **debug code**, hoặc giải thích kiến thức nền!"
             };
             welcome.innerHTML = renderMarkdown(introMap[pageType] || introMap.default);
             decorateMath(welcome);
@@ -361,6 +413,8 @@
 
         thread.innerHTML = `${staticHtml}${dynamicHtml}`;
         thread.querySelectorAll(".ai-tutor-msg-bubble--rich").forEach(decorateMath);
+        injectCopyButtons(thread);
+        bindFollowUpClicks(thread);
         thread.scrollTop = thread.scrollHeight;
     }
 
@@ -448,7 +502,7 @@
                     selection: context.selection,
                     contextSummary: context.contextSummary,
                     metadata: context.metadata,
-                    history: state.messages.slice(-6).map((message) => ({
+                    history: state.messages.slice(-10).map((message) => ({
                         role: message.role,
                         content: message.content
                     }))
@@ -505,7 +559,7 @@
         if (!prompt || state.busy) return;
 
         const context = buildContext();
-        const history = state.messages.slice(-6).map((message) => ({
+        const history = state.messages.slice(-10).map((message) => ({
             role: message.role,
             content: message.content
         }));

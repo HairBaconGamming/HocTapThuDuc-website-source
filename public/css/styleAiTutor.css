@@ -313,14 +313,77 @@
 .ai-tutor-msg-bubble pre {
     overflow-x: auto;
     padding: 0.75rem;
+    padding-top: 1.8rem;
     border-radius: 8px;
     background: #0f172a;
     color: #e2e8f0;
+    position: relative;
 }
 
 .ai-tutor-msg-bubble pre code {
     padding: 0;
     background: transparent;
+}
+
+/* Copy Button on code blocks */
+.ai-tutor-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+.ai-tutor-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+/* Follow-up suggestions (clickable) */
+.ai-tutor-msg-bubble--rich hr {
+    border: none;
+    border-top: 1px dashed var(--ai-tutor-border);
+    margin: 0.8rem 0 0.5rem;
+}
+.ai-tutor-msg-bubble--rich hr ~ ul li,
+.ai-tutor-msg-bubble--rich hr ~ p ~ ul li {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}
+.ai-tutor-msg-bubble--rich hr ~ ul li:hover,
+.ai-tutor-msg-bubble--rich hr ~ p ~ ul li:hover {
+    background: var(--ai-tutor-accent-soft);
+    color: var(--ai-tutor-accent);
+}
+
+/* Table styling in chat */
+.ai-tutor-msg-bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+}
+.ai-tutor-msg-bubble th,
+.ai-tutor-msg-bubble td {
+    padding: 6px 10px;
+    border: 1px solid var(--ai-tutor-border);
+    text-align: left;
+}
+.ai-tutor-msg-bubble th {
+    background: rgba(15, 23, 42, 0.04);
+    font-weight: 600;
 }
 
 .ai-tutor-msg--assistant .ai-tutor-msg-bubble {
