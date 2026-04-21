@@ -10,9 +10,9 @@
 
         if (strVal.includes('ngày') || strVal.includes('day')) {
             return amount * 24 * 60 * 60 * 1000;
-        } else if (strVal.includes('giờ') || strVal.includes('hour') || strVal.includes('h')) {
+        } else if (strVal.includes('giờ') || strVal.includes('gio') || strVal.includes('hour')) {
             return amount * 60 * 60 * 1000;
-        } else if (strVal.includes('giây') || strVal.includes('sec') || strVal.includes('s')) {
+        } else if (strVal.includes('giây') || strVal.includes('sec')) {
             return amount * 1000;
         }
         

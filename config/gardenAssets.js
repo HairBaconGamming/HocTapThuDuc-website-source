@@ -12,7 +12,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '5 phút/cấp',
             totalTime: '20 phút',
-            witherTime: '72 giờ', 
+            witherTime: '120 giờ', 
             stages: [
                 '/api/pro-images/1767282830562-cb26a4.png',
                 '/api/pro-images/1767283026974-wmnw2v.png',
@@ -32,7 +32,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '6 phút/cấp',
             totalTime: '30 phút',
-            witherTime: '48 giờ',
+            witherTime: '96 giờ',
             stages: [
                 '/api/pro-images/1767344323984-uvbj9k.png',
                 '/api/pro-images/1767344484389-wozd1r.png',
@@ -53,7 +53,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '15 phút/cấp',
             totalTime: '60 phút',
-            witherTime: '96 giờ',
+            witherTime: '144 giờ',
             stages: [
                 'https://i.ibb.co/M5cGgrn7/Gemini-Generated-Image-n7bna6n7bna6n7bn-removebg-preview.png',
                 'https://i.ibb.co/KzcfKq8T/Gemini-Generated-Image-h8vwrzh8vwrzh8vw-removebg-preview.png',
@@ -74,7 +74,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '10 phút/cấp',
             totalTime: '70 phút',
-            witherTime: '120 giờ',
+            witherTime: '168 giờ',
             isMultiHarvest: true,
             stages: [
                 'https://i.ibb.co/5yZqtnn/stage0.png',
@@ -101,7 +101,7 @@ module.exports = {
             size: { w: 1, h: 1 }, 
             growthTime: '72 phút/cấp', // 72 x 5 = 360 phút (6 tiếng)
             totalTime: '360 phút',
-            witherTime: '1440 phút', // Héo sau 24 tiếng nếu không thu hoạch
+            witherTime: '72 giờ', // Héo sau 3 ngày nếu không thu hoạch
             stages: [
                 'https://i.ibb.co/RmYQMCr/image-removebg-preview-20.png', // Hạt
                 'https://i.ibb.co/N291bTVq/image-removebg-preview-21.png', // Mầm
@@ -131,7 +131,7 @@ module.exports = {
             totalTime: '20 phút',
             
             // ĐIỂM NHẤN: Thời gian héo siêu ngắn
-            witherTime: '1440 phút', // Chỉ có đúng 5 phút để thu hoạch sau khi chín!
+            witherTime: '48 giờ', // 48 giờ để thu hoạch
             
             stages: [
                 'https://i.ibb.co/FqqQtwdB/image-removebg-preview-27.png', // Hạt giống

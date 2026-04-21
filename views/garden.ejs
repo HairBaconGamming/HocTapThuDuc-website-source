@@ -498,25 +498,25 @@
     <div id="inventoryOverlay" class="pixel-modal-overlay pixel-modal-overlay--rustic" style="display:none;" aria-hidden="true"
         onwheel="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
         
-        <div class="pixel-window shop-window shop-window--rustic inventory-modal" role="dialog" aria-modal="true" aria-labelledby="gardenInventoryTitle" style="max-width: 900px; height: 85vh;">
+        <div class="pixel-window shop-window shop-window--rustic inventory-modal-premium" role="dialog" aria-modal="true" aria-labelledby="gardenInventoryTitle">
             <div class="window-header">
-                <div class="win-title" id="gardenInventoryTitle">🎒 Túi Đồ Của Tôi</div>
+                <div class="win-title" id="gardenInventoryTitle"><i class="fas fa-backpack"></i> Túi Đồ Của Tôi</div>
                 <button id="closeInventoryBtn" class="pixel-btn-close red">X</button>
             </div>
 
-            <div class="window-body" style="flex-direction: column; padding: 20px;">
-                <div class="inventory-toolbar">
-                    <div class="inventory-search">
+            <div class="window-body inventory-premium-body">
+                <div class="inventory-toolbar-premium">
+                    <div class="inventory-search-premium">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="inventorySearchInput" placeholder="Tìm vật phẩm...">
+                        <input type="text" id="inventorySearchInput" placeholder="Tìm kiếm nông sản...">
                     </div>
-                    <div class="inventory-tabs">
+                    <div class="inventory-tabs-premium">
                         <button class="pixel-tab active" data-inv-tab="all">Tất cả</button>
                         <button class="pixel-tab" data-inv-tab="seed">Hạt giống</button>
                         <button class="pixel-tab" data-inv-tab="harvest">Nông sản</button>
                         <button class="pixel-tab" data-inv-tab="decor">Trang trí</button>
                     </div>
-                    <div class="inventory-sort">
+                    <div class="inventory-sort-premium">
                         <select id="inventorySortSelect" class="pixel-select">
                             <option value="qty-desc">SL giảm dần</option>
                             <option value="qty-asc">SL tăng dần</option>
@@ -525,17 +525,19 @@
                     </div>
                 </div>
 
-                <div class="inventory-modal-content" style="display: flex; flex: 1; min-height: 0; margin-top: 15px;">
-                    <div class="inventory-list-col" style="flex: 1.2; overflow-y: auto; padding-right: 15px;">
-                        <div class="inventory-grid-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <span class="inventory-grid-kicker">Lưới Lưu Trữ</span>
-                            <span id="gardenInventorySummary" style="font-size: 0.85rem; color: #8d6e63; font-weight: bold;">Đang đồng bộ</span>
+                <div class="inventory-premium-content">
+                    <div class="inventory-grid-wrapper">
+                        <div class="inventory-grid-header">
+                            <span class="grid-title"><i class="fas fa-th"></i> Lưới Lưu Trữ</span>
+                            <span id="gardenInventorySummary" class="grid-summary">Đang đồng bộ...</span>
                         </div>
-                        <div class="inventory-list grid-view" id="gardenInventoryList" role="listbox" aria-label="Túi vật phẩm" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px;"></div>
+                        <div class="inventory-premium-grid" id="gardenInventoryList" role="listbox" aria-label="Túi vật phẩm">
+                            <!-- Items injected by JS -->
+                        </div>
                     </div>
 
-                    <div class="inventory-detail-col" style="flex: 1; border-left: 2px dashed #d7ccc8; padding-left: 15px; overflow-y: auto;">
-                        <aside class="inventory-detail-panel" id="gardenInventoryDetail" aria-live="polite" style="height: 100%;">
+                    <div class="inventory-detail-wrapper">
+                        <aside class="inventory-detail-panel-premium" id="gardenInventoryDetail" aria-live="polite">
                             <!-- Injected by JS -->
                         </aside>
                     </div>

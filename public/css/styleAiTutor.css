@@ -538,6 +538,43 @@
     bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
+.ai-tutor-shell--garden.is-open {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    z-index: 1000;
+}
+
+.ai-tutor-shell--garden.is-open .ai-tutor-fab {
+    display: none;
+}
+
+.ai-tutor-shell--garden.is-open .ai-tutor-panel {
+    transform-origin: center center;
+    width: min(500px, 95vw);
+    height: 70vh;
+    max-height: 800px;
+    margin: auto;
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab-copy {
+    display: none; /* Hide text to save space on mobile/desktop */
+}
+
+.ai-tutor-shell--garden .ai-tutor-fab {
+    border-radius: 50%;
+    padding: 8px;
+}
+
 .ai-tutor-shell--garden .ai-tutor-fab {
     font-family: "VT323", "Courier New", monospace;
     background:
