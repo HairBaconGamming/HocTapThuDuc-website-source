@@ -222,6 +222,9 @@ async function interactItem({ userId, uniqueId, action }) {
     const item = garden.items.id(uniqueId);
     assertAction(item, 'Vật phẩm không tồn tại hoặc không thuộc về bạn.', 404);
 
+    const user = await User.findById(userId);
+    assertAction(user, 'Không tìm thấy người chơi.', 404);
+
     if (action === 'water') {
         assertAction(garden.water > 0, 'Hết nước rồi!');
 
@@ -307,9 +310,6 @@ async function interactItem({ userId, uniqueId, action }) {
     garden.harvestCount = (garden.harvestCount || 0) + 1;
     garden.totalGoldCollected = (garden.totalGoldCollected || 0) + rewardGold;
     const inventory = addInventoryItem(garden, item.itemId, harvestYield);
-
-    const user = await User.findById(userId);
-    assertAction(user, 'Không tìm thấy người chơi.', 404);
 
     const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, rewardXP);
     user.level = levelResult.newLevel;
