@@ -174,7 +174,7 @@ async function buyItem({ userId, itemId, type, x, y }) {
         newGold: garden.gold,
         item: garden.items[garden.items.length - 1],
         achievements,
-        dailyQuests: buildDailyQuests(garden)
+        dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 })
     };
 }
 
@@ -249,7 +249,7 @@ async function interactItem({ userId, uniqueId, action }) {
             item,
             newWater: garden.water,
             achievements,
-            dailyQuests: buildDailyQuests(garden)
+            dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 })
         };
     }
 
@@ -277,6 +277,8 @@ async function interactItem({ userId, uniqueId, action }) {
         plot.lastWatered = now;
         plot.lastUpdated = now;
 
+        garden.fertilizeCount = (garden.fertilizeCount || 0) + 1;
+
         await garden.save();
 
         return {
@@ -287,7 +289,7 @@ async function interactItem({ userId, uniqueId, action }) {
             item: item.toObject(),
             plot: plot.toObject(),
             newFertilizer: garden.fertilizer,
-            dailyQuests: buildDailyQuests(garden)
+            dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 })
         };
     }
 
@@ -344,7 +346,7 @@ async function interactItem({ userId, uniqueId, action }) {
             levelName: nextLevelInfo.levelName,
             hasLeveledUp: levelResult.hasLeveledUp
         },
-        dailyQuests: buildDailyQuests(garden),
+        dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 }),
         msg: config.isMultiHarvest
             ? `Thu hoach qua: +${rewardGold}G, +${rewardXP}XP (Cay se phat trien lai!)`
             : `Thu hoach: +${rewardGold}G, +${rewardXP}XP`
@@ -517,6 +519,8 @@ async function processBatchActions(userId, actions = []) {
                 item.lastUpdated = now;
                 if (plot) { plot.lastWatered = now; plot.lastUpdated = now; }
 
+                garden.fertilizeCount = (garden.fertilizeCount || 0) + 1;
+
                 needSave = true;
                 results.push({ action, success: true, uniqueId, item: item.toObject() });
 
@@ -610,7 +614,7 @@ async function processBatchActions(userId, actions = []) {
             newWater: garden.water,
             newFertilizer: garden.fertilizer,
             inventory: garden.inventory || {},
-            dailyQuests: buildDailyQuests(garden),
+            dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 }),
             levelData
         }
     };

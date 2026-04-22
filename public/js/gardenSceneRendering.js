@@ -178,21 +178,47 @@
         },
 
         showFloatingText(x, y, msg, cType) {
-            const colors = { gold: '#ffeb3b', green: '#66bb6a', blue: '#42a5f5' };
-            const text = this.add.text(x, y - 20, msg, {
+            const colors = { gold: '#ffca28', green: '#69f0ae', blue: '#40c4ff', red: '#ff5252' };
+            const strokeColors = { gold: '#b71c1c', green: '#1b5e20', blue: '#01579b', red: '#b71c1c' };
+            
+            let iconStr = '';
+            if (cType === 'gold' && !msg.includes('!')) iconStr = '💰 ';
+            if (cType === 'blue' && msg.includes('XP')) iconStr = '✨ ';
+            if (cType === 'green' && msg.includes('Lon len')) iconStr = '🌱 ';
+            if (cType === 'gold' && msg.includes('Chin roi')) iconStr = '🌟 ';
+
+            const text = this.add.text(x, y - 10, iconStr + msg, {
                 fontFamily: 'VT323',
-                fontSize: '32px',
-                color: colors[cType] || '#fff',
-                stroke: '#000',
-                strokeThickness: 4
+                fontSize: '36px',
+                color: colors[cType] || '#ffffff',
+                stroke: strokeColors[cType] || '#000000',
+                strokeThickness: 5,
+                shadow: {
+                    offsetX: 2,
+                    offsetY: 2,
+                    color: 'rgba(0,0,0,0.8)',
+                    blur: 2,
+                    fill: true
+                }
             }).setOrigin(0.5).setDepth(999999);
 
+            // Bounce physics animation
             this.tweens.add({
                 targets: text,
-                y: y - 100,
-                alpha: 0,
-                duration: 1500,
-                onComplete: () => text.destroy()
+                y: y - 50,
+                duration: 400,
+                ease: 'Back.easeOut',
+                onComplete: () => {
+                    this.tweens.add({
+                        targets: text,
+                        y: y - 80,
+                        alpha: 0,
+                        duration: 800,
+                        ease: 'Sine.easeIn',
+                        delay: 300,
+                        onComplete: () => text.destroy()
+                    });
+                }
             });
         },
 

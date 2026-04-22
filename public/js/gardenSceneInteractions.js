@@ -17,6 +17,37 @@
         return apiCall('/my-garden/interact', { ...payload, action });
     }
 
+    function clearHarvestSelection(scene) {
+        scene.selectedTile = null;
+        scene.selectionMarker?.setVisible(false);
+        if (window.hidePlantStats) window.hidePlantStats();
+    }
+
+    function showHarvestRewards(scene, anchor, result) {
+        if (!scene || !anchor || !result?.success) return;
+
+        const goldReward = Number(result.goldReward || 0);
+        const xpReward = Number(result.xpReward || 0);
+
+        if (goldReward > 0) {
+            scene.showFloatingText?.(
+                anchor.x,
+                anchor.y - 10,
+                `+${goldReward.toLocaleString('vi-VN')} vang`,
+                'gold'
+            );
+        }
+
+        if (xpReward > 0) {
+            scene.showFloatingText?.(
+                anchor.x,
+                anchor.y - 46,
+                `+${xpReward.toLocaleString('vi-VN')} XP`,
+                'blue'
+            );
+        }
+    }
+
     window.GardenSceneInteractions = {
         startMovingSprite(sprite) {
             if (!IS_OWNER) return showToast('Chi chu nha moi duoc di chuyen!', 'warning');
@@ -106,31 +137,63 @@
         async handlePlantingAction(gx, gy) {
             if (!this.plantingMode.active) return;
             const { itemId, type } = this.plantingMode;
+            const normalizedType = (type === 'decor') ? 'decoration' : type;
             const allItems = getSceneItems(this);
             const existingPlot = allItems.find((i) => i.itemData.type === 'plot' && Math.abs(i.itemData.x - gx) < 1 && Math.abs(i.itemData.y - gy) < 1);
             const existingItem = allItems.find((i) => i.itemData.type !== 'plot' && Math.abs(i.itemData.x - gx) < 1 && Math.abs(i.itemData.y - gy) < 1);
 
-            if (type === 'plant') {
+            if (normalizedType === 'plant') {
                 if (!existingPlot) return showToast('Can co dat de trong!', 'warning');
                 if (existingItem) return showToast('Da co cay roi!', 'warning');
-            } else if (type === 'plot') {
+            } else if (normalizedType === 'plot') {
                 if (existingPlot) return showToast('Cho nay co dat roi!', 'warning');
-            } else if (type === 'decor' || type === 'decoration') {
+            } else if (normalizedType === 'decoration') {
                 if (existingPlot) return showToast('Decor phai dat tren co!', 'warning');
                 if (existingItem) return showToast('Vuong vat can!', 'warning');
             }
 
-            // Buy needs server _id, so keep direct
-            const res = await apiCall('/my-garden/buy', { itemId, type, x: gx, y: gy });
-            if (!res.success) return showToast(res.msg, 'error');
-            updateHUD(res);
-            if (GardenShared.addGardenItem && res.item) GardenShared.addGardenItem(res.item);
-            this.renderItem(res.item);
+            // --- Optimistic UI: render immediately, sync in background ---
+            const tempId = `temp_${Date.now()}_${Math.random()}`;
+            const optimisticItem = {
+                _id: tempId, type: normalizedType, itemId,
+                x: gx, y: gy, stage: 0, growthProgress: 0,
+                witherProgress: 0, isDead: false,
+                lastWatered: null, lastUpdated: new Date(), plantedAt: new Date()
+            };
+            const sprite = this.renderItem(optimisticItem);
+            if (GardenShared.addGardenItem) GardenShared.addGardenItem(optimisticItem);
             this.add.particles(gx + 32, gy + 32, 'star_particle', {
                 speed: 100, scale: { start: 0.5, end: 0 }, lifespan: 500, quantity: 10
             }).explode();
             window.gameEvents.emit('actionSuccess', { action: 'plant' });
             if (ASSETS.DECORS[itemId]?.isFence) this.updateAllFences();
+
+            // Enqueue the buy action; patch or rollback when batch resolves
+            const sc = this;
+            enqueue('buy', { itemId, type: normalizedType, x: gx, y: gy }, (errResult) => {
+                // Rollback: remove optimistic sprite
+                if (sprite) {
+                    if (sprite.ui) sprite.ui.destroy();
+                    if (sprite.thirstyIcon) sprite.thirstyIcon.destroy();
+                    sprite.destroy();
+                }
+                if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
+                if (ASSETS.DECORS[itemId]?.isFence) sc.updateAllFences();
+                showToast(errResult?.msg || 'Dat cay that bai!', 'error');
+            }).then((result) => {
+                if (result && result.success && result.item) {
+                    // Patch temp _id → real server _id
+                    const realItem = result.item;
+                    if (sprite && !sprite.destroyed) {
+                        sprite.itemData._id = realItem._id;
+                        sprite.itemData.lastUpdated = realItem.lastUpdated;
+                        sprite.itemData.plantedAt = realItem.plantedAt;
+                    }
+                    if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
+                    if (GardenShared.addGardenItem) GardenShared.addGardenItem({ ...optimisticItem, ...realItem });
+                    updateHUD(result);
+                }
+            }).catch(() => {});
         },
 
         async handleToolAction(gx, gy) {
@@ -146,16 +209,36 @@
             }
             if (!IS_OWNER) return showToast('Chi chu vuon moi duoc lam!', 'warning');
 
-            // HOE: needs server _id
+            // HOE: optimistic UI + enqueue
             if (this.currentTool === 'hoe') {
                 if (plot || plant) return showToast('Co dat roi!', 'info');
-                const res = await apiCall('/my-garden/buy', { type: 'plot', itemId: 'soil_tile', x: gx, y: gy });
-                if (!res.success) return showToast(res.msg, 'error');
-                this.renderItem(res.item);
-                updateHUD(res);
-                if (GardenShared.addGardenItem && res.item) GardenShared.addGardenItem(res.item);
+
+                const tempId = `temp_${Date.now()}_${Math.random()}`;
+                const optimisticPlot = {
+                    _id: tempId, type: 'plot', itemId: 'soil_tile',
+                    x: gx, y: gy, lastWatered: null
+                };
+                const plotSprite = this.renderItem(optimisticPlot);
+                if (GardenShared.addGardenItem) GardenShared.addGardenItem(optimisticPlot);
                 this.add.particles(gx + 32, gy + 32, 'soil_dry', { speed: 50, scale: { start: 0.2, end: 0 }, lifespan: 300, quantity: 5 }).explode();
                 window.gameEvents.emit('actionSuccess', { action: 'hoe' });
+
+                const sc = this;
+                enqueue('buy', { itemId: 'soil_tile', type: 'plot', x: gx, y: gy }, (errResult) => {
+                    if (plotSprite) plotSprite.destroy();
+                    if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
+                    showToast(errResult?.msg || 'Mo dat that bai!', 'error');
+                }).then((result) => {
+                    if (result && result.success && result.item) {
+                        const realItem = result.item;
+                        if (plotSprite && !plotSprite.destroyed) {
+                            plotSprite.itemData._id = realItem._id;
+                        }
+                        if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
+                        if (GardenShared.addGardenItem) GardenShared.addGardenItem({ ...optimisticPlot, ...realItem });
+                        updateHUD(result);
+                    }
+                }).catch(() => {});
                 return;
             }
 
@@ -191,6 +274,12 @@
 
                 if (plant.ui) { plant.ui.destroy(); plant.ui = null; }
                 const pId = plant.itemData._id;
+                const rewardAnchor = {
+                    x: plant.x,
+                    y: plant.y - plant.displayHeight
+                };
+
+                clearHarvestSelection(this);
 
                 if (cfg.isMultiHarvest) {
                     const ns = Number.isInteger(cfg.afterharvestStage) ? cfg.afterharvestStage : 0;
@@ -204,17 +293,20 @@
                     plant.setTexture(`plant_${plant.itemData.itemId}_${ns}`);
                     plant.setDisplaySize((cfg.size?.w || 1) * GRID_SIZE, (cfg.size?.h || 1) * GRID_SIZE).setOrigin(0.5, 1);
                     this.updatePlantUI(plant);
-                    this.selectItem(plant);
                 } else {
                     const pr = plant;
                     this.tweens.add({ targets: plant, y: plant.y - 60, alpha: 0, duration: 500, onComplete: () => { if (pr.thirstyIcon) pr.thirstyIcon.destroy(); pr.destroy(); } });
                     if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(pId);
-                    this.selectedTile = null;
-                    if (window.hidePlantStats) window.hidePlantStats();
                 }
                 window.gameEvents.emit('actionSuccess', { action: 'harvest' });
                 showToast('Thu hoach!', 'success');
-                enqueue('harvest', { uniqueId: pId }, (r) => { showToast(r.msg || 'Thu hoach loi!', 'error'); });
+                enqueue('harvest', { uniqueId: pId }, (r) => { showToast(r.msg || 'Thu hoach loi!', 'error'); })
+                    .then((result) => {
+                        if (!result?.success) return;
+                        if (!ActionQueue) updateHUD(result);
+                        showHarvestRewards(this, rewardAnchor, result);
+                    })
+                    .catch(() => {});
                 return;
             }
 

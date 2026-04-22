@@ -64,7 +64,7 @@ function buildGardenViewData(garden, ownerUser) {
         nextLevelXP: levelData.nextLevelXP,
         levelName: levelData.levelName,
         ownerName: ownerUser?.username || 'Nguoi choi',
-        dailyQuests: buildDailyQuests(garden)
+        dailyQuests: buildDailyQuests(garden, { userLevel: levelData.level })
     };
 }
 

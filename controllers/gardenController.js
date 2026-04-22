@@ -182,7 +182,7 @@ exports.updateTutorialStep = async (req, res) => {
 
 exports.claimDailyQuest = async (req, res) => {
     try {
-        const result = await claimDailyQuest(req.user._id, req.body.questId);
+        const result = await claimDailyQuest(req.user._id, req.body.questId, req.user.level || 1);
         if (!result.success) {
             return res.status(400).json(result);
         }

@@ -21,7 +21,9 @@ const GuildSchema = new mongoose.Schema({
         sunflower: { type: Number, default: 0 },
         wheat: { type: Number, default: 0 },
         carrot: { type: Number, default: 0 },
-        tomato: { type: Number, default: 0 }
+        tomato: { type: Number, default: 0 },
+        watermelon: { type: Number, default: 0 },
+        chili_pepper: { type: Number, default: 0 }
     },
     totalContributionValue: { type: Number, default: 0 },
     announcement: {

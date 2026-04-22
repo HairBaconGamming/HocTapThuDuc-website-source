@@ -7,7 +7,7 @@ const GuildWeeklyGoalSchema = new mongoose.Schema({
     targetType: { type: String, enum: ['spirit_power', 'resource'], required: true },
     targetResource: {
         type: String,
-        enum: ['water', 'fertilizer', 'gold', 'sunflower', 'wheat', 'carrot', 'tomato', null],
+        enum: ['water', 'fertilizer', 'gold', 'sunflower', 'wheat', 'carrot', 'tomato', 'watermelon', 'chili_pepper', null],
         default: null
     },
     targetAmount: { type: Number, required: true, min: 1 },

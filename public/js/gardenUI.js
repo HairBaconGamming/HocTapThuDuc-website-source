@@ -38,7 +38,9 @@
         sunflower: 20,
         wheat: 35,
         carrot: 60,
-        tomato: 120
+        tomato: 120,
+        watermelon: 1000,
+        chili_pepper: 300
     });
 
     function getGardenItems() {
@@ -282,21 +284,38 @@
     function updateQuestSummary() {
         const countEl = document.getElementById('questSummaryCount');
         const statusEl = document.getElementById('questSummaryStatus');
+        const modalStatusEl = document.getElementById('questModalSummaryStatus');
+        const badgeEl = document.getElementById('questFabBadge');
+
         const quests = Array.isArray(gardenData.dailyQuests) ? gardenData.dailyQuests : [];
         const pending = quests.filter((quest) => quest.complete && !quest.claimed).length;
         const complete = quests.filter((quest) => quest.claimed).length;
 
-        if (countEl) {
-            countEl.innerText = String(pending || quests.length || 0);
+        if (countEl) countEl.innerText = String(pending || quests.length || 0);
+
+        if (badgeEl) {
+            if (pending > 0) {
+                badgeEl.innerText = String(pending);
+                badgeEl.style.display = 'flex';
+                badgeEl.parentElement.classList.add('pulse-anim');
+            } else {
+                badgeEl.style.display = 'none';
+                badgeEl.parentElement.classList.remove('pulse-anim');
+            }
         }
 
-        if (!statusEl) return;
-        if (!quests.length) {
-            statusEl.innerText = 'Hôm nay chưa có nhiệm vụ';
-        } else if (pending > 0) {
-            statusEl.innerText = `${pending} thưởng đang chờ nhận`;
-        } else {
-            statusEl.innerText = `${complete}/${quests.length} nhiệm vụ đã hoàn tất`;
+        if (statusEl) {
+            if (!quests.length) {
+                statusEl.innerText = 'Hôm nay chưa có nhiệm vụ';
+            } else if (pending > 0) {
+                statusEl.innerText = `${pending} thưởng đang chờ nhận`;
+            } else {
+                statusEl.innerText = `${complete}/${quests.length} nhiệm vụ đã hoàn tất`;
+            }
+        }
+
+        if (modalStatusEl) {
+            modalStatusEl.innerText = `Tiến độ: ${complete}/${quests.length} nhiệm vụ hoàn thành`;
         }
     }
 
@@ -469,50 +488,85 @@
     }
 
     function renderDailyQuests(quests = gardenData.dailyQuests || []) {
-        const list = document.getElementById('dailyQuestList');
+        const list = document.getElementById('questModalList');
         if (!list) return;
 
         gardenData.dailyQuests = Array.isArray(quests) ? quests : [];
         updateQuestSummary();
 
         if (!gardenData.dailyQuests.length) {
-            list.innerHTML = '<div class="quest-empty">Hôm nay chưa có nhiệm vụ.</div>';
+            list.innerHTML = '<div class="quest-empty"><i class="fas fa-box-open"></i> Hôm nay chưa có nhiệm vụ.</div>';
             return;
         }
 
         list.innerHTML = gardenData.dailyQuests.map((quest) => {
             const pct = quest.target > 0 ? Math.min(100, Math.round((quest.progress / quest.target) * 100)) : 0;
+            const isClaimed = quest.claimed;
+            const isComplete = !isClaimed && quest.complete;
+
             const cardClass = [
-                'quest-card',
-                quest.claimed ? 'claimed' : '',
-                (!quest.claimed && quest.complete) ? 'complete' : ''
+                'quest-card-premium',
+                isClaimed ? 'claimed' : '',
+                isComplete ? 'complete' : ''
             ].filter(Boolean).join(' ');
 
             let buttonLabel = 'Đang làm';
-            if (quest.claimed) buttonLabel = 'Đã nhận';
-            else if (quest.complete) buttonLabel = 'Nhận thưởng';
+            if (isClaimed) buttonLabel = 'Đã nhận';
+            else if (isComplete) buttonLabel = 'Nhận thưởng';
+
+            // SVG Progress Arc calculation
+            const radius = 20;
+            const circumference = 2 * Math.PI * radius;
+            const strokeDashoffset = circumference - (pct / 100) * circumference;
 
             return `
                 <div class="${cardClass}">
-                    <div class="quest-topline">
-                        <strong class="quest-title">${escapeHtml(quest.title)}</strong>
-                        <span class="quest-progress-label">${quest.progress}/${quest.target}</span>
+                    ${isComplete ? '<div class="quest-shimmer"></div>' : ''}
+                    <div class="quest-type-icon">${quest.icon || '📜'}</div>
+                    <div class="quest-content">
+                        <div class="quest-topline">
+                            <strong class="quest-title">${escapeHtml(quest.title)}</strong>
+                        </div>
+                        <div class="quest-desc">${escapeHtml(quest.description)}</div>
+                        <div class="quest-bottomline">
+                            <span class="quest-reward">${formatQuestReward(quest.rewards)}</span>
+                        </div>
                     </div>
-                    <div class="quest-desc">${escapeHtml(quest.description)}</div>
-                    <div class="quest-progress">
-                        <div class="quest-progress-fill" style="width:${pct}%"></div>
-                    </div>
-                    <div class="quest-bottomline">
-                        <span class="quest-reward">${formatQuestReward(quest.rewards)}</span>
+                    <div class="quest-actions">
+                        <div class="quest-progress-ring">
+                            <svg width="48" height="48">
+                                <circle class="ring-bg" cx="24" cy="24" r="${radius}"></circle>
+                                <circle class="ring-fill" cx="24" cy="24" r="${radius}" 
+                                    style="stroke-dasharray: ${circumference}; stroke-dashoffset: ${strokeDashoffset};"></circle>
+                            </svg>
+                            <span class="ring-text">${quest.progress}/${quest.target}</span>
+                        </div>
                         <button
-                            class="quest-claim-btn"
+                            class="pixel-btn quest-claim-btn ${isComplete ? 'pulse-btn' : ''}"
                             data-quest-id="${quest.id}"
-                            ${quest.complete && !quest.claimed ? '' : 'disabled'}
+                            ${isComplete ? '' : 'disabled'}
                         >${buttonLabel}</button>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    function openQuestModal() {
+        const overlay = document.getElementById('questModalOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => overlay.setAttribute('aria-hidden', 'false'));
+            renderDailyQuests();
+        }
+    }
+
+    function closeQuestModal() {
+        const overlay = document.getElementById('questModalOverlay');
+        if (overlay) {
+            overlay.setAttribute('aria-hidden', 'true');
+            setTimeout(() => { overlay.style.display = 'none'; }, 250);
+        }
     }
 
     async function claimQuest(questId) {
@@ -929,6 +983,8 @@
                 const target = element.getAttribute('data-shell-target') || 'quests';
                 if (target === 'inventory') {
                     openInventoryModal();
+                } else if (target === 'quest-modal') {
+                    openQuestModal();
                 } else {
                     openPanel(target);
                 }
@@ -938,6 +994,18 @@
         document.getElementById('closeInventoryBtn')?.addEventListener('click', closeInventoryModal);
         document.getElementById('inventoryOverlay')?.addEventListener('click', (event) => {
             if (event.target?.id === 'inventoryOverlay') closeInventoryModal();
+        });
+
+        document.getElementById('closeQuestModalBtn')?.addEventListener('click', closeQuestModal);
+        document.getElementById('questModalOverlay')?.addEventListener('click', (event) => {
+            if (event.target?.id === 'questModalOverlay') closeQuestModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeInventoryModal();
+                closeQuestModal();
+            }
         });
 
         document.getElementById('inventorySearchInput')?.addEventListener('input', (e) => {
@@ -993,7 +1061,7 @@
             fertilizeSelectedPlant();
         });
 
-        document.getElementById('dailyQuestList')?.addEventListener('click', (event) => {
+        document.getElementById('questModalList')?.addEventListener('click', (event) => {
             const button = event.target.closest('.quest-claim-btn[data-quest-id]');
             if (!button || button.disabled) return;
             claimQuest(button.getAttribute('data-quest-id'));
@@ -1173,16 +1241,16 @@
                     <div class="inventory-detail-art">
                         <img src="${escapeHtml(insight.icon)}" alt="${escapeHtml(insight.config.name)}">
                     </div>
-                    <div class="inventory-detail-copy">
+                    <div class="inventory-detail-heading">
                         <div class="inventory-detail-kicker">Hồ sơ vật phẩm</div>
                         <h4>${escapeHtml(insight.config.name)}</h4>
-                        <p>${escapeHtml(insight.description)}</p>
-                        <div class="inventory-detail-chips">
-                            <span class="inventory-detail-chip tone-${escapeHtml(insight.tier.tone)}">${escapeHtml(insight.tier.label)}</span>
-                            <span class="inventory-detail-chip">${escapeHtml(insight.harvestMode)}</span>
-                            <span class="inventory-detail-chip">Sở hữu ${escapeHtml(String(insight.count))}</span>
-                            <span class="inventory-detail-chip">Mở khóa LV ${escapeHtml(String(insight.unlockLevel))}</span>
-                        </div>
+                    </div>
+                    <p class="inventory-detail-description">${escapeHtml(insight.description)}</p>
+                    <div class="inventory-detail-chips">
+                        <span class="inventory-detail-chip tone-${escapeHtml(insight.tier.tone)}">${escapeHtml(insight.tier.label)}</span>
+                        <span class="inventory-detail-chip">${escapeHtml(insight.harvestMode)}</span>
+                        <span class="inventory-detail-chip">Sở hữu ${escapeHtml(String(insight.count))}</span>
+                        <span class="inventory-detail-chip">Mở khóa LV ${escapeHtml(String(insight.unlockLevel))}</span>
                     </div>
                 </div>
 

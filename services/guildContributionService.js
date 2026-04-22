@@ -3,6 +3,7 @@ const GuildContribution = require('../models/GuildContribution');
 const User = require('../models/User');
 const { ensureGarden } = require('./gardenRewardService');
 const {
+    CONTRIBUTION_VALUES,
     clampPositiveInteger,
     formatContributionSummary,
     getContributionValue,
@@ -14,7 +15,9 @@ const { syncGuildDerivedState, hydrateGuildDetail } = require('./guildService');
 const { createAuditLog, syncWeeklyGoalProgress } = require('./guildGovernanceService');
 
 const DONATION_FIELDS = new Set(['water', 'fertilizer', 'gold']);
-const DONATION_ITEMS = new Set(['sunflower', 'wheat', 'carrot', 'tomato']);
+const DONATION_ITEMS = new Set(
+    Object.keys(CONTRIBUTION_VALUES).filter((resourceType) => !DONATION_FIELDS.has(resourceType))
+);
 
 async function contributeToGuild({ userId, resourceType, amount }) {
     const safeAmount = clampPositiveInteger(amount);

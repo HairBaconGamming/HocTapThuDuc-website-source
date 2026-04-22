@@ -75,7 +75,9 @@ const DONATION_SYMBOLS = {
     tomato: '🍅',
     wheat: '🌾',
     carrot: '🥕',
-    sunflower: '🌻'
+    sunflower: '🌻',
+    watermelon: '🍉',
+    chili_pepper: '🌶️'
 };
 
 function formatCompactNumber(value) {

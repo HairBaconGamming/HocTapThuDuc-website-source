@@ -54,27 +54,61 @@
     }
 
     function showToast(msg, type = 'info') {
-        if (typeof window.Swal !== 'undefined' && window.SwalPixel) {
-            window.SwalPixel.fire({ title: msg, icon: type });
-            return;
+        let container = document.getElementById('gardenToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'gardenToastContainer';
+            document.body.appendChild(container);
         }
 
-        if (typeof window.Swal !== 'undefined') {
-            const Toast = window.Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
-                background: '#3e2723',
-                color: '#ffb300',
-                iconColor: '#ffb300'
+        const toast = document.createElement('div');
+        toast.className = `garden-toast ${type}`;
+        
+        let iconHtml = '📢';
+        if (type === 'success') iconHtml = '✨';
+        if (type === 'error') iconHtml = '❗';
+        if (type === 'warning') iconHtml = '⚠️';
+        if (type === 'info') iconHtml = 'ℹ️';
+
+        if (msg.toLowerCase().includes('vàng') || msg.toLowerCase().includes('gold')) iconHtml = '💰';
+        if (msg.toLowerCase().includes('nước') || msg.toLowerCase().includes('tuới')) iconHtml = '💧';
+        if (msg.toLowerCase().includes('thu hoạch')) iconHtml = '🧺';
+        if (msg.toLowerCase().includes('trồng')) iconHtml = '🌱';
+
+        toast.innerHTML = `
+            <div class="garden-toast-icon">${iconHtml}</div>
+            <div class="garden-toast-msg">${msg}</div>
+        `;
+
+        container.appendChild(toast);
+
+        // Sound effect based on type (optional if sound is needed, using small beep)
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                if (type === 'success') { osc.frequency.setValueAtTime(600, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1); }
+                else if (type === 'error') { osc.frequency.setValueAtTime(300, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.1); }
+                else { osc.frequency.setValueAtTime(800, ctx.currentTime); }
+                
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.1);
+            }
+        } catch (e) { /* ignore audio error */ }
+
+        setTimeout(() => {
+            toast.classList.add('toast-hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
             });
-            Toast.fire({ title: msg, icon: type });
-            return;
-        }
-
-        console.log(`[${type.toUpperCase()}] ${msg}`);
+        }, 3000);
     }
 
     async function apiCall(url, body) {

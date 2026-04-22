@@ -20,14 +20,18 @@ function runTest(name, fn) {
 
 runTest('guild contribution values scale by resource weight', () => {
     assert.strictEqual(getContributionValue('water', 2), 12);
-    assert.strictEqual(getContributionValue('tomato', 3), 135);
-    assert.strictEqual(getContributionValue('gold', 1), 0.1);
+    assert.strictEqual(getContributionValue('tomato', 3), 360);
+    assert.strictEqual(getContributionValue('watermelon', 1), 1000);
+    assert.strictEqual(getContributionValue('chili_pepper', 2), 600);
+    assert.strictEqual(getContributionValue('gold', 1), 0.2);
     assert.strictEqual(getContributionValue('invalid', 5), 0);
 });
 
 runTest('guild contribution meta stays available for the redesigned UI', () => {
     assert.strictEqual(getContributionResourceMeta('water').label, 'Nước');
     assert.strictEqual(getContributionResourceMeta('gold').icon, '🪙');
+    assert.strictEqual(getContributionResourceMeta('watermelon').label, 'Dưa hấu');
+    assert.strictEqual(getContributionResourceMeta('chili_pepper').label, 'Trái ớt');
 });
 
 runTest('guild tree thresholds follow steeper exponential growth', () => {

@@ -5,7 +5,7 @@ const GuildContributionSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     resourceType: {
         type: String,
-        enum: ['water', 'fertilizer', 'gold', 'sunflower', 'wheat', 'carrot', 'tomato'],
+        enum: ['water', 'fertilizer', 'gold', 'sunflower', 'wheat', 'carrot', 'tomato', 'watermelon', 'chili_pepper'],
         required: true
     },
     amount: { type: Number, required: true, min: 1 },

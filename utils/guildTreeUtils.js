@@ -5,17 +5,21 @@ const RESOURCE_META = Object.freeze({
     sunflower: { label: 'Hướng dương', icon: '🌻', tone: 'crop' },
     wheat: { label: 'Lúa mì', icon: '🌾', tone: 'crop' },
     carrot: { label: 'Cà rốt', icon: '🥕', tone: 'crop' },
-    tomato: { label: 'Cà chua', icon: '🍅', tone: 'crop' }
+    tomato: { label: 'Cà chua', icon: '🍅', tone: 'crop' },
+    watermelon: { label: 'Dưa hấu', icon: '🍉', tone: 'crop' },
+    chili_pepper: { label: 'Trái ớt', icon: '🌶️', tone: 'crop' }
 });
 
 const CONTRIBUTION_VALUES = Object.freeze({
     water: 6,
     fertilizer: 18,
-    gold: 0.5,
+    gold: 0.2,
     sunflower: 20,
     wheat: 35,
     carrot: 60,
-    tomato: 120
+    tomato: 120,
+    watermelon: 1000,
+    chili_pepper: 300
 });
 
 const SPIRIT_TREE_XP_BASE = 1000;
