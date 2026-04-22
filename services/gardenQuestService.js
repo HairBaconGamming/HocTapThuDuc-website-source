@@ -2,6 +2,8 @@ const Garden = require('../models/Garden');
 
 const QUEST_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const MAX_DAILY_QUESTS = 5;
+const RICH_FARMER_BASE_TARGET = 500;
+const RICH_FARMER_TARGET_GROWTH = 1.08;
 
 /**
  * Full quest pool — 15 diverse quest definitions.
@@ -110,6 +112,7 @@ const QUEST_POOL = [
     },
     {
         id: 'decorate-3',
+        disabled: true,
         title: 'Kiến trúc sư',
         description: 'Đặt 3 vật trang trí — biến khu vườn thành tác phẩm nghệ thuật.',
         metric: 'decorationCount',
@@ -136,10 +139,25 @@ const QUEST_POOL = [
         description: 'Thu được tổng cộng 500 vàng — tay buôn thứ thiệt!',
         metric: 'totalGoldCollected',
         baselineKey: 'totalGoldCollected',
-        target: 500,
+        target: RICH_FARMER_BASE_TARGET,
+        targetScaling: {
+            mode: 'exponential',
+            factor: RICH_FARMER_TARGET_GROWTH
+        },
         icon: '👑',
         category: 'gold',
         baseRewards: { water: 3, fertilizer: 2 }
+    },
+    {
+        id: 'lesson-1',
+        title: 'Hoàn thành bài học',
+        description: 'Hoàn thành 1 bài học trong ngày để nhận thêm tài nguyên cho nông trại.',
+        metric: 'lessonCompleteCount',
+        baselineKey: 'lessonCompleteCount',
+        target: 1,
+        icon: '📘',
+        category: 'lesson',
+        baseRewards: { gold: 120, water: 1, fertilizer: 1 }
     },
     {
         id: 'fertilize-2',
@@ -200,37 +218,55 @@ function hashString(str) {
     return Math.abs(hash);
 }
 
+function deterministicShuffle(list, seedKey) {
+    const items = [...list];
+
+    for (let i = items.length - 1; i > 0; i -= 1) {
+        const seed = hashString(`${seedKey}-${i}`);
+        const swapIndex = Math.floor(seededRandom(seed) * (i + 1));
+        [items[i], items[swapIndex]] = [items[swapIndex], items[i]];
+    }
+
+    return items;
+}
+
 /**
  * Select N unique quests from the pool using a deterministic seed.
  * Ensures no two quests share the same category when possible.
  */
 function selectDailyQuests(userId, dateKey, count = MAX_DAILY_QUESTS) {
     const seedStr = `${userId}-${dateKey}-quest-v2`;
-    let seed = hashString(seedStr);
-
-    const pool = [...QUEST_POOL];
+    const pool = QUEST_POOL.filter((quest) => !quest.disabled);
+    const groupedByCategory = new Map();
     const selected = [];
-    const usedCategories = new Set();
+    const selectedIds = new Set();
 
-    // First pass: pick one from each unique category
-    const categories = [...new Set(pool.map(q => q.category))];
+    pool.forEach((quest) => {
+        if (!groupedByCategory.has(quest.category)) {
+            groupedByCategory.set(quest.category, []);
+        }
+        groupedByCategory.get(quest.category).push(quest);
+    });
+
+    const categories = deterministicShuffle([...groupedByCategory.keys()], `${seedStr}-categories`);
     for (const cat of categories) {
         if (selected.length >= count) break;
-        const catQuests = pool.filter(q => q.category === cat && !selected.includes(q));
+        const catQuests = deterministicShuffle(
+            groupedByCategory.get(cat) || [],
+            `${seedStr}-${cat}`
+        );
         if (catQuests.length > 0) {
-            seed = hashString(seedStr + cat + seed);
-            const idx = Math.floor(seededRandom(seed) * catQuests.length);
-            selected.push(catQuests[idx]);
-            usedCategories.add(cat);
+            selected.push(catQuests[0]);
+            selectedIds.add(catQuests[0].id);
         }
     }
 
-    // Second pass: fill remaining slots from unused quests
-    const remaining = pool.filter(q => !selected.includes(q));
+    const remaining = deterministicShuffle(
+        pool.filter((quest) => !selectedIds.has(quest.id)),
+        `${seedStr}-remaining`
+    );
     while (selected.length < count && remaining.length > 0) {
-        seed = hashString(seedStr + selected.length + seed);
-        const idx = Math.floor(seededRandom(seed) * remaining.length);
-        selected.push(remaining.splice(idx, 1)[0]);
+        selected.push(remaining.shift());
     }
 
     return selected.slice(0, count);
@@ -255,6 +291,19 @@ function scaleRewards(baseRewards, userLevel = 1) {
     }
 
     return scaled;
+}
+
+function resolveQuestTarget(quest, userLevel = 1) {
+    const baseTarget = Math.max(1, Number(quest?.target || 1));
+    const scaling = quest?.targetScaling;
+    const safeLevel = Math.max(1, Math.floor(Number(userLevel) || 1));
+
+    if (!scaling || scaling.mode !== 'exponential') {
+        return baseTarget;
+    }
+
+    const factor = Math.max(1.01, Number(scaling.factor || 1.05));
+    return Math.max(baseTarget, Math.round(baseTarget * Math.pow(factor, safeLevel - 1)));
 }
 
 function getGardenDateKey(date = new Date()) {
@@ -284,6 +333,7 @@ function buildFreshQuestState(garden, dateKey, userId) {
         decorationCount: garden.decorationCount || 0,
         totalGoldCollected: garden.totalGoldCollected || 0,
         fertilizeCount: garden.fertilizeCount || 0,
+        lessonCompleteCount: garden.lessonCompleteCount || 0,
         activeQuestIds,
         claimedQuestIds: []
     };
@@ -303,6 +353,7 @@ function getQuestState(garden, dateKey = getGardenDateKey()) {
         decorationCount: state.decorationCount || 0,
         totalGoldCollected: state.totalGoldCollected || 0,
         fertilizeCount: state.fertilizeCount || 0,
+        lessonCompleteCount: state.lessonCompleteCount || 0,
         activeQuestIds: Array.isArray(state.activeQuestIds) ? [...state.activeQuestIds] : [],
         claimedQuestIds: Array.isArray(state.claimedQuestIds) ? [...state.claimedQuestIds] : []
     };
@@ -339,18 +390,31 @@ function buildDailyQuests(garden, options = {}) {
     if (activeIds && activeIds.length > 0) {
         activeQuests = activeIds
             .map(id => QUEST_POOL.find(q => q.id === id))
-            .filter(Boolean);
+            .filter((quest) => quest && !quest.disabled);
     } else {
         // Fallback: select fresh quests
         activeQuests = selectDailyQuests(String(garden.user), dateKey);
+    }
+
+    if (activeQuests.length < MAX_DAILY_QUESTS) {
+        const seenQuestIds = new Set(activeQuests.map((quest) => quest.id));
+        const fallbackQuests = selectDailyQuests(String(garden.user), dateKey);
+        fallbackQuests.forEach((quest) => {
+            if (activeQuests.length >= MAX_DAILY_QUESTS) return;
+            if (!seenQuestIds.has(quest.id)) {
+                activeQuests.push(quest);
+                seenQuestIds.add(quest.id);
+            }
+        });
     }
 
     return activeQuests.map((quest) => {
         const currentValue = garden[quest.metric] || 0;
         const baselineValue = state[quest.baselineKey] || 0;
         const progress = Math.max(0, currentValue - baselineValue);
+        const target = resolveQuestTarget(quest, userLevel);
         const claimed = state.claimedQuestIds.includes(quest.id);
-        const complete = progress >= quest.target;
+        const complete = progress >= target;
         const scaledRewards = scaleRewards(quest.baseRewards, userLevel);
 
         return {
@@ -359,13 +423,24 @@ function buildDailyQuests(garden, options = {}) {
             description: quest.description,
             icon: quest.icon,
             category: quest.category,
-            progress: Math.min(progress, quest.target),
-            target: quest.target,
+            progress: Math.min(progress, target),
+            target,
             claimed,
             complete,
             rewards: scaledRewards
         };
     });
+}
+
+async function recordLessonCompletion(userId, amount = 1) {
+    const safeAmount = Math.max(0, Math.floor(Number(amount || 0)));
+    if (!safeAmount) return null;
+
+    return Garden.findOneAndUpdate(
+        { user: userId },
+        { $inc: { lessonCompleteCount: safeAmount } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 }
 
 async function claimDailyQuest(userId, questId, userLevel = 1) {
@@ -415,5 +490,7 @@ module.exports = {
     ensureDailyQuestState,
     buildDailyQuests,
     claimDailyQuest,
-    scaleRewards
+    scaleRewards,
+    resolveQuestTarget,
+    recordLessonCompletion
 };

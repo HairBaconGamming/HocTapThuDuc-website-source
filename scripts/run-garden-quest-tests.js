@@ -1,10 +1,12 @@
 const assert = require('assert');
 
 const {
+    QUEST_POOL,
     getGardenDateKey,
     getQuestState,
     ensureDailyQuestState,
-    buildDailyQuests
+    buildDailyQuests,
+    resolveQuestTarget
 } = require('../services/gardenQuestService');
 
 function runTest(name, fn) {
@@ -34,6 +36,8 @@ runTest('buildDailyQuests uses daily baseline to calculate progress', () => {
             waterCount: 2,
             harvestCount: 1,
             plantCount: 3,
+            lessonCompleteCount: 0,
+            activeQuestIds: ['water-3', 'plant-2', 'harvest-2', 'gold-500', 'fertilize-2'],
             claimedQuestIds: ['plant-2']
         }
     };
@@ -62,6 +66,7 @@ runTest('getQuestState falls back to fresh baseline when day changes', () => {
             waterCount: 1,
             harvestCount: 1,
             plantCount: 1,
+            lessonCompleteCount: 2,
             claimedQuestIds: ['water-3']
         }
     }, getGardenDateKey(date));
@@ -70,6 +75,36 @@ runTest('getQuestState falls back to fresh baseline when day changes', () => {
     assert.strictEqual(state.harvestCount, 4);
     assert.strictEqual(state.plantCount, 3);
     assert.deepStrictEqual(state.claimedQuestIds, []);
+});
+
+runTest('resolveQuestTarget scales Rich Farmer exponentially by level', () => {
+    const richFarmerQuest = QUEST_POOL.find((quest) => quest.id === 'gold-500');
+    assert.ok(richFarmerQuest, 'gold-500 quest should exist');
+    assert.strictEqual(resolveQuestTarget(richFarmerQuest, 1), 500);
+    assert.strictEqual(
+        resolveQuestTarget(richFarmerQuest, 10),
+        Math.round(500 * Math.pow(1.08, 9))
+    );
+});
+
+runTest('buildDailyQuests tracks lesson completion progress', () => {
+    const date = new Date('2026-04-06T10:00:00.000Z');
+    const dateKey = getGardenDateKey(date);
+    const garden = {
+        user: 'user-lesson',
+        lessonCompleteCount: 3,
+        dailyQuestState: {
+            dateKey,
+            lessonCompleteCount: 2,
+            activeQuestIds: ['lesson-1'],
+            claimedQuestIds: []
+        }
+    };
+
+    const lessonQuest = buildDailyQuests(garden, { date, userLevel: 3 }).find((entry) => entry.id === 'lesson-1');
+    assert.ok(lessonQuest, 'lesson quest should be present');
+    assert.strictEqual(lessonQuest.progress, 1);
+    assert.strictEqual(lessonQuest.complete, true);
 });
 
 async function runAsyncTests() {
@@ -86,6 +121,7 @@ async function runAsyncTests() {
             waterCount: 0,
             harvestCount: 0,
             plantCount: 0,
+            lessonCompleteCount: 0,
             claimedQuestIds: []
         },
         async save() {
@@ -99,6 +135,7 @@ async function runAsyncTests() {
     assert.strictEqual(state.waterCount, 9);
     assert.strictEqual(state.harvestCount, 5);
     assert.strictEqual(state.plantCount, 6);
+    assert.strictEqual(state.lessonCompleteCount, 0);
     console.log('PASS ensureDailyQuestState rotates stale quest baseline');
 }
 

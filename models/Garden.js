@@ -43,6 +43,7 @@ const GardenSchema = new mongoose.Schema({
     totalGoldCollected: { type: Number, default: 0 },
     plantSurvivalStreak: { type: Number, default: 0 },
     fertilizeCount: { type: Number, default: 0 },
+    lessonCompleteCount: { type: Number, default: 0 },
 
     dailyQuestState: {
         dateKey: { type: String, default: null },
@@ -52,6 +53,7 @@ const GardenSchema = new mongoose.Schema({
         decorationCount: { type: Number, default: 0 },
         totalGoldCollected: { type: Number, default: 0 },
         fertilizeCount: { type: Number, default: 0 },
+        lessonCompleteCount: { type: Number, default: 0 },
         activeQuestIds: [{ type: String }],
         claimedQuestIds: [{ type: String }]
     }

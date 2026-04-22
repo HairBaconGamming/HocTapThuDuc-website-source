@@ -10,17 +10,30 @@ LessonCompletionSchema.index({ user: 1, lesson: 1 }, { unique: true });
 
 LessonCompletionSchema.post("save", async function lessonCompletionPostSave(doc) {
   try {
-    if (doc?.$locals?.skipAchievementCheck || !this.isNew) {
+    if (!this.isNew) {
       return;
     }
 
-    const { achievementChecker } = require("../utils/achievementUtils");
-    if (!achievementChecker?.onLessonCompleted) {
-      return;
-    }
+    const skipAchievementCheck = Boolean(doc?.$locals?.skipAchievementCheck);
 
     setImmediate(async () => {
       try {
+        const { recordLessonCompletion } = require("../services/gardenQuestService");
+        await recordLessonCompletion(doc.user);
+      } catch (err) {
+        console.error("Garden lesson quest sync error:", err.message);
+      }
+
+      if (skipAchievementCheck) {
+        return;
+      }
+
+      try {
+        const { achievementChecker } = require("../utils/achievementUtils");
+        if (!achievementChecker?.onLessonCompleted) {
+          return;
+        }
+
         await achievementChecker.onLessonCompleted(doc.user);
         console.log(`Achievement check triggered for user ${doc.user}`);
       } catch (err) {

@@ -197,7 +197,7 @@ exports.processBatch = async (req, res) => {
     try {
         const actions = req.body.actions;
         if (!Array.isArray(actions)) {
-            return res.status(400).json({ success: false, msg: 'Danh sach hanh dong khong hop le.' });
+            return res.status(400).json({ success: false, msg: 'Danh sách hành động không hợp lệ.' });
         }
 
         const result = await processBatchActions(req.user._id, actions);

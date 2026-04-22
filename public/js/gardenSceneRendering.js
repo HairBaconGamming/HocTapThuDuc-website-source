@@ -91,8 +91,8 @@
                 sprite.setTexture(`plant_${item.itemId}_${newStage}`);
                 sprite.setDisplaySize((config.size?.w || 1) * GRID_SIZE, (config.size?.h || 1) * GRID_SIZE).setOrigin(0.5, 1);
 
-                if (newStage < config.maxStage) this.showFloatingText(sprite.x, sprite.y - sprite.displayHeight, 'Lon len!', 'green');
-                else this.showFloatingText(sprite.x, sprite.y - sprite.displayHeight, 'Chin roi!', 'gold');
+                if (newStage < config.maxStage) this.showFloatingText(sprite.x, sprite.y - sprite.displayHeight, 'Lớn lên!', 'green');
+                else this.showFloatingText(sprite.x, sprite.y - sprite.displayHeight, 'Chín rồi!', 'gold');
 
                 if (newStage >= config.maxStage) this.updatePlantUI(sprite);
             });
@@ -177,45 +177,59 @@
             sprite.setTexture(key).setDisplaySize(GRID_SIZE, GRID_SIZE);
         },
 
-        showFloatingText(x, y, msg, cType) {
+        showFloatingText(x, y, msg, cType, options = {}) {
             const colors = { gold: '#ffca28', green: '#69f0ae', blue: '#40c4ff', red: '#ff5252' };
             const strokeColors = { gold: '#b71c1c', green: '#1b5e20', blue: '#01579b', red: '#b71c1c' };
-            
+            const compact = Boolean(options?.compact);
+
             let iconStr = '';
             if (cType === 'gold' && !msg.includes('!')) iconStr = '💰 ';
             if (cType === 'blue' && msg.includes('XP')) iconStr = '✨ ';
             if (cType === 'green' && msg.includes('Lon len')) iconStr = '🌱 ';
             if (cType === 'gold' && msg.includes('Chin roi')) iconStr = '🌟 ';
 
-            const text = this.add.text(x, y - 10, iconStr + msg, {
+            const fontSize = compact ? '18px' : '36px';
+            const strokeThickness = compact ? 2 : 5;
+            const shadowOffset = compact ? 1 : 2;
+            const shadowBlur = compact ? 1 : 2;
+            const startOffset = compact ? 4 : 10;
+            const popOffset = compact ? 30 : 50;
+            const fadeOffset = compact ? 52 : 80;
+            const popDuration = compact ? 260 : 400;
+            const fadeDuration = compact ? 520 : 800;
+            const fadeDelay = compact ? 120 : 300;
+
+            if (compact) iconStr = '';
+
+            const text = this.add.text(x, y - startOffset, iconStr + msg, {
                 fontFamily: 'VT323',
-                fontSize: '36px',
+                fontSize,
                 color: colors[cType] || '#ffffff',
                 stroke: strokeColors[cType] || '#000000',
-                strokeThickness: 5,
+                strokeThickness,
                 shadow: {
-                    offsetX: 2,
-                    offsetY: 2,
+                    offsetX: shadowOffset,
+                    offsetY: shadowOffset,
                     color: 'rgba(0,0,0,0.8)',
-                    blur: 2,
+                    blur: shadowBlur,
                     fill: true
-                }
+                },
+                align: 'center'
             }).setOrigin(0.5).setDepth(999999);
 
-            // Bounce physics animation
             this.tweens.add({
                 targets: text,
-                y: y - 50,
-                duration: 400,
-                ease: 'Back.easeOut',
+                y: y - popOffset,
+                duration: popDuration,
+                ease: compact ? 'Sine.easeOut' : 'Back.easeOut',
                 onComplete: () => {
                     this.tweens.add({
                         targets: text,
-                        y: y - 80,
+                        y: y - fadeOffset,
                         alpha: 0,
-                        duration: 800,
+                        duration: fadeDuration,
                         ease: 'Sine.easeIn',
-                        delay: 300,
+                        delay: fadeDelay,
                         onComplete: () => text.destroy()
                     });
                 }

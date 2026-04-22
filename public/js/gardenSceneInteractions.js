@@ -4,7 +4,7 @@
     const IS_OWNER = window.isOwner || false;
     const GardenShared = window.GardenShared || {};
     const showToast = GardenShared.showToast || ((msg) => console.log(msg));
-    const apiCall = GardenShared.apiCall || (async () => ({ success: false, msg: 'Mat ket noi server!' }));
+    const apiCall = GardenShared.apiCall || (async () => ({ success: false, msg: 'Mất kết nối server!' }));
     const updateHUD = GardenShared.updateHUD || (() => {});
     const ActionQueue = GardenShared.ActionQueue;
 
@@ -32,33 +32,35 @@
         if (goldReward > 0) {
             scene.showFloatingText?.(
                 anchor.x,
-                anchor.y - 10,
-                `+${goldReward.toLocaleString('vi-VN')} vang`,
-                'gold'
+                anchor.y - 6,
+                `+${goldReward.toLocaleString('vi-VN')} vàng`,
+                'gold',
+                { compact: true }
             );
         }
 
         if (xpReward > 0) {
             scene.showFloatingText?.(
                 anchor.x,
-                anchor.y - 46,
+                anchor.y - 28,
                 `+${xpReward.toLocaleString('vi-VN')} XP`,
-                'blue'
+                'blue',
+                { compact: true }
             );
         }
     }
 
     window.GardenSceneInteractions = {
         startMovingSprite(sprite) {
-            if (!IS_OWNER) return showToast('Chi chu nha moi duoc di chuyen!', 'warning');
+            if (!IS_OWNER) return showToast('Chỉ chủ nhà mới được di chuyển!', 'warning');
             const item = sprite.itemData;
-            if (item.type === 'plot') return showToast('Khong the di chuyen dat!', 'warning');
+            if (item.type === 'plot') return showToast('Không thể di chuyển đất!', 'warning');
             const cfg = ASSETS.PLANTS[item.itemId] || ASSETS.DECORS[item.itemId];
             const canMove = !item.isDead && (
                 item.type === 'decoration' || item.type === 'decor'
                 || item.stage === 0 || (cfg && item.stage >= cfg.maxStage)
             );
-            if (!canMove) return showToast(item.isDead ? 'Cay chet khong doi duoc!' : 'Cay dang lon!', 'warning');
+            if (!canMove) return showToast(item.isDead ? 'Cây chết không dời được!' : 'Cây đang lớn!', 'warning');
 
             this.isMovingObject = true;
             this.movingSprite = sprite;
@@ -69,7 +71,7 @@
             this.selectionMarker.setVisible(false);
             if (window.hidePlantStats) window.hidePlantStats();
             this.input.setDefaultCursor('grabbing');
-            showToast('Che do di chuyen: Click de dat lai', 'info');
+            showToast('Chế độ di chuyển: Bấm để đặt lại', 'info');
             if (window.updateMobileMoveBtn) window.updateMobileMoveBtn(true);
         },
 
@@ -85,16 +87,16 @@
                 if (sprite.itemData.type === 'plant' && o.itemData.type === 'plot') return false;
                 return true;
             });
-            if (conflict) return showToast('Vi tri bi trung!', 'error');
+            if (conflict) return showToast('Vị trí bị trùng!', 'error');
 
             const hasPlot = this.children.list.some((o) => (
                 o.itemData?.type === 'plot'
                 && Math.abs(o.itemData.x - gx) < 1
                 && Math.abs(o.itemData.y - gy) < 1
             ));
-            if (sprite.itemData.type === 'plant' && !hasPlot) return showToast('Cay phai dat tren dat!', 'warning');
+            if (sprite.itemData.type === 'plant' && !hasPlot) return showToast('Cây phải đặt trên đất!', 'warning');
             if ((sprite.itemData.type === 'decoration' || sprite.itemData.type === 'decor') && hasPlot) {
-                return showToast('Decor phai dat tren co!', 'warning');
+                return showToast('Decor phải đặt trên cỏ!', 'warning');
             }
 
             // Optimistic move
@@ -106,7 +108,7 @@
             if (GardenShared.moveGardenItem) GardenShared.moveGardenItem(sprite.itemData._id, gx, gy);
             if (sprite.ui) sprite.ui.setVisible(true);
             if (ASSETS.DECORS[sprite.itemData.itemId]?.isFence) this.updateAllFences();
-            showToast('Da di chuyen!', 'success');
+            showToast('Đã di chuyển!', 'success');
             this.cancelMoveObject(false);
             this.selectItem(sprite);
 
@@ -117,7 +119,7 @@
                 ref.y = oldY + ref.displayHeight;
                 ref.setDepth(oldY);
                 if (GardenShared.moveGardenItem) GardenShared.moveGardenItem(ref.itemData._id, oldX, oldY);
-                showToast('Di chuyen that bai, hoan tac!', 'error');
+                showToast('Di chuyển thất bại, hoàn tác!', 'error');
             });
         },
 
@@ -143,13 +145,13 @@
             const existingItem = allItems.find((i) => i.itemData.type !== 'plot' && Math.abs(i.itemData.x - gx) < 1 && Math.abs(i.itemData.y - gy) < 1);
 
             if (normalizedType === 'plant') {
-                if (!existingPlot) return showToast('Can co dat de trong!', 'warning');
-                if (existingItem) return showToast('Da co cay roi!', 'warning');
+                if (!existingPlot) return showToast('Cần có đất để trồng!', 'warning');
+                if (existingItem) return showToast('Đã có cây rồi!', 'warning');
             } else if (normalizedType === 'plot') {
-                if (existingPlot) return showToast('Cho nay co dat roi!', 'warning');
+                if (existingPlot) return showToast('Chỗ này có đất rồi!', 'warning');
             } else if (normalizedType === 'decoration') {
-                if (existingPlot) return showToast('Decor phai dat tren co!', 'warning');
-                if (existingItem) return showToast('Vuong vat can!', 'warning');
+                if (existingPlot) return showToast('Decor phải đặt trên cỏ!', 'warning');
+                if (existingItem) return showToast('Vướng vật cản!', 'warning');
             }
 
             // --- Optimistic UI: render immediately, sync in background ---
@@ -179,7 +181,7 @@
                 }
                 if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
                 if (ASSETS.DECORS[itemId]?.isFence) sc.updateAllFences();
-                showToast(errResult?.msg || 'Dat cay that bai!', 'error');
+                showToast(errResult?.msg || 'Đặt cây thất bại!', 'error');
             }).then((result) => {
                 if (result && result.success && result.item) {
                     // Patch temp _id → real server _id
@@ -207,11 +209,11 @@
                 else { this.selectedTile = null; this.selectionMarker.setVisible(false); if (window.hidePlantStats) window.hidePlantStats(); }
                 return;
             }
-            if (!IS_OWNER) return showToast('Chi chu vuon moi duoc lam!', 'warning');
+            if (!IS_OWNER) return showToast('Chỉ chủ vườn mới được làm!', 'warning');
 
             // HOE: optimistic UI + enqueue
             if (this.currentTool === 'hoe') {
-                if (plot || plant) return showToast('Co dat roi!', 'info');
+                if (plot || plant) return showToast('Có đất rồi!', 'info');
 
                 const tempId = `temp_${Date.now()}_${Math.random()}`;
                 const optimisticPlot = {
@@ -227,7 +229,7 @@
                 enqueue('buy', { itemId: 'soil_tile', type: 'plot', x: gx, y: gy }, (errResult) => {
                     if (plotSprite) plotSprite.destroy();
                     if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(tempId);
-                    showToast(errResult?.msg || 'Mo dat that bai!', 'error');
+                    showToast(errResult?.msg || 'Mở đất thất bại!', 'error');
                 }).then((result) => {
                     if (result && result.success && result.item) {
                         const realItem = result.item;
@@ -255,12 +257,12 @@
                     const sp = allItems.find((i) => i.itemData.type === 'plot' && Math.abs(i.itemData.x - gx) < 1 && Math.abs(i.itemData.y - gy) < 1);
                     if (sp) { sp.setTexture('soil_wet').setDisplaySize(GRID_SIZE, GRID_SIZE); sp.itemData.lastWatered = now; }
                 }
-                showToast('Da tuoi!', 'success');
+                showToast('Đã tưới!', 'success');
                 window.gameEvents.emit('actionSuccess', { action: 'water', target: targetId });
                 const pRef = plot;
                 enqueue('water', { uniqueId: targetId }, (r) => {
                     if (pRef) pRef.setTexture('soil_dry').setDisplaySize(GRID_SIZE, GRID_SIZE);
-                    showToast(r.msg || 'Tuoi that bai!', 'error');
+                    showToast(r.msg || 'Tưới thất bại!', 'error');
                 });
                 return;
             }
@@ -268,9 +270,9 @@
             // BASKET: optimistic + queue
             if (this.currentTool === 'basket') {
                 if (!plant || plant.itemData.type !== 'plant') return;
-                if (plant.itemData.isDead) return showToast('Cay chet roi!', 'error');
+                if (plant.itemData.isDead) return showToast('Cây chết rồi!', 'error');
                 const cfg = ASSETS.PLANTS[plant.itemData.itemId];
-                if (!cfg || plant.itemData.stage < cfg.maxStage) return showToast('Chua chin!', 'warning');
+                if (!cfg || plant.itemData.stage < cfg.maxStage) return showToast('Chưa chín!', 'warning');
 
                 if (plant.ui) { plant.ui.destroy(); plant.ui = null; }
                 const pId = plant.itemData._id;
@@ -299,8 +301,8 @@
                     if (GardenShared.removeGardenItem) GardenShared.removeGardenItem(pId);
                 }
                 window.gameEvents.emit('actionSuccess', { action: 'harvest' });
-                showToast('Thu hoach!', 'success');
-                enqueue('harvest', { uniqueId: pId }, (r) => { showToast(r.msg || 'Thu hoach loi!', 'error'); })
+                showToast('Thu hoạch!', 'success');
+                enqueue('harvest', { uniqueId: pId }, (r) => { showToast(r.msg || 'Thu hoạch lỗi!', 'error'); })
                     .then((result) => {
                         if (!result?.success) return;
                         if (!ActionQueue) updateHUD(result);
@@ -322,12 +324,12 @@
                 if (ASSETS.DECORS[td.itemId]?.isFence) this.updateAllFences();
                 this.selectedTile = null;
                 if (window.hidePlantStats) window.hidePlantStats();
-                showToast('Da don dep!', 'success');
+                showToast('Đã dọn dẹp!', 'success');
                 const sc = this;
                 enqueue('remove', { uniqueId: td._id }, () => {
                     sc.renderItem(td);
                     if (GardenShared.addGardenItem) GardenShared.addGardenItem(td);
-                    showToast('Xoa that bai, hoan tac!', 'error');
+                    showToast('Xóa thất bại, hoàn tác!', 'error');
                 });
             }
         }

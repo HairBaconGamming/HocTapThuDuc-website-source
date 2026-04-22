@@ -37,9 +37,9 @@
                 this.plantingMode = { active: true, itemId: id, type };
                 if (window.togglePlantingUI) {
                     const itemData = ASSETS.PLANTS[id] || ASSETS.DECORS[id];
-                    window.togglePlantingUI(true, itemData ? itemData.name : 'Vat pham');
+                    window.togglePlantingUI(true, itemData ? itemData.name : 'Vật phẩm');
                 }
-                showToast('Da lay hang! Bam chuot de dat', 'info');
+                showToast('Đã lấy hàng! Bấm chuột để đặt', 'info');
             });
 
             window.gameEvents.on('cancelPlanting', () => this.cancelPlanting());
@@ -50,7 +50,7 @@
                     return;
                 }
 
-                if (!this.selectedTile) return showToast('Hay chon 1 vat the truoc!', 'warning');
+                if (!this.selectedTile) return showToast('Hãy chọn 1 vật thể trước!', 'warning');
                 this.startMovingSprite(this.selectedTile);
             });
         },
@@ -117,7 +117,7 @@
                 ));
 
                 if (item) this.startMovingSprite(item);
-                else showToast('Hay chi vao vat can di chuyen!', 'warning');
+                else showToast('Hãy chỉ vào vật cần di chuyển!', 'warning');
             });
 
             this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {

@@ -4,7 +4,7 @@
     const helpers = window.GardenShared || {};
     const formatTime = helpers.formatTime || ((value) => `${value}`);
     const parseDuration = helpers.parseDuration || (() => 5 * 60 * 1000);
-    const apiCall = helpers.apiCall || (async () => ({ success: false, msg: 'Mat ket noi server!' }));
+    const apiCall = helpers.apiCall || (async () => ({ success: false, msg: 'Mất kết nối server!' }));
     const updateHUD = helpers.updateHUD || (() => {});
     const addGardenItem = helpers.addGardenItem || (() => {});
     const showToast = helpers.showToast || ((msg) => console.log(msg));
@@ -394,8 +394,8 @@
         countEl.innerText = count;
 
         const label = fertilizePending
-            ? 'DANG BON PHAN...'
-            : (disabledReason || 'BON PHAN (+1 CAP)');
+            ? 'ĐANG BÓN PHÂN...'
+            : (disabledReason || 'BÓN PHÂN (+1 CẤP)');
         btn.disabled = fertilizePending || Boolean(disabledReason) || !visible;
         btn.innerText = label;
     }
@@ -708,11 +708,11 @@
 
             let disabledReason = '';
             if (itemData.isDead) {
-                disabledReason = 'CAY DA CHET';
+                disabledReason = 'CÂY ĐÃ CHẾT';
             } else if (stage >= maxStage) {
-                disabledReason = 'DA SAN SANG THU HOACH';
+                disabledReason = 'ĐÃ SẴN SÀNG THU HOẠCH';
             } else if ((gardenData.fertilizer || 0) <= 0) {
-                disabledReason = 'HET PHAN BON';
+                disabledReason = 'HẾT PHÂN BÓN';
             }
 
             updateFertilizeControls({

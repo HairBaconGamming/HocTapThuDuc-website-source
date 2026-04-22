@@ -3976,7 +3976,8 @@ input {
 }
 
 .garden-toast.toast-hiding {
-    animation: toastFadeOut 0.3s forwards;
+    pointer-events: none;
+    animation: toastFadeOut 0.35s ease forwards;
 }
 
 /* Toast Types */
@@ -4048,8 +4049,8 @@ input {
 }
 
 @keyframes toastFadeOut {
-    0% { transform: translateX(0) scale(1); opacity: 1; height: auto; margin-bottom: 12px; }
-    100% { transform: translateX(50px) scale(0.9); opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; margin-bottom: 0; border-width: 0; }
+    0% { transform: translateX(0) scale(1); opacity: 1; }
+    100% { transform: translateX(42px) scale(0.94); opacity: 0; }
 }
 
 @keyframes toastShine {
@@ -4070,4 +4071,3 @@ input {
         max-width: none;
     }
 }
-

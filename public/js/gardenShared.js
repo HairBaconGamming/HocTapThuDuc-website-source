@@ -81,6 +81,32 @@
         `;
 
         container.appendChild(toast);
+        let hideTimer = null;
+        let cleanupTimer = null;
+        let removed = false;
+
+        const removeToast = () => {
+            if (removed) return;
+            removed = true;
+            window.clearTimeout(hideTimer);
+            window.clearTimeout(cleanupTimer);
+            toast.removeEventListener('animationend', handleAnimationEnd);
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        };
+
+        const handleAnimationEnd = (event) => {
+            if (event.animationName === 'toastFadeOut') {
+                removeToast();
+            }
+        };
+
+        const startHiding = () => {
+            if (removed || toast.classList.contains('toast-hiding')) return;
+            toast.classList.add('toast-hiding');
+            cleanupTimer = window.setTimeout(removeToast, 380);
+        };
+
+        toast.addEventListener('animationend', handleAnimationEnd);
 
         // Sound effect based on type (optional if sound is needed, using small beep)
         try {
@@ -103,12 +129,7 @@
             }
         } catch (e) { /* ignore audio error */ }
 
-        setTimeout(() => {
-            toast.classList.add('toast-hiding');
-            toast.addEventListener('animationend', () => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            });
-        }, 3000);
+        hideTimer = window.setTimeout(startHiding, 3000);
     }
 
     async function apiCall(url, body) {

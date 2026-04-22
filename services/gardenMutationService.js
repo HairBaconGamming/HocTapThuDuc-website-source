@@ -36,8 +36,8 @@ function assertAction(condition, message, status = 400) {
 
 function normalizeGridCoordinate(value, label) {
     const number = Number(value);
-    assertAction(Number.isInteger(number), `${label} khong hop le.`);
-    assertAction(isValidGridCoordinate(number), `${label} nam ngoai khu vuon.`);
+    assertAction(Number.isInteger(number), `${label} không hợp lệ.`);
+    assertAction(isValidGridCoordinate(number), `${label} nằm ngoài khu vườn.`);
     return number;
 }
 
@@ -87,20 +87,20 @@ async function buyItem({ userId, itemId, type, x, y }) {
     const safeX = normalizeGridCoordinate(x, 'Vi tri X');
     const safeY = normalizeGridCoordinate(y, 'Vi tri Y');
 
-    assertAction(['plot', 'plant', 'decoration'].includes(normalizedType), 'Loai vat pham khong hop le.');
+    assertAction(['plot', 'plant', 'decoration'].includes(normalizedType), 'Loại vật phẩm không hợp lệ.');
 
     const garden = await loadGardenForMutation(userId);
     const user = await User.findById(userId);
-    assertAction(user, 'Khong tim thay nguoi choi.', 404);
+    assertAction(user, 'Không tìm thấy người chơi.', 404);
 
     if (normalizedType === 'plot') {
-        assertAction(!findPlot(garden, safeX, safeY), 'Cho nay da co dat roi!');
-        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'Cho nay da co vat pham roi!');
+        assertAction(!findPlot(garden, safeX, safeY), 'Chỗ này đã có đất rồi!');
+        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'Chỗ này đã có vật phẩm rồi!');
 
         const currentPlots = garden.items.filter((item) => item.type === 'plot').length;
         const plotPrice = Math.ceil(PLOT_BASE_PRICE * Math.pow(1.005, currentPlots));
 
-        assertAction(garden.gold >= plotPrice, `Can ${plotPrice} vang de mo rong!`);
+        assertAction(garden.gold >= plotPrice, `Cần ${plotPrice} vàng để mở rộng!`);
 
         garden.gold -= plotPrice;
         garden.items.push({
@@ -113,29 +113,29 @@ async function buyItem({ userId, itemId, type, x, y }) {
 
         return {
             success: true,
-            msg: `Mo rong dat (-${plotPrice} vang)`,
+            msg: `Mở rộng đất (-${plotPrice} vàng)`,
             item: garden.items[garden.items.length - 1],
             newGold: garden.gold
         };
     }
 
     const itemConfig = getItemConfig(normalizedType, itemId);
-    assertAction(itemConfig, 'Vat pham loi.');
+    assertAction(itemConfig, 'Vật phẩm lỗi.');
 
     if (itemConfig.unlockLevel) {
-        assertAction((user.level || 1) >= itemConfig.unlockLevel, `Can Level ${itemConfig.unlockLevel} de mua vat pham nay!`);
+        assertAction((user.level || 1) >= itemConfig.unlockLevel, `Cần Level ${itemConfig.unlockLevel} để mua vật phẩm này!`);
     }
 
-    assertAction(garden.gold >= itemConfig.price, 'Khong du vang.');
+    assertAction(garden.gold >= itemConfig.price, 'Không đủ vàng.');
 
     if (normalizedType === 'plant') {
-        assertAction(findPlot(garden, safeX, safeY), 'Phai cuoc dat truoc!');
-        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'O dat nay da co cay!');
+        assertAction(findPlot(garden, safeX, safeY), 'Phải cuốc đất trước!');
+        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'Ô đất này đã có cây!');
     }
 
     if (normalizedType === 'decoration') {
-        assertAction(!findPlot(garden, safeX, safeY), 'Decor phai dat tren co!');
-        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'Vuong vat can!');
+        assertAction(!findPlot(garden, safeX, safeY), 'Decor phải đặt trên cỏ!');
+        assertAction(!findNonPlotOccupant(garden, safeX, safeY), 'Vướng vật cản!');
     }
 
     garden.gold -= itemConfig.price;
@@ -170,7 +170,7 @@ async function buyItem({ userId, itemId, type, x, y }) {
 
     return {
         success: true,
-        msg: `Da mua ${itemConfig.name}`,
+        msg: `Đã mua ${itemConfig.name}`,
         newGold: garden.gold,
         item: garden.items[garden.items.length - 1],
         achievements,
@@ -181,12 +181,12 @@ async function buyItem({ userId, itemId, type, x, y }) {
 async function moveItem({ userId, uniqueId, x, y }) {
     const safeX = normalizeGridCoordinate(x, 'Vi tri X');
     const safeY = normalizeGridCoordinate(y, 'Vi tri Y');
-    assertAction(uniqueId, 'Thieu ma vat pham.');
+    assertAction(uniqueId, 'Thiếu mã vật phẩm.');
 
     const garden = await loadGardenForMutation(userId);
     const item = garden.items.id(uniqueId);
-    assertAction(item, 'Vat pham khong ton tai hoac khong thuoc ve ban.', 404);
-    assertAction(item.type !== 'plot', 'Khong the di chuyen o dat!');
+    assertAction(item, 'Vật phẩm không tồn tại hoặc không thuộc về bạn.', 404);
+    assertAction(item.type !== 'plot', 'Không thể di chuyển ô đất!');
 
     const config = ASSETS.PLANTS[item.itemId] || ASSETS.DECORS[item.itemId];
     const canMove = !item.isDead && (
@@ -195,16 +195,16 @@ async function moveItem({ userId, uniqueId, x, y }) {
         || (config && item.stage >= config.maxStage)
     );
 
-    assertAction(canMove, item.isDead ? 'Cay chet khong doi duoc!' : 'Cay dang lon, khong nen dong vao!');
+    assertAction(canMove, item.isDead ? 'Cây chết không dời được!' : 'Cây đang lớn, không nên động vào!');
 
     if (item.type === 'plant') {
-        assertAction(findPlot(garden, safeX, safeY), 'Cay phai dat tren dat!');
-        assertAction(!findNonPlotOccupant(garden, safeX, safeY, uniqueId), 'Vi tri bi trung!');
+        assertAction(findPlot(garden, safeX, safeY), 'Cây phải đặt trên đất!');
+        assertAction(!findNonPlotOccupant(garden, safeX, safeY, uniqueId), 'Vị trí bị trùng!');
     }
 
     if (item.type === 'decoration') {
-        assertAction(!findPlot(garden, safeX, safeY), 'Decor phai dat tren co!');
-        assertAction(!findNonPlotOccupant(garden, safeX, safeY, uniqueId), 'Vi tri bi trung!');
+        assertAction(!findPlot(garden, safeX, safeY), 'Decor phải đặt trên cỏ!');
+        assertAction(!findNonPlotOccupant(garden, safeX, safeY, uniqueId), 'Vị trí bị trùng!');
     }
 
     item.x = safeX;
@@ -215,18 +215,18 @@ async function moveItem({ userId, uniqueId, x, y }) {
 }
 
 async function interactItem({ userId, uniqueId, action }) {
-    assertAction(uniqueId, 'Thieu ma vat pham.');
-    assertAction(['water', 'harvest', 'fertilize'].includes(action), 'Hanh dong khong hop le.');
+    assertAction(uniqueId, 'Thiếu mã vật phẩm.');
+    assertAction(['water', 'harvest', 'fertilize'].includes(action), 'Hành động không hợp lệ.');
 
     const garden = await loadGardenForMutation(userId);
     const item = garden.items.id(uniqueId);
-    assertAction(item, 'Vat pham khong ton tai hoac khong thuoc ve ban.', 404);
+    assertAction(item, 'Vật phẩm không tồn tại hoặc không thuộc về bạn.', 404);
 
     if (action === 'water') {
-        assertAction(garden.water > 0, 'Het nuoc roi!');
+        assertAction(garden.water > 0, 'Hết nước rồi!');
 
         const plot = item.type === 'plot' ? item : findPlot(garden, item.x, item.y);
-        assertAction(plot, 'Khong tim thay o dat de tuoi.');
+        assertAction(plot, 'Không tìm thấy ô đất để tưới.');
 
         const plant = item.type === 'plant'
             ? item
@@ -245,7 +245,7 @@ async function interactItem({ userId, uniqueId, action }) {
 
         return {
             success: true,
-            msg: 'Da tuoi nuoc (am 24h)',
+            msg: 'Đã tưới nước (ẩm 24h)',
             item,
             newWater: garden.water,
             achievements,
@@ -254,16 +254,16 @@ async function interactItem({ userId, uniqueId, action }) {
     }
 
     if (action === 'fertilize') {
-        assertAction(item.type === 'plant', 'Chi co the bon phan cho cay trong.');
-        assertAction(!item.isDead, 'Cay da chet, khong the bon phan.');
-        assertAction(garden.fertilizer > 0, 'Ban da het phan bon.');
+        assertAction(item.type === 'plant', 'Chỉ có thể bón phân cho cây trồng.');
+        assertAction(!item.isDead, 'Cây đã chết, không thể bón phân.');
+        assertAction(garden.fertilizer > 0, 'Bạn đã hết phân bón.');
 
         const config = ASSETS.PLANTS[item.itemId];
-        assertAction(config, 'Khong tim thay cau hinh cay trong.');
-        assertAction(item.stage < config.maxStage, 'Cay da san sang thu hoach.');
+        assertAction(config, 'Không tìm thấy cấu hình cây trồng.');
+        assertAction(item.stage < config.maxStage, 'Cây đã sẵn sàng thu hoạch.');
 
         const plot = findPlot(garden, item.x, item.y);
-        assertAction(plot, 'Khong tim thay o dat cua cay.');
+        assertAction(plot, 'Không tìm thấy ô đất của cây.');
 
         const now = new Date();
         const timePerStage = parseDuration(config.growthTime);
@@ -284,8 +284,8 @@ async function interactItem({ userId, uniqueId, action }) {
         return {
             success: true,
             msg: item.stage >= config.maxStage
-                ? 'Da bon phan, cay da san sang thu hoach!'
-                : 'Da bon phan, cay lon nhanh hon!',
+                ? 'Đã bón phân, cây đã sẵn sàng thu hoạch!'
+                : 'Đã bón phân, cây lớn nhanh hơn!',
             item: item.toObject(),
             plot: plot.toObject(),
             newFertilizer: garden.fertilizer,
@@ -293,11 +293,11 @@ async function interactItem({ userId, uniqueId, action }) {
         };
     }
 
-    assertAction(item.type === 'plant', 'Chi co the thu hoach cay trong.');
+    assertAction(item.type === 'plant', 'Chỉ có thể thu hoạch cây trồng.');
 
     const config = ASSETS.PLANTS[item.itemId];
-    assertAction(config, 'Khong tim thay cau hinh cay trong.');
-    assertAction(item.stage >= config.maxStage, 'Chua chin!');
+    assertAction(config, 'Không tìm thấy cấu hình cây trồng.');
+    assertAction(item.stage >= config.maxStage, 'Chưa chín!');
 
     const rewardGold = Math.floor(Math.random() * ((config.rewardGold.max - config.rewardGold.min) + 1)) + config.rewardGold.min;
     const rewardXP = config.rewardXP || 10;
@@ -309,7 +309,7 @@ async function interactItem({ userId, uniqueId, action }) {
     const inventory = addInventoryItem(garden, item.itemId, harvestYield);
 
     const user = await User.findById(userId);
-    assertAction(user, 'Khong tim thay nguoi choi.', 404);
+    assertAction(user, 'Không tìm thấy người chơi.', 404);
 
     const levelResult = LevelUtils.calculateLevelUp(user.level, user.xp, rewardXP);
     user.level = levelResult.newLevel;
@@ -348,26 +348,26 @@ async function interactItem({ userId, uniqueId, action }) {
         },
         dailyQuests: buildDailyQuests(garden, { userLevel: user.level || 1 }),
         msg: config.isMultiHarvest
-            ? `Thu hoach qua: +${rewardGold}G, +${rewardXP}XP (Cay se phat trien lai!)`
-            : `Thu hoach: +${rewardGold}G, +${rewardXP}XP`
+            ? `Thu hoạch quả: +${rewardGold}G, +${rewardXP}XP (Cây sẽ phát triển lại!)`
+            : `Thu hoạch: +${rewardGold}G, +${rewardXP}XP`
     };
 }
 
 async function removeItem({ userId, uniqueId }) {
-    assertAction(uniqueId, 'Thieu ma vat pham.');
+    assertAction(uniqueId, 'Thiếu mã vật phẩm.');
 
     const garden = await loadGardenForMutation(userId);
     const item = garden.items.id(uniqueId);
-    assertAction(item, 'Vat pham khong ton tai hoac khong thuoc ve ban.', 404);
+    assertAction(item, 'Vật phẩm không tồn tại hoặc không thuộc về bạn.', 404);
 
     if (item.type === 'plot') {
-        assertAction(!findNonPlotOccupant(garden, item.x, item.y), 'Can don cay hoac decor truoc khi xoa dat.');
+        assertAction(!findNonPlotOccupant(garden, item.x, item.y), 'Cần dọn cây hoặc decor trước khi xóa đất.');
     }
 
     garden.items.pull(item._id);
     await garden.save();
 
-    return { success: true, msg: 'Da don dep!' };
+    return { success: true, msg: 'Đã dọn dẹp!' };
 }
 
 async function saveCamera({ userId, x, y, zoom }) {
@@ -377,7 +377,7 @@ async function saveCamera({ userId, x, y, zoom }) {
         zoom: Number(zoom)
     };
 
-    assertAction(isValidCameraState(camera), 'Trang thai camera khong hop le.');
+    assertAction(isValidCameraState(camera), 'Trạng thái camera không hợp lệ.');
 
     await ensureGarden(userId);
     await Garden.updateOne(
@@ -396,8 +396,8 @@ async function saveCamera({ userId, x, y, zoom }) {
 
 async function updateTutorialStep({ userId, step }) {
     const safeStep = Number(step);
-    assertAction(Number.isInteger(safeStep), 'Buoc tutorial khong hop le.');
-    assertAction(safeStep >= 0 && safeStep <= 999, 'Buoc tutorial nam ngoai pham vi.');
+    assertAction(Number.isInteger(safeStep), 'Bước tutorial không hợp lệ.');
+    assertAction(safeStep >= 0 && safeStep <= 999, 'Bước tutorial nằm ngoài phạm vi.');
 
     await Garden.findOneAndUpdate(
         { user: userId },
@@ -430,7 +430,7 @@ async function processBatchActions(userId, actions = []) {
     // Load garden + sync state ONCE for the entire batch
     const garden = await loadGardenForMutation(userId);
     const user = await User.findById(userId);
-    if (!user) throw new GardenActionError('Khong tim thay nguoi choi.', 404);
+    if (!user) throw new GardenActionError('Không tìm thấy người chơi.', 404);
 
     const results = [];
     let needSave = false;
@@ -443,11 +443,11 @@ async function processBatchActions(userId, actions = []) {
             if (action === 'water') {
                 const { uniqueId } = payload || {};
                 const item = garden.items.id(uniqueId);
-                if (!item) { results.push({ action, success: false, msg: 'Vat pham khong ton tai.' }); continue; }
-                if (garden.water <= 0) { results.push({ action, success: false, msg: 'Het nuoc roi!' }); continue; }
+                if (!item) { results.push({ action, success: false, msg: 'Vật phẩm không tồn tại.' }); continue; }
+                if (garden.water <= 0) { results.push({ action, success: false, msg: 'Hết nước rồi!' }); continue; }
 
                 const plot = item.type === 'plot' ? item : findPlot(garden, item.x, item.y);
-                if (!plot) { results.push({ action, success: false, msg: 'Khong tim thay o dat de tuoi.' }); continue; }
+                if (!plot) { results.push({ action, success: false, msg: 'Không tìm thấy ô đất để tưới.' }); continue; }
 
                 const plant = item.type === 'plant'
                     ? item
@@ -465,11 +465,11 @@ async function processBatchActions(userId, actions = []) {
             } else if (action === 'harvest') {
                 const { uniqueId } = payload || {};
                 const item = garden.items.id(uniqueId);
-                if (!item || item.type !== 'plant') { results.push({ action, success: false, msg: 'Chi co the thu hoach cay trong.' }); continue; }
+                if (!item || item.type !== 'plant') { results.push({ action, success: false, msg: 'Chỉ có thể thu hoạch cây trồng.' }); continue; }
 
                 const config = ASSETS.PLANTS[item.itemId];
-                if (!config) { results.push({ action, success: false, msg: 'Khong tim thay cau hinh cay.' }); continue; }
-                if (item.stage < config.maxStage) { results.push({ action, success: false, msg: 'Chua chin!' }); continue; }
+                if (!config) { results.push({ action, success: false, msg: 'Không tìm thấy cấu hình cây.' }); continue; }
+                if (item.stage < config.maxStage) { results.push({ action, success: false, msg: 'Chưa chín!' }); continue; }
 
                 const rewardGold = Math.floor(Math.random() * ((config.rewardGold.max - config.rewardGold.min) + 1)) + config.rewardGold.min;
                 const rewardXP = config.rewardXP || 10;
@@ -499,13 +499,13 @@ async function processBatchActions(userId, actions = []) {
             } else if (action === 'fertilize') {
                 const { uniqueId } = payload || {};
                 const item = garden.items.id(uniqueId);
-                if (!item || item.type !== 'plant') { results.push({ action, success: false, msg: 'Chi co the bon phan cho cay.' }); continue; }
-                if (item.isDead) { results.push({ action, success: false, msg: 'Cay da chet.' }); continue; }
-                if (garden.fertilizer <= 0) { results.push({ action, success: false, msg: 'Het phan bon.' }); continue; }
+                if (!item || item.type !== 'plant') { results.push({ action, success: false, msg: 'Chỉ có thể bón phân cho cây.' }); continue; }
+                if (item.isDead) { results.push({ action, success: false, msg: 'Cây đã chết.' }); continue; }
+                if (garden.fertilizer <= 0) { results.push({ action, success: false, msg: 'Hết phân bón.' }); continue; }
 
                 const config = ASSETS.PLANTS[item.itemId];
-                if (!config) { results.push({ action, success: false, msg: 'Khong tim thay cau hinh cay.' }); continue; }
-                if (item.stage >= config.maxStage) { results.push({ action, success: false, msg: 'Cay da san sang thu hoach.' }); continue; }
+                if (!config) { results.push({ action, success: false, msg: 'Không tìm thấy cấu hình cây.' }); continue; }
+                if (item.stage >= config.maxStage) { results.push({ action, success: false, msg: 'Cây đã sẵn sàng thu hoạch.' }); continue; }
 
                 const plot = findPlot(garden, item.x, item.y);
                 const now = new Date();
@@ -530,14 +530,14 @@ async function processBatchActions(userId, actions = []) {
                 const normalizedType = normalizeItemType(type);
                 const safeX = Number(x); const safeY = Number(y);
                 if (!Number.isInteger(safeX) || !Number.isInteger(safeY) || !isValidGridCoordinate(safeX) || !isValidGridCoordinate(safeY)) {
-                    results.push({ action, success: false, msg: 'Vi tri khong hop le.' }); continue;
+                    results.push({ action, success: false, msg: 'Vị trí không hợp lệ.' }); continue;
                 }
 
                 if (normalizedType === 'plot') {
-                    if (findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Cho nay da co dat.' }); continue; }
+                    if (findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Chỗ này đã có đất.' }); continue; }
                     const currentPlots = garden.items.filter((i) => i.type === 'plot').length;
                     const plotPrice = Math.ceil(PLOT_BASE_PRICE * Math.pow(1.005, currentPlots));
-                    if (garden.gold < plotPrice) { results.push({ action, success: false, msg: `Can ${plotPrice} vang.` }); continue; }
+                    if (garden.gold < plotPrice) { results.push({ action, success: false, msg: `Cần ${plotPrice} vàng.` }); continue; }
 
                     garden.gold -= plotPrice;
                     garden.items.push({ type: 'plot', itemId: 'soil_tile', x: safeX, y: safeY });
@@ -546,12 +546,12 @@ async function processBatchActions(userId, actions = []) {
 
                 } else {
                     const itemConfig = getItemConfig(normalizedType, itemId);
-                    if (!itemConfig) { results.push({ action, success: false, msg: 'Vat pham loi.' }); continue; }
-                    if (garden.gold < itemConfig.price) { results.push({ action, success: false, msg: 'Khong du vang.' }); continue; }
-                    if (normalizedType === 'plant' && !findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Phai cuoc dat truoc.' }); continue; }
-                    if (normalizedType === 'plant' && findNonPlotOccupant(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'O dat nay da co cay.' }); continue; }
-                    if (normalizedType === 'decoration' && findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Decor phai dat tren co.' }); continue; }
-                    if (normalizedType === 'decoration' && findNonPlotOccupant(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Vuong vat can.' }); continue; }
+                    if (!itemConfig) { results.push({ action, success: false, msg: 'Vật phẩm lỗi.' }); continue; }
+                    if (garden.gold < itemConfig.price) { results.push({ action, success: false, msg: 'Không đủ vàng.' }); continue; }
+                    if (normalizedType === 'plant' && !findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Phải cuốc đất trước.' }); continue; }
+                    if (normalizedType === 'plant' && findNonPlotOccupant(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Ô đất này đã có cây.' }); continue; }
+                    if (normalizedType === 'decoration' && findPlot(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Decor phải đặt trên cỏ.' }); continue; }
+                    if (normalizedType === 'decoration' && findNonPlotOccupant(garden, safeX, safeY)) { results.push({ action, success: false, msg: 'Vướng vật cản.' }); continue; }
 
                     garden.gold -= itemConfig.price;
                     garden.items.push({
@@ -567,7 +567,7 @@ async function processBatchActions(userId, actions = []) {
                 const { uniqueId, x, y } = payload || {};
                 const safeX = Number(x); const safeY = Number(y);
                 const item = garden.items.id(uniqueId);
-                if (!item) { results.push({ action, success: false, msg: 'Vat pham khong ton tai.' }); continue; }
+                if (!item) { results.push({ action, success: false, msg: 'Vật phẩm không tồn tại.' }); continue; }
                 item.x = safeX; item.y = safeY;
                 needSave = true;
                 results.push({ action, success: true, uniqueId });
@@ -575,19 +575,19 @@ async function processBatchActions(userId, actions = []) {
             } else if (action === 'remove') {
                 const { uniqueId } = payload || {};
                 const item = garden.items.id(uniqueId);
-                if (!item) { results.push({ action, success: false, msg: 'Vat pham khong ton tai.' }); continue; }
+                if (!item) { results.push({ action, success: false, msg: 'Vật phẩm không tồn tại.' }); continue; }
                 if (item.type === 'plot' && findNonPlotOccupant(garden, item.x, item.y)) {
-                    results.push({ action, success: false, msg: 'Can don cay truoc.' }); continue;
+                    results.push({ action, success: false, msg: 'Cần dọn cây trước.' }); continue;
                 }
                 garden.items.pull(item._id);
                 needSave = true;
                 results.push({ action, success: true, uniqueId });
 
             } else {
-                results.push({ action, success: false, msg: 'Hanh dong khong hop le.' });
+                results.push({ action, success: false, msg: 'Hành động không hợp lệ.' });
             }
         } catch (err) {
-            results.push({ action, success: false, msg: err.message || 'Loi xu ly.' });
+            results.push({ action, success: false, msg: err.message || 'Lỗi xử lý.' });
         }
     }
 
