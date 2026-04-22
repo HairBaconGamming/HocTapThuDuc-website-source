@@ -1,409 +1,447 @@
 <%- include('partials/header') %>
 
-<link rel="stylesheet" href="/css/styleIndex.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="/css/styleIndex.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
-<section class="hero-section gsap-hero">
-    <!-- Decorative background elements -->
-    <div class="hero-bg-shape shape-1"></div>
-    <div class="hero-bg-shape shape-2"></div>
+    <!-- Premium Noise Overlay -->
+    <div class="bg-noise"></div>
 
-    <div class="hero-container max-w-7xl mx-auto">
-        
-        <% if (!user) { %>
-            <div class="hero-bento-grid guest-grid">
-                
-                <!-- 1. Main Content Box -->
-                <div class="bento-box main-box reveal-holder creative-reveal-up" style="transition-delay: 0.1s">
-                    <div class="hero-badge animate__animated animate__bounceIn">
-                        <i class="fas fa-seedling text-accent-green"></i> Giai đoạn khởi tạo - Beta
-                    </div>
-                    
-                    <h1 class="hero-title">
-                        Kết nối tri thức,<br>
-                        <span class="text-gradient">Xây dựng cộng đồng</span>
-                    </h1>
-                    
-                    <p class="hero-desc">
-                        Chào mừng bạn đến với ngôi nhà chung của học sinh Thủ Đức! Nơi chia sẻ tài liệu, bài giảng và cùng nhau chinh phục những điểm 10 rực rỡ.
-                    </p>
-                    
-                    <div class="hero-actions">
-                        <a href="/register" class="btn-main">
-                            <i class="fas fa-user-plus"></i> Đăng ký thành viên
-                        </a>
-                        <a href="/courses" class="btn-outline">
-                            Dạo một vòng
-                        </a>
-                    </div>
-                </div>
+    <section class="hero-section gsap-hero">
+        <!-- Decorative background elements -->
+        <div class="hero-bg-shape shape-1"></div>
+        <div class="hero-bg-shape shape-2"></div>
 
-                <!-- 2. Visual Box -->
-                <div class="bento-box visual-box p-0 overflow-hidden reveal-holder creative-reveal-scale" style="transition-delay: 0.3s; background: linear-gradient(135deg, #e0f2fe, #bae6fd); display: flex; align-items: center; justify-content: center;">
-                    <img src="https://cdni.iconscout.com/illustration/premium/thumb/online-learning-concept-4309653-3580556.png" alt="Online Learning" style="width: 80%; max-height: 80%; object-fit: contain; transform: scale(1.1);">
-                    <div class="floating-card fc-1" style="bottom: 20px; top: auto; right: 20px;">
-                        <i class="fas fa-lightbulb text-accent-orange"></i> Sáng tạo & Học tập
-                    </div>
-                </div>
+        <div class="hero-container max-w-7xl mx-auto">
 
-                <!-- 3. Stats Box -->
-                <div class="bento-box stats-box reveal-holder creative-reveal-up" style="transition-delay: 0.4s">
-                    <div class="stat-group">
-                        <div class="stat-val counter" data-target="<%= totalLessons || 0 %>">0</div>
-                        <div class="stat-lbl">Tài liệu</div>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-group">
-                        <div class="stat-val counter" data-target="<%= totalCourses || 0 %>">0</div>
-                        <div class="stat-lbl">Khóa học</div>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-group">
-                        <div class="stat-val counter" data-target="<%= totalStudents || 0 %>">0</div>
-                        <div class="stat-lbl">Học viên</div>
-                    </div>
-                </div>
+            <% if (!user) { %>
+                <div class="hero-bento-grid guest-grid">
 
-                <!-- 4. Marquee Box -->
-                <div class="bento-box marquee-box reveal-holder creative-reveal-left" style="transition-delay: 0.5s">
-                    <div class="marquee-wrapper">
-                        <div class="marquee-content">
-                            <% if(subjects && subjects.length > 0) { subjects.forEach(s => { %>
-                                <div class="marquee-item"><i class="<%= s.icon || 'fas fa-book' %>"></i> <%= s.name %></div>
-                            <% }); } else { %>
-                                <div class="marquee-item"><i class="fas fa-calculator"></i> Toán học</div>
-                                <div class="marquee-item"><i class="fas fa-atom"></i> Vật lý</div>
-                                <div class="marquee-item"><i class="fas fa-flask"></i> Hóa học</div>
-                                <div class="marquee-item"><i class="fas fa-book-open"></i> Ngữ văn</div>
-                                <div class="marquee-item"><i class="fas fa-language"></i> Tiếng Anh</div>
-                            <% } %>
-                            <!-- Duplicate for infinite effect -->
-                            <% if(subjects && subjects.length > 0) { subjects.forEach(s => { %>
-                                <div class="marquee-item"><i class="<%= s.icon || 'fas fa-book' %>"></i> <%= s.name %></div>
-                            <% }); } else { %>
-                                <div class="marquee-item"><i class="fas fa-calculator"></i> Toán học</div>
-                                <div class="marquee-item"><i class="fas fa-atom"></i> Vật lý</div>
-                                <div class="marquee-item"><i class="fas fa-flask"></i> Hóa học</div>
-                                <div class="marquee-item"><i class="fas fa-book-open"></i> Ngữ văn</div>
-                                <div class="marquee-item"><i class="fas fa-language"></i> Tiếng Anh</div>
-                            <% } %>
+                    <!-- 1. Main Content Box -->
+                    <div class="bento-box main-box reveal-holder creative-reveal-up" style="transition-delay: 0.1s">
+                        <div class="hero-badge animate__animated animate__bounceIn">
+                            <i class="fas fa-seedling text-accent-green"></i> Giai đoạn khởi tạo - Beta
                         </div>
-                    </div>
-                </div>
 
-            </div>
+                        <h1 class="hero-title">
+                            Kết nối tri thức,<br>
+                            <span class="text-gradient">Xây dựng cộng đồng</span>
+                        </h1>
 
-        <% } else { %>
-            <%
-                const currentHour = new Date().getHours();
-                let greeting = "";
-                let greetingIcon = "";
-                if (currentHour >= 5 && currentHour < 12) {
-                    greeting = `Hế lô ${user.username}, nạp năng lượng cày cuốc thôi!`;
-                    greetingIcon = "☀️";
-                } else if (currentHour >= 12 && currentHour < 18) {
-                    greeting = `Chào buổi chiều ${user.username}, cố gắng chút nữa nhé!`;
-                    greetingIcon = "🌤️";
-                } else if (currentHour >= 18 && currentHour < 22) {
-                    greeting = `Chào buổi tối ${user.username}, học sương sương rồi nghỉ ngơi nhé!`;
-                    greetingIcon = "🌙";
-                } else {
-                    greeting = `Cú đêm ${user.username} ơi, nhớ giữ gìn sức khỏe nhé!`;
-                    greetingIcon = "🦉";
-                }
-            %>
-            <div class="hero-bento-grid user-grid">
-                
-                <!-- 1. Main Greeting Box -->
-                <div class="bento-box main-box reveal-holder creative-reveal-up" style="transition-delay: 0.1s">
-                    <div class="hero-badge" style="background: #e0f2fe; color: var(--primary); border-color: #bae6fd;">
-                        <span class="text-lg mr-2"><%= greetingIcon %></span> <b><%= greeting %></b>
-                    </div>
-                    
-                    <h1 class="hero-title">
-                        Hôm nay chúng ta<br>
-                        <span class="text-gradient">Cày môn gì đây?</span>
-                    </h1>
-                    
-                    <p class="hero-desc">
-                        Đừng để ngày hôm nay trôi qua lãng phí. Một chút nỗ lực mỗi ngày sẽ tạo nên kỳ tích. Vào bàn học thôi nào!
-                    </p>
-                    
-                    <div class="hero-actions">
-                        <a href="/dashboard" class="btn-main">
-                            <i class="fas fa-laptop-house"></i> Vào Dashboard
-                        </a>
-                        <a href="/courses" class="btn-outline">
-                            <i class="fas fa-search"></i> Tìm bài mới
-                        </a>
-                    </div>
-                </div>
+                        <p class="hero-desc">
+                            Chào mừng bạn đến với ngôi nhà chung của học sinh Thủ Đức! Nơi chia sẻ tài liệu, bài giảng
+                            và cùng nhau chinh phục những điểm 10 rực rỡ.
+                        </p>
 
-                <!-- 2. Member Card Box -->
-                <div class="bento-box member-box reveal-holder creative-reveal-scale" style="transition-delay: 0.3s">
-                    <div class="member-card-3d">
-                        <div class="member-card-header">
-                            <div class="member-avatar-wrapper">
-                                <img src="<%= user.avatar || 'https://ui-avatars.com/api/?name=' + user.username + '&background=random' %>" alt="User Avatar" loading="lazy">
-                                <div class="status-dot"></div>
-                            </div>
-                            <div class="member-info">
-                                <h3><%= user.username %></h3>
-                                <span class="member-role"><%= user.isAdmin ? 'Quản trị viên' : (user.isTeacher ? 'Giáo viên' : 'Học sinh chăm chỉ') %></span>
-                            </div>
-                        </div>
-                        
-                        <!-- EXP Progress Bar (Gamification) -->
-                        <% if (levelInfo) { %>
-                        <div class="member-level-info mb-5">
-                            <div class="flex justify-between items-center mb-2 text-sm font-bold">
-                                <span class="text-primary"><i class="fas fa-star text-accent-orange"></i> Level <%= levelInfo.currentLevel %>: <%= levelInfo.title %></span>
-                                <span class="text-gray-500"><%= levelInfo.currentXP %> / <%= levelInfo.nextLevelXP %> EXP</span>
-                            </div>
-                            <div class="w-full bg-gray-100 rounded-full h-2.5 shadow-inner">
-                                <div class="bg-gradient-to-r from-green-400 to-green-600 h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: <%= levelInfo.progress %>%"></div>
-                            </div>
-                        </div>
-                        <% } %>
-
-                        <div class="member-stats-mini">
-                            <div class="ms-item">
-                                <span class="ms-label">Trạng thái</span>
-                                <span class="ms-value text-success">Sẵn sàng</span>
-                            </div>
-                            <div class="ms-item">
-                                <span class="ms-label">Mục tiêu</span>
-                                <span class="ms-value text-primary">Đại học</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-            </div>
-        <% } %>
-
-    </div>
-</section>
-
-
-<section class="section">
-    <div class="section-head reveal-holder creative-reveal-up">
-        <span class="section-tag">Định hướng</span>
-        <h2 class="section-title">Các môn học trọng tâm</h2>
-    </div>
-
-    <% if (subjects && subjects.length > 0) { %>
-        <div class="subject-grid" style="justify-content: center;">
-            <% subjects.forEach((sub, index) => { %>
-                <a href="/subjects/<%= sub._id %>" class="subject-card reveal-holder creative-reveal-up" style="transition-delay: <%= index * 100 %>ms">
-                    <i class="<%= sub.icon || 'fas fa-book' %>"></i>
-                    <div class="subject-name"><%= sub.name %></div>
-                </a>
-            <% }) %>
-            
-            <% if (subjects.length < 4) { %>
-                <div class="subject-card reveal-holder creative-reveal-up" style="opacity: 0.7; border-style: dashed;">
-                    <i class="fas fa-plus-circle text-gray-300"></i>
-                    <div class="subject-name text-gray-400">Sắp cập nhật</div>
-                </div>
-            <% } %>
-        </div>
-    <% } else { %>
-        <div class="text-center p-8 bg-white rounded-3xl shadow-sm border border-gray-100 reveal-holder creative-reveal-scale">
-            <img src="https://cdni.iconscout.com/illustration/premium/thumb/folder-is-empty-4064360-3363921.png" width="120" alt="Empty" class="mx-auto mb-4 opacity-80">
-            <p class="text-gray-500 font-medium">Chúng mình đang biên soạn danh mục môn học...</p>
-        </div>
-    <% } %>
-</section>
-
-<section class="section">
-    <div class="section-head reveal-holder creative-reveal-up">
-        <span class="section-tag">Vừa ra lò</span>
-        <h2 class="section-title">Khóa học tiên phong</h2>
-    </div>
-
-    <% if (courses && courses.length > 0) { %>
-        <div class="course-grid" style="<%= courses.length < 3 ? 'display: flex; justify-content: center; flex-wrap: wrap;' : '' %>">
-            
-            <% courses.forEach((course, index) => { %>
-                <div class="course-card reveal-holder <%= index % 2 === 0 ? 'creative-reveal-left' : 'creative-reveal-right' %>" 
-                     style="transition-delay: <%= index * 150 %>ms; <%= courses.length < 3 ? 'width: 100%; max-width: 380px;' : '' %>">
-                    
-                    <a href="/course/<%= course._id %>" class="course-img-wrapper">
-                        <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="course-img" alt="<%= course.title %>" onerror="this.onerror=null;this.src='https://i.ibb.co/BVnNtLhp/default-course.png';">
-                        
-                        <div class="course-overlay"></div>
-                        <span class="course-category-badge">
-                            <%= course.subjectId ? course.subjectId.name : 'Mới' %>
-                        </span>
-                        
-                        <div class="course-icon-float">
-                            <i class="fas fa-play"></i>
-                        </div>
-                    </a>
-
-                    <div class="course-content">
-                        <div class="course-meta">
-                            <span><i class="far fa-calendar-alt"></i> <%= new Date(course.createdAt).toLocaleDateString('vi-VN') %></span>
-                            <span class="text-accent-orange font-bold"><i class="fas fa-star me-1"></i> Mới</span>
-                        </div>
-                        
-                        <a href="/course/<%= course._id %>" class="course-title">
-                            <%= course.title %>
-                        </a>
-
-                        <div class="course-footer">
-                            <% 
-                                const author = course.author || {}; 
-                                const authorName = author.username || 'Ban Biên Tập';
-                                const authorAvatar = author.avatar || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
-                            %>
-                            <div class="author-info">
-                                <img src="<%= authorAvatar %>" class="author-avatar" alt="Author">
-                                <span class="author-name"><%= authorName %></span>
-                            </div>
-                            
-                            <a href="/course/<%= course._id %>" class="btn-arrow-go">
-                                <i class="fas fa-arrow-right"></i>
+                        <div class="hero-actions">
+                            <a href="/register" class="btn-main">
+                                <i class="fas fa-user-plus"></i> Đăng ký thành viên
+                            </a>
+                            <a href="/courses" class="btn-outline">
+                                Dạo một vòng
                             </a>
                         </div>
                     </div>
+
+                    <!-- 2. Visual Box -->
+                    <div class="bento-box visual-box p-0 overflow-hidden reveal-holder creative-reveal-scale"
+                        style="transition-delay: 0.3s; background: linear-gradient(135deg, #e0f2fe, #bae6fd); display: flex; align-items: center; justify-content: center;">
+                        <img src="https://qlcv.net/logo.png" alt="Online Learning"
+                            style="width: 80%; max-height: 80%; object-fit: contain; transform: scale(1.1);">
+                        <div class="floating-card fc-1" style="bottom: 20px; top: auto; right: 20px;">
+                            <i class="fas fa-lightbulb text-accent-orange"></i> Sáng tạo & Học tập
+                        </div>
+                    </div>
+
+                    <!-- 3. Stats Box -->
+                    <div class="bento-box stats-box reveal-holder creative-reveal-up" style="transition-delay: 0.4s">
+                        <div class="stat-group">
+                            <div class="stat-val counter" data-target="<%= totalLessons || 0 %>">0</div>
+                            <div class="stat-lbl">Tài liệu</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-group">
+                            <div class="stat-val counter" data-target="<%= totalCourses || 0 %>">0</div>
+                            <div class="stat-lbl">Khóa học</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-group">
+                            <div class="stat-val counter" data-target="<%= totalStudents || 0 %>">0</div>
+                            <div class="stat-lbl">Học viên</div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Marquee Box -->
+                    <div class="bento-box marquee-box reveal-holder creative-reveal-left"
+                        style="transition-delay: 0.5s">
+                        <div class="marquee-wrapper">
+                            <div class="marquee-content">
+                                <% if(subjects && subjects.length> 0) { subjects.forEach(s => { %>
+                                    <div class="marquee-item"><i class="<%= s.icon || 'fas fa-book' %>"></i>
+                                        <%= s.name %>
+                                    </div>
+                                    <% }); } else { %>
+                                        <div class="marquee-item"><i class="fas fa-calculator"></i> Toán học</div>
+                                        <div class="marquee-item"><i class="fas fa-atom"></i> Vật lý</div>
+                                        <div class="marquee-item"><i class="fas fa-flask"></i> Hóa học</div>
+                                        <div class="marquee-item"><i class="fas fa-book-open"></i> Ngữ văn</div>
+                                        <div class="marquee-item"><i class="fas fa-language"></i> Tiếng Anh</div>
+                                        <% } %>
+                                            <!-- Duplicate for infinite effect -->
+                                            <% if(subjects && subjects.length> 0) { subjects.forEach(s => { %>
+                                                <div class="marquee-item"><i class="<%= s.icon || 'fas fa-book' %>"></i>
+                                                    <%= s.name %>
+                                                </div>
+                                                <% }); } else { %>
+                                                    <div class="marquee-item"><i class="fas fa-calculator"></i> Toán học
+                                                    </div>
+                                                    <div class="marquee-item"><i class="fas fa-atom"></i> Vật lý</div>
+                                                    <div class="marquee-item"><i class="fas fa-flask"></i> Hóa học</div>
+                                                    <div class="marquee-item"><i class="fas fa-book-open"></i> Ngữ văn
+                                                    </div>
+                                                    <div class="marquee-item"><i class="fas fa-language"></i> Tiếng Anh
+                                                    </div>
+                                                    <% } %>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-            <% }) %>
+
+                <% } else { %>
+                    <% const currentHour=new Date().getHours(); let greeting="" ; let greetingIcon="" ; if (currentHour>
+                        = 5 && currentHour < 12) { greeting=`Hế lô ${user.username}, nạp năng lượng cày cuốc thôi!`;
+                            greetingIcon="☀️" ; } else if (currentHour>= 12 && currentHour < 18) { greeting=`Chào buổi
+                                chiều ${user.username}, cố gắng chút nữa nhé!`; greetingIcon="🌤️" ; } else if
+                                (currentHour>= 18 && currentHour < 22) { greeting=`Chào buổi tối ${user.username}, học
+                                    sương sương rồi nghỉ ngơi nhé!`; greetingIcon="🌙" ; } else { greeting=`Cú đêm
+                                    ${user.username} ơi, nhớ giữ gìn sức khỏe nhé!`; greetingIcon="🦉" ; } %>
+                                    <div class="hero-bento-grid user-grid">
+
+                                        <!-- 1. Main Greeting Box -->
+                                        <div class="bento-box main-box reveal-holder creative-reveal-up"
+                                            style="transition-delay: 0.1s">
+                                            <div class="hero-badge"
+                                                style="background: #e0f2fe; color: var(--primary); border-color: #bae6fd;">
+                                                <span class="text-lg mr-2">
+                                                    <%= greetingIcon %>
+                                                </span> <b>
+                                                    <%= greeting %>
+                                                </b>
+                                            </div>
+
+                                            <h1 class="hero-title">
+                                                Hôm nay chúng ta<br>
+                                                <span class="text-gradient">Cày môn gì đây?</span>
+                                            </h1>
+
+                                            <p class="hero-desc">
+                                                Đừng để ngày hôm nay trôi qua lãng phí. Một chút nỗ lực mỗi ngày sẽ tạo
+                                                nên kỳ tích. Vào bàn học thôi nào!
+                                            </p>
+
+                                            <div class="hero-actions">
+                                                <a href="/dashboard" class="btn-main">
+                                                    <i class="fas fa-laptop-house"></i> Vào Dashboard
+                                                </a>
+                                                <a href="/courses" class="btn-outline">
+                                                    <i class="fas fa-search"></i> Tìm bài mới
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <!-- 2. Member Card Box -->
+                                        <div class="bento-box member-box reveal-holder creative-reveal-scale"
+                                            style="transition-delay: 0.3s">
+                                            <div class="member-card-3d">
+                                                <div class="member-card-header">
+                                                    <div class="member-avatar-wrapper">
+                                                        <img src="<%= user.avatar || 'https://ui-avatars.com/api/?name=' + user.username + '&background=random' %>"
+                                                            alt="User Avatar" loading="lazy">
+                                                        <div class="status-dot"></div>
+                                                    </div>
+                                                    <div class="member-info">
+                                                        <h3>
+                                                            <%= user.username %>
+                                                        </h3>
+                                                        <span class="member-role">
+                                                            <%= user.isAdmin ? 'Quản trị viên' : (user.isTeacher
+                                                                ? 'Giáo viên' : 'Học sinh chăm chỉ' ) %>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- EXP Progress Bar (Gamification) -->
+                                                <% if (levelInfo) { %>
+                                                    <div class="member-level-info mb-5">
+                                                        <div
+                                                            class="flex justify-between items-center mb-2 text-sm font-bold">
+                                                            <span class="text-primary"><i
+                                                                    class="fas fa-star text-accent-orange"></i> Level
+                                                                <%= levelInfo.currentLevel %>: <%= levelInfo.title %>
+                                                            </span>
+                                                            <span class="text-gray-500">
+                                                                <%= levelInfo.currentXP %> / <%= levelInfo.nextLevelXP
+                                                                        %> EXP
+                                                            </span>
+                                                        </div>
+                                                        <div class="w-full bg-gray-100 rounded-full h-2.5 shadow-inner">
+                                                            <div class="bg-gradient-to-r from-green-400 to-green-600 h-2.5 rounded-full transition-all duration-1000 ease-out"
+                                                                style="width: <%= levelInfo.progress %>%"></div>
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
+
+                                                        <div class="member-stats-mini">
+                                                            <div class="ms-item">
+                                                                <span class="ms-label">Trạng thái</span>
+                                                                <span class="ms-value text-success">Sẵn sàng</span>
+                                                            </div>
+                                                            <div class="ms-item">
+                                                                <span class="ms-label">Mục tiêu</span>
+                                                                <span class="ms-value text-primary">Đại học</span>
+                                                            </div>
+                                                        </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                    <% } %>
+
         </div>
-        
-        <div class="text-center mt-12 reveal-holder creative-reveal-up">
-            <a href="/courses" class="btn-outline px-10 py-4 rounded-full transition font-bold shadow-sm">
-                Xem thư viện khóa học <i class="fas fa-angle-right ms-2"></i>
-            </a>
+    </section>
+
+
+    <section class="section">
+        <div class="section-head reveal-holder creative-reveal-up">
+            <span class="section-tag">Định hướng</span>
+            <h2 class="section-title">Các môn học trọng tâm</h2>
         </div>
 
-    <% } else { %>
-        <div class="text-center py-16 px-4 bg-white rounded-[40px] border border-gray-100 shadow-sm reveal-holder creative-reveal-scale mx-auto max-w-2xl">
-            <img src="https://cdni.iconscout.com/illustration/premium/thumb/writer-writing-notes-2974917-2477348.png" alt="Be the first" style="width: 250px;" class="mx-auto mb-6">
-            <h3 class="text-2xl font-bold text-dark mb-2">Chưa có bài học nào</h3>
-            <p class="text-gray-500 mb-6">Hãy trở thành người đầu tiên đóng góp bài giảng cho cộng đồng!</p>
-            <a href="/create-course" class="btn-main">
-                <i class="fas fa-plus-circle"></i> Tạo bài học ngay
-            </a>
-        </div>
-    <% } %>
-</section>
+        <% if (subjects && subjects.length> 0) { %>
+            <div class="subject-grid" style="justify-content: center;">
+                <% subjects.forEach((sub, index)=> { %>
+                    <a href="/subjects/<%= sub._id %>" class="subject-card reveal-holder creative-reveal-up"
+                        style="transition-delay: <%= index * 100 %>ms">
+                        <i class="<%= sub.icon || 'fas fa-book' %>"></i>
+                        <div class="subject-name">
+                            <%= sub.name %>
+                        </div>
+                    </a>
+                    <% }) %>
 
-<section class="features-section">
-    <div class="reveal-holder creative-reveal-up">
-        <h2 class="text-4xl font-black mb-4">Bạn muốn đóng góp?</h2>
-        <p class="text-gray-300 text-lg font-medium max-w-2xl mx-auto">
-            Dù bạn là học sinh giỏi hay chỉ đơn giản muốn chia sẻ ghi chú, 
-            chúng mình luôn chào đón mọi sự đóng góp để xây dựng kho tài liệu chung.
-        </p>
-    </div>
-
-    <div class="features-grid">
-        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 0ms">
-            <div class="feature-icon-box">
-                <i class="fas fa-upload"></i>
+                        <% if (subjects.length < 4) { %>
+                            <div class="subject-card reveal-holder creative-reveal-up"
+                                style="opacity: 0.7; border-style: dashed;">
+                                <i class="fas fa-plus-circle text-gray-300"></i>
+                                <div class="subject-name text-gray-400">Sắp cập nhật</div>
+                            </div>
+                            <% } %>
             </div>
-            <h3>Chia sẻ tài liệu</h3>
-            <p>Upload đề thi, tóm tắt bài học hoặc ghi chú cá nhân.</p>
+            <% } else { %>
+                <div
+                    class="text-center p-8 bg-white rounded-3xl shadow-sm border border-gray-100 reveal-holder creative-reveal-scale">
+                    <img src="https://cdni.iconscout.com/illustration/premium/thumb/folder-is-empty-4064360-3363921.png"
+                        width="120" alt="Empty" class="mx-auto mb-4 opacity-80">
+                    <p class="text-gray-500 font-medium">Chúng mình đang biên soạn danh mục môn học...</p>
+                </div>
+                <% } %>
+    </section>
+
+    <section class="section">
+        <div class="section-head reveal-holder creative-reveal-up">
+            <span class="section-tag">Vừa ra lò</span>
+            <h2 class="section-title">Khóa học tiên phong</h2>
         </div>
-        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 200ms">
-            <div class="feature-icon-box">
-                <i class="fas fa-pen-nib"></i>
+
+        <% if (courses && courses.length> 0) { %>
+            <div class="course-grid"
+                style="<%= courses.length < 3 ? 'display: flex; justify-content: center; flex-wrap: wrap;' : '' %>">
+
+                <% courses.forEach((course, index)=> { %>
+                    <div class="course-card reveal-holder <%= index % 2 === 0 ? 'creative-reveal-left' : 'creative-reveal-right' %>"
+                        style="transition-delay: <%= index * 150 %>ms; <%= courses.length < 3 ? 'width: 100%; max-width: 380px;' : '' %>">
+
+                        <a href="/course/<%= course._id %>" class="course-img-wrapper">
+                            <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>"
+                                class="course-img" alt="<%= course.title %>"
+                                onerror="this.onerror=null;this.src='https://i.ibb.co/BVnNtLhp/default-course.png';">
+
+                            <div class="course-overlay"></div>
+                            <span class="course-category-badge">
+                                <%= course.subjectId ? course.subjectId.name : 'Mới' %>
+                            </span>
+
+                            <div class="course-icon-float">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </a>
+
+                        <div class="course-content">
+                            <div class="course-meta">
+                                <span><i class="far fa-calendar-alt"></i>
+                                    <%= new Date(course.createdAt).toLocaleDateString('vi-VN') %>
+                                </span>
+                                <span class="text-accent-orange font-bold"><i class="fas fa-star me-1"></i> Mới</span>
+                            </div>
+
+                            <a href="/course/<%= course._id %>" class="course-title">
+                                <%= course.title %>
+                            </a>
+
+                            <div class="course-footer">
+                                <% const author=course.author || {}; const authorName=author.username || 'Ban Biên Tập'
+                                    ; const authorAvatar=author.avatar ||
+                                    `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`; %>
+                                    <div class="author-info">
+                                        <img src="<%= authorAvatar %>" class="author-avatar" alt="Author">
+                                        <span class="author-name">
+                                            <%= authorName %>
+                                        </span>
+                                    </div>
+
+                                    <a href="/course/<%= course._id %>" class="btn-arrow-go">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                            </div>
+                        </div>
+                    </div>
+                    <% }) %>
             </div>
-            <h3>Viết bài giảng</h3>
-            <p>Biên soạn các bài học trực quan, dễ hiểu cho các bạn khóa dưới.</p>
-        </div>
-        <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 400ms">
-            <div class="feature-icon-box">
-                <i class="fas fa-heart"></i>
+
+            <div class="text-center mt-12 reveal-holder creative-reveal-up">
+                <a href="/courses" class="btn-outline px-10 py-4 rounded-full transition font-bold shadow-sm">
+                    Xem thư viện khóa học <i class="fas fa-angle-right ms-2"></i>
+                </a>
             </div>
-            <h3>Lan tỏa</h3>
-            <p>Giới thiệu web đến bạn bè để cộng đồng ngày càng lớn mạnh.</p>
+
+            <% } else { %>
+                <div
+                    class="text-center py-16 px-4 bg-white rounded-[40px] border border-gray-100 shadow-sm reveal-holder creative-reveal-scale mx-auto max-w-2xl">
+                    <img src="https://cdni.iconscout.com/illustration/premium/thumb/writer-writing-notes-2974917-2477348.png"
+                        alt="Be the first" style="width: 250px;" class="mx-auto mb-6">
+                    <h3 class="text-2xl font-bold text-dark mb-2">Chưa có bài học nào</h3>
+                    <p class="text-gray-500 mb-6">Hãy trở thành người đầu tiên đóng góp bài giảng cho cộng đồng!</p>
+                    <a href="/create-course" class="btn-main">
+                        <i class="fas fa-plus-circle"></i> Tạo bài học ngay
+                    </a>
+                </div>
+                <% } %>
+    </section>
+
+    <section class="features-section">
+        <div class="reveal-holder creative-reveal-up">
+            <h2 class="text-4xl font-black mb-4">Bạn muốn đóng góp?</h2>
+            <p class="text-gray-300 text-lg font-medium max-w-2xl mx-auto">
+                Dù bạn là học sinh giỏi hay chỉ đơn giản muốn chia sẻ ghi chú,
+                chúng mình luôn chào đón mọi sự đóng góp để xây dựng kho tài liệu chung.
+            </p>
         </div>
-    </div>
-</section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+        <div class="features-grid">
+            <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 0ms">
+                <div class="feature-icon-box">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <h3>Chia sẻ tài liệu</h3>
+                <p>Upload đề thi, tóm tắt bài học hoặc ghi chú cá nhân.</p>
+            </div>
+            <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 200ms">
+                <div class="feature-icon-box">
+                    <i class="fas fa-pen-nib"></i>
+                </div>
+                <h3>Viết bài giảng</h3>
+                <p>Biên soạn các bài học trực quan, dễ hiểu cho các bạn khóa dưới.</p>
+            </div>
+            <div class="feature-card reveal-holder creative-reveal-scale" style="transition-delay: 400ms">
+                <div class="feature-icon-box">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h3>Lan tỏa</h3>
+                <p>Giới thiệu web đến bạn bè để cộng đồng ngày càng lớn mạnh.</p>
+            </div>
+        </div>
+    </section>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Lazy Loading for Images ---
-        document.querySelectorAll('img').forEach(img => {
-            if (!img.hasAttribute('loading')) {
-                img.setAttribute('loading', 'lazy');
-            }
-        });
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-        // --- 2. Spotlight Mouse Glow Effect ---
-        const cards = document.querySelectorAll('.course-card, .subject-card');
-        document.addEventListener('mousemove', (e) => {
-            cards.forEach(card => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                card.style.setProperty('--x', `${x}px`);
-                card.style.setProperty('--y', `${y}px`);
-            });
-        });
-
-        // --- 3. Number Counter Animation ---
-        const counters = document.querySelectorAll('.counter');
-        const speed = 200;
-        counters.forEach(counter => {
-            const updateCount = () => {
-                const target = +counter.getAttribute('data-target');
-                const count = +counter.innerText;
-                const inc = target / speed;
-                if (count < target) {
-                    counter.innerText = Math.ceil(count + inc);
-                    setTimeout(updateCount, 15);
-                } else {
-                    counter.innerText = target;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 1. Lazy Loading for Images ---
+            document.querySelectorAll('img').forEach(img => {
+                if (!img.hasAttribute('loading')) {
+                    img.setAttribute('loading', 'lazy');
                 }
-            };
-            // Run counter when element is in view
-            gsap.to(counter, {
+            });
+
+            // --- 2. Spotlight Mouse Glow Effect ---
+            const cards = document.querySelectorAll('.course-card, .subject-card');
+            document.addEventListener('mousemove', (e) => {
+                cards.forEach(card => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    card.style.setProperty('--x', `${x}px`);
+                    card.style.setProperty('--y', `${y}px`);
+                });
+            });
+
+            // --- 3. Number Counter Animation ---
+            const counters = document.querySelectorAll('.counter');
+            const speed = 200;
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText;
+                    const inc = target / speed;
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + inc);
+                        setTimeout(updateCount, 15);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                // Run counter when element is in view
+                gsap.to(counter, {
+                    scrollTrigger: {
+                        trigger: counter,
+                        start: "top 90%",
+                        once: true,
+                        onEnter: () => updateCount()
+                    }
+                });
+            });
+
+            // --- 4. GSAP Storytelling Scroll & Animations ---
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Background Color Morphing
+            gsap.to("body", {
+                backgroundColor: "#fff1f2", // Light red
                 scrollTrigger: {
-                    trigger: counter,
-                    start: "top 90%",
-                    once: true,
-                    onEnter: () => updateCount()
+                    trigger: ".features-section",
+                    start: "top center",
+                    end: "bottom bottom",
+                    scrub: true
                 }
             });
-        });
 
-        // --- 4. GSAP Storytelling Scroll & Animations ---
-        gsap.registerPlugin(ScrollTrigger);
+            // Use IntersectionObserver as a fallback for simple reveal elements if not using GSAP for all
+            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
 
-        // Background Color Morphing
-        gsap.to("body", {
-            backgroundColor: "#fff1f2", // Light red
-            scrollTrigger: {
-                trigger: ".features-section",
-                start: "top center",
-                end: "bottom bottom",
-                scrub: true
-            }
-        });
-
-        // Use IntersectionObserver as a fallback for simple reveal elements if not using GSAP for all
-        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
-        const revealObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                    observer.unobserve(entry.target); 
-                }
+            document.querySelectorAll('.reveal-holder').forEach(el => {
+                revealObserver.observe(el);
             });
-        }, observerOptions);
-
-        document.querySelectorAll('.reveal-holder').forEach(el => {
-            revealObserver.observe(el);
         });
-    });
-</script>
+    </script>
 
-<%- include('partials/footer') %>
+    <%- include('partials/footer') %>
