@@ -108,24 +108,13 @@
                 </div>
 
                 <% } else { %>
-                    <% 
-                    const currentHour = new Date().getHours(); 
-                    let greeting = ""; 
-                    let greetingIcon = ""; 
-                    if (currentHour >= 5 && currentHour < 12) { 
-                        greeting = `Hế lô ${user.username}, nạp năng lượng cày cuốc thôi!`;
-                        greetingIcon = "☀️"; 
-                    } else if (currentHour >= 12 && currentHour < 18) { 
-                        greeting = `Chào buổi chiều ${user.username}, cố gắng chút nữa nhé!`; 
-                        greetingIcon = "🌤️"; 
-                    } else if (currentHour >= 18 && currentHour < 22) { 
-                        greeting = `Chào buổi tối ${user.username}, học sương sương rồi nghỉ ngơi nhé!`; 
-                        greetingIcon = "🌙"; 
-                    } else { 
-                        greeting = `Cú đêm ${user.username} ơi, nhớ giữ gìn sức khỏe nhé!`; 
-                        greetingIcon = "🦉"; 
-                    } 
-                    %>
+                    <% const currentHour=new Date().getHours(); let greeting="" ; let greetingIcon="" ; if (currentHour>
+                        = 5 && currentHour < 12) { greeting=`Hế lô ${user.username}, nạp năng lượng cày cuốc thôi!`;
+                            greetingIcon="☀️" ; } else if (currentHour>= 12 && currentHour < 18) { greeting=`Chào buổi
+                                chiều ${user.username}, cố gắng chút nữa nhé!`; greetingIcon="🌤️" ; } else if
+                                (currentHour>= 18 && currentHour < 22) { greeting=`Chào buổi tối ${user.username}, học
+                                    sương sương rồi nghỉ ngơi nhé!`; greetingIcon="🌙" ; } else { greeting=`Cú đêm
+                                    ${user.username} ơi, nhớ giữ gìn sức khỏe nhé!`; greetingIcon="🦉" ; } %>
                                     <div class="hero-bento-grid user-grid">
 
                                         <!-- 1. Main Greeting Box -->

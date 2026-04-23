@@ -581,7 +581,7 @@ exports.getQuestionDetail = async (req, res) => {
             breadcrumbs: buildBreadcrumbsForQuestion(question),
             metaTitle: `${question.title} | Bảng Cầu Cứu`,
             metaDescription: questionPreviewText(question),
-            metaImage: question.images?.[0] || 'https://hoctapthuduc.onrender.com/api/pro-images/1752242181665-mcpehv.png',
+            metaImage: question.images?.[0] || 'https://i.ibb.co/QBLckWj/Gemini-Generated-Image-wt3dr4wt3dr4wt3d-removebg-preview.png',
             metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, canonicalPath),
             activePage: 'qa'
         });
