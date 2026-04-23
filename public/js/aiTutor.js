@@ -157,30 +157,92 @@
         };
     }
 
+    function summarizeStudioBlockTypes(blocks) {
+        return (Array.isArray(blocks) ? blocks : []).reduce((summary, block) => {
+            const type = String(block?.type || "unknown").trim() || "unknown";
+            summary[type] = (summary[type] || 0) + 1;
+            return summary;
+        }, {});
+    }
+
+    function buildStudioQualityHints(snapshot) {
+        const hints = [];
+        const blocks = Array.isArray(snapshot?.blocks) ? snapshot.blocks : [];
+
+        if (!String(snapshot?.title || "").trim()) {
+            hints.push("Lesson title is missing.");
+        }
+
+        blocks.forEach((block, index) => {
+            const order = index + 1;
+            const type = String(block?.type || "unknown");
+            if (type === "text" && !String(block?.data?.text || "").trim()) {
+                hints.push(`Text block #${order} is empty.`);
+            }
+            if (["image", "video", "resource"].includes(type) && !String(block?.data?.url || "").trim()) {
+                hints.push(`${type} block #${order} is missing URL.`);
+            }
+            if (type === "resource" && !String(block?.data?.title || "").trim()) {
+                hints.push(`Resource block #${order} is missing title.`);
+            }
+            if ((type === "question" || type === "quiz") && !(block?.data?.questions || []).length) {
+                hints.push(`Quiz block #${order} has no questions.`);
+            }
+            if (type === "html_preview" && /<script/i.test(String(block?.data?.html || ""))) {
+                hints.push(`HTML preview block #${order} contains script tag.`);
+            }
+        });
+
+        return hints.slice(0, 8);
+    }
+
+    function getStudioSelectionLabels() {
+        return {
+            subjectLabel: clampText(document.getElementById("studioSubjectChip")?.textContent || "", 120),
+            courseLabel: clampText(document.getElementById("studioCourseChip")?.textContent || "", 160),
+            selectionLabel: clampText(document.getElementById("studioSelectionChip")?.textContent || "", 160)
+        };
+    }
+
     function getLessonStudioContext() {
         const snapshot = window.LessonStudioBridge && typeof window.LessonStudioBridge.getSnapshot === "function"
             ? window.LessonStudioBridge.getSnapshot()
             : null;
         const metrics = snapshot?.metrics || {};
-        const firstBlocks = Array.isArray(snapshot?.blocks)
-            ? snapshot.blocks.slice(0, 3).map((block, index) => ({
-                index,
-                type: block?.type || "unknown",
-                preview: clampText(
-                    block?.data?.text ||
-                    block?.data?.content ||
-                    block?.data?.question ||
-                    block?.data?.title ||
-                    "",
-                    280
-                )
-            }))
-            : [];
+        const blocks = Array.isArray(snapshot?.blocks) ? snapshot.blocks : [];
+        const firstBlocks = blocks.slice(0, 5).map((block, index) => ({
+            index,
+            type: block?.type || "unknown",
+            preview: clampText(
+                block?.data?.text ||
+                block?.data?.content ||
+                block?.data?.question ||
+                block?.data?.title ||
+                "",
+                280
+            )
+        }));
+        const blockTypeCounts = summarizeStudioBlockTypes(blocks);
+        const qualityHints = buildStudioQualityHints(snapshot);
+        const studioState = snapshot?.studioState || {};
+        const labels = getStudioSelectionLabels();
+        const blockTypeSummary = Object.entries(blockTypeCounts)
+            .map(([type, count]) => `${type}:${count}`)
+            .join(", ");
+        const dirtySummary = snapshot
+            ? `Trang thai luu: lessonDirty=${Boolean(studioState.lessonDirty)}, courseDirty=${Boolean(studioState.courseDirty)}.`
+            : "";
 
         return {
             pageTitle: snapshot?.title || document.title,
             selection: getSelectedText(),
             contextSummary: [
+                labels.subjectLabel ? `Mon hoc: ${labels.subjectLabel}` : "",
+                labels.courseLabel ? `Khoa hoc: ${labels.courseLabel}` : "",
+                labels.selectionLabel ? `Dang chon: ${labels.selectionLabel}` : "",
+                dirtySummary,
+                blockTypeSummary ? `Phan bo block: ${blockTypeSummary}` : "",
+                qualityHints.length ? `Quality hints: ${qualityHints.join(" | ")}` : "",
                 snapshot?.title ? `Tiêu đề bài học: ${clampText(snapshot.title, 200)}` : "",
                 `Context đang sửa: ${snapshot?.activeContext || "unknown"}`,
                 `Số block: ${Number(metrics.blocks) || 0}, số từ: ${Number(metrics.words) || 0}, media: ${Number(metrics.media) || 0}, read time: ${Number(metrics.readTime) || 0} phút.`,
@@ -193,7 +255,14 @@
                     activeUnitId: snapshot.activeUnitId,
                     studioState: snapshot.studioState,
                     title: snapshot.title,
+                    courseId: snapshot.courseId,
+                    subjectId: snapshot.subjectId,
+                    subjectLabel: labels.subjectLabel,
+                    courseLabel: labels.courseLabel,
+                    selectionLabel: labels.selectionLabel,
                     metrics,
+                    blockTypeCounts,
+                    qualityHints,
                     firstBlocks
                 } : null
             }

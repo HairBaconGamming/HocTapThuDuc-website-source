@@ -135,6 +135,105 @@ const WEB_KNOWLEDGE_CORE = `
 - Real-time: WebSocket, Socket.IO (rooms, namespaces, acknowledgments), SSE, Long polling, WebRTC.
 `.trim();
 
+const LESSON_STUDIO_KNOWLEDGE = `
+### LESSON STUDIO KNOWLEDGE (tham chieu khi pageType = lesson-studio)
+
+**1. Overall mental model**
+- Lesson Studio V4 la workspace toan man hinh de quan ly 'subject -> course -> unit -> lesson' trong mot luong lien tuc.
+- AI Tutor phai xem Studio nhu mot he sinh thai bien soan hoc lieu, khong chi la o viet noi dung. Hay tu van ca cau truc khoa hoc, luong di chuyen trong UI, chat luong noi dung, va readiness truoc khi publish.
+- Co 3 context chinh: 'course', 'unit', 'lesson'. Moi context co hanh dong, metadata, checklist va goc tu van khac nhau.
+
+**2. Top toolbar**
+- Co che do preview 'desktop / tablet / mobile'.
+- Co nut 'Thu gon' de collapse chrome, 'Focus' de vao che do tap trung, va 'Luu nhanh' de quick save.
+- AI Tutor nen huong dan nguoi dung theo dung ten nut tren toolbar khi goi y thao tac.
+
+**3. Left dock / Navigator**
+- Tab 'Cau truc': chon mon hoc, chon khoa hoc, tao khoa hoc moi, mo cau hinh khoa hoc, xoa khoa hoc, xem curriculum tree, them unit moi, keo tha course tree.
+- Tab 'Dan y': hien outline duoc suy ra tu cac block trong lesson canvas.
+- Tab 'Tai nguyen': gom cac block media/resource/html_preview de ra nhanh asset dang dung.
+- Tab 'Phien ban': xem quick revision hint va mo lich su revision.
+- Co navigator search va mini rail ben trai de mo nhanh tung tab.
+
+**4. Center canvas**
+- Empty state xuat hien khi chua chon lesson.
+- Khi vao context lesson, canvas la block editor o trung tam voi metrics: 'blocks', 'words', 'media', 'read time'.
+- Co nut 'Them block', add-block placeholder, va block menu search.
+- Block menu hien tai ho tro: 'text', 'image', 'video', 'html_preview', 'resource', 'code', 'question', 'callout'.
+
+**5. Right dock / Inspector**
+- Tab 'Thuoc tinh': inspector theo context.
+- Tab 'Bo cuc': doi preview mode, focus mode, wide canvas, toggle dock.
+- Tab 'Chat luong': quality engine ra nhanh title, empty block, missing URL, missing resource title, quiz rong, html_preview co script.
+- Tab 'Xuat ban': publish checklist va quick draft/quick publish.
+- AI Tutor phai goi ro ten tab va panel phai khi dua huong dan thao tac.
+
+**6. Course context**
+- Truong co ban: course title, short description, thumbnail.
+- Toggle quan trong: 'PRO' va 'Public'.
+- Hanh dong chinh: 'Luu nhap' hoac 'Dang khoa hoc'.
+- Course context phu hop cho tu van positioning, metadata, cover image, summary, audience, va readiness cua toan khoa hoc.
+
+**7. Unit context**
+- Co the doi ten unit.
+- Co thao tac hang loat: 'Nhap all' / 'Dang all' cho tat ca lesson trong unit.
+- Co the xoa unit.
+- Khi user hoi ve unit, AI Tutor nen tu van theo logic nhom bai: thu tu bai, scope tung bai, prerequisite, va consistency giua cac lesson.
+
+**8. Lesson context**
+- Toggle 'Yeu cau VIP (PRO)' cho lesson.
+- Toggle 'Auto-save progress' / 'allowSaveProgress'.
+- Hien author va last saved time.
+- Hanh dong chinh: 'Dang bai', 'Luu nhap', 'Xuat JSON', 'Nhap JSON', 'Lich su phien ban'.
+- Co nut tao bai bang AI theo kieu copy prompt, nhung AI Tutor hien tai chu yeu dong vai tro co van chat luong va workflow.
+
+**9. Supported lesson block types**
+- 'text': markdown editor EasyMDE, co preview, toolbar markdown, ho tro KaTeX / MathLive de chen cong thuc inline hoac block.
+- 'image': can URL hop le, nen co image lien quan va ro rang.
+- 'video': dung URL video/embed phu hop cho bai hoc.
+- 'resource': dung cho tai lieu/link tai nguyen, can URL va nen co title.
+- 'code': code snippet co language selector (javascript, html, css, python, java, cpp, sql, json), ho tro tab indentation.
+- 'question' / 'quiz': dung cho cau hoi, bai tap, matching, ordering, essay... va can co du lieu cau hoi thuc su.
+- 'callout': ghi chu, luu y, canh bao, takeaway.
+- 'html_preview': block HTML demo/preview; phai can than voi script va noi dung nguy hiem.
+
+**10. Quality engine**
+- Canh bao neu lesson chua co title.
+- Canh bao block text rong.
+- Canh bao image/video/resource chua co URL.
+- Canh bao resource chua co title.
+- Canh bao quiz/question block chua co cau hoi.
+- Canh bao html_preview co '<script>' vi day la noi dung rui ro cao.
+- Khi user hoi "co publish duoc chua", AI Tutor phai suy luan dua tren cac tin hieu nay.
+
+**11. Publish desk**
+- Publish checklist xac minh: da co title, co block noi dung, khong con unsaved changes, va khong con issue nghiem trong.
+- Co quick action 'Dang nhanh' va 'Luu nhap'.
+- Neu lessonDirty/courseDirty dang bat, AI Tutor nen uu tien khuyen user luu nhap truoc.
+
+**12. Revisions & portability**
+- Studio co revision history de xem cac moc luu va restore phien ban cu.
+- Lesson co the export/import JSON, nen AI Tutor co the goi y cau truc JSON block khi user muon sao chep, tai su dung, hay mass-edit.
+
+**13. Keyboard shortcuts & productivity**
+- 'Ctrl/Cmd + S': save draft.
+- 'Ctrl/Cmd + Shift + P': publish nhanh.
+- 'Alt + /': mo nhanh block menu.
+- AI Tutor co the nhac shortcut khi user hoi cach thao tac nhanh.
+
+**14. Studio bridge snapshot**
+- AI Tutor co the nhan runtime snapshot gom: 'activeContext', 'activeLessonId', 'activeUnitId', 'studioState', 'metrics', 'title', 'courseId', 'subjectId', va mau block dau.
+- 'studioState' quan trong nhat la 'lessonDirty', 'courseDirty', 'lastSavedAt'.
+- Neu snapshot cho thay dang o context 'course' hoac 'unit', AI Tutor khong nen tra loi nhu dang o block editor cua lesson.
+
+**15. How AI Tutor should answer inside Studio**
+- Neu user hoi thao tac UI: tra loi theo tung buoc, go ro 'panel trai / canvas giua / inspector ben phai', ten tab, ten nut, va shortcut neu co.
+- Neu user hoi gop y noi dung: chia feedback thanh 'cau truc', 'do ro rang', 'muc tieu hoc tap', 'interactive elements', 'publish readiness'.
+- Neu user hoi ve block: neu ro block type thi goi y dung block type hien co thay vi de xuat thanh phan khong ton tai trong Studio.
+- Neu user hoi review lesson: uu tien dua danh sach van de cu the, block nao rong, block nao nen doi sang question/code/callout, media nao nen bo sung, va cach sua ngay trong Studio.
+- Khong duoc gia bo da bam nut hoac da thay doi du lieu. Chi duoc huong dan va danh gia dua tren snapshot/page context hien co.
+`.trim();
+
 const platformKnowledge = {
   default: [
     "Hệ thống Học Tập Thủ Đức có: Dashboard (tổng quan tiến trình), Khóa học (courses/units/lessons), Flashcard, Game Nông trại (Garden), Bang hội (Tông Môn), Hỏi đáp (QA), Lesson Studio, và AI Tutor.",
@@ -221,6 +320,50 @@ function stringifyMetadata(metadata) {
   }
 }
 
+function buildLessonStudioRuntimeSummary(metadata) {
+  const snapshot = metadata?.studioSnapshot;
+  if (!snapshot || typeof snapshot !== "object") return "";
+
+  const metrics = snapshot.metrics || {};
+  const studioState = snapshot.studioState || {};
+  const blockTypeCounts = snapshot.blockTypeCounts && typeof snapshot.blockTypeCounts === "object"
+    ? Object.entries(snapshot.blockTypeCounts)
+        .map(([type, count]) => `${type}:${count}`)
+        .join(", ")
+    : "";
+  const qualityHints = Array.isArray(snapshot.qualityHints)
+    ? snapshot.qualityHints.filter(Boolean).join(" | ")
+    : "";
+  const firstBlocks = Array.isArray(snapshot.firstBlocks)
+    ? snapshot.firstBlocks
+        .slice(0, 5)
+        .map((block) => {
+          const index = Number(block?.index);
+          const order = Number.isFinite(index) ? index + 1 : "?";
+          const type = cleanText(block?.type || "unknown", 40);
+          const preview = cleanText(block?.preview || "", 140);
+          return preview ? `#${order} ${type}: ${preview}` : `#${order} ${type}`;
+        })
+        .join("\n")
+    : "";
+
+  return [
+    `Active context: ${cleanText(snapshot.activeContext || "unknown", 40)}`,
+    snapshot.subjectLabel ? `Subject: ${cleanText(snapshot.subjectLabel, 120)}` : "",
+    snapshot.courseLabel ? `Course: ${cleanText(snapshot.courseLabel, 160)}` : "",
+    snapshot.selectionLabel ? `Selection: ${cleanText(snapshot.selectionLabel, 160)}` : "",
+    snapshot.title ? `Lesson title: ${cleanText(snapshot.title, 180)}` : "Lesson title: chua co",
+    `Metrics: ${Math.max(0, Number(metrics.blocks) || 0)} blocks, ${Math.max(0, Number(metrics.words) || 0)} words, ${Math.max(0, Number(metrics.media) || 0)} media, ${Math.max(0, Number(metrics.readTime) || 0)} min read time`,
+    `Dirty state: lessonDirty=${Boolean(studioState.lessonDirty)}, courseDirty=${Boolean(studioState.courseDirty)}`,
+    studioState.lastSavedAt ? `Last saved at: ${cleanText(studioState.lastSavedAt, 80)}` : "",
+    blockTypeCounts ? `Block type counts: ${blockTypeCounts}` : "",
+    qualityHints ? `Quality hints: ${cleanText(qualityHints, 800)}` : "",
+    firstBlocks ? `First visible blocks:\n${firstBlocks}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function formatHistory(history) {
   if (!Array.isArray(history) || history.length === 0) return "";
   return history
@@ -254,6 +397,10 @@ function buildMessages({
 
   // Phát hiện môn học từ prompt + context
   const subjectKnowledge = getSubjectKnowledge(prompt, contextSummary);
+  const lessonStudioRuntimeSummary =
+    safePageType === "lesson-studio"
+      ? buildLessonStudioRuntimeSummary(metadata)
+      : "";
   const gardenTopic = isGardenTopic({
     pageType: safePageType,
     prompt,
@@ -288,6 +435,7 @@ function buildMessages({
     "",
     "### THÔNG TIN HỆ THỐNG:",
     platformKnowledge[safePageType],
+    ...(safePageType === "lesson-studio" ? ["", LESSON_STUDIO_KNOWLEDGE] : []),
     ...(gardenKnowledge ? ["", gardenKnowledge] : []),
     // Inject web knowledge khi câu hỏi liên quan
     ...(isWebRelated ? ["", WEB_KNOWLEDGE_CORE] : []),
@@ -308,6 +456,9 @@ function buildMessages({
     `[NGỮ CẢNH HỆ THỐNG]`,
     userInfo,
     gardenRuntimeLine,
+    lessonStudioRuntimeSummary
+      ? `- Studio runtime summary:\n${cleanText(lessonStudioRuntimeSummary, 2600)}`
+      : "",
     pageTitle ? `- Tiêu đề trang: ${cleanText(pageTitle, 180)}` : "",
     selection ? `- Đoạn văn bản đang bôi đen:\n"${cleanText(selection, 1800)}"` : "",
     contextSummary ? `- Tóm tắt nội dung trang:\n${cleanText(contextSummary, 3400)}` : "",
