@@ -831,6 +831,100 @@ small {
     flex-wrap: wrap;
 }
 
+/* =========================================================================
+   SECTION CARD HEADER - MỤC TIÊU TUẦN
+   ========================================================================= */
+.guild-v2-sectioncard__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-6);
+    border-bottom: 2px solid var(--guild-paper-border);
+}
+
+.guild-v2-sectioncard__head > div:first-child {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.guild-v2-sectioncard__head h2 {
+    font-size: var(--text-2xl);
+    color: var(--guild-ink);
+    margin: 0;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.guild-v2-sectioncard__head .guild-mini-kicker {
+    font-size: var(--text-sm);
+    color: var(--guild-ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* =========================================================================
+   GOAL METRICS - CONTAINER & CARDS
+   ========================================================================= */
+.guild-v2-goal-metrics,
+.guild-v3-goal-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+    margin: var(--space-6) 0;
+    padding: var(--space-6);
+    background: linear-gradient(180deg, 
+        rgba(237, 243, 221, 0.3), 
+        rgba(237, 243, 221, 0.1));
+    border: 2px solid var(--guild-paper-border);
+    border-radius: var(--radius-lg);
+    min-width: 0;
+}
+
+.guild-v2-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: var(--guild-white);
+    border: 2px solid var(--guild-paper-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(58, 37, 24, 0.06);
+    transition: all var(--anim-fast);
+    min-height: 90px;
+    text-align: center;
+}
+
+.guild-v2-metric:hover {
+    border-color: var(--guild-moss-500);
+    box-shadow: 0 4px 12px rgba(124, 168, 96, 0.15);
+    transform: translateY(-2px);
+}
+
+.guild-v2-metric small {
+    font-size: var(--text-sm);
+    color: var(--guild-ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+}
+
+.guild-v2-metric strong {
+    font-size: var(--text-lg);
+    color: var(--guild-moss-700);
+    font-weight: 700;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
 /* Unlock Block */
 .guild-v2-unlock {
     display: flex;
@@ -1486,6 +1580,13 @@ input[type="checkbox"] {
         position: static;
         /* Gỡ dính để cuộn tự nhiên */
     }
+
+    .guild-v2-goal-metrics,
+    .guild-v3-goal-metrics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-4);
+        padding: var(--space-4);
+    }
 }
 
 /* Breakpoint: Tablet Dọc (Dưới 900px) */
@@ -1529,6 +1630,38 @@ input[type="checkbox"] {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .guild-v2-sectioncard__head {
+        flex-direction: column;
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+        padding-bottom: var(--space-4);
+    }
+
+    .guild-v2-sectioncard__head h2 {
+        font-size: var(--text-xl);
+    }
+
+    .guild-v2-goal-metrics,
+    .guild-v3-goal-metrics {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        margin: var(--space-4) 0;
+    }
+
+    .guild-v2-metric {
+        min-height: 80px;
+        padding: var(--space-3);
+    }
+
+    .guild-v2-metric small {
+        font-size: var(--text-xs);
+    }
+
+    .guild-v2-metric strong {
+        font-size: var(--text-base);
+    }
 }
 
 /* Breakpoint: Điện Thoại Nhỏ (Dưới 480px) */
@@ -1549,6 +1682,39 @@ input[type="checkbox"] {
 
     .guild-custom-amount input {
         text-align: center;
+    }
+
+    .guild-v2-sectioncard__head {
+        gap: var(--space-3);
+        margin-bottom: var(--space-3);
+        padding-bottom: var(--space-3);
+    }
+
+    .guild-v2-sectioncard__head h2 {
+        font-size: var(--text-lg);
+    }
+
+    .guild-v2-goal-metrics,
+    .guild-v3-goal-metrics {
+        gap: var(--space-2);
+        padding: var(--space-3);
+        margin: var(--space-3) 0;
+        border-radius: var(--radius-md);
+    }
+
+    .guild-v2-metric {
+        min-height: 70px;
+        padding: var(--space-2);
+        border-radius: var(--radius-sm);
+    }
+
+    .guild-v2-metric small {
+        font-size: 0.7rem;
+        margin-bottom: var(--space-1);
+    }
+
+    .guild-v2-metric strong {
+        font-size: var(--text-sm);
     }
 }
 
