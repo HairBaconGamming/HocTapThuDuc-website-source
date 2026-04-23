@@ -103,6 +103,21 @@
                             <% } %>
                         </p>
 
+                        <div class="lesson-study-banner" id="lessonStudyBanner" aria-live="polite">
+                            <div class="lesson-study-banner-main">
+                                <div class="lesson-study-banner-status-row">
+                                    <span class="lesson-study-banner-dot" id="lessonStudyDot"></span>
+                                    <strong class="lesson-study-banner-status" id="lessonStudyStatus">Đang khởi động bộ đếm học tập</strong>
+                                </div>
+                                <span class="lesson-study-banner-rate" id="lessonStudyRewardRate">Đang tính mốc nước theo level</span>
+                            </div>
+                            <div class="lesson-study-banner-metrics">
+                                <span>Trong lesson <strong id="lessonElapsedTime">00:00</strong></span>
+                                <span>Học active <strong id="lessonActiveTime">00:00</strong></span>
+                                <span>Mốc nước <strong id="lessonRewardCountdown">05:00</strong></span>
+                            </div>
+                        </div>
+
                         <% if (user) { %>
                             <div class="co-presence-container" id="co-presence-bar" aria-live="polite">
                                 <div class="presence-pulse"></div>
@@ -353,7 +368,7 @@
 <script>
     window.LESSON_ID = '<%= lesson._id %>';
     window.AUTHOR_USERNAME = '<%= lesson.createdBy ? lesson.createdBy.username : "" %>';
-    window.USER = <%- user ? JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar }) : 'null' %>;
+    window.USER = <%- user ? JSON.stringify({ id: user._id, username: user.username, avatar: user.avatar, level: user.level || 0 }) : 'null' %>;
     window.LESSON_VIEW_STATE = {
         lessonId: "<%= lesson._id %>",
         courseId: <%- JSON.stringify(course ? String(course._id) : '') %>,

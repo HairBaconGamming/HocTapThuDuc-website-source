@@ -1,3 +1,9 @@
+const {
+  isGardenTopic,
+  buildGardenTutorKnowledge,
+  buildGardenRuntimeSummary
+} = require("../services/aiTutorGardenKnowledge");
+
 const apiKey =
   process.env.SILICONFLOW_API_KEY ||
   process.env.SILICONFLOW_TOKEN ||
@@ -248,6 +254,18 @@ function buildMessages({
 
   // Phát hiện môn học từ prompt + context
   const subjectKnowledge = getSubjectKnowledge(prompt, contextSummary);
+  const gardenTopic = isGardenTopic({
+    pageType: safePageType,
+    prompt,
+    contextSummary,
+    metadata
+  });
+  const gardenKnowledge = gardenTopic
+    ? buildGardenTutorKnowledge({ metadata })
+    : "";
+  const gardenRuntimeSummary = gardenTopic
+    ? buildGardenRuntimeSummary(metadata?.garden)
+    : "";
 
   // 1. SYSTEM PROMPT: Định hình nhân vật + Kiến thức nền
   const systemInstructions = [
@@ -270,6 +288,7 @@ function buildMessages({
     "",
     "### THÔNG TIN HỆ THỐNG:",
     platformKnowledge[safePageType],
+    ...(gardenKnowledge ? ["", gardenKnowledge] : []),
     // Inject web knowledge khi câu hỏi liên quan
     ...(isWebRelated ? ["", WEB_KNOWLEDGE_CORE] : []),
     // Inject subject knowledge khi phát hiện môn học
@@ -281,9 +300,14 @@ function buildMessages({
     ? `Học viên: ${cleanText(user.username || "Ẩn danh", 60)} | Level ${Math.max(0, Number(user.level) || 0)} | Vai trò: ${user.isAdmin ? "Admin" : user.isTeacher ? "Teacher" : "Student"}`
     : "Người dùng: Khách (Chưa đăng nhập)";
 
+  const gardenRuntimeLine = gardenRuntimeSummary
+    ? `- My Garden snapshot:\n${cleanText(gardenRuntimeSummary, 2400)}`
+    : "";
+
   const userContent = [
     `[NGỮ CẢNH HỆ THỐNG]`,
     userInfo,
+    gardenRuntimeLine,
     pageTitle ? `- Tiêu đề trang: ${cleanText(pageTitle, 180)}` : "",
     selection ? `- Đoạn văn bản đang bôi đen:\n"${cleanText(selection, 1800)}"` : "",
     contextSummary ? `- Tóm tắt nội dung trang:\n${cleanText(contextSummary, 3400)}` : "",

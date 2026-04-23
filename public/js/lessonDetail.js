@@ -1464,76 +1464,254 @@ function triggerConfetti() {
 
 const StudyManager = {
     REWARD_INTERVAL: 300,
-    AFK_TIMEOUT: 60,
+    AFK_TIMEOUT: 30,
     MIN_LEARN_TIME: 10,
+    secondsInLesson: 0,
     secondsStudied: 0,
     secondsSinceLastInput: 0,
+    activeSecondsTowardsReward: 0,
     isAFK: false,
+    isClaimingReward: false,
+    nextClaimAttemptAt: 0,
     interval: null,
+    rewardPreview: 0,
+    elements: {},
 
     init() {
-        if (window.LESSON_VIEW_STATE?.isCompleted) return;
+        if (window.LESSON_VIEW_STATE?.isCompleted) {
+            document.getElementById('lessonStudyBanner')?.setAttribute('hidden', 'hidden');
+            return;
+        }
+        this.rewardPreview = this.getRewardAmountPreview();
         this.createUI();
+        this.cacheElements();
         this.bindEvents();
+        this.updateUI();
         this.start();
         this.lockButton();
     },
 
+    getRewardAmountPreview() {
+        const currentLevel = Math.max(1, Number(window.USER?.level || 1));
+        return Number((currentLevel / 10).toFixed(1));
+    },
+
+    formatDuration(totalSeconds) {
+        const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const seconds = safeSeconds % 60;
+
+        if (hours > 0) {
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    },
+
+    formatRewardAmount(amount) {
+        return new Intl.NumberFormat('vi-VN', {
+            maximumFractionDigits: 1
+        }).format(Number(amount) || 0);
+    },
+
     createUI() {
+        if (document.getElementById('study-floater')) return;
         const floater = document.createElement('div');
         floater.id = 'study-floater';
         floater.className = 'study-floater';
-        floater.innerHTML = '<div class="timer-ring"></div><div class="fw-bold" id="timer-text">00:00</div>';
+        floater.setAttribute('aria-live', 'polite');
+        floater.innerHTML = `
+            <div class="timer-ring"></div>
+            <div class="study-floater-copy">
+                <span class="study-floater-kicker" id="study-floater-label">Mốc nước kế tiếp</span>
+                <div class="study-floater-row">
+                    <strong class="study-floater-timer" id="timer-text">05:00</strong>
+                    <span class="study-floater-pill" id="study-floater-state">Đang học</span>
+                </div>
+            </div>
+        `;
         document.body.appendChild(floater);
+    },
+
+    cacheElements() {
+        this.elements = {
+            floater: document.getElementById('study-floater'),
+            timerText: document.getElementById('timer-text'),
+            floaterLabel: document.getElementById('study-floater-label'),
+            floaterState: document.getElementById('study-floater-state'),
+            banner: document.getElementById('lessonStudyBanner'),
+            bannerStatus: document.getElementById('lessonStudyStatus'),
+            bannerRate: document.getElementById('lessonStudyRewardRate'),
+            elapsedTime: document.getElementById('lessonElapsedTime'),
+            activeTime: document.getElementById('lessonActiveTime'),
+            rewardCountdown: document.getElementById('lessonRewardCountdown')
+        };
     },
 
     bindEvents() {
         const reset = () => {
             this.secondsSinceLastInput = 0;
-            this.isAFK = false;
+            if (this.isAFK) {
+                this.isAFK = false;
+                this.updateUI();
+            }
         };
 
-        ['mousemove', 'keydown', 'scroll', 'click'].forEach((eventName) => {
-            window.addEventListener(eventName, reset, { passive: true });
+        ['mousemove', 'keydown', 'click', 'wheel', 'touchstart', 'touchmove'].forEach((eventName) => {
+            const options = eventName === 'wheel' || eventName === 'touchstart' || eventName === 'touchmove'
+                ? { passive: true }
+                : undefined;
+            window.addEventListener(eventName, reset, options);
         });
 
+        const scrollContainer = document.getElementById('mainScrollArea');
+        scrollContainer?.addEventListener('scroll', reset, { passive: true });
+
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) this.isAFK = true;
+            if (document.hidden) {
+                this.isAFK = true;
+            }
+            this.updateUI();
         });
     },
 
+    getSecondsUntilReward() {
+        return Math.max(0, this.REWARD_INTERVAL - Math.min(this.activeSecondsTowardsReward, this.REWARD_INTERVAL));
+    },
+
+    getStatusText() {
+        if (this.isClaimingReward) return 'Đang nhận nước';
+        if (this.isAFK) return 'Tạm dừng do AFK, thao tác để tiếp tục';
+        return 'Đang tích lũy nước theo thời gian học';
+    },
+
+    getFloaterStateText() {
+        if (this.isClaimingReward) return 'Đang nhận';
+        if (this.isAFK) return 'Tạm dừng';
+        return 'Đang học';
+    },
+
+    updateUI() {
+        const countdown = this.formatDuration(this.getSecondsUntilReward());
+        const rewardLabel = `+${this.formatRewardAmount(this.rewardPreview)} nước mỗi 5 phút`;
+        const floaterLabel = this.isClaimingReward
+            ? `Đang đồng bộ ${rewardLabel.toLowerCase()}`
+            : `Thưởng kế tiếp: ${rewardLabel.toLowerCase()}`;
+
+        if (this.elements.timerText) {
+            this.elements.timerText.textContent = countdown;
+        }
+
+        if (this.elements.floaterLabel) {
+            this.elements.floaterLabel.textContent = floaterLabel;
+        }
+
+        if (this.elements.floaterState) {
+            this.elements.floaterState.textContent = this.getFloaterStateText();
+        }
+
+        if (this.elements.bannerStatus) {
+            this.elements.bannerStatus.textContent = this.getStatusText();
+        }
+
+        if (this.elements.bannerRate) {
+            this.elements.bannerRate.textContent = rewardLabel;
+        }
+
+        if (this.elements.elapsedTime) {
+            this.elements.elapsedTime.textContent = this.formatDuration(this.secondsInLesson);
+        }
+
+        if (this.elements.activeTime) {
+            this.elements.activeTime.textContent = this.formatDuration(this.secondsStudied);
+        }
+
+        if (this.elements.rewardCountdown) {
+            this.elements.rewardCountdown.textContent = countdown;
+        }
+
+        const shouldPause = this.isAFK && !this.isClaimingReward;
+        this.elements.floater?.classList.toggle('is-paused', shouldPause);
+        this.elements.banner?.classList.toggle('is-paused', shouldPause);
+    },
+
     start() {
+        if (this.interval) {
+            window.clearInterval(this.interval);
+        }
+
         this.interval = window.setInterval(() => {
-            if (document.hidden || this.isAFK) return;
             this.secondsSinceLastInput += 1;
-            if (this.secondsSinceLastInput > this.AFK_TIMEOUT) {
-                this.isAFK = true;
+            if (document.hidden) {
+                this.updateUI();
                 return;
             }
 
-            this.secondsStudied += 1;
-            const minutes = String(Math.floor(this.secondsStudied / 60)).padStart(2, '0');
-            const seconds = String(this.secondsStudied % 60).padStart(2, '0');
-            const timerText = document.getElementById('timer-text');
-            if (timerText) timerText.textContent = `${minutes}:${seconds}`;
+            this.secondsInLesson += 1;
 
-            if (this.secondsStudied > 0 && this.secondsStudied % this.REWARD_INTERVAL === 0) this.claimReward();
-            this.checkUnlock();
+            if (this.secondsSinceLastInput >= this.AFK_TIMEOUT) {
+                this.isAFK = true;
+            }
+
+            if (!this.isAFK) {
+                this.secondsStudied += 1;
+                this.activeSecondsTowardsReward += 1;
+
+                if (
+                    this.activeSecondsTowardsReward >= this.REWARD_INTERVAL
+                    && !this.isClaimingReward
+                    && Date.now() >= this.nextClaimAttemptAt
+                ) {
+                    void this.claimReward();
+                }
+
+                this.checkUnlock();
+            }
+
+            this.updateUI();
         }, 1000);
     },
 
     async claimReward() {
+        if (this.isClaimingReward) return;
+        this.isClaimingReward = true;
+        this.updateUI();
+
         try {
             const response = await fetch('/api/lesson/claim-study-reward', { method: 'POST' });
             const data = await response.json().catch(() => ({}));
-            if (response.ok && data?.gardenReward && window.lessonGamification?.showPassiveRewardToast) {
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    this.activeSecondsTowardsReward = Math.max(0, this.activeSecondsTowardsReward - 10);
+                    this.nextClaimAttemptAt = Date.now() + 10000;
+                } else {
+                    this.nextClaimAttemptAt = Date.now() + 15000;
+                }
+                throw new Error(data?.msg || 'Không thể nhận thưởng học tập.');
+            }
+
+            this.activeSecondsTowardsReward = Math.max(0, this.activeSecondsTowardsReward - this.REWARD_INTERVAL);
+            this.nextClaimAttemptAt = 0;
+
+            if (data?.gardenReward?.rewardAmount) {
+                this.rewardPreview = Number(data.gardenReward.rewardAmount) || this.rewardPreview;
+            }
+
+            if (data?.gardenReward && window.lessonGamification?.showPassiveRewardToast) {
                 window.lessonGamification.showPassiveRewardToast({
                     rewardType: data.gardenReward.rewardType,
                     rewardAmount: data.gardenReward.rewardAmount,
                     sourceLabel: 'Thưởng học bền bỉ'
                 });
             }
-        } catch (error) {}
+        } catch (error) {
+            console.warn('Study reward claim failed:', error);
+        } finally {
+            this.isClaimingReward = false;
+            this.updateUI();
+        }
     },
 
     lockButton() {

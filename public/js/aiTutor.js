@@ -200,11 +200,111 @@
         };
     }
 
+    function summarizeGardenCounts(items) {
+        return items.reduce((summary, item) => {
+            if (item?.type === "plot") {
+                summary.plots += 1;
+            }
+
+            if (item?.type === "plant") {
+                summary.plants += 1;
+                if (item?.isDead) {
+                    summary.deadPlants += 1;
+                }
+
+                const maxStage = Number(window.gardenAssets?.PLANTS?.[item.itemId]?.maxStage || 0);
+                if (!item?.isDead && Number(item?.stage || 0) >= maxStage) {
+                    summary.readyPlants += 1;
+                }
+            }
+
+            return summary;
+        }, {
+            plots: 0,
+            plants: 0,
+            readyPlants: 0,
+            deadPlants: 0
+        });
+    }
+
+    function buildGardenCropBreakdown(items) {
+        const cropMap = new Map();
+
+        items.forEach((item) => {
+            if (item?.type !== "plant" || !item?.itemId) return;
+
+            const config = window.gardenAssets?.PLANTS?.[item.itemId] || {};
+            const maxStage = Number(config.maxStage || 0);
+            const current = cropMap.get(item.itemId) || {
+                itemId: item.itemId,
+                name: config.name || item.itemId,
+                count: 0,
+                ready: 0,
+                dead: 0
+            };
+
+            current.count += 1;
+            if (item.isDead) current.dead += 1;
+            if (!item.isDead && Number(item.stage || 0) >= maxStage) current.ready += 1;
+
+            cropMap.set(item.itemId, current);
+        });
+
+        return Array.from(cropMap.values())
+            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+            .slice(0, 8);
+    }
+
+    function buildGardenInventorySummary(inventory) {
+        return Object.entries(inventory || {})
+            .map(([itemId, count]) => ({
+                itemId,
+                count: Number(count || 0),
+                name: window.gardenAssets?.PLANTS?.[itemId]?.name || itemId
+            }))
+            .filter((entry) => entry.count > 0)
+            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+            .slice(0, 8);
+    }
+
+    function buildGardenQuestSummary(quests) {
+        return (Array.isArray(quests) ? quests : [])
+            .map((quest) => ({
+                id: quest?.id || "",
+                title: clampText(quest?.title || "", 80),
+                progress: Number(quest?.progress || 0),
+                target: Number(quest?.target || 0),
+                complete: !!quest?.complete,
+                claimed: !!quest?.claimed
+            }))
+            .slice(0, 5);
+    }
+
+    function getGardenSelectedPlantMeta() {
+        const name = document.getElementById("statName")?.textContent || "";
+        if (!name || name === "...") return null;
+
+        return {
+            name: clampText(name, 120),
+            stageBadge: clampText(document.getElementById("statStageBadge")?.textContent || "", 120),
+            totalTime: clampText(document.getElementById("statTotalTime")?.textContent || "", 80),
+            wateringTime: clampText(document.getElementById("statWateringTime")?.textContent || "", 80),
+            soilStatus: clampText(document.getElementById("statSoilStatus")?.textContent || "", 180)
+        };
+    }
+
     function getGardenContext() {
         const gardenData = window.gardenData || {};
+        const items = Array.isArray(gardenData.items) ? gardenData.items : [];
         const guideLine = document.getElementById("gardenGuideLine")?.textContent || "";
         const sceneTitle = document.getElementById("sceneTitle")?.textContent || "Vườn hiện tại";
         const questCount = document.getElementById("questSummaryCount")?.textContent || "0";
+        const selectedPlant = getGardenSelectedPlantMeta();
+        const counts = summarizeGardenCounts(items);
+        const cropBreakdown = buildGardenCropBreakdown(items);
+        const inventorySummary = buildGardenInventorySummary(gardenData.inventory);
+        const dailyQuestSummary = buildGardenQuestSummary(gardenData.dailyQuests);
+        const pendingClaimQuests = dailyQuestSummary.filter((quest) => quest.complete && !quest.claimed).length;
         const visiblePlant = document.getElementById("statName")?.textContent || "";
 
         return {
@@ -223,7 +323,15 @@
                     fertilizer: Number(gardenData.fertilizer) || 0,
                     gold: Number(gardenData.gold) || 0,
                     tutorialStep: Number(gardenData.tutorialStep) || 0,
-                    isOwner: !!window.isOwner
+                    userLevel: Number(gardenData.userLevel) || 0,
+                    levelName: clampText(gardenData.levelName || "", 120),
+                    isOwner: !!window.isOwner,
+                    counts,
+                    cropBreakdown,
+                    inventory: inventorySummary,
+                    dailyQuests: dailyQuestSummary,
+                    pendingClaimQuests,
+                    selectedPlant
                 }
             }
         };

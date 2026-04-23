@@ -319,9 +319,12 @@ exports.claimStudyReward = async (req, res) => {
             return res.status(429).json({ success: false, msg: 'Chưa đủ thời gian học!' });
         }
 
-        // 2. Tính toán phần thưởng
-        const bonus = Math.floor((user.level || 0) / 10); // Thêm fallback || 0 cho an toàn
-        const reward = 1 + bonus;
+        // 2. Tính toán phần thưởng: mỗi 5 phút nhận nước bằng 1/10 level hiện tại.
+        const currentLevel = Math.max(1, Number(user.level || 1));
+        const reward = Math.max(1, Math.floor(currentLevel / 10));
+        const formattedReward = new Intl.NumberFormat('vi-VN', {
+            maximumFractionDigits: 0
+        }).format(reward);
 
         // 3. Cập nhật Dữ liệu
         const garden = await grantTypedReward(userId, 'water', reward);
@@ -343,7 +346,7 @@ exports.claimStudyReward = async (req, res) => {
                 fertilizer: Number(garden.fertilizer || 0),
                 gold: Number(garden.gold || 0)
             },
-            msg: `Bạn đã học chăm chỉ! Nhận +${reward} Nước 💧` 
+            msg: `Bạn đã học chăm chỉ! Nhận +${formattedReward} Nước 💧`
         });
 
     } catch (err) {

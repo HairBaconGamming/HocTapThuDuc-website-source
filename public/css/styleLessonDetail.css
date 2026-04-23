@@ -1112,12 +1112,50 @@ pre[class*="language-"] {
     z-index: 1100;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 12px;
+    padding: 12px 16px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid rgba(148, 163, 184, 0.16);
     box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+}
+
+.study-floater-copy {
+    display: grid;
+    gap: 3px;
+}
+
+.study-floater-kicker {
+    color: var(--lesson-muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.study-floater-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.study-floater-timer {
+    color: var(--lesson-secondary);
+    font-size: 1.05rem;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.study-floater-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 800;
 }
 
 .timer-ring {
@@ -1127,6 +1165,16 @@ pre[class*="language-"] {
     border-top-color: var(--lesson-success);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+.study-floater.is-paused .timer-ring {
+    animation-play-state: paused;
+    border-top-color: var(--lesson-warning);
+}
+
+.study-floater.is-paused .study-floater-pill {
+    background: rgba(245, 158, 11, 0.18);
+    color: #92400e;
 }
 
 @keyframes spin {
@@ -1901,6 +1949,77 @@ body.lesson-focus-mode .lesson-reading-surface {
 .lesson-hero-meta-line .is-success {
     color: #047857;
     font-weight: 700;
+}
+
+.lesson-study-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px 18px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.92));
+    border: 1px solid rgba(147, 197, 253, 0.28);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.08);
+}
+
+.lesson-study-banner-main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.lesson-study-banner-status-row,
+.lesson-study-banner-metrics {
+    display: flex;
+    align-items: center;
+    gap: 10px 16px;
+    flex-wrap: wrap;
+}
+
+.lesson-study-banner-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.36);
+    animation: lessonStudyPulse 2s infinite;
+}
+
+.lesson-study-banner-status {
+    color: var(--lesson-secondary);
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.lesson-study-banner-rate,
+.lesson-study-banner-metrics {
+    color: var(--lesson-muted);
+    font-size: 0.84rem;
+}
+
+.lesson-study-banner-metrics strong {
+    color: var(--lesson-secondary);
+    font-size: 0.96rem;
+}
+
+.lesson-study-banner.is-paused .lesson-study-banner-dot {
+    background: var(--lesson-warning);
+    animation: none;
+    box-shadow: none;
+}
+
+@keyframes lessonStudyPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
 }
 
 .lesson-section-strip {
@@ -3351,6 +3470,14 @@ body.lesson-detail-mode .swal2-validation-message {
 }
 
 @media (max-width: 760px) {
+    .lesson-study-banner {
+        align-items: flex-start;
+    }
+
+    .lesson-study-banner-metrics {
+        justify-content: flex-start;
+    }
+
     .co-presence-container {
         position: fixed;
         right: 14px;
@@ -3362,5 +3489,11 @@ body.lesson-detail-mode .swal2-validation-message {
 
     .presence-text {
         display: none;
+    }
+
+    .study-floater {
+        right: 14px;
+        bottom: 90px;
+        max-width: calc(100vw - 28px);
     }
 }
