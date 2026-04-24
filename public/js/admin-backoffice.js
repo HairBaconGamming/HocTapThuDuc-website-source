@@ -19,6 +19,8 @@
 
     function renderOverviewCharts(charts) {
         if (!charts?.overviewGrowth) return;
+        const overviewRole = charts.overviewRole || charts.roleMix;
+        const overviewContent = charts.overviewContent || charts.contentMix;
 
         createChart('overviewGrowthChart', {
             type: 'line',
@@ -55,13 +57,13 @@
             options: chartOptions({ yTitle: 'Count' })
         });
 
-        if (charts.overviewRole) {
+        if (overviewRole) {
             createChart('overviewRoleChart', {
                 type: 'doughnut',
                 data: {
-                    labels: charts.overviewRole.labels,
+                    labels: overviewRole.labels,
                     datasets: [{
-                        data: charts.overviewRole.data,
+                        data: overviewRole.data,
                         backgroundColor: ['#102532', '#0aa889', '#2f7eea', '#dc8e2f'],
                         borderWidth: 0
                     }]
@@ -82,14 +84,14 @@
             });
         }
 
-        if (charts.overviewContent) {
+        if (overviewContent) {
             createChart('overviewContentChart', {
                 type: 'bar',
                 data: {
-                    labels: charts.overviewContent.labels,
+                    labels: overviewContent.labels,
                     datasets: [{
                         label: 'Courses',
-                        data: charts.overviewContent.data,
+                        data: overviewContent.data,
                         backgroundColor: 'rgba(47, 126, 234, 0.78)',
                         borderRadius: 10,
                         maxBarThickness: 44

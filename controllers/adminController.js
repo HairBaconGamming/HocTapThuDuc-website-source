@@ -42,6 +42,7 @@ function renderPage(pageKey) {
             const viewModel = await getPageViewModel(pageKey, req.query || {});
             return res.render('admin/index', {
                 ...viewModel,
+                clientData: viewModel.clientData || {},
                 title: `${viewModel.pageTitle} · Admin`,
                 currentUrl: req.originalUrl,
                 adminCsrfToken: res.locals.adminCsrfToken,
