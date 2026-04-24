@@ -13,7 +13,7 @@
 
     const safeUser = user || {};
     const safeUsername = String(safeUser.username || 'Hoc vien').trim() || 'Hoc vien';
-    const safeAvatar = safeUser.avatar || `https://ui-avatars.com/api/?name=${encodeAvatarName(safeUsername)}&background=eff6ff&color=1d4ed8`;
+    const safeAvatar = safeUser.avatar || `https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg`;
     
     const safeLevel = levelInfo ? levelInfo.level : Math.max(1, toNumber(safeUser.level, 1));
     const safeXP = levelInfo ? levelInfo.currentXP : Math.max(0, toNumber(safeUser.xp, 0));
@@ -94,7 +94,7 @@
             <div class="dashboard-hero__main">
                 <div class="dashboard-hero__identity">
                     <div class="dashboard-avatar">
-                        <img src="<%= safeAvatar %>" alt="Avatar cua <%= safeUsername %>" onerror="this.src='https://ui-avatars.com/api/?name=<%= encodeAvatarName(safeUsername) %>&background=eff6ff&color=1d4ed8';">
+                        <img src="<%= safeAvatar %>" alt="Avatar cua <%= safeUsername %>" onerror="this.src='https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg';">
                         <span class="dashboard-avatar__badge">LV. <%= safeLevel %></span>
                     </div>
 

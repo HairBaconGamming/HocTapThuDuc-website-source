@@ -1790,7 +1790,7 @@ const LessonPresenceManager = {
     normalizeUser(user = {}) {
         const id = String(user.id || user._id || '').trim();
         const username = String(user.username || user.name || 'Bạn học').trim() || 'Bạn học';
-        const avatar = String(user.avatar || '').trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=eff6ff&color=1d4ed8`;
+        const avatar = String(user.avatar || '').trim() || `https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg`;
         return { id, username, avatar };
     },
 

@@ -117,25 +117,6 @@ async function setUserBanState(payload, overrides = {}) {
     targetUser.isBanned = Boolean(banned);
     await targetUser.save();
 
-    const deviceIp = targetUser.lastLoginIP || `user:${targetUser._id}`;
-    const userAgent = targetUser.lastLoginUA || 'admin-ban-without-user-agent';
-
-    if (targetUser.isBanned) {
-        await deps.BanEntry.create({
-            ip: deviceIp,
-            userAgent,
-            banToken: crypto.randomBytes(18).toString('hex'),
-            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10)
-        });
-    } else {
-        await deps.BanEntry.deleteMany({
-            $or: [
-                { ip: deviceIp },
-                { userAgent }
-            ]
-        });
-    }
-
     await deps.recordAdminAction({
         actorId: actor._id,
         domain: 'users',

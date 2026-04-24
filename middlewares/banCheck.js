@@ -1,56 +1,23 @@
 // middlewares/banCheck.js
-const BanEntry = require("../models/BanEntry");
-const mongoose = require("mongoose");
 
 async function banCheck(req, res, next) {
   try {
-    // Check DB connection before attempting query
-    if(mongoose.connection.readyState !== 1) {
-      console.warn("⚠️  BanCheck: Skipped (DB not ready)");
-      return next(); // Allow request if DB is down
+    // Nếu route là /logout, cho phép tiếp tục để người dùng có thể đăng xuất
+    if (req.path === '/logout') {
+      return next();
     }
 
     if (req.user && req.user.isBanned) {
-      return res.status(403).send("Your access has been permanently restricted.");
+      if (req.path.startsWith('/api') || req.xhr) {
+          return res.status(403).json({ error: "Tài khoản của bạn đã bị khóa." });
+      }
+      return res.status(403).render("banned", { title: "Tài khoản bị khóa", user: req.user, activePage: 'banned' });
     }
 
-    // Retrieve identifying info:
-    const ip = req.ip;
-    const userAgent = req.get("User-Agent") || "";
-    const banToken = req.cookies && req.cookies.banToken;
-
-    // Find any active ban entry with timeout protection
-    const ban = await BanEntry.findOne({
-      $and: [
-        {
-          $or: [
-            { ip: ip },
-            { userAgent: userAgent },
-            { banToken: banToken }
-          ]
-        },
-        {
-          $or: [
-            { expiresAt: { $gt: new Date() } },
-            { expiresAt: null },
-            { expiresAt: { $exists: false } }
-          ]
-        }
-      ]
-    });
-
-    if (ban) {
-      return res.status(403).send("Your access has been permanently restricted.");
-    }
     next();
   } catch (err) {
-    // Log error but don't block request if DB fails
-    if(err.name === 'MongooseError' || err.name === 'MongoNetworkError') {
-      console.warn("⚠️  BanCheck timeout/error - allowing request:", err.message);
-    } else {
-      console.error("❌ Error checking ban:", err.message);
-    }
-    next(); // Continue anyway to avoid blocking users when DB is slow
+    console.error("❌ Error checking ban:", err.message);
+    next(); // Continue anyway to avoid blocking users
   }
 }
 

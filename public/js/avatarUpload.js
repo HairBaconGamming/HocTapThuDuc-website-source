@@ -145,16 +145,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         xhr.onload = async () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-                const uploadResult = JSON.parse(xhr.responseText);
-                await handleSetAvatar(uploadResult.url);
-                await loadUserImages(); // Refresh gallery
-                resetState();
+                try {
+                    const uploadResult = JSON.parse(xhr.responseText);
+                    await handleSetAvatar(uploadResult.url);
+                    await loadUserImages(); // Refresh gallery
+                    resetState();
+                } catch (e) {
+                    showToast('Lỗi dữ liệu trả về từ máy chủ.', 'danger');
+                }
             } else {
                 try {
                     const errData = JSON.parse(xhr.responseText);
                     showToast(errData.error || 'Tải lên thất bại.', 'danger');
                 } catch {
-                    showToast('Tải lên thất bại.', 'danger');
+                    showToast('Tải lên thất bại. Máy chủ trả về lỗi không xác định.', 'danger');
                 }
             }
              // Final state handled in 'loadend'

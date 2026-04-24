@@ -134,7 +134,13 @@
             const res = await fetch('/api/pro-images/list');
             if (!res.ok) throw new Error('Loi tai danh sach anh');
 
-            const data = await res.json();
+            let data;
+            const textResponse = await res.text();
+            try {
+                data = JSON.parse(textResponse);
+            } catch(e) {
+                data = { error: textResponse || 'Loi khong xac dinh' };
+            }
             grid.innerHTML = '';
 
             if (!data || data.length === 0) {
@@ -191,7 +197,14 @@
                 body: formData
             });
 
-            const data = await res.json();
+            let data;
+            const textResponse = await res.text();
+            try {
+                data = JSON.parse(textResponse);
+            } catch(e) {
+                data = { error: textResponse || 'Loi khong xac dinh' };
+            }
+
             if (res.ok) {
                 pFill.style.width = '100%';
                 setTimeout(() => {
@@ -242,7 +255,13 @@
         if (result.isConfirmed) {
             try {
                 const res = await fetch('/api/pro-images/' + id, { method: 'DELETE' });
-                const data = await res.json();
+                let data;
+                const textResponse = await res.text();
+                try {
+                    data = JSON.parse(textResponse);
+                } catch(e) {
+                    data = { error: textResponse || 'Loi khong xac dinh' };
+                }
 
                 if (res.ok) {
                     loadImages();
