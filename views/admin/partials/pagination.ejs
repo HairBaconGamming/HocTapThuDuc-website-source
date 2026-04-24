@@ -1,0 +1,11 @@
+<% if (pagination && pagination.totalPages > 1) { %>
+    <nav class="admin-pagination">
+        <a class="admin-page-btn <%= pagination.hasPrev ? '' : 'is-disabled' %>" href="<%= pagination.hasPrev ? buildAdminUrl(path, filters, { page: pagination.page - 1 }) : '#' %>">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        <span class="admin-page-indicator">Trang <%= pagination.page %> / <%= pagination.totalPages %></span>
+        <a class="admin-page-btn <%= pagination.hasNext ? '' : 'is-disabled' %>" href="<%= pagination.hasNext ? buildAdminUrl(path, filters, { page: pagination.page + 1 }) : '#' %>">
+            <i class="fas fa-angle-right"></i>
+        </a>
+    </nav>
+<% } %>

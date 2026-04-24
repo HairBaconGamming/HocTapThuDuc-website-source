@@ -1,0 +1,34 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm summary, domain, action">
+        <select name="status">
+            <option value="">Tất cả domain</option>
+            <option value="users" <%= filters.status === 'users' ? 'selected' : '' %>>users</option>
+            <option value="content" <%= filters.status === 'content' ? 'selected' : '' %>>content</option>
+            <option value="community" <%= filters.status === 'community' ? 'selected' : '' %>>community</option>
+            <option value="gamification" <%= filters.status === 'gamification' ? 'selected' : '' %>>gamification</option>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Cũ nhất</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="audit-feed">
+        <% auditLogs.forEach((log) => { %>
+            <article class="audit-item audit-item-<%= log.source %>">
+                <div>
+                    <strong><%= log.title %></strong>
+                    <span><%= log.meta %></span>
+                </div>
+                <div class="audit-meta">
+                    <span><%= log.actor %></span>
+                    <time><%= formatDateTime(log.createdAt) %></time>
+                </div>
+            </article>
+        <% }) %>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

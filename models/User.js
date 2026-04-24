@@ -16,6 +16,7 @@ const UserSchema = new mongoose.Schema(
     proSecretKey: { type: String, default: "" },
     isBanned: { type: Boolean, default: false },
     lastLoginIP: { type: String, default: "" },
+    lastLoginUA: { type: String, default: "" },
     // --- NEW FIELD ---
     avatar: { type: String, default: "https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191" }, // Default avatar
     guild: { type: mongoose.Schema.Types.ObjectId, ref: 'Guild', default: null, index: true },

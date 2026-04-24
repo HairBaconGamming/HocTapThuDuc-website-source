@@ -31,7 +31,7 @@ router.post('/auth/login', (req, res, next) => {
         try {
              User.findByIdAndUpdate(user._id, {
                   lastLoginIP: req.ip,
-                  lastloginUA: req.get('User-Agent') || 'Unknown'
+                  lastLoginUA: req.get('User-Agent') || 'Unknown'
              }).exec().then(async () => {
                   try {
                        await achievementChecker.onUserLogin(user._id);

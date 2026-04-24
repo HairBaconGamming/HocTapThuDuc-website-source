@@ -21,7 +21,13 @@
 </head>
 <body class="studio-v4-page" data-user-id="<%= user ? user._id : '' %>">
     <div class="studio-v4-root">
-        <form id="lessonForm" action="/lesson/<%= lesson ? 'edit/' + lesson._id : 'add' %>" method="POST" class="studio-shell studio-v4-shell">
+        <form id="lessonForm" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : `/lesson/${lesson ? 'edit/' + lesson._id : 'add'}` %>" method="POST" class="studio-shell studio-v4-shell">
+            <% if (typeof adminCsrfToken !== 'undefined' && adminCsrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+            <% } %>
+            <% if (typeof returnTo !== 'undefined' && returnTo) { %>
+                <input type="hidden" name="returnTo" value="<%= returnTo %>">
+            <% } %>
             <input type="hidden" name="courseId" id="hiddenCourseId">
             <input type="hidden" name="subjectId" id="hiddenSubjectId" value="<%= lesson ? lesson.subjectId : '' %>">
             <input type="hidden" name="curriculumSnapshot" id="curriculumSnapshot">
@@ -30,7 +36,7 @@
             <section class="studio-v4-toolbar">
                 <div class="studio-v4-toolbar-main">
                     <div class="studio-v4-brand">
-                        <a href="/dashboard" class="studio-v4-ghost-link studio-v4-exit-link">
+                        <a href="<%= typeof exitHref !== 'undefined' && exitHref ? exitHref : '/dashboard' %>" class="studio-v4-ghost-link studio-v4-exit-link">
                             <i class="fas fa-arrow-left"></i>
                             <span>Rời studio</span>
                         </a>

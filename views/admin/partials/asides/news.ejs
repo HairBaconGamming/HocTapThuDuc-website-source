@@ -1,0 +1,32 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">News editor</span>
+        <h3><%= selectedNews ? 'Biên tập bài viết' : 'Soạn bài viết mới' %></h3>
+        <form method="POST" action="/admin/content/news/save" class="context-form">
+            <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+            <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+            <input type="hidden" name="newsId" value="<%= selectedNews ? selectedNews._id : '' %>">
+            <label><span>Tiêu đề</span><input type="text" name="title" value="<%= selectedNews ? selectedNews.title : '' %>" required></label>
+            <label>
+                <span>Danh mục</span>
+                <select name="category" required>
+                    <% ['Thông báo', 'Học tập', 'Tuyển sinh', 'Tài khoản PRO'].forEach((category) => { %>
+                        <option value="<%= category %>" <%= selectedNews && selectedNews.category === category ? 'selected' : '' %>><%= category %></option>
+                    <% }) %>
+                </select>
+            </label>
+            <label>
+                <span>Môn học</span>
+                <select name="subject">
+                    <option value="">Không gắn môn</option>
+                    <% subjectOptions.forEach((subject) => { %>
+                        <option value="<%= subject._id %>" <%= selectedNews && selectedNews.subject && String(selectedNews.subject._id || selectedNews.subject) === String(subject._id) ? 'selected' : '' %>><%= subject.name %></option>
+                    <% }) %>
+                </select>
+            </label>
+            <label><span>Ảnh bìa</span><input type="text" name="image" value="<%= selectedNews ? selectedNews.image : '' %>"></label>
+            <label><span>Nội dung</span><textarea name="content" rows="8" required><%= selectedNews ? selectedNews.content : '' %></textarea></label>
+            <button class="admin-btn admin-btn-primary" type="submit"><%= selectedNews ? 'Lưu bài viết' : 'Đăng bài' %></button>
+        </form>
+    </section>
+</div>

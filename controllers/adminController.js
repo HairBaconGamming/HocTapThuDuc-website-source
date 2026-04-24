@@ -1,278 +1,322 @@
-const User = require('../models/User');
-const Course = require('../models/Course');
-const Unit = require('../models/Unit');
 const Lesson = require('../models/Lesson');
 const Subject = require('../models/Subject');
-const News = require('../models/News'); // <--- Đã sửa thành News
-const VisitStats = require('../models/VisitStats'); // Import Model thống kê truy cập
+const {
+    LEGACY_TAB_MAP,
+    PAGE_CONFIG,
+    getPageViewModel
+} = require('../services/adminViewService');
+const {
+    updateUserRoles,
+    setUserBanState,
+    deleteUserAccount,
+    toggleCoursePublish,
+    deleteCourseWithContent,
+    saveSubjectRecord,
+    deleteSubjectRecord,
+    saveNewsRecord,
+    deleteNewsRecord,
+    toggleLessonPublish,
+    updateLessonFromAdmin,
+    updateQuestionStatus,
+    moderateComment,
+    reviewGuildApplicationFromAdmin,
+    saveAchievementType
+} = require('../services/adminMutationService');
+const { safeAdminReturnTo, getReturnTo } = require('../utils/adminHelpers');
 
-// controllers/adminController.js
+function buildLegacyRedirect(req) {
+    const targetPath = LEGACY_TAB_MAP[req.query.tab] || PAGE_CONFIG.overview.path;
+    const params = new URLSearchParams();
+    Object.entries(req.query || {}).forEach(([key, value]) => {
+        if (key === 'tab') return;
+        if (value === undefined || value === null || value === '') return;
+        params.set(key, String(value));
+    });
+    const queryString = params.toString();
+    return `${targetPath}${queryString ? `?${queryString}` : ''}`;
+}
 
-exports.getAdminPanel = async (req, res) => {
+function renderPage(pageKey) {
+    return async (req, res) => {
+        try {
+            const viewModel = await getPageViewModel(pageKey, req.query || {});
+            return res.render('admin/index', {
+                ...viewModel,
+                title: `${viewModel.pageTitle} · Admin`,
+                currentUrl: req.originalUrl,
+                adminCsrfToken: res.locals.adminCsrfToken,
+                layout: false
+            });
+        } catch (error) {
+            console.error(`Admin render error (${pageKey}):`, error);
+            req.flash('error', 'Không thể tải khu quản trị này lúc này.');
+            return res.redirect(PAGE_CONFIG.overview.path);
+        }
+    };
+}
+
+async function handleMutation(req, res, task, { successMessage, fallbackPath }) {
     try {
-        // ... (Giữ nguyên các phần thống kê User, Course, News cũ ...)
-        const totalUsers = await User.countDocuments();
-        const totalCourses = await Course.countDocuments();
-        const totalLessons = await Lesson.countDocuments();
-        const totalNews = await News.countDocuments();
+        await task();
+        req.flash('success', successMessage);
+    } catch (error) {
+        console.error('Admin mutation error:', error);
+        req.flash('error', error.message || 'Không thể hoàn tất thao tác quản trị.');
+    }
 
-        const users = await User.find().sort({ createdAt: -1 }).limit(10).lean();
-        const courses = await Course.find().populate('author', 'username email').sort({ createdAt: -1 }).limit(10).lean();
-        const subjects = await Subject.find().sort({ createdAt: -1 }).lean();
-        const news = await News.find().sort({ createdAt: -1 }).limit(10).lean();
+    return res.redirect(getReturnTo(req, fallbackPath));
+}
 
-        // --- XỬ LÝ CHART DATA ---
+exports.redirectAdminEntry = async (req, res) => {
+    if (req.query.tab) {
+        return res.redirect(buildLegacyRedirect(req));
+    }
+    return res.redirect(PAGE_CONFIG.overview.path);
+};
 
-        // 1. CHART: Growth (7 ngày) - Giữ nguyên logic cũ
-        const labels = [];
-        const dataVisits = [];
-        const dataRegisters = [];
-        
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            const displayDate = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-            
-            labels.push(displayDate);
-            
-            const startOfDay = new Date(d.setHours(0,0,0,0));
-            const endOfDay = new Date(d.setHours(23,59,59,999));
-            
-            dataRegisters.push(await User.countDocuments({ createdAt: { $gte: startOfDay, $lte: endOfDay } }));
-            
-            const visitRecord = await VisitStats.findOne({ dateStr: dateStr });
-            dataVisits.push(visitRecord ? visitRecord.count : 0);
+exports.getOverview = renderPage('overview');
+exports.getUsers = renderPage('users');
+exports.getCourses = renderPage('courses');
+exports.getSubjects = renderPage('subjects');
+exports.getLessons = renderPage('lessons');
+exports.getNews = renderPage('news');
+exports.getProImages = renderPage('proImages');
+exports.getQuestions = renderPage('questions');
+exports.getComments = renderPage('comments');
+exports.getGuilds = renderPage('guilds');
+exports.getGuildApplications = renderPage('guildApplications');
+exports.getAchievements = renderPage('achievements');
+exports.getRewards = renderPage('rewards');
+exports.getStandings = renderPage('standings');
+exports.getTraffic = renderPage('traffic');
+exports.getBans = renderPage('bans');
+exports.getAudit = renderPage('audit');
+
+exports.getAdminLessonEditor = async (req, res) => {
+    try {
+        const lesson = await Lesson.findById(req.params.id).lean();
+        if (!lesson) {
+            req.flash('error', 'Không tìm thấy bài học cần biên tập.');
+            return res.redirect(PAGE_CONFIG.lessons.path);
         }
 
-        // 2. CHART: User Structure (Phân loại User)
-        const countAdmin = await User.countDocuments({ isAdmin: true });
-        const countTeacher = await User.countDocuments({ isTeacher: true, isAdmin: { $ne: true } });
-        const countPro = await User.countDocuments({ isPro: true, isTeacher: { $ne: true }, isAdmin: { $ne: true } });
-        const countNormal = await User.countDocuments({ isPro: { $ne: true }, isTeacher: { $ne: true }, isAdmin: { $ne: true } });
+        const subjects = await Subject.find({}).lean();
+        const exitHref = safeAdminReturnTo(req.query.returnTo, `${PAGE_CONFIG.lessons.path}?detailId=${lesson._id}`);
 
-        // 3. CHART: Content Distribution (Khóa học theo Môn)
-        // Lấy top 5 môn có nhiều khóa học nhất (hoặc tất cả)
-        const subjectLabels = [];
-        const subjectCounts = [];
-        
-        // Dùng Promise.all để chạy nhanh hơn thay vì await trong loop
-        await Promise.all(subjects.map(async (sub) => {
-            const count = await Course.countDocuments({ subjectId: sub._id });
-            if (count > 0) { // Chỉ lấy môn có khóa học để đỡ rác biểu đồ
-                subjectLabels.push(sub.name);
-                subjectCounts.push(count);
-            }
-        }));
-
-        // Gửi tất cả xuống View
-        res.render('admin', {
-            title: 'Admin Dashboard',
+        return res.render('ManageLesson', {
+            mode: 'edit',
             user: req.user,
-            stats: { totalUsers, totalCourses, totalLessons, totalNews },
-            users, courses, subjects, news,
-            
-            // Object chứa toàn bộ data chart
-            chartData: {
-                growth: { labels, visits: dataVisits, registers: dataRegisters },
-                userPie: { 
-                    labels: ['Thành viên thường', 'Tài khoản PRO', 'Giáo viên', 'Admin'], 
-                    data: [countNormal > 0 ? countNormal : 0, countPro, countTeacher, countAdmin] 
-                },
-                contentBar: { labels: subjectLabels, data: subjectCounts }
-            },
-            layout: false
+            lesson,
+            subjects,
+            activePage: 'admin',
+            formAction: `/admin/content/lessons/${lesson._id}/edit`,
+            exitHref,
+            returnTo: exitHref,
+            adminCsrfToken: res.locals.adminCsrfToken
         });
-
-    } catch (err) {
-        console.error("Admin Panel Error:", err);
-        res.status(500).send("Server Error");
+    } catch (error) {
+        console.error('Admin lesson editor error:', error);
+        req.flash('error', 'Không thể mở studio quản trị cho bài học này.');
+        return res.redirect(PAGE_CONFIG.lessons.path);
     }
 };
 
-exports.updateUser = async (req, res) => {
-    try {
-        // Lấy isAdmin từ body (nếu check thì là 'on', không check là undefined)
-        const { userId, isAdmin, isPro, isTeacher, proSecretKey } = req.body;
-        const currentUser = req.user;
-
-        const targetUser = await User.findById(userId);
-        if (!targetUser) return res.redirect('/admin?tab=users');
-
-        // --- BẢO MẬT ---
-        
-        // 1. Nếu đang sửa 'truonghoangnam' -> Giữ nguyên quyền Admin
-        if (targetUser.username === 'truonghoangnam') {
-            await User.findByIdAndUpdate(userId, {
-                // isAdmin: true, // Mặc định true, không cần update lại
-                isPro: true,
-                isTeacher: true,
-                proSecretKey: proSecretKey
-            });
-            req.flash('success', 'Đã update thông tin Owner.');
-            return res.redirect('/admin?tab=users');
-        }
-
-        // 2. Chuẩn bị object update
-        let updateData = {
-            isPro: isPro === 'on',
-            isTeacher: isTeacher === 'on',
-            proSecretKey: proSecretKey
-        };
-
-        // 3. Xử lý quyền Admin
-        // Chỉ 'truonghoangnam' mới được phép thay đổi trường isAdmin
-        if (currentUser.username === 'truonghoangnam') {
-            updateData.isAdmin = (isAdmin === 'on');
-        } 
-        // Nếu không phải truonghoangnam, ta KHÔNG thêm isAdmin vào updateData 
-        // => Giá trị cũ trong DB được giữ nguyên (an toàn)
-
-        await User.findByIdAndUpdate(userId, updateData);
-
-        req.flash('success', 'Cập nhật thành công!');
-        res.redirect('/admin?tab=users');
-
-    } catch (err) {
-        console.error(err);
-        req.flash('error', 'Lỗi server');
-        res.redirect('/admin?tab=users');
-    }
-};
-
-exports.deleteUser = async (req, res) => {
-    try {
-        const targetUser = await User.findById(req.body.userId);
-        if (targetUser.username === 'truonghoangnam') {
-            req.flash('error', 'Không thể xóa tài khoản Super Admin!');
-            return res.redirect('/admin?tab=users');
-        }
-        await User.findByIdAndDelete(req.body.userId);
-        req.flash('success', 'Xóa người dùng thành công!');
-        res.redirect('/admin?tab=users');
-    } catch (err) {
-        console.error(err);
-        req.flash('error', 'Lỗi xóa user');
-        res.redirect('/admin?tab=users');
-    }
-};
-
-// 3. COURSE ACTIONS
-exports.approveCourse = async (req, res) => {
-    try {
-        const { courseId, isPublished } = req.body;
-        // Toggle trạng thái public
-        await Course.findByIdAndUpdate(courseId, { 
-            isPublished: isPublished === 'on' 
+exports.saveAdminLessonEditor = async (req, res) => {
+    return handleMutation(req, res, async () => {
+        await updateLessonFromAdmin({
+            actor: req.user,
+            lessonId: req.params.id,
+            body: req.body
         });
-        res.redirect('/admin?tab=courses');
-    } catch (err) {
-        console.error(err);
-        res.redirect('/admin');
-    }
+    }, {
+        successMessage: 'Đã lưu thay đổi của bài học trong studio quản trị.',
+        fallbackPath: `${PAGE_CONFIG.lessons.path}?detailId=${req.params.id}`
+    });
 };
 
-exports.deleteCourse = async (req, res) => {
-    try {
-        const courseId = req.body.courseId;
-        // Xóa Course, Unit, Lesson liên quan (Basic cleanup)
-        await Course.findByIdAndDelete(courseId);
-        await Unit.deleteMany({ courseId: courseId });
-        await Lesson.deleteMany({ courseId: courseId });
-        
-        res.redirect('/admin?tab=courses');
-    } catch (err) {
-        console.error(err);
-        res.redirect('/admin');
-    }
-};
+exports.updateUser = async (req, res) => handleMutation(req, res, async () => {
+    await updateUserRoles({
+        actor: req.user,
+        targetUserId: req.body.userId || req.params.id,
+        isAdmin: req.body.isAdmin,
+        isPro: req.body.isPro,
+        isTeacher: req.body.isTeacher,
+        proSecretKey: req.body.proSecretKey
+    });
+}, {
+    successMessage: 'Đã cập nhật quyền tài khoản.',
+    fallbackPath: PAGE_CONFIG.users.path
+});
 
-// 4. NEWS ACTIONS (Cập nhật theo Schema News.js)
-exports.createNews = async (req, res) => {
-    try {
-        const { title, content, category, image } = req.body;
-        
-        await News.create({
-            title,
-            content,
-            category: category || 'Thông báo', // Mặc định nếu không chọn
-            image: image || '',
-            postedBy: req.user._id // <--- Khớp với schema News.js
-        });
-        
-        res.redirect('/admin?tab=news');
-    } catch (err) {
-        console.error("Create News Error:", err);
-        res.redirect('/admin?error=create_news_failed');
-    }
-};
+exports.banUser = async (req, res) => handleMutation(req, res, async () => {
+    await setUserBanState({
+        actor: req.user,
+        targetUserId: req.body.userId || req.params.id,
+        banned: true,
+        reason: req.body.reason
+    });
+}, {
+    successMessage: 'Đã khóa tài khoản người dùng.',
+    fallbackPath: PAGE_CONFIG.users.path
+});
 
-exports.deleteNews = async (req, res) => {
-    try {
-        await News.findByIdAndDelete(req.body.newsId);
-        res.redirect('/admin?tab=news');
-    } catch (err) {
-        console.error(err);
-        res.redirect('/admin');
-    }
-};
+exports.unbanUser = async (req, res) => handleMutation(req, res, async () => {
+    await setUserBanState({
+        actor: req.user,
+        targetUserId: req.body.userId || req.params.id,
+        banned: false,
+        reason: req.body.reason
+    });
+}, {
+    successMessage: 'Đã mở khóa tài khoản người dùng.',
+    fallbackPath: PAGE_CONFIG.users.path
+});
 
-exports.saveSubject = async (req, res) => {
-    try {
-        // Lấy dữ liệu từ Form (admin.ejs dòng 1031)
-        const { subjectId, name, image } = req.body;
+exports.deleteUser = async (req, res) => handleMutation(req, res, async () => {
+    await deleteUserAccount({
+        actor: req.user,
+        targetUserId: req.body.userId || req.params.id
+    });
+}, {
+    successMessage: 'Đã xóa tài khoản người dùng.',
+    fallbackPath: PAGE_CONFIG.users.path
+});
 
-        // Validate cơ bản
-        if (!name) {
-            req.flash('error', 'Tên môn học không được để trống!');
-            return res.redirect('/admin?tab=subjects');
-        }
+exports.approveCourse = async (req, res) => handleMutation(req, res, async () => {
+    await toggleCoursePublish({
+        actor: req.user,
+        courseId: req.body.courseId || req.params.id,
+        isPublished: req.body.isPublished === 'on' || req.body.isPublished === true || req.body.isPublished === 'true'
+    });
+}, {
+    successMessage: 'Đã cập nhật trạng thái khóa học.',
+    fallbackPath: PAGE_CONFIG.courses.path
+});
 
-        // 1. TRƯỜNG HỢP CẬP NHẬT (NẾU CÓ ID)
-        if (subjectId && subjectId.trim() !== '') {
-            await Subject.findByIdAndUpdate(subjectId, {
-                name: name.trim(),
-                image: image ? image.trim() : ''
-            });
-            req.flash('success', 'Cập nhật môn học thành công!');
-        } 
-        // 2. TRƯỜNG HỢP THÊM MỚI (KHÔNG CÓ ID)
-        else {
-            const newSubject = new Subject({
-                name: name.trim(),
-                image: image ? image.trim() : ''
-            });
-            await newSubject.save();
-            req.flash('success', 'Thêm môn học mới thành công!');
-        }
+exports.deleteCourse = async (req, res) => handleMutation(req, res, async () => {
+    await deleteCourseWithContent({
+        actor: req.user,
+        courseId: req.body.courseId || req.params.id
+    });
+}, {
+    successMessage: 'Đã xóa khóa học và nội dung liên quan.',
+    fallbackPath: PAGE_CONFIG.courses.path
+});
 
-        res.redirect('/admin?tab=subjects');
+exports.saveSubject = async (req, res) => handleMutation(req, res, async () => {
+    await saveSubjectRecord({
+        actor: req.user,
+        subjectId: req.body.subjectId,
+        name: req.body.name,
+        image: req.body.image
+    });
+}, {
+    successMessage: 'Đã lưu môn học.',
+    fallbackPath: PAGE_CONFIG.subjects.path
+});
 
-    } catch (err) {
-        console.error("Lỗi Save Subject:", err);
-        req.flash('error', 'Lỗi hệ thống: ' + err.message);
-        res.redirect('/admin?tab=subjects');
-    }
-};
+exports.deleteSubject = async (req, res) => handleMutation(req, res, async () => {
+    await deleteSubjectRecord({
+        actor: req.user,
+        subjectId: req.body.subjectId || req.params.id
+    });
+}, {
+    successMessage: 'Đã xóa môn học.',
+    fallbackPath: PAGE_CONFIG.subjects.path
+});
 
-// --- [FIX] XÓA MÔN HỌC ---
-exports.deleteSubject = async (req, res) => {
-    try {
-        const { subjectId } = req.body; // Lấy ID từ form delete
-        
-        if (!subjectId) {
-            req.flash('error', 'Không tìm thấy ID môn học cần xóa.');
-            return res.redirect('/admin?tab=subjects');
-        }
+exports.saveNews = async (req, res) => handleMutation(req, res, async () => {
+    await saveNewsRecord({
+        actor: req.user,
+        newsId: req.body.newsId,
+        title: req.body.title,
+        content: req.body.content,
+        category: req.body.category,
+        image: req.body.image,
+        subject: req.body.subject
+    });
+}, {
+    successMessage: 'Đã lưu bài viết tin tức.',
+    fallbackPath: PAGE_CONFIG.news.path
+});
 
-        await Subject.findByIdAndDelete(subjectId);
-        
-        req.flash('success', 'Đã xóa môn học!');
-        res.redirect('/admin?tab=subjects');
-        
-    } catch (err) {
-        console.error("Lỗi Delete Subject:", err);
-        req.flash('error', 'Lỗi khi xóa: ' + err.message);
-        res.redirect('/admin?tab=subjects');
-    }
-};
+exports.createNews = exports.saveNews;
+
+exports.deleteNews = async (req, res) => handleMutation(req, res, async () => {
+    await deleteNewsRecord({
+        actor: req.user,
+        newsId: req.body.newsId || req.params.id
+    });
+}, {
+    successMessage: 'Đã xóa bài viết tin tức.',
+    fallbackPath: PAGE_CONFIG.news.path
+});
+
+exports.toggleLessonPublish = async (req, res) => handleMutation(req, res, async () => {
+    await toggleLessonPublish({
+        actor: req.user,
+        lessonId: req.body.lessonId || req.params.id,
+        isPublished: req.body.isPublished === 'on' || req.body.isPublished === true || req.body.isPublished === 'true'
+    });
+}, {
+    successMessage: 'Đã cập nhật trạng thái publish của bài học.',
+    fallbackPath: PAGE_CONFIG.lessons.path
+});
+
+exports.updateQuestionStatus = async (req, res) => handleMutation(req, res, async () => {
+    await updateQuestionStatus({
+        actor: req.user,
+        questionId: req.body.questionId || req.params.id,
+        status: req.body.status
+    });
+}, {
+    successMessage: 'Đã cập nhật trạng thái câu hỏi.',
+    fallbackPath: PAGE_CONFIG.questions.path
+});
+
+exports.moderateComment = async (req, res) => handleMutation(req, res, async () => {
+    await moderateComment({
+        actor: req.user,
+        commentId: req.body.commentId || req.params.id,
+        action: req.body.action
+    });
+}, {
+    successMessage: 'Đã cập nhật moderation cho bình luận.',
+    fallbackPath: PAGE_CONFIG.comments.path
+});
+
+exports.reviewGuildApplication = async (req, res) => handleMutation(req, res, async () => {
+    await reviewGuildApplicationFromAdmin({
+        actor: req.user,
+        applicationId: req.body.applicationId || req.params.id,
+        decision: req.body.decision,
+        reviewNote: req.body.reviewNote
+    });
+}, {
+    successMessage: 'Đã xử lý đơn bang hội.',
+    fallbackPath: PAGE_CONFIG.guildApplications.path
+});
+
+exports.saveAchievement = async (req, res) => handleMutation(req, res, async () => {
+    await saveAchievementType({
+        actor: req.user,
+        achievementId: req.body.achievementId,
+        id: req.body.id,
+        name: req.body.name,
+        description: req.body.description,
+        icon: req.body.icon,
+        color: req.body.color,
+        category: req.body.category,
+        points: req.body.points,
+        rarity: req.body.rarity,
+        conditionType: req.body.conditionType,
+        conditionValue: req.body.conditionValue,
+        conditionOperator: req.body.conditionOperator,
+        unlockMessage: req.body.unlockMessage,
+        isHidden: req.body.isHidden,
+        isActive: req.body.isActive
+    });
+}, {
+    successMessage: 'Đã lưu achievement type.',
+    fallbackPath: PAGE_CONFIG.achievements.path
+});

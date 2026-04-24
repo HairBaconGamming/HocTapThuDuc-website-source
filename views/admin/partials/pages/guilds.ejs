@@ -1,0 +1,51 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar filter-bar-extended">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm tên hoặc mô tả bang hội">
+        <select name="status">
+            <option value="">Tất cả chế độ</option>
+            <option value="open" <%= filters.status === 'open' ? 'selected' : '' %>>Open</option>
+            <option value="approval" <%= filters.status === 'approval' ? 'selected' : '' %>>Approval</option>
+            <option value="invite" <%= filters.status === 'invite' ? 'selected' : '' %>>Invite</option>
+            <option value="private" <%= filters.status === 'private' ? 'selected' : '' %>>Private</option>
+        </select>
+        <select name="sort">
+            <option value="members_desc" <%= filters.sort === 'members_desc' ? 'selected' : '' %>>Nhiều member</option>
+            <option value="xp_desc" <%= filters.sort === 'xp_desc' ? 'selected' : '' %>>Tree XP cao</option>
+            <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Tên A-Z</option>
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Guild</th>
+                    <th>Leader</th>
+                    <th>Join mode</th>
+                    <th>Members / XP</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% guilds.forEach((guild) => { %>
+                    <tr class="<%= selectedGuild && String(selectedGuild._id) === String(guild._id) ? 'is-selected' : '' %>">
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= guild.name %></strong>
+                                <span><%= guild.description || 'Không có mô tả' %></span>
+                            </div>
+                        </td>
+                        <td><%= guild.leader?.username || 'Ẩn danh' %></td>
+                        <td><span class="admin-badge info"><%= guild.settings?.joinMode || 'open' %></span></td>
+                        <td><%= formatNumber(guild.memberCount) %> · <%= formatNumber(guild.treeXp) %> XP</td>
+                        <td><a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: guild._id, page: pagination.page }) %>">Chi tiết</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

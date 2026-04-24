@@ -1,0 +1,40 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Guild detail</span>
+        <h3><%= selectedGuild ? selectedGuild.name : 'Chọn một bang hội' %></h3>
+        <% if (selectedGuild) { %>
+            <div class="context-rows">
+                <div class="context-row"><span>Leader</span><strong><%= selectedGuild.leader?.username || 'Ẩn danh' %></strong></div>
+                <div class="context-row"><span>Slug</span><strong><%= selectedGuild.slug %></strong></div>
+                <div class="context-row"><span>Join mode</span><strong><%= selectedGuild.settings?.joinMode || 'open' %></strong></div>
+                <div class="context-row"><span>Public</span><strong><%= selectedGuild.settings?.isPublic ? 'Có' : 'Không' %></strong></div>
+                <div class="context-row"><span>Members / limit</span><strong><%= formatNumber(selectedGuild.memberCount || 0) %> / <%= formatNumber(selectedGuild.memberLimit || 0) %></strong></div>
+                <div class="context-row"><span>Tree XP</span><strong><%= formatNumber(selectedGuild.treeXp || 0) %></strong></div>
+                <div class="context-row"><span>Auto moderation</span><strong><%= selectedGuild.settings?.autoModeration?.enabled ? 'Đang bật' : 'Đang tắt' %></strong></div>
+            </div>
+
+            <% if (selectedGuild.description) { %>
+                <p class="context-copy"><%= selectedGuild.description %></p>
+            <% } %>
+        <% } else { %>
+            <p>Chọn một guild để xem tín hiệu governance, join mode và log moderation gần nhất.</p>
+        <% } %>
+    </section>
+
+    <section class="context-card">
+        <span class="context-kicker">Guild audit</span>
+        <h3>Nhịp governance gần đây</h3>
+        <% if (guildAuditRows && guildAuditRows.length > 0) { %>
+            <div class="mini-feed">
+                <% guildAuditRows.forEach((row) => { %>
+                    <div class="mini-feed-item">
+                        <strong><%= row.message %></strong>
+                        <span><%= row.actor?.username || 'System' %> · <%= formatDateTime(row.createdAt) %></span>
+                    </div>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <p>Chưa có guild audit log nào cho bang hội đang chọn.</p>
+        <% } %>
+    </section>
+</div>

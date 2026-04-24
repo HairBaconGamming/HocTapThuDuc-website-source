@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin-backoffice.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="admin-backoffice-body" data-admin-page="<%= key %>">
+    <div class="admin-shell">
+        <aside class="admin-sidebar">
+            <%- include('partials/nav') %>
+        </aside>
+
+        <section class="admin-center">
+            <header class="admin-topbar">
+                <div class="admin-title-stack">
+                    <span class="admin-kicker">Back office</span>
+                    <h1><%= pageTitle %></h1>
+                    <p><%= pageDescription %></p>
+                </div>
+
+                <div class="admin-topbar-meta">
+                    <a href="/" class="admin-topbar-link">
+                        <i class="fas fa-home"></i>
+                        <span>Trang chủ</span>
+                    </a>
+                    <a href="/logout" class="admin-topbar-link admin-topbar-link-danger">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span>Đăng xuất</span>
+                    </a>
+                    <div class="admin-identity">
+                        <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= user.username %>">
+                        <div>
+                            <strong><%= user.username %></strong>
+                            <span>Admin đang trực tuyến</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <% if (message && message.type) { %>
+                <div class="admin-flash admin-flash-<%= message.type %>">
+                    <i class="fas <%= message.type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check' %>"></i>
+                    <span><%= message.message %></span>
+                </div>
+            <% } %>
+
+            <section class="admin-summary-grid">
+                <% summaryCards.forEach((card) => { %>
+                    <article class="summary-card summary-card-<%= card.tone %>">
+                        <div class="summary-card-icon">
+                            <i class="fas <%= card.icon %>"></i>
+                        </div>
+                        <div class="summary-card-copy">
+                            <span><%= card.label %></span>
+                            <strong><%= card.value %></strong>
+                            <% if (card.meta) { %>
+                                <small><%= card.meta %></small>
+                            <% } %>
+                        </div>
+                    </article>
+                <% }) %>
+            </section>
+
+            <main class="admin-page-content">
+                <%- include(String(mainPartial || '').replace(/^admin\//, '')) %>
+            </main>
+        </section>
+
+        <aside class="admin-context-rail">
+            <%- include(String(asidePartial || '').replace(/^admin\//, '')) %>
+        </aside>
+    </div>
+
+    <script id="admin-page-data" type="application/json"><%- JSON.stringify(clientData || {}) %></script>
+    <script src="/js/admin-backoffice.js"></script>
+</body>
+</html>

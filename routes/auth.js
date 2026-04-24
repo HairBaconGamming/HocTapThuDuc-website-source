@@ -60,7 +60,7 @@ function captureAuthReturnTo(req) {
 async function finalizeLogin(req, res, user, options = {}) {
     try {
         user.lastLoginIP = req.ip;
-        user.lastloginUA = req.get("User-Agent") || "Unknown";
+        user.lastLoginUA = req.get("User-Agent") || "Unknown";
         await user.save();
 
         const newAchievements = [];

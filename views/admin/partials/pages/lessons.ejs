@@ -1,0 +1,82 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar filter-bar-extended">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm bài học hoặc category">
+        <select name="status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Published</option>
+            <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Draft</option>
+            <option value="pro" <%= filters.status === 'pro' ? 'selected' : '' %>>PRO</option>
+        </select>
+        <select name="subjectId">
+            <option value="">Tất cả môn</option>
+            <% subjectOptions.forEach((subject) => { %>
+                <option value="<%= subject._id %>" <%= filters.subjectId === String(subject._id) ? 'selected' : '' %>><%= subject.name %></option>
+            <% }) %>
+        </select>
+        <select name="authorId">
+            <option value="">Tất cả tác giả</option>
+            <% authorOptions.forEach((author) => { %>
+                <option value="<%= author._id %>" <%= filters.authorId === String(author._id) ? 'selected' : '' %>><%= author.username %></option>
+            <% }) %>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Cũ nhất</option>
+            <option value="title_asc" <%= filters.sort === 'title_asc' ? 'selected' : '' %>>Tên A-Z</option>
+            <option value="views_desc" <%= filters.sort === 'views_desc' ? 'selected' : '' %>>Views cao trước</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Bài học</th>
+                    <th>Context</th>
+                    <th>Scope</th>
+                    <th>Views</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% lessons.forEach((lesson) => { %>
+                    <tr>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= lesson.title %></strong>
+                                <span><%= lesson.category || 'Không phân loại' %></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= lesson.subjectId?.name || 'Chưa gắn môn' %></strong>
+                                <span><%= lesson.courseId?.title || 'Chưa gắn khóa' %></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="badge-row">
+                                <span class="admin-badge <%= lesson.isPublished ? 'success' : 'warning' %>"><%= lesson.isPublished ? 'Published' : 'Draft' %></span>
+                                <% if (lesson.isPro || lesson.isProOnly) { %><span class="admin-badge info">PRO</span><% } %>
+                            </div>
+                        </td>
+                        <td><%= formatNumber(lesson.views || 0) %></td>
+                        <td>
+                            <div class="table-actions">
+                                <a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(`/admin/content/lessons/${lesson._id}/edit`, {}, { returnTo: currentUrl }) %>">Studio</a>
+                                <form method="POST" action="/admin/content/lessons/<%= lesson._id %>/publish">
+                                    <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                                    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                                    <input type="hidden" name="isPublished" value="<%= lesson.isPublished ? '' : 'on' %>">
+                                    <button class="admin-btn <%= lesson.isPublished ? 'admin-btn-warning' : 'admin-btn-success' %>" type="submit"><%= lesson.isPublished ? 'Ẩn' : 'Publish' %></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

@@ -1,0 +1,75 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Achievement editor</span>
+        <h3><%= selectedAchievement ? 'Cập nhật achievement type' : 'Tạo achievement type mới' %></h3>
+
+        <% if (selectedAchievement) { %>
+            <div class="context-rows">
+                <div class="context-row"><span>Mở khóa</span><strong><%= formatNumber(selectedAchievementUnlocks || 0) %> user</strong></div>
+                <div class="context-row"><span>Tạo lúc</span><strong><%= formatDateTime(selectedAchievement.createdAt) %></strong></div>
+                <div class="context-row"><span>Cập nhật</span><strong><%= formatDateTime(selectedAchievement.updatedAt) %></strong></div>
+            </div>
+        <% } %>
+
+        <form method="POST" action="/admin/gamification/achievements/save" class="context-form">
+            <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+            <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+            <input type="hidden" name="achievementId" value="<%= selectedAchievement ? selectedAchievement._id : '' %>">
+
+            <div class="context-form-grid">
+                <label><span>ID</span><input type="text" name="id" value="<%= selectedAchievement ? selectedAchievement.id : '' %>" required></label>
+                <label><span>Tên</span><input type="text" name="name" value="<%= selectedAchievement ? selectedAchievement.name : '' %>" required></label>
+                <label><span>Icon</span><input type="text" name="icon" value="<%= selectedAchievement ? selectedAchievement.icon : '🏆' %>"></label>
+                <label><span>Màu</span><input type="color" name="color" value="<%= selectedAchievement ? selectedAchievement.color : '#0aa889' %>"></label>
+                <label>
+                    <span>Category</span>
+                    <select name="category">
+                        <% ['learning', 'engagement', 'challenge', 'social', 'milestone'].forEach((category) => { %>
+                            <option value="<%= category %>" <%= selectedAchievement && selectedAchievement.category === category ? 'selected' : '' %>><%= category %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>
+                    <span>Rarity</span>
+                    <select name="rarity">
+                        <% ['common', 'rare', 'epic', 'legendary'].forEach((rarity) => { %>
+                            <option value="<%= rarity %>" <%= selectedAchievement && selectedAchievement.rarity === rarity ? 'selected' : '' %>><%= rarity %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label><span>Points</span><input type="number" name="points" min="0" value="<%= selectedAchievement ? selectedAchievement.points : 0 %>"></label>
+                <label>
+                    <span>Condition type</span>
+                    <select name="conditionType">
+                        <% ['lessons_completed', 'points_reached', 'streak_days', 'courses_enrolled', 'custom', 'plants_planted', 'plants_harvested', 'plants_watered', 'decorations_placed', 'gold_collected', 'plant_survival_streak', 'level_reached'].forEach((conditionType) => { %>
+                            <option value="<%= conditionType %>" <%= selectedAchievement && selectedAchievement.condition?.type === conditionType ? 'selected' : '' %>><%= conditionType %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>
+                    <span>Operator</span>
+                    <select name="conditionOperator">
+                        <% ['>=', '==', '>', '<=', '<'].forEach((operator) => { %>
+                            <option value="<%= operator %>" <%= selectedAchievement && selectedAchievement.condition?.operator === operator ? 'selected' : '' %>><%= operator %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label><span>Condition value</span><input type="number" name="conditionValue" min="0" value="<%= selectedAchievement ? selectedAchievement.condition?.value : 1 %>"></label>
+            </div>
+
+            <label><span>Mô tả</span><textarea name="description" rows="4"><%= selectedAchievement ? selectedAchievement.description : '' %></textarea></label>
+            <label><span>Unlock message</span><textarea name="unlockMessage" rows="3"><%= selectedAchievement ? selectedAchievement.unlockMessage : '' %></textarea></label>
+
+            <label class="checkbox-row">
+                <input type="checkbox" name="isActive" <%= !selectedAchievement || selectedAchievement.isActive ? 'checked' : '' %>>
+                <span>Đang active</span>
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" name="isHidden" <%= selectedAchievement && selectedAchievement.isHidden ? 'checked' : '' %>>
+                <span>Ẩn với user</span>
+            </label>
+
+            <button class="admin-btn admin-btn-primary" type="submit"><%= selectedAchievement ? 'Lưu achievement' : 'Tạo achievement' %></button>
+        </form>
+    </section>
+</div>

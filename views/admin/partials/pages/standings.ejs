@@ -1,0 +1,42 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar">
+        <select name="status">
+            <option value="">Tất cả chu kỳ</option>
+            <option value="weekly" <%= filters.status === 'weekly' ? 'selected' : '' %>>Weekly</option>
+            <option value="monthly" <%= filters.status === 'monthly' ? 'selected' : '' %>>Monthly</option>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="rank_asc" <%= filters.sort === 'rank_asc' ? 'selected' : '' %>>Rank tăng dần</option>
+            <option value="xp_desc" <%= filters.sort === 'xp_desc' ? 'selected' : '' %>>XP cao trước</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Guild</th>
+                    <th>Cycle</th>
+                    <th>Rank</th>
+                    <th>XP / Points / Minutes</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% standings.forEach((standing) => { %>
+                    <tr>
+                        <td><%= standing.guild?.name || 'Ẩn danh' %></td>
+                        <td><%= standing.periodType %> · <%= standing.periodKey %></td>
+                        <td>#<%= standing.rank %></td>
+                        <td><%= formatNumber(standing.totalXp) %> / <%= formatNumber(standing.totalPoints) %> / <%= formatNumber(standing.totalStudyMinutes) %></td>
+                        <td><a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: standing._id, page: pagination.page }) %>">Chi tiết</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

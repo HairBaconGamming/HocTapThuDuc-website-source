@@ -1,0 +1,50 @@
+<section class="admin-panel admin-panel-grid">
+    <article class="admin-card admin-card-span">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Banned users</span>
+                <h2>Tài khoản đang bị khóa</h2>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Last login IP</th>
+                        <th>User-agent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% bannedUsers.forEach((item) => { %>
+                        <tr>
+                            <td><%= item.username %></td>
+                            <td><%= item.email || 'Chưa có' %></td>
+                            <td><%= item.lastLoginIP || 'Chưa có' %></td>
+                            <td><%= item.lastLoginUA || 'Chưa có' %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <%- include('../pagination') %>
+    </article>
+
+    <article class="admin-card">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Ban entry</span>
+                <h2>Fingerprint mới nhất</h2>
+            </div>
+        </div>
+        <div class="mini-feed">
+            <% recentBanEntries.forEach((entry) => { %>
+                <div class="mini-feed-item">
+                    <strong><%= entry.ip %></strong>
+                    <span><%= formatDateTime(entry.bannedAt) %></span>
+                </div>
+            <% }) %>
+        </div>
+    </article>
+</section>

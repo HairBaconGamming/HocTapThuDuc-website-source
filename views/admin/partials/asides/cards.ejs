@@ -1,0 +1,38 @@
+<div class="context-stack">
+    <% if (contextPanels && contextPanels.length > 0) { %>
+        <% contextPanels.forEach((panel) => { %>
+            <section class="context-card">
+                <span class="context-kicker"><%= panel.kicker %></span>
+                <h3><%= panel.title %></h3>
+
+                <% if (panel.rows && panel.rows.length > 0) { %>
+                    <div class="context-rows">
+                        <% panel.rows.forEach((row) => { %>
+                            <div class="context-row">
+                                <span><%= row.label %></span>
+                                <strong><%= row.value %></strong>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+
+                <% if (panel.actions && panel.actions.length > 0) { %>
+                    <div class="context-actions">
+                        <% panel.actions.forEach((action) => { %>
+                            <a href="<%= action.href %>" class="context-action context-action-<%= action.tone || 'neutral' %>">
+                                <i class="fas <%= action.icon %>"></i>
+                                <span><%= action.label %></span>
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </section>
+        <% }) %>
+    <% } else { %>
+        <section class="context-card">
+            <span class="context-kicker">Context rail</span>
+            <h3>Không có dữ liệu bổ sung</h3>
+            <p>Chọn một bản ghi cụ thể hoặc thay đổi bộ lọc để xem thêm ngữ cảnh vận hành.</p>
+        </section>
+    <% } %>
+</div>

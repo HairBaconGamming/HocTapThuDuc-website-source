@@ -1,0 +1,41 @@
+<section class="admin-panel admin-panel-grid">
+    <article class="admin-card admin-card-span">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Trend</span>
+                <h2>Visits · Study minutes · Signups (30 ngày)</h2>
+            </div>
+        </div>
+        <div class="chart-shell">
+            <canvas id="trafficTrendChart"></canvas>
+        </div>
+    </article>
+
+    <article class="admin-card admin-card-span">
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Visits</th>
+                        <th>Study minutes</th>
+                        <th>Active users</th>
+                        <th>New users</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% trafficRows.forEach((row) => { %>
+                        <tr>
+                            <td><%= row.label %></td>
+                            <td><%= formatNumber(row.visits) %></td>
+                            <td><%= formatNumber(row.minutes) %></td>
+                            <td><%= formatNumber(row.activeUsers) %></td>
+                            <td><%= formatNumber(row.newUsers) %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <%- include('../pagination') %>
+    </article>
+</section>

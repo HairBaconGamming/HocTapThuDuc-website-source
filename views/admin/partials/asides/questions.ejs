@@ -1,0 +1,34 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Question moderation</span>
+        <h3><%= selectedQuestion ? selectedQuestion.title : 'Chọn một câu hỏi' %></h3>
+        <% if (selectedQuestion) { %>
+            <div class="context-rows">
+                <div class="context-row"><span>Tác giả</span><strong><%= selectedQuestion.author?.username || 'Ẩn danh' %></strong></div>
+                <div class="context-row"><span>Môn / khối</span><strong><%= selectedQuestion.subject %> · <%= selectedQuestion.grade %></strong></div>
+                <div class="context-row"><span>Trạng thái</span><strong><%= selectedQuestion.status %></strong></div>
+                <div class="context-row"><span>Bounty</span><strong><%= formatNumber(selectedQuestion.bountyAmount || 0) %></strong></div>
+                <div class="context-row"><span>Lượt xem / trả lời</span><strong><%= formatNumber(selectedQuestion.viewCount || 0) %> / <%= formatNumber(selectedQuestion.answerCount || 0) %></strong></div>
+                <div class="context-row"><span>Tạo lúc</span><strong><%= formatDateTime(selectedQuestion.createdAt) %></strong></div>
+            </div>
+
+            <p class="context-copy"><%= selectedQuestion.content %></p>
+
+            <form method="POST" action="/admin/community/questions/<%= selectedQuestion._id %>/status" class="context-form">
+                <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                <label>
+                    <span>Cập nhật trạng thái</span>
+                    <select name="status">
+                        <% ['open', 'resolved', 'closed'].forEach((status) => { %>
+                            <option value="<%= status %>" <%= selectedQuestion.status === status ? 'selected' : '' %>><%= status %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <button class="admin-btn admin-btn-primary" type="submit">Lưu moderation</button>
+            </form>
+        <% } else { %>
+            <p>Chọn một câu hỏi từ bảng để xem ngữ cảnh, tín hiệu chất lượng và đổi trạng thái ngay trong rail này.</p>
+        <% } %>
+    </section>
+</div>

@@ -1,0 +1,77 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar filter-bar-extended">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm tiêu đề, nội dung, category">
+        <select name="status">
+            <option value="">Tất cả danh mục</option>
+            <% ['Thông báo', 'Học tập', 'Tuyển sinh', 'Tài khoản PRO'].forEach((category) => { %>
+                <option value="<%= category %>" <%= filters.status === category ? 'selected' : '' %>><%= category %></option>
+            <% }) %>
+        </select>
+        <select name="subjectId">
+            <option value="">Tất cả môn</option>
+            <% subjectOptions.forEach((subject) => { %>
+                <option value="<%= subject._id %>" <%= filters.subjectId === String(subject._id) ? 'selected' : '' %>><%= subject.name %></option>
+            <% }) %>
+        </select>
+        <select name="authorId">
+            <option value="">Tất cả tác giả</option>
+            <% authorOptions.forEach((author) => { %>
+                <option value="<%= author._id %>" <%= filters.authorId === String(author._id) ? 'selected' : '' %>><%= author.username %></option>
+            <% }) %>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Cũ nhất</option>
+            <option value="title_asc" <%= filters.sort === 'title_asc' ? 'selected' : '' %>>Tên A-Z</option>
+        </select>
+        <input type="date" name="dateFrom" value="<%= filters.dateFrom %>">
+        <input type="date" name="dateTo" value="<%= filters.dateTo %>">
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Bài viết</th>
+                    <th>Danh mục</th>
+                    <th>Môn / Tác giả</th>
+                    <th>Ngày đăng</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% newsItems.forEach((item) => { %>
+                    <tr class="<%= selectedNews && String(selectedNews._id) === String(item._id) ? 'is-selected' : '' %>">
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= item.title %></strong>
+                                <span><%= String(item.content || '').slice(0, 80) %></span>
+                            </div>
+                        </td>
+                        <td><span class="admin-badge info"><%= item.category %></span></td>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= item.subject?.name || 'Không gắn môn' %></strong>
+                                <span><%= item.postedBy?.username || 'Ẩn danh' %></span>
+                            </div>
+                        </td>
+                        <td><%= formatDate(item.createdAt) %></td>
+                        <td>
+                            <div class="table-actions">
+                                <a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: item._id, page: pagination.page }) %>"><%= selectedNews && String(selectedNews._id) === String(item._id) ? 'Đang sửa' : 'Sửa' %></a>
+                                <form method="POST" action="/admin/content/news/<%= item._id %>/delete" data-confirm="Xóa bài viết <%= item.title %>?">
+                                    <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                                    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                                    <button class="admin-btn admin-btn-danger" type="submit">Xóa</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

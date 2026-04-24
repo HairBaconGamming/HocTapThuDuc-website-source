@@ -1,0 +1,54 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm id, tên, mô tả achievement">
+        <select name="status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+            <option value="hidden" <%= filters.status === 'hidden' ? 'selected' : '' %>>Hidden</option>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Tên A-Z</option>
+            <option value="points_desc" <%= filters.sort === 'points_desc' ? 'selected' : '' %>>Points cao</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Achievement</th>
+                    <th>Category / Rarity</th>
+                    <th>Condition</th>
+                    <th>Flags</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% achievements.forEach((achievement) => { %>
+                    <tr class="<%= selectedAchievement && String(selectedAchievement._id) === String(achievement._id) ? 'is-selected' : '' %>">
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= achievement.icon %> <%= achievement.name %></strong>
+                                <span><%= achievement.id %></span>
+                            </div>
+                        </td>
+                        <td><%= achievement.category %> · <%= achievement.rarity %></td>
+                        <td><%= achievement.condition?.type %> <%= achievement.condition?.operator %> <%= achievement.condition?.value %></td>
+                        <td>
+                            <div class="badge-row">
+                                <span class="admin-badge <%= achievement.isActive ? 'success' : 'warning' %>"><%= achievement.isActive ? 'Active' : 'Inactive' %></span>
+                                <% if (achievement.isHidden) { %><span class="admin-badge info">Hidden</span><% } %>
+                            </div>
+                        </td>
+                        <td><a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: achievement._id, page: pagination.page }) %>">Sửa</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

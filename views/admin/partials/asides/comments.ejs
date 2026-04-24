@@ -1,0 +1,31 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Comment moderation</span>
+        <h3><%= selectedComment ? 'Bình luận đang chọn' : 'Chọn một bình luận' %></h3>
+        <% if (selectedComment) { %>
+            <% const replyCount = Array.isArray(selectedComment.replies) ? selectedComment.replies.length : 0; %>
+            <div class="context-rows">
+                <div class="context-row"><span>Lesson</span><strong><%= selectedComment.lesson?.title || 'Không rõ bài học' %></strong></div>
+                <div class="context-row"><span>Tác giả</span><strong><%= selectedComment.user?.username || 'Ẩn danh' %></strong></div>
+                <div class="context-row"><span>Trạng thái</span><strong><%= selectedComment.isDeleted ? 'Đã ẩn' : 'Đang hiển thị' %></strong></div>
+                <div class="context-row"><span>Likes / replies</span><strong><%= formatNumber(selectedComment.likes || 0) %> / <%= formatNumber(replyCount) %></strong></div>
+                <div class="context-row"><span>Tạo lúc</span><strong><%= formatDateTime(selectedComment.createdAt) %></strong></div>
+            </div>
+
+            <% if (selectedComment.contextAnchor?.selectedText) { %>
+                <div class="context-quote"><%= selectedComment.contextAnchor.selectedText %></div>
+            <% } %>
+
+            <p class="context-copy"><%= selectedComment.content %></p>
+
+            <form method="POST" action="/admin/community/comments/<%= selectedComment._id %>/moderate" class="context-form" data-confirm="<%= selectedComment.isDeleted ? 'Khôi phục bình luận này?' : 'Ẩn bình luận này?' %>">
+                <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                <input type="hidden" name="action" value="<%= selectedComment.isDeleted ? 'restore' : 'delete' %>">
+                <button class="admin-btn <%= selectedComment.isDeleted ? 'admin-btn-success' : 'admin-btn-danger' %>" type="submit"><%= selectedComment.isDeleted ? 'Khôi phục' : 'Ẩn bình luận' %></button>
+            </form>
+        <% } else { %>
+            <p>Chọn một bình luận để xem đoạn trích context, số reply và thao tác ẩn/khôi phục nhanh.</p>
+        <% } %>
+    </section>
+</div>

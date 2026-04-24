@@ -10,6 +10,10 @@ async function banCheck(req, res, next) {
       return next(); // Allow request if DB is down
     }
 
+    if (req.user && req.user.isBanned) {
+      return res.status(403).send("Your access has been permanently restricted.");
+    }
+
     // Retrieve identifying info:
     const ip = req.ip;
     const userAgent = req.get("User-Agent") || "";
@@ -17,12 +21,22 @@ async function banCheck(req, res, next) {
 
     // Find any active ban entry with timeout protection
     const ban = await BanEntry.findOne({
-      $or: [
-        { ip: ip },
-        { userAgent: userAgent },
-        { banToken: banToken }
-      ],
-      expiresAt: { $gt: new Date() }
+      $and: [
+        {
+          $or: [
+            { ip: ip },
+            { userAgent: userAgent },
+            { banToken: banToken }
+          ]
+        },
+        {
+          $or: [
+            { expiresAt: { $gt: new Date() } },
+            { expiresAt: null },
+            { expiresAt: { $exists: false } }
+          ]
+        }
+      ]
     });
 
     if (ban) {

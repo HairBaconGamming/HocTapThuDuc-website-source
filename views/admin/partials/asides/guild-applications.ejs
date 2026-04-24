@@ -1,0 +1,40 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Application review</span>
+        <h3><%= selectedApplication ? `Đơn vào ${selectedApplication.guild?.name || 'guild'}` : 'Chọn một đơn' %></h3>
+        <% if (selectedApplication) { %>
+            <div class="context-rows">
+                <div class="context-row"><span>Applicant</span><strong><%= selectedApplication.applicant?.username || 'Ẩn danh' %></strong></div>
+                <div class="context-row"><span>Level</span><strong><%= formatNumber(selectedApplication.applicant?.level || 0) %></strong></div>
+                <div class="context-row"><span>Guild</span><strong><%= selectedApplication.guild?.name || 'Không rõ' %></strong></div>
+                <div class="context-row"><span>Trạng thái</span><strong><%= selectedApplication.status %></strong></div>
+                <div class="context-row"><span>Reviewed by</span><strong><%= selectedApplication.reviewedBy?.username || 'Chưa có' %></strong></div>
+                <div class="context-row"><span>Reviewed at</span><strong><%= formatDateTime(selectedApplication.reviewedAt) %></strong></div>
+            </div>
+
+            <% if (selectedApplication.message) { %>
+                <p class="context-copy"><%= selectedApplication.message %></p>
+            <% } %>
+
+            <form method="POST" action="/admin/community/guild-applications/<%= selectedApplication._id %>/review" class="context-form">
+                <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                <label>
+                    <span>Quyết định</span>
+                    <select name="decision">
+                        <% ['approved', 'rejected', 'cancelled'].forEach((decision) => { %>
+                            <option value="<%= decision %>" <%= selectedApplication.status === decision ? 'selected' : '' %>><%= decision %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>
+                    <span>Review note</span>
+                    <textarea name="reviewNote" rows="4" placeholder="Lý do hoặc ghi chú nội bộ"><%= selectedApplication.reviewNote || '' %></textarea>
+                </label>
+                <button class="admin-btn admin-btn-primary" type="submit">Lưu quyết định</button>
+            </form>
+        <% } else { %>
+            <p>Chọn một guild application để duyệt, từ chối hoặc hủy trực tiếp ở panel ngữ cảnh.</p>
+        <% } %>
+    </section>
+</div>

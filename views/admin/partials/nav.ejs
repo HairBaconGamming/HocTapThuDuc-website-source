@@ -1,0 +1,25 @@
+<div class="admin-brand">
+    <div class="admin-brand-mark">
+        <i class="fas fa-compass-drafting"></i>
+    </div>
+    <div>
+        <strong>Admin Ops</strong>
+        <span>HocTapThuDuc</span>
+    </div>
+</div>
+
+<div class="admin-nav-groups">
+    <% navGroups.forEach((group) => { %>
+        <section class="admin-nav-group">
+            <span class="admin-nav-group-label"><%= group.label %></span>
+            <div class="admin-nav-items">
+                <% group.items.forEach((item) => { %>
+                    <a href="<%= item.href %>" class="admin-nav-item <%= item.active ? 'is-active' : '' %>">
+                        <i class="fas <%= item.icon %>"></i>
+                        <span><%= item.label %></span>
+                    </a>
+                <% }) %>
+            </div>
+        </section>
+    <% }) %>
+</div>

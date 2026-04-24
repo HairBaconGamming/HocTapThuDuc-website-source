@@ -1,0 +1,20 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Subject form</span>
+        <h3><%= selectedSubject ? 'Cập nhật môn học' : 'Tạo môn học mới' %></h3>
+        <form method="POST" action="/admin/content/subjects/save" class="context-form">
+            <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+            <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+            <input type="hidden" name="subjectId" value="<%= selectedSubject ? selectedSubject._id : '' %>">
+            <label>
+                <span>Tên môn</span>
+                <input type="text" name="name" value="<%= selectedSubject ? selectedSubject.name : '' %>" required>
+            </label>
+            <label>
+                <span>Icon URL</span>
+                <input type="text" name="image" value="<%= selectedSubject ? selectedSubject.image : '' %>" placeholder="https://...">
+            </label>
+            <button class="admin-btn admin-btn-primary" type="submit"><%= selectedSubject ? 'Lưu thay đổi' : 'Tạo môn học' %></button>
+        </form>
+    </section>
+</div>

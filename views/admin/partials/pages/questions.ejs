@@ -1,0 +1,63 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar filter-bar-extended">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm tiêu đề hoặc nội dung câu hỏi">
+        <select name="status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="open" <%= filters.status === 'open' ? 'selected' : '' %>>Open</option>
+            <option value="resolved" <%= filters.status === 'resolved' ? 'selected' : '' %>>Resolved</option>
+            <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
+            <option value="unanswered" <%= filters.status === 'unanswered' ? 'selected' : '' %>>Unanswered</option>
+        </select>
+        <select name="subjectId">
+            <option value="">Tất cả môn</option>
+            <% questionSubjects.forEach((subject) => { %>
+                <option value="<%= subject %>" <%= filters.subjectId === subject ? 'selected' : '' %>><%= subject %></option>
+            <% }) %>
+        </select>
+        <select name="authorId">
+            <option value="">Tất cả tác giả</option>
+            <% authorOptions.forEach((author) => { %>
+                <option value="<%= author._id %>" <%= filters.authorId === String(author._id) ? 'selected' : '' %>><%= author.username %></option>
+            <% }) %>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="bounty_desc" <%= filters.sort === 'bounty_desc' ? 'selected' : '' %>>Bounty cao</option>
+            <option value="answers_desc" <%= filters.sort === 'answers_desc' ? 'selected' : '' %>>Nhiều trả lời</option>
+            <option value="views_desc" <%= filters.sort === 'views_desc' ? 'selected' : '' %>>Nhiều views</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Câu hỏi</th>
+                    <th>Tác giả</th>
+                    <th>Subject / Grade</th>
+                    <th>Tín hiệu</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% questions.forEach((question) => { %>
+                    <tr class="<%= selectedQuestion && String(selectedQuestion._id) === String(question._id) ? 'is-selected' : '' %>">
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= question.title %></strong>
+                                <span><%= String(question.content || '').slice(0, 80) %></span>
+                            </div>
+                        </td>
+                        <td><%= question.author?.username || 'Ẩn danh' %></td>
+                        <td><%= question.subject %> · <%= question.grade %></td>
+                        <td><%= question.answerCount %> answers · <%= formatNumber(question.viewCount) %> views</td>
+                        <td><a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: question._id, page: pagination.page }) %>">Chi tiết</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

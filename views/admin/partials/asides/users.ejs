@@ -1,0 +1,56 @@
+<div class="context-stack">
+    <section class="context-card">
+        <span class="context-kicker">Chi tiết user</span>
+        <h3><%= selectedUser ? selectedUser.username : 'Chọn một tài khoản' %></h3>
+        <% if (selectedUser) { %>
+            <div class="context-rows">
+                <div class="context-row"><span>Email</span><strong><%= selectedUser.email || 'Chưa có' %></strong></div>
+                <div class="context-row"><span>Last login IP</span><strong><%= selectedUser.lastLoginIP || 'Chưa ghi nhận' %></strong></div>
+                <div class="context-row"><span>Study minutes</span><strong><%= formatNumber(selectedUserMetrics?.minutes || 0) %></strong></div>
+                <div class="context-row"><span>Last active</span><strong><%= formatDateTime(selectedUserMetrics?.lastActive) %></strong></div>
+            </div>
+
+            <% if (selectedUser.username === 'truonghoangnam') { %>
+                <p class="context-note">Owner account được khóa cứng quyền admin và không thể bị xóa hoặc khóa.</p>
+            <% } %>
+
+            <form method="POST" action="/admin/users/<%= selectedUser._id %>/roles" class="context-form">
+                <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+
+                <% if (user.username === 'truonghoangnam') { %>
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="isAdmin" <%= selectedUser.isAdmin ? 'checked' : '' %> <%= selectedUser.username === 'truonghoangnam' ? 'disabled' : '' %>>
+                        <span>Admin</span>
+                    </label>
+                <% } %>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="isTeacher" <%= selectedUser.isTeacher ? 'checked' : '' %> <%= selectedUser.username === 'truonghoangnam' ? 'disabled' : '' %>>
+                    <span>Teacher</span>
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="isPro" <%= selectedUser.isPro ? 'checked' : '' %> <%= selectedUser.username === 'truonghoangnam' ? 'disabled' : '' %>>
+                    <span>PRO</span>
+                </label>
+                <label>
+                    <span>PRO secret key</span>
+                    <input type="text" name="proSecretKey" value="<%= selectedUser.proSecretKey || '' %>" <%= selectedUser.username === 'truonghoangnam' ? '' : '' %>>
+                </label>
+                <button class="admin-btn admin-btn-primary" type="submit">Lưu quyền</button>
+            </form>
+
+            <% if (selectedUserLogs && selectedUserLogs.length > 0) { %>
+                <div class="mini-feed">
+                    <% selectedUserLogs.forEach((log) => { %>
+                        <div class="mini-feed-item">
+                            <strong><%= log.summary %></strong>
+                            <span><%= log.actor?.username || 'Admin' %> · <%= formatDateTime(log.createdAt) %></span>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        <% } else { %>
+            <p>Click “Chi tiết” ở bảng bên trái để mở panel cập nhật quyền, trạng thái khóa và lịch sử thao tác.</p>
+        <% } %>
+    </section>
+</div>

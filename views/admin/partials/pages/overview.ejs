@@ -1,0 +1,57 @@
+<section class="admin-panel admin-panel-grid">
+    <article class="admin-card admin-card-span">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Timeline</span>
+                <h2>Nhịp hoạt động gần nhất</h2>
+            </div>
+        </div>
+        <div class="activity-feed">
+            <% recentActivity.forEach((entry) => { %>
+                <div class="activity-row activity-row-<%= entry.tone %>">
+                    <div>
+                        <strong><%= entry.title %></strong>
+                        <span><%= entry.meta %></span>
+                    </div>
+                    <time><%= formatDateTime(entry.createdAt) %></time>
+                </div>
+            <% }) %>
+        </div>
+    </article>
+
+    <article class="admin-card">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Chart</span>
+                <h2>Visits · Study minutes · Signups</h2>
+            </div>
+        </div>
+        <div class="chart-shell">
+            <canvas id="overviewGrowthChart"></canvas>
+        </div>
+    </article>
+
+    <article class="admin-card">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Mix</span>
+                <h2>Cơ cấu vai trò</h2>
+            </div>
+        </div>
+        <div class="chart-shell chart-shell-compact">
+            <canvas id="overviewRoleChart"></canvas>
+        </div>
+    </article>
+
+    <article class="admin-card admin-card-span">
+        <div class="panel-heading">
+            <div>
+                <span class="panel-kicker">Top subjects</span>
+                <h2>Phân bổ course theo môn</h2>
+            </div>
+        </div>
+        <div class="chart-shell">
+            <canvas id="overviewContentChart"></canvas>
+        </div>
+    </article>
+</section>
