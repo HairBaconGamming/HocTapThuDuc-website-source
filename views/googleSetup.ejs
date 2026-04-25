@@ -6,8 +6,9 @@
     <div class="auth-bg-blobs">
         <div class="auth-blob auth-blob-1"></div>
         <div class="auth-blob auth-blob-2"></div>
+        <div class="auth-blob auth-blob-3"></div>
     </div>
-    <div class="auth-hero-panel" style="background: linear-gradient(135deg, #f59e0b, #ea580c);">
+    <div class="auth-hero-panel">
         <div class="auth-hero-bg">
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="50,15 90,85 10,85" fill="currentColor"/>
@@ -27,7 +28,7 @@
         <div class="auth-form-container">
             <div class="auth-form-header">
                 <% if (pendingGoogleUser && pendingGoogleUser.avatar) { %>
-                    <img src="<%= pendingGoogleUser.avatar %>" alt="Google Avatar" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #f59e0b; padding: 3px;">
+                    <img src="<%= pendingGoogleUser.avatar %>" alt="Google Avatar" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; padding: 3px;">
                 <% } else { %>
                     <div style="font-size: 3rem; margin-bottom: 10px;">🌟</div>
                 <% } %>
@@ -60,11 +61,11 @@
                     </select>
                 </div>
 
-                <button type="submit" class="auth-btn-primary" style="background: #ea580c;">🚀 Hoàn tất & Vào lớp</button>
+                <button type="submit" class="auth-btn-primary">🚀 Hoàn tất & Vào lớp</button>
             </form>
 
             <div class="auth-switch">
-                <a href="/login" style="color: #ea580c;">Hủy bỏ & Quay lại</a>
+                <a href="/login">Hủy bỏ & Quay lại</a>
             </div>
         </div>
     </div>
