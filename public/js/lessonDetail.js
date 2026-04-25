@@ -1497,7 +1497,6 @@ const StudyManager = {
     init() {
         if (window.LESSON_VIEW_STATE?.isCompleted) {
             document.getElementById('lessonStudyBanner')?.setAttribute('hidden', 'hidden');
-            return;
         }
         this.rewardPreview = this.getRewardAmountPreview();
         this.createUI();
