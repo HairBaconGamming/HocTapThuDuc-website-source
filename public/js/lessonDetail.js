@@ -2,8 +2,17 @@ const LESSON_STORAGE_PREFIX = 'lesson-detail-v3:';
 let tocObserver = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    LessonWorkspace.init();
-    if (typeof StudyManager !== 'undefined') StudyManager.init();
+    try {
+        LessonWorkspace.init();
+    } catch (error) {
+        console.error('LessonWorkspace init failed:', error);
+    }
+
+    try {
+        if (typeof StudyManager !== 'undefined') StudyManager.init();
+    } catch (error) {
+        console.error('StudyManager init failed:', error);
+    }
 });
 
 const LessonWorkspace = {
@@ -18,18 +27,26 @@ const LessonWorkspace = {
 
     init() {
         document.body.classList.add('lesson-detail-mode');
-        this.bindGlobalEvents();
-        this.applySavedLayout();
-        if (this.isAiTutorOpen()) {
-            this.setToolsDrawerState(false, false);
-        }
-        this.syncAiTutorBodyState(this.isAiTutorOpen());
-        this.initLessonContent();
-        this.initNotes();
-        this.maybeShowResumeBanner();
+
+        const safeRun = (label, fn) => {
+            try { fn(); } catch (error) { console.error(`LessonWorkspace.${label} failed:`, error); }
+        };
+
+        safeRun('bindGlobalEvents', () => this.bindGlobalEvents());
+        safeRun('applySavedLayout', () => this.applySavedLayout());
+        safeRun('aiTutor', () => {
+            if (this.isAiTutorOpen()) this.setToolsDrawerState(false, false);
+            this.syncAiTutorBodyState(this.isAiTutorOpen());
+        });
+        safeRun('initLessonContent', () => this.initLessonContent());
+        safeRun('initNotes', () => this.initNotes());
+        safeRun('maybeShowResumeBanner', () => this.maybeShowResumeBanner());
+
         setTimeout(() => {
-            if (typeof LessonProgressManager !== 'undefined') LessonProgressManager.init();
-            if (typeof LessonPresenceManager !== 'undefined') LessonPresenceManager.init();
+            try { if (typeof LessonProgressManager !== 'undefined') LessonProgressManager.init(); }
+            catch (error) { console.error('LessonProgressManager init failed:', error); }
+            try { if (typeof LessonPresenceManager !== 'undefined') LessonPresenceManager.init(); }
+            catch (error) { console.error('LessonPresenceManager init failed:', error); }
         }, 500);
     },
 
@@ -1642,34 +1659,38 @@ const StudyManager = {
         }
 
         this.interval = window.setInterval(() => {
-            this.secondsSinceLastInput += 1;
-            if (document.hidden) {
-                this.updateUI();
-                return;
-            }
-
-            this.secondsInLesson += 1;
-
-            if (this.secondsSinceLastInput >= this.AFK_TIMEOUT) {
-                this.isAFK = true;
-            }
-
-            if (!this.isAFK) {
-                this.secondsStudied += 1;
-                this.activeSecondsTowardsReward += 1;
-
-                if (
-                    this.activeSecondsTowardsReward >= this.REWARD_INTERVAL
-                    && !this.isClaimingReward
-                    && Date.now() >= this.nextClaimAttemptAt
-                ) {
-                    void this.claimReward();
+            try {
+                this.secondsSinceLastInput += 1;
+                if (document.hidden) {
+                    this.updateUI();
+                    return;
                 }
 
-                this.checkUnlock();
-            }
+                this.secondsInLesson += 1;
 
-            this.updateUI();
+                if (this.secondsSinceLastInput >= this.AFK_TIMEOUT) {
+                    this.isAFK = true;
+                }
+
+                if (!this.isAFK) {
+                    this.secondsStudied += 1;
+                    this.activeSecondsTowardsReward += 1;
+
+                    if (
+                        this.activeSecondsTowardsReward >= this.REWARD_INTERVAL
+                        && !this.isClaimingReward
+                        && Date.now() >= this.nextClaimAttemptAt
+                    ) {
+                        void this.claimReward();
+                    }
+
+                    this.checkUnlock();
+                }
+
+                this.updateUI();
+            } catch (error) {
+                console.error('StudyManager tick error:', error);
+            }
         }, 1000);
     },
 
