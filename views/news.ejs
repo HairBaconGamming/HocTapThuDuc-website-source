@@ -66,8 +66,25 @@
                     <span class="nf-featured-meta-date"><%= new Date(featured.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                 </div>
                 <div class="nf-featured-stats">
-                    <span><i class="fas fa-eye"></i> <%= Math.floor(Math.random() * 500) + 100 %></span>
-                    <span><i class="fas fa-heart"></i> <%= Math.floor(Math.random() * 100) + 10 %></span>
+                    <span><i class="fas fa-eye"></i> <%= featured.views || 0 %></span>
+                    <% 
+                        let fReacts = [];
+                        if (featured.reactions) {
+                            const fCounts = [
+                                { icon: '👍', count: featured.reactions.like ? featured.reactions.like.length : 0 },
+                                { icon: '❤️', count: featured.reactions.heart ? featured.reactions.heart.length : 0 },
+                                { icon: '😆', count: featured.reactions.haha ? featured.reactions.haha.length : 0 },
+                                { icon: '😢', count: featured.reactions.sad ? featured.reactions.sad.length : 0 },
+                                { icon: '😡', count: featured.reactions.angry ? featured.reactions.angry.length : 0 }
+                            ];
+                            fReacts = fCounts.filter(c => c.count > 0).sort((a,b) => b.count - a.count);
+                        }
+                        const fTotalReacts = fReacts.reduce((sum, r) => sum + r.count, 0);
+                        const fTopIcons = fReacts.slice(0, 3).map(r => r.icon).join('');
+                    %>
+                    <% if(fTotalReacts > 0) { %>
+                        <span style="margin-left: 8px;"><%= fTopIcons %> <%= fTotalReacts %></span>
+                    <% } %>
                 </div>
             </div>
         </div>
@@ -103,7 +120,25 @@
                             </div>
                         </div>
                         <div class="nf-card-stats">
-                            <span><i class="fas fa-eye"></i> <%= Math.floor(Math.random() * 300) + 50 %></span>
+                            <span><i class="fas fa-eye"></i> <%= news.views || 0 %></span>
+                            <% 
+                                let nReacts = [];
+                                if (news.reactions) {
+                                    const nCounts = [
+                                        { icon: '👍', count: news.reactions.like ? news.reactions.like.length : 0 },
+                                        { icon: '❤️', count: news.reactions.heart ? news.reactions.heart.length : 0 },
+                                        { icon: '😆', count: news.reactions.haha ? news.reactions.haha.length : 0 },
+                                        { icon: '😢', count: news.reactions.sad ? news.reactions.sad.length : 0 },
+                                        { icon: '😡', count: news.reactions.angry ? news.reactions.angry.length : 0 }
+                                    ];
+                                    nReacts = nCounts.filter(c => c.count > 0).sort((a,b) => b.count - a.count);
+                                }
+                                const nTotalReacts = nReacts.reduce((sum, r) => sum + r.count, 0);
+                                const nTopIcons = nReacts.slice(0, 3).map(r => r.icon).join('');
+                            %>
+                            <% if(nTotalReacts > 0) { %>
+                                <span style="margin-left: 8px;"><%= nTopIcons %> <%= nTotalReacts %></span>
+                            <% } %>
                         </div>
                     </div>
                 </div>
