@@ -9,44 +9,51 @@
     <div class="idx-hero-blob blob-1"></div>
     <div class="idx-hero-blob blob-2"></div>
     
-    <div class="idx-hero-content gsap-hero-reveal">
-        <div class="idx-badge">
-            ✨ Nền tảng học tập cực xịn thế hệ mới
+    <div class="idx-hero-wrapper gsap-hero-reveal">
+        <div class="idx-hero-content">
+            <div class="idx-badge">
+                ✨ Nền tảng học tập cực xịn thế hệ mới
+            </div>
+            
+            <% if (!user) { %>
+                <h1 class="idx-title">
+                    Đỉnh cao tri thức,<br>
+                    <span class="idx-title-gradient">Cộng đồng dẫn đầu</span>
+                </h1>
+                <p class="idx-desc">
+                    Tham gia mạng lưới học sinh Thủ Đức. Nơi chia sẻ tài liệu, bài giảng chất lượng cao và cùng nhau leo rank trên bảng xếp hạng thành tích.
+                </p>
+                <div class="idx-hero-actions">
+                    <a href="/register" class="idx-btn idx-btn-primary">Bắt đầu ngay <i class="fas fa-arrow-right"></i></a>
+                    <a href="#features" class="idx-btn idx-btn-secondary">Khám phá tính năng</a>
+                </div>
+            <% } else { %>
+                <% 
+                    const currentHour = new Date().getHours();
+                    let greeting = "";
+                    if (currentHour >= 5 && currentHour < 12) greeting = "Chào buổi sáng";
+                    else if (currentHour >= 12 && currentHour < 18) greeting = "Chào buổi chiều";
+                    else if (currentHour >= 18 && currentHour < 22) greeting = "Chào buổi tối";
+                    else greeting = "Khuya rồi";
+                %>
+                <h1 class="idx-title">
+                    <%= greeting %>,<br>
+                    <span class="idx-title-gradient"><%= user.username %>!</span>
+                </h1>
+                <p class="idx-desc">
+                    Sẵn sàng cho một phiên học mới chưa? Đừng quên kiểm tra khu vườn và các nhiệm vụ hôm nay của bạn.
+                </p>
+                <div class="idx-hero-actions">
+                    <a href="/dashboard" class="idx-btn idx-btn-primary"><i class="fas fa-laptop-house"></i> Vào Dashboard</a>
+                    <a href="/courses" class="idx-btn idx-btn-secondary"><i class="fas fa-book-open"></i> Thư viện</a>
+                </div>
+            <% } %>
         </div>
-        
-        <% if (!user) { %>
-            <h1 class="idx-title">
-                Đỉnh cao tri thức,<br>
-                <span class="idx-title-gradient">Cộng đồng dẫn đầu</span>
-            </h1>
-            <p class="idx-desc">
-                Tham gia mạng lưới học sinh Thủ Đức. Nơi chia sẻ tài liệu, bài giảng chất lượng cao và cùng nhau leo rank trên bảng xếp hạng thành tích.
-            </p>
-            <div class="idx-hero-actions">
-                <a href="/register" class="idx-btn idx-btn-primary">Bắt đầu ngay <i class="fas fa-arrow-right"></i></a>
-                <a href="#features" class="idx-btn idx-btn-secondary">Khám phá tính năng</a>
-            </div>
-        <% } else { %>
-            <% 
-                const currentHour = new Date().getHours();
-                let greeting = "";
-                if (currentHour >= 5 && currentHour < 12) greeting = "Chào buổi sáng";
-                else if (currentHour >= 12 && currentHour < 18) greeting = "Chào buổi chiều";
-                else if (currentHour >= 18 && currentHour < 22) greeting = "Chào buổi tối";
-                else greeting = "Khuya rồi";
-            %>
-            <h1 class="idx-title">
-                <%= greeting %>,<br>
-                <span class="idx-title-gradient"><%= user.username %>!</span>
-            </h1>
-            <p class="idx-desc">
-                Sẵn sàng cho một phiên học mới chưa? Đừng quên kiểm tra khu vườn và các nhiệm vụ hôm nay của bạn.
-            </p>
-            <div class="idx-hero-actions">
-                <a href="/dashboard" class="idx-btn idx-btn-primary"><i class="fas fa-laptop-house"></i> Vào Dashboard</a>
-                <a href="/courses" class="idx-btn idx-btn-secondary"><i class="fas fa-book-open"></i> Thư viện</a>
-            </div>
-        <% } %>
+
+        <div class="idx-hero-3d">
+            <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.5/build/spline-viewer.js"></script>
+            <spline-viewer url="https://prod.spline.design/nlqoSDxfjVd8ZjLcG7bLqyoy/scene.splinecode"></spline-viewer>
+        </div>
     </div>
 </section>
 
