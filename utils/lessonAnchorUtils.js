@@ -43,8 +43,8 @@ function createStableBlockKey(block, index = 0) {
         block.data?.url ||
         '';
 
-    const seed = `${block.type || 'unknown'}|${String(seedText || '').slice(0, 160)}`;
-    return `block-${index}-${legacyClientHashSeed(seed)}`;
+    const seed = [block.type || 'unknown', seedText].join('|');
+    return `block-${index}-${legacyClientHashSeed(seed.slice(0, 160))}`;
 }
 
 function extractLessonBlocks(lessonOrContent) {
