@@ -290,7 +290,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /news/:id/react - Handle reactions
-router.post("/:id/react", ensureAuthenticated, async (req, res) => {
+router.post("/:id/react", isLoggedIn, async (req, res) => {
   try {
     const { type } = req.body;
     const validTypes = ['like', 'heart', 'haha', 'sad', 'angry'];
