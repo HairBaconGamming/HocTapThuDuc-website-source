@@ -1,31 +1,66 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleNewsDetail.css">
 
-<div class="container">
-    <div class="article-container">
-        <div class="article-header">
-            <span class="article-cat"><%= newsItem.category %></span>
-            <h1 class="article-title"><%= newsItem.title %></h1>
-            <div class="article-meta">
-                Đăng bởi <b><%= newsItem.postedBy ? newsItem.postedBy.username : 'Admin' %></b> 
-                • <%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN') %>
+<!-- HERO IMAGE -->
+<% const heroImg = newsItem.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1200&auto=format&fit=crop'; %>
+<div class="nd-hero">
+    <img src="<%= heroImg %>" class="nd-hero-img" alt="<%= newsItem.title %>">
+    <div class="nd-hero-overlay"></div>
+</div>
+
+<article class="nd-article">
+    <!-- ARTICLE HEADER -->
+    <header class="nd-header">
+        <span class="nd-cat"><%= newsItem.category || 'Tin tức' %></span>
+        <h1 class="nd-title"><%= newsItem.title %></h1>
+        
+        <div class="nd-meta">
+            <img src="<%= newsItem.postedBy && newsItem.postedBy.avatar ? newsItem.postedBy.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" 
+                 class="nd-author-avatar" alt="Author">
+            <div class="nd-author-info">
+                <span class="nd-author-name"><%= newsItem.postedBy ? newsItem.postedBy.username : 'Ban Biên Tập' %></span>
+                <span class="nd-publish-date"><%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
             </div>
         </div>
+    </header>
 
-        <div class="article-content">
+    <!-- ARTICLE BODY -->
+    <div class="nd-body">
+        <div class="nd-content">
             <%- marked.parse(newsItem.content) %>
         </div>
+    </div>
 
-        <div class="article-actions">
-            <a href="/news" class="btn btn-secondary">&larr; Quay lại danh sách</a>
+    <!-- ARTICLE FOOTER -->
+    <footer class="nd-footer">
+        <div class="nd-actions">
+            <a href="/news" class="nd-btn nd-btn-back">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
             
             <% if (user && newsItem.postedBy && user._id.toString() === newsItem.postedBy._id.toString()) { %>
-                <div>
-                    <a href="/news/<%= newsItem._id %>/edit" class="btn btn-sm" style="background:#eee;">Sửa</a>
-                    </div>
+                <div style="display: flex; gap: 8px;">
+                    <a href="/news/<%= newsItem._id %>/edit" class="nd-btn nd-btn-edit">
+                        <i class="fas fa-pen"></i> Sửa bài
+                    </a>
+                    <form action="/news/<%= newsItem._id %>/delete" method="POST" style="margin:0;" onsubmit="return confirm('Xác nhận xóa bài viết này?');">
+                        <button type="submit" class="nd-btn nd-btn-delete">
+                            <i class="fas fa-trash"></i> Xóa
+                        </button>
+                    </form>
+                </div>
             <% } %>
         </div>
-    </div>
-</div>
+    </footer>
+</article>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        gsap.from(".nd-hero-img", { scale: 1.1, duration: 1.5, ease: "power2.out" });
+        gsap.from(".nd-header", { y: 40, opacity: 0, duration: 1, delay: 0.3, ease: "power3.out" });
+        gsap.from(".nd-body", { y: 30, opacity: 0, duration: 0.8, delay: 0.5, ease: "power3.out" });
+    });
+</script>
 
 <%- include('partials/footer') %>

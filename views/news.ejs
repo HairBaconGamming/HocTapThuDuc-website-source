@@ -1,111 +1,114 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { activePage: 'news' }) %>
 <link rel="stylesheet" href="/css/styleNewsFeed.css">
 
-<div class="container" style="max-width: 1200px; padding: 40px 20px;">
+<div class="news-container">
     
-    <div style="text-align: center; margin-bottom: 50px;" data-animate="fade-down">
-        <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 10px;">📰 Bản Tin HTTD</h1>
-        <p style="color: #666; max-width: 600px; margin: 0 auto;">
-            Cập nhật những thông tin nóng hổi, sự kiện và bí kíp học tập mới nhất.
-        </p>
+    <div class="news-header gsap-fade-down">
+        <h1 class="news-title-main">Tạp chí HTTD</h1>
+        <p class="news-subtitle">Đọc để hiểu, học để vươn xa. Khám phá những câu chuyện và bí kíp từ cộng đồng học sinh ưu tú.</p>
         
-        <% if(user && user.isPro) { %>
-            <div style="margin-top: 30px;">
-                <a href="/news/post" class="btn btn-primary">
-                    <i class="fas fa-pen-nib"></i> Viết bài mới
-                </a>
-            </div>
+        <% if(user && (user.isPro || user.isAdmin)) { %>
+            <a href="/news/post" class="news-btn-write">
+                <i class="fas fa-pen-nib"></i> Lên bài ngay
+            </a>
         <% } %>
     </div>
 
-    <div class="news-grid">
-        <% if(newsList && newsList.length > 0) { %>
-            <% newsList.forEach((news, idx) => { %>
-                <article class="news-card" data-animate="fade-up" style="animation-delay: <%= idx * 0.1 %>s">
-                    
-                    <div class="news-thumb-wrapper">
-                        <img src="<%= news.image || 'https://media.istockphoto.com/id/1197831888/vector/male-hand-holding-megaphone-with-breaking-news-speech-bubble-loudspeaker-banner-for-business.jpg?s=612x612&w=0&k=20&c=4CvdND_C8H3AxDMlEAZ8j9oagSvlmMcNHlrVoqoc9KQ=' %>" 
-                             class="news-thumb" 
-                             alt="Thumbnail">
-                        <span class="news-cat-badge"><%= news.category || 'Tin tức' %></span>
-                    </div>
-
-                    <div class="news-content">
-                        <div class="news-date">
-                            <i class="far fa-clock"></i> 
-                            <%= new Date(news.createdAt).toLocaleDateString('vi-VN') %>
+    <% if(newsList && newsList.length > 0) { %>
+        <!-- BÀI NỔI BẬT (FEATURED POST) -->
+        <% const featured = newsList[0]; %>
+        <a href="/news/<%= featured._id %>" class="featured-post gsap-fade-up">
+            <img src="<%= featured.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1000&auto=format&fit=crop' %>" class="fp-image" alt="Featured">
+            <div class="fp-content">
+                <span class="fp-cat"><%= featured.category || 'Tiêu Điểm' %></span>
+                <h2 class="fp-title"><%= featured.title %></h2>
+                <p class="fp-excerpt"><%= featured.content.replace(/[#*`>]/g, '').substring(0, 200) %>...</p>
+                
+                <div class="post-meta">
+                    <div class="meta-author">
+                        <img src="<%= featured.author && featured.author.avatar ? featured.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Author">
+                        <div class="meta-author-info">
+                            <span class="meta-name"><%= featured.author ? featured.author.username : 'Ban Biên Tập' %></span>
+                            <span class="meta-date"><%= new Date(featured.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                         </div>
+                    </div>
+                    <!-- Fake Stats for aesthetic -->
+                    <div class="meta-stats">
+                        <span><i class="fas fa-eye"></i> <%= Math.floor(Math.random() * 500) + 100 %></span>
+                        <span><i class="fas fa-heart"></i> <%= Math.floor(Math.random() * 100) + 10 %></span>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- DANH SÁCH BÀI VIẾT (GRID) -->
+        <div class="news-grid">
+            <% for(let i = 1; i < newsList.length; i++) { %>
+                <% const news = newsList[i]; %>
+                <a href="/news/<%= news._id %>" class="grid-post gsap-stagger">
+                    <div class="gp-image-wrapper">
+                        <img src="<%= news.image || 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop' %>" class="gp-image" alt="Thumbnail">
+                        <span class="gp-cat"><%= news.category || 'Tin tức' %></span>
+                    </div>
+                    <div class="gp-content">
+                        <h3 class="gp-title"><%= news.title %></h3>
+                        <p class="gp-excerpt"><%= news.content.replace(/[#*`>]/g, '').substring(0, 120) %>...</p>
                         
-                        <a href="/news/<%= news._id %>" style="text-decoration: none;">
-                            <h2 class="news-title"><%= news.title %></h2>
-                        </a>
-
-                        <p class="news-excerpt">
-                            <%= news.content.replace(/[#*`]/g, '').substring(0, 150) %>...
-                        </p>
-
-                        <div class="news-footer">
-                            <div class="author-info">
-                                <img src="<%= news.author && news.author.avatar ? news.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="author-avatar">
-                                <span><%= news.author ? news.author.username : 'Admin' %></span>
+                        <div class="post-meta">
+                            <div class="meta-author">
+                                <img src="<%= news.author && news.author.avatar ? news.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Author">
+                                <div class="meta-author-info">
+                                    <span class="meta-name"><%= news.author ? news.author.username : 'Ban Biên Tập' %></span>
+                                    <span class="meta-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
+                                </div>
                             </div>
-                            <a href="/news/<%= news._id %>" class="read-more-link">Đọc tiếp &rarr;</a>
+                            <!-- Fake Stats for aesthetic -->
+                            <div class="meta-stats">
+                                <span><i class="fas fa-eye"></i> <%= Math.floor(Math.random() * 300) + 50 %></span>
+                            </div>
                         </div>
                     </div>
+                </a>
+            <% } %>
+        </div>
 
-                </article>
-            <% }) %>
-        <% } else { %>
-            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
-                <i class="far fa-newspaper" style="font-size: 4rem; margin-bottom: 20px;"></i>
-                <h3>Chưa có tin tức nào.</h3>
-                <p>Hãy trở thành người đầu tiên viết bài!</p>
-            </div>
-        <% } %>
-    </div>
+    <% } else { %>
+        <div style="text-align: center; padding: 100px 20px; color: var(--nf-text-muted);">
+            <i class="far fa-newspaper" style="font-size: 5rem; margin-bottom: 20px; opacity: 0.5;"></i>
+            <h3 style="font-size: 1.5rem; font-weight: 600;">Chưa có bài viết nào</h3>
+            <p>Tòa soạn hiện đang trống, hãy là người đầu tiên lên bài!</p>
+        </div>
+    <% } %>
 
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        
-        // Kiểm tra xem GSAP có hoạt động không
-        if (typeof gsap !== 'undefined') {
-            
-            // 1. Header & Nút "Viết bài mới"
-            const header = document.querySelector('[data-animate="fade-down"]');
-            if(header) {
-                gsap.fromTo(header, 
-                    { y: -30, opacity: 0 }, 
-                    { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out', clearProps: 'all' }
-                );
-            }
+        gsap.registerPlugin(ScrollTrigger);
 
-            // 2. Danh sách tin tức (News Cards)
-            const cards = document.querySelectorAll('.news-card');
-            if(cards.length > 0) {
-                gsap.fromTo(cards, 
-                    { y: 50, opacity: 0 }, 
-                    { 
-                        y: 0, 
-                        opacity: 1, 
-                        duration: 0.6, 
-                        stagger: 0.1, // Hiệu ứng xuất hiện lần lượt
-                        ease: 'power2.out', 
-                        clearProps: 'all' // Quan trọng: Xóa style inline sau khi xong để hover hoạt động tốt
-                    }
-                );
-            }
+        gsap.from(".gsap-fade-down", {
+            y: -30, opacity: 0, duration: 1, ease: 'power3.out'
+        });
 
-        } else {
-            // FALLBACK: Nếu GSAP lỗi, ép hiển thị tất cả ngay lập tức
-            console.warn("GSAP not detected. Forcing visibility.");
-            document.querySelectorAll('[data-animate], .news-card').forEach(el => {
-                el.style.opacity = '1';
-                el.style.transform = 'none';
-                el.style.visibility = 'visible';
+        gsap.from(".gsap-fade-up", {
+            y: 50, opacity: 0, duration: 1, ease: 'power3.out', delay: 0.2
+        });
+
+        const gridPosts = document.querySelectorAll('.gsap-stagger');
+        if (gridPosts.length > 0) {
+            gsap.from(gridPosts, {
+                scrollTrigger: {
+                    trigger: ".news-grid",
+                    start: "top 85%"
+                },
+                y: 50, 
+                opacity: 0, 
+                duration: 0.8, 
+                stagger: 0.15,
+                ease: 'power3.out'
             });
         }
     });

@@ -1,270 +1,335 @@
-/* public/css/styleNewsPost.css */
+/* styleNewsPost.css - Premium Newsroom Editor */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --news-bg: #fff;
-    --news-border: #2d3436;
-    --news-shadow: 6px 6px 0px rgba(45, 52, 54, 0.2);
-    --tag-study: #a2d2ff;
-    --tag-event: #ffc8dd;
-    --tag-enroll: #b9fbc0;
+    --np-bg: #f8fafc;
+    --np-surface: #ffffff;
+    --np-text: #0f172a;
+    --np-text-muted: #64748b;
+    --np-primary: #3b82f6;
+    --np-border: #e2e8f0;
+    --np-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    --np-radius: 20px;
+}
+
+body {
+    background-color: var(--np-bg);
+    font-family: 'Inter', sans-serif;
 }
 
 .newsroom-wrapper {
     max-width: 900px;
     margin: 40px auto;
-    font-family: 'Quicksand', sans-serif;
+    padding: 0 20px;
 }
 
 /* Header */
 .newsroom-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
 
 .newsroom-title {
     font-size: 2.5rem;
-    font-weight: 900;
-    color: var(--news-border);
-    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--np-text);
+    margin-bottom: 8px;
+}
+
+.newsroom-header p {
+    color: var(--np-text-muted);
+    font-size: 1.05rem;
 }
 
 /* Form Container */
 .news-editor-card {
-    background: var(--news-bg);
-    border: 3px solid var(--news-border);
-    border-radius: 25px;
-    padding: 40px;
-    box-shadow: var(--news-shadow);
+    background: var(--np-surface);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius);
+    padding: 48px;
+    box-shadow: var(--np-shadow);
 }
 
 /* 1. Cover Image Upload */
+.cover-section {
+    margin-bottom: 36px;
+}
+
+.thumb-switcher {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    justify-content: center;
+}
+
+.thumb-tab {
+    padding: 10px 22px;
+    border-radius: 100px;
+    border: 1px solid var(--np-border);
+    background: var(--np-surface);
+    color: var(--np-text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.thumb-tab:hover {
+    border-color: var(--np-primary);
+    color: var(--np-primary);
+}
+
+.thumb-tab.active {
+    background: var(--np-primary);
+    color: white;
+    border-color: var(--np-primary);
+}
+
+.thumb-tab.locked {
+    background: #fef9c3;
+    color: #a16207;
+    border-color: #fde68a;
+    cursor: pointer;
+}
+
+.thumb-tab.locked:hover {
+    background: #fde68a;
+}
+
+.thumb-input-group { display: none; }
+.thumb-input-group.active { display: block; }
+
 .cover-upload-zone {
     width: 100%;
-    height: 300px;
-    background: #f8f9fa;
-    border: 3px dashed #ccc;
-    border-radius: 20px;
+    aspect-ratio: 16/9;
+    max-height: 360px;
+    background: var(--np-bg);
+    border: 2px dashed var(--np-border);
+    border-radius: 16px;
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 30px;
+    margin-bottom: 0;
 }
 
 .cover-upload-zone:hover {
-    border-color: var(--news-border);
-    background: #f0f8ff;
+    border-color: var(--np-primary);
+    background: #eff6ff;
 }
 
 .cover-placeholder {
     text-align: center;
-    color: #999;
+    color: var(--np-text-muted);
     pointer-events: none;
 }
 
-/* Nút xóa ảnh */
+.cover-placeholder h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.cover-placeholder p {
+    font-size: 0.9rem;
+    margin-top: 6px;
+}
+
+.cover-preview {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+}
+
+/* Remove button */
 .btn-remove-cover {
     position: absolute;
-    top: 15px; right: 15px;
+    top: 12px; right: 12px;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.9);
-    color: #c62828;
-    border: 2px solid #c62828;
-    width: 40px; height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #ef4444;
+    border: none;
+    width: 36px; height: 36px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    transition: 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
-.btn-remove-cover:hover { transform: scale(1.1); background: #c62828; color: white; }
+.btn-remove-cover:hover { transform: scale(1.1); background: #ef4444; color: white; }
 
-/* 2. Inputs */
+/* URL Input */
+.url-input {
+    width: 100%;
+    padding: 14px 20px;
+    border: 1px solid var(--np-border);
+    border-radius: 12px;
+    background: var(--np-bg);
+    text-align: center;
+    color: var(--np-text);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+.url-input:focus { 
+    border-color: var(--np-primary); 
+    outline: none; 
+    background: white; 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 2. Title Input */
 .news-title-input {
     width: 100%;
     border: none;
-    border-bottom: 3px solid #eee;
+    border-bottom: 2px solid var(--np-border);
     font-size: 2rem;
     font-weight: 800;
-    padding: 10px 0;
-    color: var(--news-border);
-    transition: 0.3s;
-    margin-bottom: 25px;
-    font-family: 'Quicksand', sans-serif;
+    padding: 16px 0;
+    color: var(--np-text);
+    transition: all 0.3s ease;
+    margin-bottom: 32px;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
 }
 
 .news-title-input:focus {
     outline: none;
-    border-color: var(--news-border);
+    border-color: var(--np-primary);
 }
 
-.news-title-input::placeholder { color: #ccc; font-weight: 600; }
+.news-title-input::placeholder { color: #cbd5e1; font-weight: 600; }
 
-/* 3. Category Selector (Chips) */
+/* 3. Category Selector */
 .cat-label {
     font-weight: 700;
-    color: #666;
-    margin-bottom: 10px;
+    color: var(--np-text-muted);
+    margin-bottom: 12px;
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .cat-selector {
     display: flex;
-    gap: 15px;
-    margin-bottom: 30px;
+    gap: 12px;
+    margin-bottom: 32px;
     flex-wrap: wrap;
 }
 
 .cat-option input { display: none; }
 
 .cat-chip {
-    padding: 8px 20px;
-    border-radius: 50px;
-    border: 2px solid #eee;
-    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 100px;
+    border: 1px solid var(--np-border);
+    font-weight: 600;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #888;
+    color: var(--np-text-muted);
+    font-size: 0.9rem;
 }
 
-.cat-chip:hover { transform: translateY(-3px); }
+.cat-chip:hover { 
+    transform: translateY(-2px); 
+    border-color: var(--np-primary);
+    color: var(--np-primary);
+}
 
-/* Active States */
 .cat-option input:checked + .cat-chip {
-    border-color: var(--news-border);
-    color: var(--news-border);
-    box-shadow: 3px 3px 0px var(--news-border);
+    background: var(--np-primary);
+    color: white;
+    border-color: var(--np-primary);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
 
-.cat-option input[value="Học tập"]:checked + .cat-chip { background: var(--tag-study); }
-.cat-option input[value="Hoạt động"]:checked + .cat-chip { background: var(--tag-event); }
-.cat-option input[value="Tuyển sinh"]:checked + .cat-chip { background: var(--tag-enroll); }
+/* 4. Editor Override */
+#newsContentEditor {
+    border: 1px solid var(--np-border);
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 350px;
+    margin-bottom: 0;
+}
 
-/* 4. Action Bar */
+/* TOAST UI Editor Overrides */
+.toastui-editor-defaultUI {
+    border: none !important;
+}
+
+.toastui-editor-toolbar {
+    background: var(--np-bg) !important;
+    border-bottom: 1px solid var(--np-border) !important;
+}
+
+.toastui-editor-md-container .toastui-editor-md-preview,
+.toastui-editor-contents {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1rem !important;
+    line-height: 1.7 !important;
+}
+
+/* 5. Action Bar */
 .action-bar {
     display: flex;
     justify-content: flex-end;
-    gap: 15px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px dashed #eee;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--np-border);
 }
 
 .btn-post {
-    padding: 12px 35px;
-    border-radius: 50px;
-    font-weight: 800;
+    padding: 14px 32px;
+    border-radius: 100px;
+    font-weight: 700;
     border: none;
     cursor: pointer;
-    background: var(--news-border);
+    background: var(--np-text);
     color: white;
-    box-shadow: 4px 4px 0px #aaa;
-    transition: 0.2s;
-    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     gap: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .btn-post:hover {
-    transform: translate(-3px, -3px);
-    box-shadow: 6px 6px 0px #aaa;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
 }
 
 .btn-cancel {
-    padding: 12px 25px;
-    border-radius: 50px;
+    padding: 14px 24px;
+    border-radius: 100px;
     text-decoration: none;
-    color: #666;
-    font-weight: 700;
-    border: 2px solid #eee;
-    transition: 0.2s;
-}
-.btn-cancel:hover { background: #f5f5f5; }
-
-/* --- SMART THUMBNAIL UPLOADER --- */
-.thumb-switcher {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    justify-content: center;
-}
-
-.thumb-tab {
-    padding: 8px 20px;
-    border-radius: 20px;
-    border: 2px solid #eee;
-    background: white;
-    color: #888;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.thumb-tab.active {
-    background: var(--news-border);
-    color: white;
-    border-color: var(--news-border);
-}
-
-.thumb-input-group { display: none; }
-.thumb-input-group.active { display: block; }
-
-/* Input URL */
-.url-input {
-    width: 100%;
-    padding: 12px 20px;
-    border: 2px dashed #ccc;
-    border-radius: 15px;
-    background: #fafafa;
-    text-align: center;
-    color: var(--news-border);
+    color: var(--np-text-muted);
     font-weight: 600;
+    border: 1px solid var(--np-border);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
 }
-.url-input:focus { border-color: var(--news-border); outline: none; background: white; }
-
-/* Preview Image Adjustment */
-.cover-preview {
-    object-fit: cover; /* Đảm bảo ảnh luôn đẹp dù tỉ lệ nào */
-    border-radius: 18px; /* Bo góc trùng với border cha */
-}
-
-/* Thêm vào styleNewsPost.css */
-
-.thumb-tab.locked {
-    background: #f5f5f5;
-    color: #999;
-    border-color: #ddd;
-    cursor: pointer; /* Vẫn cho click để dẫn sang trang Upgrade */
-    position: relative;
-    padding-right: 30px;
-}
-
-.thumb-tab.locked:hover {
-    background: #fff3cd; /* Màu vàng nhạt cảnh báo */
-    color: #856404;
-    border-color: #ffeeba;
-}
-
-/* Biểu tượng khóa nhỏ */
-.thumb-tab.locked::after {
-    content: ''; 
-    /* Hoặc dùng font awesome trong html như trên */
-}
+.btn-cancel:hover { background: var(--np-bg); }
 
 /* Responsive */
-@media (max-width: 600px) {
-    .news-editor-card { padding: 20px; }
+@media (max-width: 768px) {
+    .news-editor-card { padding: 24px; }
     .news-title-input { font-size: 1.5rem; }
+    .newsroom-title { font-size: 2rem; }
 }
