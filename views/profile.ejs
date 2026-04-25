@@ -31,440 +31,458 @@
 %>
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
     :root {
-        --prof-bg: #f8fafc;
-        --prof-surface: #ffffff;
-        --prof-border: #e2e8f0;
-        --prof-primary: #4f46e5;
-        --prof-text: #0f172a;
-        --prof-muted: #64748b;
-        --prof-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-        --radius-xl: 28px;
-        --radius-lg: 20px;
+        --cv-bg: #f3f4f6; /* Subtle light gray */
+        --cv-surface: #ffffff;
+        --cv-surface-alt: #f8fafc;
+        --cv-border: #e2e8f0;
+        --cv-primary: #3b82f6; /* Modern Blue */
+        --cv-primary-dark: #2563eb;
+        --cv-text-main: #0f172a;
+        --cv-text-muted: #64748b;
+        --cv-shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+        --cv-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        --cv-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.02);
+        --cv-radius: 16px;
+        --cv-font: 'Inter', sans-serif;
     }
 
     body {
-        background-color: var(--prof-bg);
+        background-color: var(--cv-bg);
+        font-family: var(--cv-font);
     }
 
-    .profile-v2-wrapper {
-        max-width: 1100px;
-        margin: 40px auto 80px;
+    .cv-container {
+        max-width: 1200px;
+        margin: 40px auto;
         padding: 0 20px;
-        font-family: 'Quicksand', sans-serif;
-    }
-
-    .prof-hero {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-        border-radius: var(--radius-xl);
-        padding: 40px;
-        display: flex;
-        align-items: center;
+        display: grid;
+        grid-template-columns: 320px 1fr;
         gap: 30px;
-        color: white;
+        align-items: start;
+    }
+
+    /* SIDEBAR */
+    .cv-sidebar {
+        background: var(--cv-surface);
+        border-radius: var(--cv-radius);
+        padding: 30px;
+        box-shadow: var(--cv-shadow-lg);
+        position: sticky;
+        top: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .cv-avatar-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 25px;
         position: relative;
-        overflow: hidden;
-        box-shadow: 0 20px 40px rgba(49, 46, 129, 0.2);
-        margin-bottom: 30px;
     }
 
-    .prof-hero::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-
-    .prof-avatar-box {
+    .cv-avatar-inner {
         position: relative;
-        width: 130px;
-        height: 130px;
-        flex-shrink: 0;
+        width: 140px;
+        height: 140px;
+        margin-bottom: 15px;
     }
 
-    .prof-avatar {
+    .cv-avatar {
         width: 100%;
         height: 100%;
         border-radius: 50%;
         object-fit: cover;
-        border: 4px solid rgba(255, 255, 255, 0.2);
-        background: #fff;
-        position: relative;
-        z-index: 2;
+        border: 4px solid var(--cv-surface);
+        box-shadow: var(--cv-shadow-md);
+        background: var(--cv-surface-alt);
     }
 
-    .prof-level-badge {
+    .cv-level-badge {
         position: absolute;
-        bottom: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #f59e0b;
-        color: #fff;
-        padding: 4px 16px;
-        border-radius: 20px;
-        font-weight: 800;
-        font-size: 0.85rem;
-        z-index: 3;
-        border: 2px solid #fff;
-        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
-        white-space: nowrap;
-    }
-
-    .prof-info {
-        flex: 1;
-        z-index: 2;
-        min-width: 0;
-    }
-
-    .prof-name {
-        font-size: 2.2rem;
-        font-weight: 900;
-        margin: 0 0 5px;
-        letter-spacing: -0.5px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .prof-tags {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
-        flex-wrap: wrap;
-    }
-
-    .p-tag {
-        padding: 4px 12px;
-        border-radius: 50px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-    }
-
-    .p-tag.pro {
+        bottom: 0;
+        right: 0;
         background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: #fff;
-    }
-
-    .p-tag.role {
-        background: rgba(99, 102, 241, 0.3);
-        color: #e0e7ff;
-    }
-
-    .prof-bio {
-        font-size: 1rem;
-        opacity: 0.85;
-        line-height: 1.6;
-        max-width: 600px;
-        margin: 0;
-    }
-
-    .prof-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 2;
-    }
-
-    .btn-prof {
-        padding: 10px 20px;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        text-decoration: none;
-        text-align: center;
-        transition: 0.2s;
-        cursor: pointer;
-        border: none;
-    }
-
-    .btn-prof.edit {
-        background: white;
-        color: var(--prof-primary);
-    }
-
-    .btn-prof.edit:hover {
-        background: #f1f5f9;
-        transform: translateY(-2px);
-    }
-
-    .btn-prof.logout {
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-    }
-
-    .btn-prof.logout:hover {
-        background: #ef4444;
         color: white;
-    }
-
-    .prof-tabs {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 30px;
-        background: white;
-        padding: 8px;
-        border-radius: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .prof-tabs::-webkit-scrollbar {
-        display: none;
-    }
-
-    .p-tab {
-        flex: 1;
-        padding: 12px 20px;
-        border-radius: 14px;
-        border: none;
-        background: transparent;
-        font-weight: 700;
-        color: var(--prof-muted);
-        cursor: pointer;
-        transition: 0.3s;
-        white-space: nowrap;
-        font-size: 1rem;
-    }
-
-    .p-tab.active {
-        background: var(--prof-primary);
-        color: white;
-        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
-    }
-
-    .tab-content {
-        display: none;
-        animation: fadeIn 0.4s ease;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .bento-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-auto-rows: minmax(140px, auto);
-        gap: 20px;
-    }
-
-    .bento-card {
-        background: var(--prof-surface);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--prof-border);
-        padding: 24px;
-        box-shadow: var(--prof-shadow);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        transition: 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .bento-card:hover {
-        transform: translateY(-5px);
-        border-color: #cbd5e1;
-        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.1);
-    }
-
-    .span-2 {
-        grid-column: span 2;
-    }
-
-    .span-4 {
-        grid-column: span 4;
-    }
-
-    .realm-card {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        border-color: #86efac;
-        color: #166534;
-    }
-
-    .realm-icon {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-        opacity: 0.8;
-    }
-
-    .realm-name {
-        font-size: 1.8rem;
-        font-weight: 900;
-        margin: 0 0 5px;
-        line-height: 1.2;
-    }
-
-    .realm-sub {
-        font-size: 0.9rem;
-        font-weight: 700;
-        opacity: 0.8;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .realm-progress-wrap {
-        margin-top: 15px;
-        width: 100%;
-        background: rgba(255, 255, 255, 0.5);
-        height: 8px;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .realm-progress-fill {
-        height: 100%;
-        background: #16a34a;
-        border-radius: 10px;
-        transition: width 1s ease-out;
-    }
-
-    .realm-xp-text {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        font-size: 0.8rem;
-        margin-top: 5px;
-        font-weight: 700;
-    }
-
-    .stat-icon {
-        font-size: 2rem;
-        margin-bottom: 10px;
-    }
-
-    .stat-val {
-        font-size: 2rem;
-        font-weight: 900;
-        color: var(--prof-text);
-        line-height: 1;
-        margin-bottom: 5px;
-        font-family: 'Consolas', monospace;
-    }
-
-    .stat-lbl {
-        font-size: 0.9rem;
-        color: var(--prof-muted);
-        font-weight: 600;
-    }
-
-    .link-card {
-        text-decoration: none;
-        color: inherit;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: linear-gradient(135deg, #fffbeb, #fef3c7);
-        border-color: #fde68a;
-    }
-
-    .link-card.guild {
-        background: linear-gradient(135deg, #faf5ff, #f3e8ff);
-        border-color: #e9d5ff;
-    }
-
-    .lc-content {
-        min-width: 0;
-    }
-
-    .lc-content h3 {
-        font-size: 1.2rem;
-        font-weight: 800;
-        margin: 0 0 5px;
-        color: #1e293b;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .lc-content p {
-        margin: 0;
-        font-size: 0.85rem;
-        color: #64748b;
-        font-weight: 600;
-    }
-
-    .lc-icon {
-        width: 45px;
-        height: 45px;
-        background: white;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-        transition: 0.3s;
-        flex-shrink: 0;
+        font-weight: 800;
+        font-size: 0.9rem;
+        border: 3px solid var(--cv-surface);
+        box-shadow: var(--cv-shadow-sm);
     }
 
-    .link-card:hover .lc-icon {
-        transform: scale(1.1) translateX(3px);
+    .cv-name {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--cv-text-main);
+        margin: 0 0 5px;
+        line-height: 1.2;
     }
 
-    .empty-msg {
-        text-align: center;
-        padding: 40px;
-        color: #94a3b8;
+    .cv-role {
+        font-size: 0.95rem;
+        color: var(--cv-primary);
         font-weight: 600;
-        background: white;
-        border-radius: 20px;
-        border: 1px dashed #cbd5e1;
+        margin: 0 0 15px;
     }
 
-    .empty-msg i {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        opacity: 0.5;
-        display: block;
+    .cv-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 20px;
     }
 
-    .act-list {
+    .cv-tag {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: var(--cv-surface-alt);
+        color: var(--cv-text-muted);
+        border: 1px solid var(--cv-border);
+    }
+
+    .cv-tag.pro {
+        background: #fffbeb;
+        color: #d97706;
+        border-color: #fde68a;
+    }
+
+    .cv-bio {
+        font-size: 0.9rem;
+        color: var(--cv-text-muted);
+        line-height: 1.6;
+        text-align: center;
+        margin: 0 0 25px;
+        padding-bottom: 25px;
+        border-bottom: 1px dashed var(--cv-border);
+    }
+
+    .cv-info-list {
         display: flex;
         flex-direction: column;
         gap: 15px;
+        margin-bottom: 25px;
     }
 
-    .act-item {
+    .cv-info-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .cv-info-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--cv-surface-alt);
+        color: var(--cv-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .cv-info-text {
+        font-size: 0.9rem;
+        color: var(--cv-text-main);
+        font-weight: 500;
+    }
+
+    .cv-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .cv-btn {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .cv-btn-primary {
+        background: var(--cv-primary);
+        color: white;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    .cv-btn-primary:hover {
+        background: var(--cv-primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .cv-btn-outline {
         background: white;
+        color: #ef4444;
+        border: 1px solid #fca5a5;
+    }
+
+    .cv-btn-outline:hover {
+        background: #fef2f2;
+    }
+
+    /* MAIN CONTENT */
+    .cv-main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .cv-tabs-nav {
+        display: flex;
+        gap: 10px;
+        background: var(--cv-surface);
+        padding: 10px;
+        border-radius: var(--cv-radius);
+        box-shadow: var(--cv-shadow-sm);
+        overflow-x: auto;
+    }
+
+    .cv-tab-btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--cv-text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cv-tab-btn:hover {
+        color: var(--cv-text-main);
+        background: var(--cv-surface-alt);
+    }
+
+    .cv-tab-btn.active {
+        background: var(--cv-primary);
+        color: white;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    }
+
+    .cv-tab-content {
+        display: none;
+        animation: fadeUp 0.4s ease;
+    }
+
+    .cv-tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cv-section {
+        background: var(--cv-surface);
+        border-radius: var(--cv-radius);
+        padding: 30px;
+        box-shadow: var(--cv-shadow-md);
+        margin-bottom: 20px;
+    }
+
+    .cv-section-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--cv-text-main);
+        margin: 0 0 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .cv-section-title::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 20px;
+        background: var(--cv-primary);
+        border-radius: 4px;
+    }
+
+    /* Overview Styles */
+    .cv-realm-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .cv-realm-icon {
+        width: 70px;
+        height: 70px;
+        background: white;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        box-shadow: var(--cv-shadow-sm);
+        flex-shrink: 0;
+    }
+
+    .cv-realm-info {
+        flex: 1;
+    }
+
+    .cv-realm-sub {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #166534;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    .cv-realm-name {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #14532d;
+        margin: 0 0 15px;
+    }
+
+    .cv-progress-track {
+        height: 8px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .cv-progress-fill {
+        height: 100%;
+        background: #16a34a;
+        border-radius: 4px;
+        transition: width 1s ease-in-out;
+    }
+
+    .cv-progress-text {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #166534;
+    }
+
+    .cv-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .cv-stat-box {
+        background: var(--cv-surface-alt);
+        border: 1px solid var(--cv-border);
+        border-radius: 12px;
         padding: 20px;
-        border-radius: 20px;
-        border: 1px solid var(--prof-border);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        transition: transform 0.2s;
+    }
+
+    .cv-stat-box:hover {
+        transform: translateY(-3px);
+        border-color: #cbd5e1;
+        box-shadow: var(--cv-shadow-sm);
+    }
+
+    .cv-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .cv-stat-val {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--cv-text-main);
+        margin: 0 0 4px;
+        font-family: 'Consolas', monospace;
+    }
+
+    .cv-stat-lbl {
+        font-size: 0.85rem;
+        color: var(--cv-text-muted);
+        font-weight: 500;
+    }
+
+    /* Links / Experiences */
+    .cv-experience-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .cv-exp-card {
+        text-decoration: none;
         display: flex;
         align-items: center;
         gap: 15px;
-        transition: 0.2s;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--cv-border);
+        transition: all 0.2s;
     }
 
-    .act-item:hover {
-        border-color: var(--prof-primary);
-        transform: translateX(5px);
+    .cv-exp-card.garden {
+        background: linear-gradient(to right, #fffbeb, #fef3c7);
+        border-color: #fde68a;
     }
 
-    .act-icon {
+    .cv-exp-card.guild {
+        background: linear-gradient(to right, #faf5ff, #f3e8ff);
+        border-color: #e9d5ff;
+    }
+
+    .cv-exp-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--cv-shadow-md);
+    }
+
+    .cv-exp-icon {
         width: 50px;
         height: 50px;
-        background: #eff6ff;
-        color: #3b82f6;
-        border-radius: 15px;
+        background: white;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -472,274 +490,357 @@
         flex-shrink: 0;
     }
 
-    .act-info h4 {
-        margin: 0 0 5px;
-        font-size: 1.1rem;
-        color: var(--prof-text);
+    .cv-exp-info h4 {
+        font-size: 1rem;
         font-weight: 700;
+        color: var(--cv-text-main);
+        margin: 0 0 5px;
     }
 
-    .act-info p {
+    .cv-exp-info p {
+        font-size: 0.8rem;
+        color: var(--cv-text-muted);
         margin: 0;
-        font-size: 0.85rem;
-        color: var(--prof-muted);
+        font-weight: 500;
+        line-height: 1.4;
     }
 
-    .ach-grid {
+    /* Timeline (Activity) */
+    .cv-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .cv-timeline::before {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 5px;
+        bottom: 0;
+        width: 2px;
+        background: var(--cv-border);
+    }
+
+    .cv-tl-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    .cv-tl-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .cv-tl-dot {
+        position: absolute;
+        left: -30px;
+        top: 5px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--cv-primary);
+        z-index: 1;
+    }
+
+    .cv-tl-content {
+        background: var(--cv-surface-alt);
+        border: 1px solid var(--cv-border);
+        border-radius: 12px;
+        padding: 15px 20px;
+    }
+
+    .cv-tl-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--cv-text-main);
+        margin: 0 0 5px;
+    }
+
+    .cv-tl-time {
+        font-size: 0.8rem;
+        color: var(--cv-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Achievements Grid */
+    .cv-achieve-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 15px;
     }
 
-    .ach-item {
-        background: white;
-        padding: 20px;
-        border-radius: 20px;
-        border: 1px solid var(--prof-border);
+    .cv-achieve-item {
+        background: var(--cv-surface-alt);
+        border: 1px solid var(--cv-border);
+        border-radius: 12px;
+        padding: 20px 15px;
         text-align: center;
-        transition: 0.3s;
+        transition: transform 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
     }
 
-    .ach-item:hover {
-        border-color: #f59e0b;
-        box-shadow: 0 10px 20px rgba(245, 158, 11, 0.1);
+    .cv-achieve-item:hover {
         transform: translateY(-5px);
+        border-color: #f59e0b;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
     }
 
-    .ach-icon {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
+    .cv-achieve-icon {
+        font-size: 2.2rem;
     }
 
-    .ach-name {
-        font-size: 0.9rem;
+    .cv-achieve-name {
+        font-size: 0.85rem;
         font-weight: 700;
-        color: var(--prof-text);
+        color: var(--cv-text-main);
         line-height: 1.3;
     }
 
-    @media (max-width: 900px) {
-        .bento-grid {
-            grid-template-columns: repeat(2, 1fr);
+    /* Responsive */
+    @media (max-width: 992px) {
+        .cv-container {
+            grid-template-columns: 1fr;
         }
-
-        .span-4 {
-            grid-column: span 2;
+        
+        .cv-sidebar {
+            position: relative;
+            top: 0;
         }
     }
 
-    @media (max-width: 600px) {
-        .prof-hero {
-            flex-direction: column;
-            text-align: center;
-            padding: 30px 20px;
+    @media (max-width: 768px) {
+        .cv-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
 
-        .prof-tags {
-            justify-content: center;
-        }
-
-        .prof-actions {
-            flex-direction: row;
-            width: 100%;
-        }
-
-        .btn-prof {
-            flex: 1;
-        }
-
-        .bento-grid {
+        .cv-experience-grid {
             grid-template-columns: 1fr;
         }
 
-        .span-2,
-        .span-4 {
-            grid-column: span 1;
+        .cv-realm-card {
+            flex-direction: column;
+            text-align: center;
+            gap: 15px;
         }
 
-        .ach-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .cv-progress-track {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .cv-stats-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
 
-<div class="profile-v2-wrapper">
-    <div class="prof-hero">
-        <div class="prof-avatar-box">
-            <img src="<%= safeAvatar %>" class="prof-avatar" alt="Avatar">
-            <div class="prof-level-badge">Lv.<%= safeLevel %></div>
+<div class="cv-container">
+    <!-- SIDEBAR (Personal Info) -->
+    <div class="cv-sidebar">
+        <div class="cv-avatar-wrap">
+            <div class="cv-avatar-inner">
+                <img src="<%= safeAvatar %>" class="cv-avatar" alt="Avatar">
+                <div class="cv-level-badge"><%= safeLevel %></div>
+            </div>
+            <h1 class="cv-name"><%= safeUsername %></h1>
+            <div class="cv-role"><%= safeRoleLabel %></div>
+            <div class="cv-tags">
+                <% if (safeProfileUser.isPro) { %>
+                    <span class="cv-tag pro"><i class="fas fa-crown"></i> PRO</span>
+                <% } %>
+                <span class="cv-tag"><%= safeClass %></span>
+                <span class="cv-tag"><%= safeSchool %></span>
+            </div>
+            <p class="cv-bio"><%= safeBio %></p>
         </div>
 
-        <div class="prof-info">
-            <h1 class="prof-name"><%= safeUsername %></h1>
-            <div class="prof-tags">
-                <% if (safeProfileUser.isPro) { %>
-                    <span class="p-tag pro"><i class="fas fa-crown"></i> PRO Member</span>
-                <% } %>
-                <span class="p-tag role">
-                    <i class="fas <%= safeRoleIcon %>"></i>
-                    <%= safeRoleLabel %>
-                </span>
-                <span class="p-tag role" style="background: rgba(16, 185, 129, 0.3); color: #d1fae5;">
-                    <%= safeClass %> • <%= safeSchool %>
-                </span>
+        <div class="cv-info-list">
+            <div class="cv-info-item">
+                <div class="cv-info-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-trophy"></i></div>
+                <div class="cv-info-text">Rank: #<%= safeUserRank %></div>
             </div>
-            <p class="prof-bio"><%= safeBio %></p>
+            <div class="cv-info-item">
+                <div class="cv-info-icon" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-fire"></i></div>
+                <div class="cv-info-text">Chuỗi: <%= safeStreak %> ngày</div>
+            </div>
+            <div class="cv-info-item">
+                <div class="cv-info-icon" style="background: #fffbeb; color: #f59e0b;"><i class="fas fa-coins"></i></div>
+                <div class="cv-info-text">Vàng: <%= safeGold.toLocaleString('vi-VN') %></div>
+            </div>
         </div>
 
         <% if (isOwner) { %>
-            <div class="prof-actions">
-                <a href="/profile/edit" class="btn-prof edit"><i class="fas fa-pen"></i> Chỉnh sửa</a>
-                <a href="/logout" class="btn-prof logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+            <div class="cv-actions">
+                <a href="/profile/edit" class="cv-btn cv-btn-primary"><i class="fas fa-user-edit"></i> Chỉnh sửa hồ sơ</a>
+                <a href="/logout" class="cv-btn cv-btn-outline"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
             </div>
         <% } %>
     </div>
 
-    <div class="prof-tabs">
-        <button class="p-tab active" type="button" onclick="switchTab(event, 'overview')"><i class="fas fa-th-large"></i> Tổng quan</button>
-        <button class="p-tab" type="button" onclick="switchTab(event, 'activity')"><i class="fas fa-bolt"></i> Hoạt động</button>
-        <button class="p-tab" type="button" onclick="switchTab(event, 'achievements')"><i class="fas fa-medal"></i> Thành tích</button>
-    </div>
+    <!-- MAIN CONTENT -->
+    <div class="cv-main">
+        <nav class="cv-tabs-nav">
+            <button class="cv-tab-btn active" type="button" onclick="switchCvTab(event, 'overview')">
+                <i class="fas fa-id-card"></i> Hồ sơ chuyên môn
+            </button>
+            <button class="cv-tab-btn" type="button" onclick="switchCvTab(event, 'activity')">
+                <i class="fas fa-history"></i> Lịch sử hoạt động
+            </button>
+            <button class="cv-tab-btn" type="button" onclick="switchCvTab(event, 'achievements')">
+                <i class="fas fa-award"></i> Chứng nhận & Giải thưởng
+            </button>
+        </nav>
 
-    <div id="tab-overview" class="tab-content active">
-        <div class="bento-grid">
-            <div class="bento-card realm-card span-2">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <div class="realm-sub"><%= safeSubRealmName %></div>
-                        <h2 class="realm-name"><%= safeRealmName %></h2>
-                    </div>
-                    <div class="realm-icon">☯️</div>
-                </div>
-                <div class="realm-progress-wrap">
-                    <div class="realm-progress-fill" style="width: <%= safeRealmProgress %>%;"></div>
-                </div>
-                <div class="realm-xp-text">
-                    <span>Linh Khí</span>
-                    <span><%= safeCurrentXP.toLocaleString('vi-VN') %> / <%= safeRequiredXP.toLocaleString('vi-VN') %></span>
-                </div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">🏆</div>
-                <div class="stat-val">#<%= safeUserRank %></div>
-                <div class="stat-lbl">Xếp hạng Server</div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">🔥</div>
-                <div class="stat-val"><%= safeStreak %></div>
-                <div class="stat-lbl">Chuỗi ngày học</div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">⚡</div>
-                <div class="stat-val"><%= safePoints.toLocaleString('vi-VN') %></div>
-                <div class="stat-lbl">Điểm cống hiến</div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">📚</div>
-                <div class="stat-val"><%= safeLessons %></div>
-                <div class="stat-lbl">Bài đã hoàn thành</div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">🪙</div>
-                <div class="stat-val"><%= safeGold.toLocaleString('vi-VN') %></div>
-                <div class="stat-lbl">Vàng nông trại</div>
-            </div>
-
-            <div class="bento-card">
-                <div class="stat-icon">⭐</div>
-                <div class="stat-val"><%= safeAchievementPoints.toLocaleString('vi-VN') %></div>
-                <div class="stat-lbl">Điểm thành tích</div>
-            </div>
-
-            <a href="<%= safeGardenLink %>" class="bento-card link-card span-2">
-                <div class="lc-content">
-                    <h3><%= isOwner ? 'Về Nông Trại' : 'Ghé thăm Vườn' %> 🌱</h3>
-                    <p>Trồng cây, thu thập tài nguyên và nhận buff học tập.</p>
-                </div>
-                <div class="lc-icon"><i class="fas fa-arrow-right" style="color: #d97706;"></i></div>
-            </a>
-
-            <% if (safeGuildProfile) { %>
-                <a href="/guilds/<%= safeGuildProfile.slug %>" class="bento-card link-card guild span-2">
-                    <div class="lc-content">
-                        <h3>Tông Môn: <%= safeGuildProfile.name || 'Bang hội bí ẩn' %> 🏰</h3>
-                        <p>Linh Thụ Giai Đoạn <%= safeGuildProfile.treeStage || 0 %> • Buff +<%= safeGuildProfile.buffSnapshot?.lessonXpPct || 0 %>% XP</p>
-                    </div>
-                    <div class="lc-icon"><i class="fas fa-arrow-right" style="color: #9333ea;"></i></div>
-                </a>
-            <% } else { %>
-                <a href="/guilds" class="bento-card link-card guild span-2">
-                    <div class="lc-content">
-                        <h3>Tông Môn / Bang Hội 🏰</h3>
-                        <p>Bạn chưa gia nhập. Tìm bang hội để nhận buff chung ngay!</p>
-                    </div>
-                    <div class="lc-icon"><i class="fas fa-search" style="color: #9333ea;"></i></div>
-                </a>
-            <% } %>
-        </div>
-    </div>
-
-    <div id="tab-activity" class="tab-content">
-        <div class="act-list">
-            <% if (safeActivities.length > 0) { %>
-                <% safeActivities.forEach((act) => { %>
-                    <div class="act-item">
-                        <div class="act-icon"><i class="fas fa-check"></i></div>
-                        <div class="act-info">
-                            <h4>Đã hoàn thành: <%= act.lessonId ? act.lessonId.title : 'Bài học đã bị xóa' %></h4>
-                            <p><i class="far fa-clock"></i> <%= moment(act.completedAt).locale('vi').fromNow() %></p>
+        <!-- Overview Tab -->
+        <div id="cv-tab-overview" class="cv-tab-content active">
+            
+            <div class="cv-section">
+                <h2 class="cv-section-title">Trạng thái Cảnh Giới</h2>
+                <div class="cv-realm-card">
+                    <div class="cv-realm-icon">☯️</div>
+                    <div class="cv-realm-info">
+                        <div class="cv-realm-sub"><%= safeSubRealmName %></div>
+                        <h3 class="cv-realm-name"><%= safeRealmName %></h3>
+                        <div class="cv-progress-track">
+                            <div class="cv-progress-fill" style="width: <%= safeRealmProgress %>%;"></div>
+                        </div>
+                        <div class="cv-progress-text">
+                            <span>Tiến độ tu luyện</span>
+                            <span><%= safeCurrentXP.toLocaleString('vi-VN') %> / <%= safeRequiredXP.toLocaleString('vi-VN') %> XP</span>
                         </div>
                     </div>
-                <% }) %>
-            <% } else { %>
-                <div class="empty-msg">
-                    <i class="fas fa-history"></i>
-                    Chưa có hoạt động học tập nào gần đây.
                 </div>
-            <% } %>
-        </div>
-    </div>
+            </div>
 
-    <div id="tab-achievements" class="tab-content">
-        <div class="ach-grid">
-            <% if (safeAchievements.length > 0) { %>
-                <% safeAchievements.forEach((ach) => { %>
-                    <div class="ach-item" title="<%= ach.achievementId?.description || 'Thành tích' %>">
-                        <div class="ach-icon"><%= ach.achievementId?.icon || '🏆' %></div>
-                        <div class="ach-name"><%= ach.achievementId?.name || 'Thành tích bí ẩn' %></div>
+            <div class="cv-section">
+                <h2 class="cv-section-title">Chỉ số thành tích</h2>
+                <div class="cv-stats-grid">
+                    <div class="cv-stat-box">
+                        <div class="cv-stat-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-bolt"></i></div>
+                        <div class="cv-stat-val"><%= safePoints.toLocaleString('vi-VN') %></div>
+                        <div class="cv-stat-lbl">Điểm cống hiến</div>
                     </div>
-                <% }) %>
-            <% } else { %>
-                <div class="empty-msg" style="grid-column: 1/-1;">
-                    <i class="fas fa-medal"></i>
-                    Bộ sưu tập thành tích đang trống. Hãy bắt đầu cày cuốc nào!
+                    <div class="cv-stat-box">
+                        <div class="cv-stat-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-book-reader"></i></div>
+                        <div class="cv-stat-val"><%= safeLessons %></div>
+                        <div class="cv-stat-lbl">Bài đã học</div>
+                    </div>
+                    <div class="cv-stat-box">
+                        <div class="cv-stat-icon" style="background: #fdf2f8; color: #db2777;"><i class="fas fa-star"></i></div>
+                        <div class="cv-stat-val"><%= safeAchievementPoints.toLocaleString('vi-VN') %></div>
+                        <div class="cv-stat-lbl">Điểm danh hiệu</div>
+                    </div>
                 </div>
-            <% } %>
+            </div>
+
+            <div class="cv-section">
+                <h2 class="cv-section-title">Tổ chức & Hoạt động ngoại khóa</h2>
+                <div class="cv-experience-grid">
+                    <a href="<%= safeGardenLink %>" class="cv-exp-card garden">
+                        <div class="cv-exp-icon">🌱</div>
+                        <div class="cv-exp-info">
+                            <h4><%= isOwner ? 'Nông Trại Cá Nhân' : 'Vườn Của Đạo Hữu' %></h4>
+                            <p>Khu vực trồng cây và thu thập tài nguyên phụ trợ.</p>
+                        </div>
+                    </a>
+
+                    <% if (safeGuildProfile) { %>
+                        <a href="/guilds/<%= safeGuildProfile.slug %>" class="cv-exp-card guild">
+                            <div class="cv-exp-icon">🏰</div>
+                            <div class="cv-exp-info">
+                                <h4><%= safeGuildProfile.name || 'Bang hội' %></h4>
+                                <p>Linh thụ cấp <%= safeGuildProfile.treeStage || 0 %> • +<%= safeGuildProfile.buffSnapshot?.lessonXpPct || 0 %>% XP</p>
+                            </div>
+                        </a>
+                    <% } else { %>
+                        <a href="/guilds" class="cv-exp-card guild">
+                            <div class="cv-exp-icon">🔍</div>
+                            <div class="cv-exp-info">
+                                <h4>Chưa gia nhập Bang hội</h4>
+                                <p>Tìm kiếm một tập thể để cùng nhau phát triển.</p>
+                            </div>
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+
         </div>
 
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="/achievements" class="btn-prof edit" style="display: inline-block; background: white; border: 2px solid var(--prof-border);">
-                Xem toàn bộ kho thành tích
-            </a>
+        <!-- Activity Tab -->
+        <div id="cv-tab-activity" class="cv-tab-content">
+            <div class="cv-section">
+                <h2 class="cv-section-title">Lịch trình gần đây</h2>
+                
+                <% if (safeActivities.length > 0) { %>
+                    <div class="cv-timeline">
+                        <% safeActivities.forEach((act) => { %>
+                            <div class="cv-tl-item">
+                                <div class="cv-tl-dot"></div>
+                                <div class="cv-tl-content">
+                                    <h3 class="cv-tl-title">Đã hoàn thành: <%= act.lessonId ? act.lessonId.title : 'Bài học đã bị xóa' %></h3>
+                                    <div class="cv-tl-time"><i class="far fa-clock"></i> <%= moment(act.completedAt).locale('vi').fromNow() %></div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 40px 0; color: var(--cv-text-muted);">
+                        <i class="fas fa-history" style="font-size: 3rem; opacity: 0.2; margin-bottom: 15px; display: block;"></i>
+                        <p>Chưa có dữ liệu hoạt động.</p>
+                    </div>
+                <% } %>
+            </div>
         </div>
+
+        <!-- Achievements Tab -->
+        <div id="cv-tab-achievements" class="cv-tab-content">
+            <div class="cv-section">
+                <h2 class="cv-section-title">Bộ sưu tập Danh Hiệu</h2>
+                
+                <% if (safeAchievements.length > 0) { %>
+                    <div class="cv-achieve-grid">
+                        <% safeAchievements.forEach((ach) => { %>
+                            <div class="cv-achieve-item" title="<%= ach.achievementId?.description || 'Thành tích' %>">
+                                <div class="cv-achieve-icon"><%= ach.achievementId?.icon || '🏆' %></div>
+                                <div class="cv-achieve-name"><%= ach.achievementId?.name || 'Thành tích bí ẩn' %></div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 40px 0; color: var(--cv-text-muted);">
+                        <i class="fas fa-medal" style="font-size: 3rem; opacity: 0.2; margin-bottom: 15px; display: block;"></i>
+                        <p>Hồ sơ chứng nhận đang trống.</p>
+                    </div>
+                <% } %>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="/achievements" class="cv-btn cv-btn-outline" style="display: inline-flex; width: auto; padding: 10px 20px;">
+                        <i class="fas fa-external-link-alt"></i> Xem toàn bộ danh hiệu
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
-    function switchTab(event, tabId) {
-        document.querySelectorAll('.p-tab').forEach((tab) => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active'));
+    function switchCvTab(event, tabId) {
+        document.querySelectorAll('.cv-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.cv-tab-content').forEach(content => content.classList.remove('active'));
 
         if (event && event.currentTarget) {
             event.currentTarget.classList.add('active');
         }
 
-        const target = document.getElementById('tab-' + tabId);
+        const target = document.getElementById('cv-tab-' + tabId);
         if (target) {
             target.classList.add('active');
         }
