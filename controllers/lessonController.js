@@ -354,3 +354,31 @@ exports.claimStudyReward = async (req, res) => {
         res.status(500).json({ success: false, msg: 'Lỗi server' });
     }
 };
+
+// [NEW] Toggle Lesson Like
+exports.toggleLessonLike = async (req, res) => {
+    try {
+        const lessonId = req.params.id;
+        const userId = req.user._id;
+        
+        const lesson = await Lesson.findById(lessonId).select('likes');
+        if (!lesson) return res.status(404).json({ error: 'Không tìm thấy bài học' });
+        
+        const alreadyLiked = lesson.likes.some(id => id.equals(userId));
+        
+        if (alreadyLiked) {
+            await Lesson.updateOne({ _id: lessonId }, { $pull: { likes: userId } });
+        } else {
+            await Lesson.updateOne({ _id: lessonId }, { $addToSet: { likes: userId } });
+        }
+        
+        const updated = await Lesson.findById(lessonId).select('likes');
+        res.json({
+            liked: !alreadyLiked,
+            likeCount: updated.likes.length
+        });
+    } catch (err) {
+        console.error("Lesson Like Error:", err);
+        res.status(500).json({ error: 'Lỗi server khi like bài học.' });
+    }
+};

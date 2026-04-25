@@ -157,10 +157,61 @@
         });
     }
 
+    function bindLikeButton() {
+        const likeBtn = document.getElementById('courseLikeBtn');
+        if (!likeBtn) return;
+
+        likeBtn.addEventListener('click', async () => {
+            const courseId = likeBtn.dataset.courseId;
+            
+            // Optional: Simple pop animation on click
+            likeBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => { likeBtn.style.transform = 'scale(1)'; }, 100);
+
+            try {
+                const response = await fetch(`/api/course/${courseId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 401) {
+                    window.location.href = `/login?redirect=/course/${courseId}`;
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                const iconEl = document.getElementById('courseLikeIcon');
+                const countEl = document.getElementById('courseLikeCount');
+                
+                if (data.liked) {
+                    iconEl.className = 'fas fa-heart';
+                    iconEl.style.color = '#ef4444';
+                } else {
+                    iconEl.className = 'far fa-heart';
+                    iconEl.style.color = '';
+                }
+                
+                if (countEl && typeof data.likeCount !== 'undefined') {
+                    countEl.textContent = data.likeCount;
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         setStickyPreview(getDefaultPreview());
         bindFilters();
         bindRoadmapPreview();
         applyFilters();
+        bindLikeButton();
     });
 })();

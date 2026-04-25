@@ -101,6 +101,16 @@
                             <% if (isCompleted) { %>
                                 <span class="is-success">Đã hoàn thành</span>
                             <% } %>
+                            <span title="Lượt xem" style="margin-left: 8px;"><i class="fas fa-eye"></i> <%= lesson.views || 0 %></span>
+                            <%
+                                const hasLiked = user && lesson.likes && lesson.likes.some(id => id.toString() === user._id.toString());
+                                const likeIconClass = hasLiked ? 'fas fa-heart' : 'far fa-heart';
+                                const likeIconColor = hasLiked ? 'color: #ef4444;' : '';
+                            %>
+                            <span id="lessonLikeBtn" data-lesson-id="<%= lesson._id %>" title="Lượt thích" style="cursor: pointer; user-select: none; transition: transform 0.1s;">
+                                <i class="<%= likeIconClass %>" id="lessonLikeIcon" style="<%= likeIconColor %> transition: color 0.2s;"></i> 
+                                <span id="lessonLikeCount"><%= lesson.likes ? lesson.likes.length : 0 %></span>
+                            </span>
                         </p>
 
                         <div class="lesson-study-banner" id="lessonStudyBanner" aria-live="polite">

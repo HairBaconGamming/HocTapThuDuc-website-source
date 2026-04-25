@@ -38,7 +38,8 @@ const lessonSchema = new mongoose.Schema({
     
     allowSaveProgress: { type: Boolean, default: true },
     tags: [String],
-    views: { type: Number, default: 0 }
+    views: { type: Number, default: 0 },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Lesson', lessonSchema);

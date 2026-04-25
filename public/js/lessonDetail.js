@@ -1937,3 +1937,52 @@ const LessonPresenceManager = {
 window.LessonWorkspace = LessonWorkspace;
 window.LessonProgressManager = LessonProgressManager;
 window.LessonPresenceManager = LessonPresenceManager;
+
+// Thêm xử lý cho nút Like Lesson
+document.addEventListener('DOMContentLoaded', () => {
+    const likeBtn = document.getElementById('lessonLikeBtn');
+    if (!likeBtn) return;
+    
+    likeBtn.addEventListener('click', async () => {
+        const lessonId = likeBtn.dataset.lessonId;
+        const icon = document.getElementById('lessonLikeIcon');
+        const countSpan = document.getElementById('lessonLikeCount');
+        
+        // Thêm hiệu ứng nhấn
+        likeBtn.style.transform = 'scale(0.9)';
+        setTimeout(() => likeBtn.style.transform = 'scale(1)', 100);
+        
+        try {
+            const res = await fetch(`/api/lesson/${lessonId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (res.status === 401) {
+                window.location.href = `/login?redirect=/lesson/${lessonId}`;
+                return;
+            }
+            
+            const data = await res.json();
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            
+            // Cập nhật UI
+            if (data.liked) {
+                icon.className = 'fas fa-heart';
+                icon.style.color = '#ef4444';
+                icon.style.transform = 'scale(1.3)';
+                setTimeout(() => icon.style.transform = 'scale(1)', 200);
+            } else {
+                icon.className = 'far fa-heart';
+                icon.style.color = '';
+            }
+            countSpan.textContent = data.likeCount;
+            
+        } catch (err) {
+            console.error('Lỗi khi like lesson:', err);
+        }
+    });
+});

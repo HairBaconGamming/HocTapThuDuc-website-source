@@ -38,6 +38,16 @@
                     <% if (course.subjectId?.name) { %>
                         <span class="course-hero-subject"><i class="fas fa-book-open"></i><%= course.subjectId.name %></span>
                     <% } %>
+                    <span class="course-pill is-soft" title="Lượt xem"><i class="fas fa-eye"></i> <%= course.views || 0 %></span>
+                    <%
+                        const hasLiked = user && course.likes && course.likes.some(id => id.toString() === user._id.toString());
+                        const likeIconClass = hasLiked ? 'fas fa-heart' : 'far fa-heart';
+                        const likeIconColor = hasLiked ? 'color: #ef4444;' : '';
+                    %>
+                    <span class="course-pill is-soft" id="courseLikeBtn" data-course-id="<%= course._id %>" title="Lượt thích" style="cursor: pointer; user-select: none; transition: transform 0.1s;">
+                        <i class="<%= likeIconClass %>" id="courseLikeIcon" style="<%= likeIconColor %> transition: color 0.2s;"></i> 
+                        <span id="courseLikeCount"><%= course.likes ? course.likes.length : 0 %></span>
+                    </span>
                     <% if (course.isPro) { %>
                         <span class="course-status-badge is-pro"><i class="fas fa-crown"></i> PRO</span>
                     <% } %>
