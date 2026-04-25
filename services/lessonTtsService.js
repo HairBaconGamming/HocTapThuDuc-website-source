@@ -1,3 +1,9 @@
+// Polyfill globalThis.crypto for Node 18 (msedge-tts requires the Web Crypto API global)
+if (!globalThis.crypto) {
+    const { webcrypto } = require('crypto');
+    globalThis.crypto = webcrypto;
+}
+
 const mongoose = require('mongoose');
 const { Readable } = require('stream');
 
