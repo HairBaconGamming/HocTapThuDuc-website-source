@@ -1467,6 +1467,122 @@ body.lesson-focus-mode .lesson-reading-surface {
     line-height: 1.6;
 }
 
+.lesson-tts-card {
+    gap: 14px;
+}
+
+.lesson-tts-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--lesson-primary);
+}
+
+.lesson-tts-status[data-state="loading"] {
+    background: rgba(245, 158, 11, 0.16);
+    color: #b45309;
+}
+
+.lesson-tts-status[data-state="playing"] {
+    background: rgba(16, 185, 129, 0.14);
+    color: var(--lesson-success);
+}
+
+.lesson-tts-status[data-state="paused"] {
+    background: rgba(14, 165, 233, 0.14);
+    color: var(--lesson-accent);
+}
+
+.lesson-tts-status[data-state="ended"] {
+    background: rgba(15, 23, 42, 0.1);
+    color: var(--lesson-secondary);
+}
+
+.lesson-tts-status[data-state="empty"],
+.lesson-tts-status[data-state="error"] {
+    background: rgba(239, 68, 68, 0.14);
+    color: var(--lesson-danger);
+}
+
+.lesson-tts-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--lesson-muted);
+    font-size: 0.9rem;
+}
+
+.lesson-tts-meta strong {
+    color: var(--lesson-secondary);
+    font-size: 0.95rem;
+}
+
+.lesson-tts-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.lesson-tts-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--lesson-secondary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.lesson-tts-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(37, 99, 235, 0.24);
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.1);
+}
+
+.lesson-tts-button.is-primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--lesson-primary), #1d4ed8);
+    color: #fff;
+}
+
+.lesson-tts-button:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+@media (max-width: 640px) {
+    .lesson-tts-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .lesson-tts-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .lesson-tts-button {
+        width: 100%;
+    }
+}
+
 .lesson-assist-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }

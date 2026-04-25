@@ -224,6 +224,35 @@
             </div>
         </div>
 
+        <div class="lesson-rail-card lesson-tts-card" id="lessonTtsCard">
+            <div class="lesson-rail-section-head">
+                <div>
+                    <span class="lesson-rail-kicker">Nghe bài học</span>
+                    <h3>Audio toàn bài</h3>
+                </div>
+                <span class="lesson-tts-status" id="lessonTtsStatusBadge" data-state="idle">Sẵn sàng</span>
+            </div>
+            <p class="lesson-tools-copy" id="lessonTtsStatusText">Nghe lại nội dung chính của bài học với giọng đọc tiếng Việt tự nhiên. Code và khối HTML sẽ được bỏ qua để giữ nhịp nghe dễ theo dõi.</p>
+            <div class="lesson-tts-meta">
+                <span id="lessonTtsProgressText">Chưa bắt đầu</span>
+                <strong id="lessonTtsSegmentText">0/0 đoạn</strong>
+            </div>
+            <div class="lesson-tts-actions">
+                <button type="button" class="lesson-tts-button is-primary" id="lessonTtsPlayButton">
+                    <i class="fas fa-headphones"></i>
+                    <span>Nghe bài</span>
+                </button>
+                <button type="button" class="lesson-tts-button" id="lessonTtsPauseButton" disabled>
+                    <i class="fas fa-pause"></i>
+                    <span>Tạm dừng</span>
+                </button>
+                <button type="button" class="lesson-tts-button" id="lessonTtsResumeButton" disabled>
+                    <i class="fas fa-play"></i>
+                    <span>Tiếp tục</span>
+                </button>
+            </div>
+        </div>
+
         <div class="lesson-rail-card">
             <div class="lesson-rail-section-head">
                 <div>
@@ -386,6 +415,10 @@
             avatar: user.avatar || ''
         }
     }) : 'null' %>;
+    window.LESSON_TTS_STATE = {
+        manifestUrl: "/api/lesson/<%= lesson._id %>/tts",
+        lessonId: "<%= lesson._id %>"
+    };
 
     <%
         let rawContent = lesson.content || [];
@@ -399,6 +432,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script src="/js/lessonDetail.js"></script>
+<script src="/js/lessonTts.js"></script>
 <script src="/js/lessonDetailComments.js"></script>
 <script src="/js/lessonGamification.js"></script>
 <script src="/js/lessonActiveLearning.js"></script>

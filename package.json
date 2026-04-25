@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node scripts/run-syntax-checks.js && node scripts/run-admin-backoffice-tests.js && node scripts/run-garden-state-tests.js && node scripts/run-garden-inventory-tests.js && node scripts/run-garden-quest-tests.js && node scripts/run-cors-policy-tests.js && node scripts/run-google-oauth-callback-tests.js && node scripts/run-achievement-logic-tests.js && node scripts/run-lesson-active-learning-tests.js && node scripts/run-lesson-gamification-tests.js && node scripts/run-guild-tree-tests.js && node scripts/run-content-access-tests.js",
+    "test": "node scripts/run-syntax-checks.js && node scripts/run-admin-backoffice-tests.js && node scripts/run-garden-state-tests.js && node scripts/run-garden-inventory-tests.js && node scripts/run-garden-quest-tests.js && node scripts/run-cors-policy-tests.js && node scripts/run-google-oauth-callback-tests.js && node scripts/run-achievement-logic-tests.js && node scripts/run-lesson-active-learning-tests.js && node scripts/run-lesson-gamification-tests.js && node scripts/run-guild-tree-tests.js && node scripts/run-content-access-tests.js && node scripts/run-lesson-tts-tests.js",
     "test-db": "node test-db-connection.js",
     "dev": "nodemon server.js",
     "sync-achievements": "node scripts/sync-achievements.js",
@@ -36,6 +36,7 @@
     "moment-timezone": "^0.5.48",
     "mongoose": "^8.4.4",
     "mongoose-slug-updater": "^3.3.0",
+    "msedge-tts": "^2.0.5",
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^3.0.3",

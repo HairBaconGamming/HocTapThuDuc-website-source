@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const moment = require('moment-timezone'); // [FIX] Thêm dòng này
 const User = require('../models/User');
 const UserActivityLog = require('../models/UserActivityLog'); // [FIX] Thêm dòng này
 const { isLoggedIn, isPro, isTeacher } = require('../middlewares/auth');
 const unitController = require('../controllers/unitController');
 const lessonController = require('../controllers/lessonController');
+const lessonTtsController = require('../controllers/lessonTtsController');
 const courseController = require('../controllers/courseController');
 const authMiddleware = require('../middlewares/auth');
 const gardenController = require('../controllers/gardenController');
@@ -16,6 +18,16 @@ const { getJwtSecret } = require('../utils/secrets');
 const LessonProgress = require('../models/LessonProgress');
 
 const JWT_SECRET = getJwtSecret();
+const lessonTtsManifestLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 8,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Bạn thao tác nghe bài quá nhanh. Vui lòng thử lại sau ít phút.'
+    }
+});
 
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
@@ -146,6 +158,8 @@ router.post('/user/avatar', isLoggedIn, isPro, async (req, res) => {
 });
 
 // --- API LESSON & COURSE ---
+router.get('/lesson/:id/tts', authMiddleware.isLoggedIn, lessonTtsManifestLimiter, lessonTtsController.getLessonTtsManifest);
+router.get('/lesson/tts/audio/:segmentId', authMiddleware.isLoggedIn, lessonTtsController.streamLessonTtsAudio);
 router.post('/lesson/save', isTeacher, lessonController.saveLessonAjax);
 router.get('/lesson/:id', isTeacher, lessonController.getLessonDetail);
 router.post('/unit/bulk-status', isTeacher, courseController.bulkUpdateUnitStatus);
