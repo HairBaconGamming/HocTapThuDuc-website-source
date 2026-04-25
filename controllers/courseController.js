@@ -718,7 +718,7 @@ exports.getCourseDetail = async (req, res) => {
             .populate({
                 path: 'lessons',
                 match: lessonMatch,
-                select: 'title type isPro isProOnly slug duration isPublished',
+                select: 'title type isPro isProOnly slug duration isPublished views likes',
                 options: { sort: { order: 1 } }
             })
             .lean();

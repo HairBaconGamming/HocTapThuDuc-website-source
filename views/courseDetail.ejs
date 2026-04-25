@@ -234,6 +234,8 @@
                                                             <div class="course-roadmap-lesson-meta">
                                                                 <span><i class="far fa-clock"></i><%= lesson.durationLabel %></span>
                                                                 <span><i class="fas <%= lesson.typeIcon %>"></i><%= lesson.typeLabel %></span>
+                                                                <span title="Lượt xem"><i class="fas fa-eye"></i><%= lesson.views || 0 %></span>
+                                                                <span title="Lượt thích"><i class="fas fa-heart" style="color: #ef4444;"></i><%= lesson.likes ? lesson.likes.length : 0 %></span>
                                                             </div>
                                                         </div>
 
