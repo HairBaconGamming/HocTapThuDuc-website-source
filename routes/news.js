@@ -269,7 +269,16 @@ router.get("/:id", async (req, res) => {
       return res.redirect("/news");
     }
 
-    res.render("newsDetail", { user: req.user, newsItem, marked });
+    // Fetch related posts (same category, exclude current)
+    const relatedPosts = await News.find({
+      _id: { $ne: newsItem._id },
+      category: newsItem.category
+    })
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('title image createdAt');
+
+    res.render("newsDetail", { user: req.user, newsItem, relatedPosts, marked });
   } catch (err) {
     console.error(err);
     res.send("Lỗi khi tải tin chi tiết.");

@@ -43,11 +43,13 @@ body {
 
 /* Form Container */
 .news-editor-card {
-    background: var(--np-surface);
-    border: 1px solid var(--np-border);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--np-radius);
     padding: 48px;
-    box-shadow: var(--np-shadow);
+    box-shadow: var(--np-shadow), 0 0 40px rgba(59, 130, 246, 0.06);
 }
 
 /* 1. Cover Image Upload */
