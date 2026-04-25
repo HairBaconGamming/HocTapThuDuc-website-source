@@ -10,6 +10,10 @@ const courseSchema = new mongoose.Schema({
     description: String,
     thumbnail: String,
     
+    // --- THÔNG SỐ TƯƠNG TÁC ---
+    views: { type: Number, default: 0 },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    
     // TRƯỜNG MỚI: Chứa cấu trúc cây dạng JSON string (Bản nháp)
     draftTree: { type: String, default: null },
     // Lưu lại ID bài học cuối cùng đang sửa để mở lại đúng chỗ đó

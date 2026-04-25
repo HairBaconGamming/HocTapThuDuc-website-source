@@ -84,6 +84,9 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         const lesson = await Lesson.findById(req.params.id).populate("createdBy", "username avatar isTeacher").lean();
         if (!lesson) return res.redirect("/subjects");
 
+        // --- BỔ SUNG: Increment views (Fire & Forget) ---
+        Lesson.updateOne({ _id: lesson._id }, { $inc: { views: 1 } }).exec();
+
         let course = null;
         try {
             if (lesson.courseId) {

@@ -164,6 +164,7 @@ router.post('/lesson/save', isTeacher, lessonController.saveLessonAjax);
 router.get('/lesson/:id', isTeacher, lessonController.getLessonDetail);
 router.post('/unit/bulk-status', isTeacher, courseController.bulkUpdateUnitStatus);
 router.post('/course/:id/update-full', isTeacher, courseController.updateCourseFull);
+router.post('/course/:id/like', authMiddleware.isLoggedIn, courseController.toggleCourseLike);
 router.post('/unit/:id/delete', isTeacher, unitController.deleteUnit);
 router.get('/lesson/:id/revisions', isTeacher, lessonController.getRevisions);
 router.post('/lesson/restore/:revisionId', isTeacher, lessonController.restoreRevision);

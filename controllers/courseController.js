@@ -661,6 +661,34 @@ exports.updateCourseFull = async (req, res) => {
     }
 };
 
+// [NEW] API: Toggle Course Like
+exports.toggleCourseLike = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const userId = req.user._id;
+        
+        const course = await Course.findById(courseId).select('likes');
+        if (!course) return res.status(404).json({ error: 'Không tìm thấy khóa học' });
+        
+        const alreadyLiked = course.likes.some(id => id.equals(userId));
+        
+        if (alreadyLiked) {
+            await Course.updateOne({ _id: courseId }, { $pull: { likes: userId } });
+        } else {
+            await Course.updateOne({ _id: courseId }, { $addToSet: { likes: userId } });
+        }
+        
+        const updated = await Course.findById(courseId).select('likes');
+        res.json({
+            liked: !alreadyLiked,
+            likeCount: updated.likes.length
+        });
+    } catch (err) {
+        console.error("Course Like Error:", err);
+        res.status(500).json({ error: 'Lỗi server khi like khóa học.' });
+    }
+};
+
 // Canonical public detail handler used by course detail pages.
 exports.getCourseDetail = async (req, res) => {
     try {
@@ -673,6 +701,9 @@ exports.getCourseDetail = async (req, res) => {
         if (!course) {
             return res.status(404).render('404', { title: 'Khong tim thay khoa hoc', user: req.user });
         }
+
+        // --- BỔ SUNG: Increment views (Fire & Forget) ---
+        Course.updateOne({ _id: course._id }, { $inc: { views: 1 } }).exec();
 
         const canViewDraft = canManageCourse(req.user, course);
 

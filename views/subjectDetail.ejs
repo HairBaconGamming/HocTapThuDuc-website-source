@@ -1,185 +1,236 @@
 <%- include('partials/header') %>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/styleSubjectDetail.css">
 
-<style>
-    :root {
-        --primary: #3b82f6;
-        --dark: #1f2937;
-        --light: #f3f4f6;
-        --gray: #6b7280;
-    }
-
-    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; color: var(--dark); }
-
-    /* --- HERO SECTION --- */
-    .subject-hero {
-        background: white;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 60px 0;
-        margin-bottom: 40px;
-    }
-    .hero-container {
-        max-width: 1200px;
-        margin: 0 auto; padding: 0 20px;
-        display: flex; align-items: center; gap: 40px;
-    }
-    .subject-thumb-lg {
-        width: 150px; height: 150px; border-radius: 20px;
-        object-fit: cover;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-    .subject-info h1 { font-size: 2.5rem; font-weight: 800; color: #111827; margin-bottom: 15px; }
-    .subject-desc { font-size: 1.1rem; color: var(--gray); max-width: 700px; line-height: 1.6; }
-    
-    .stats-row { display: flex; gap: 25px; margin-top: 20px; color: var(--gray); font-weight: 500; }
-    .stat-badge { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; }
-
-    /* --- COURSE GRID --- */
-    .container { max-width: 1200px; margin: 0 auto 60px; padding: 0 20px; }
-    
-    .section-header { 
-        display: flex;
-        justify-content: space-between; align-items: flex-end; margin-bottom: 25px; 
-        border-bottom: 2px solid #f1f5f9; padding-bottom: 15px;
-    }
-    .section-title { font-size: 1.5rem; font-weight: 700; color: #374151; }
-    
-    .course-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 30px;
-    }
-
-    /* Course Card */
-    .course-card {
-        background: white;
-        border-radius: 16px; overflow: hidden;
-        border: 1px solid #e5e7eb; transition: 0.3s ease;
-        position: relative; display: flex; flex-direction: column;
-    }
-    .course-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1); border-color: #bfdbfe; }
-
-    .card-thumb-link { display: block; overflow: hidden; aspect-ratio: 16/9; position: relative; }
-    .card-thumb { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-    .course-card:hover .card-thumb { transform: scale(1.05); }
-
-    .card-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
-    
-    .card-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: #9ca3af; margin-bottom: 10px; }
-    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; line-height: 1.4; color: #1f2937; }
-    .card-title a { text-decoration: none; color: inherit; transition: 0.2s; }
-    .card-title a:hover { color: var(--primary); }
-    
-    /* FIX: Author Info Styling */
-    .author-info { 
-        display: flex;
-        align-items: center; 
-        gap: 12px; 
-        margin-top: auto; /* Đẩy xuống đáy card-body */
-        padding-top: 15px; 
-        border-top: 1px solid #f3f4f6; 
-    }
-    .author-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb; }
-    .author-name { font-size: 0.9rem; font-weight: 600; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* Footer Stats in Card */
-    .card-footer { 
-        background: #f9fafb;
-        padding: 12px 20px; border-top: 1px solid #e5e7eb;
-        display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #6b7280;
-    }
-
-    /* Empty State */
-    .empty-state { text-align: center; padding: 60px; background: white; border-radius: 12px; border: 2px dashed #e5e7eb; }
-    
-    @media (max-width: 768px) {
-        .hero-container { flex-direction: column; text-align: center; }
-        .stats-row { justify-content: center; }
-    }
-</style>
-
-<div class="subject-hero">
+<!-- CINEMATIC HERO -->
+<div class="subject-hero" style="background-image: url('<%= subject.image || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>');">
+    <div class="hero-overlay"></div>
     <div class="hero-container">
-        <img src="<%= subject.image || '/img/default-subject.png' %>" class="subject-thumb-lg" alt="<%= subject.name %>">
-        <div class="subject-info">
-            <h1><%= subject.name %></h1>
-            <p class="subject-desc"><%= subject.description || 'Khám phá các khóa học chất lượng cao thuộc bộ môn này.' %></p>
+        <div class="hero-content">
+            <span class="hero-kicker">Lộ trình môn học</span>
+            <h1 class="hero-title"><%= subject.name %></h1>
+            <p class="hero-desc"><%= subject.description || 'Khám phá các khóa học chất lượng cao thuộc bộ môn này, được thiết kế bài bản để giúp bạn làm chủ kiến thức từ cơ bản đến nâng cao.' %></p>
             
-            <div class="stats-row">
-                <div class="stat-badge"><i class="fas fa-layer-group"></i> <%= courses.length %> Khóa học</div>
-                <% if(typeof totalLessons !== 'undefined') { %>
-                    <div class="stat-badge"><i class="fas fa-video"></i> <%= totalLessons %> Bài học</div>
-                <% } %>
-                <div class="stat-badge"><i class="fas fa-users"></i> Đang cập nhật học viên</div>
+            <div class="hero-stats">
+                <div class="stat-pill">
+                    <i class="fas fa-layer-group"></i>
+                    <span><strong><%= courses.length %></strong> Khóa học</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-video"></i>
+                    <span><strong><%= typeof totalLessons !== 'undefined' ? totalLessons : 0 %></strong> Bài học</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-users"></i>
+                    <span><strong><%= typeof totalStudents !== 'undefined' ? totalStudents : 0 %></strong> Học viên</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-eye"></i>
+                    <span><strong><%= typeof totalViews !== 'undefined' ? totalViews : 0 %></strong> Lượt xem</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-heart"></i>
+                    <span><strong><%= typeof totalLikes !== 'undefined' ? totalLikes : 0 %></strong> Lượt thích</span>
+                </div>
+            </div>
+
+            <button class="hero-cta" onclick="document.getElementById('course-grid-section').scrollIntoView({behavior: 'smooth'})">
+                Khám phá lộ trình <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="main-container" id="course-grid-section">
+    <!-- LEFT COLUMN: COURSE GRID -->
+    <div class="content-col">
+        <div class="section-header">
+            <h2 class="section-title">Các khóa học trong lộ trình</h2>
+            <div class="filter-pills" style="display: none;">
+                <button class="filter-pill active">Tất cả</button>
+                <button class="filter-pill">Mới nhất</button>
+                <button class="filter-pill">Phổ biến</button>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="container">
-    <div class="section-header">
-        <div class="section-title">Các khóa học nổi bật</div>
-    </div>
+        <% if(courses && courses.length > 0) { %>
+            <div class="course-grid">
+                <% courses.forEach(course => { %>
+                    <div class="course-card">
+                        <a href="<%= buildCoursePath(course) %>" class="card-thumb-link">
+                            <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="card-thumb" alt="<%= course.title %>">
+                            <div class="card-badges">
+                                <% if(course.isPro) { %>
+                                    <span class="badge pro"><i class="fas fa-crown"></i> PRO</span>
+                                <% } %>
+                                <% if(!course.isPublished) { %>
+                                    <span class="badge draft"><i class="fas fa-lock"></i> Sắp ra mắt</span>
+                                <% } %>
+                            </div>
+                        </a>
 
-    <% if(courses && courses.length > 0) { %>
-        <div class="course-grid">
-            <% courses.forEach(course => { %>
-                <div class="course-card">
-                    <a href="<%= buildCoursePath(course) %>" class="card-thumb-link">
-                        <img src="<%= course.thumbnail || 'https://i.ibb.co/BVnNtLhp/default-course.png' %>" class="card-thumb" alt="<%= course.title %>">
-                        <% if(course.isPublished) { %>
-                            <span style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:white; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;">
-                                <i class="fas fa-globe"></i> Public
-                            </span>
-                        <% } else { %>
-                            <span style="position:absolute; top:10px; right:10px; background:#f59e0b; color:white; padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;">
-                                <i class="fas fa-lock"></i> Sắp ra mắt
-                            </span>
-                        <% } %>
-                    </a>
+                        <div class="card-body">
+                            <h3 class="card-title">
+                                <a href="<%= buildCoursePath(course) %>"><%= course.title %></a>
+                            </h3>
+                            
+                            <p class="card-desc">
+                                <%= course.description || 'Chưa có mô tả ngắn. Khóa học này đang được biên soạn nội dung.' %>
+                            </p>
 
-                    <div class="card-body">
-                        <div class="card-meta">
-                            <span><i class="far fa-calendar-alt"></i> <%= new Date(course.createdAt).toLocaleDateString('vi-VN') %></span>
-                            <span>Cơ bản</span> 
+                            <div class="subject-card-stats">
+                                <span><i class="fas fa-book-open"></i> <%= course.lessonCount || 0 %> bài</span>
+                                <span><i class="fas fa-eye"></i> <%= (course.viewCount || 0).toLocaleString('vi-VN') %></span>
+                            </div>
+
+                            <% if (user) { %>
+                                <div class="card-progress">
+                                    <div class="progress-info">
+                                        <span class="progress-text">Tiến độ: <%= course.progressPercent || 0 %>%</span>
+                                        <span class="progress-count"><%= course.completedCount || 0 %>/<%= course.lessonCount || 0 %> bài</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" style="width: <%= course.progressPercent || 0 %>%"></div>
+                                    </div>
+                                </div>
+                            <% } %>
+
+                            <div class="author-info">
+                                <% 
+                                    const author = course.createdBy || course.author || {}; 
+                                    const avatar = author.avatar || 'https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg';
+                                    const name = author.username || 'Ban biên tập';
+                                %>
+                                <img src="<%= avatar %>" class="author-avatar" alt="<%= name %>">
+                                <span class="author-name"><%= name %></span>
+                            </div>
                         </div>
 
-                        <h3 class="card-title">
-                            <a href="<%= buildCoursePath(course) %>"><%= course.title %></a>
-                        </h3>
-                        
-                        <p style="font-size:0.9rem; color:#6b7280; line-height:1.5; margin-bottom:15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                            <%= course.description || 'Chưa có mô tả ngắn.' %>
-                        </p>
-
-                        <div class="author-info">
-                            <% 
-                                const author = course.createdBy || course.author || {}; 
-                                const avatar = author.avatar || 'https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg';
-                                const name = author.username || 'Ban biên tập';
-                            %>
-                            <img src="<%= avatar %>" class="author-avatar" alt="Author">
-                            <span class="author-name"><%= name %></span>
+                        <div class="card-footer">
+                            <button class="subject-card-like-btn <%= course.isLikedByUser ? 'is-liked' : '' %>"
+                                    data-course-id="<%= course._id %>"
+                                    data-liked="<%= course.isLikedByUser %>"
+                                    title="Thích khóa học này">
+                                <i class="<%= course.isLikedByUser ? 'fas' : 'far' %> fa-heart"></i>
+                                <span class="like-count"><%= course.likeCount || 0 %></span>
+                            </button>
+                            
+                            <a href="<%= buildCoursePath(course) %>" class="card-cta">
+                                <%= course.progressPercent > 0 ? 'Học tiếp' : 'Vào học' %> <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <h3>Chưa có khóa học nào</h3>
+                <p>Nội dung cho lộ trình này đang được các giảng viên xây dựng và sẽ sớm ra mắt.</p>
+                <a href="/subjects" class="btn btn-primary mt-3">Khám phá lộ trình khác</a>
+            </div>
+        <% } %>
+    </div>
 
-                    <div class="card-footer">
-                        <span><i class="fas fa-book-open"></i> Xem chi tiết</span>
-                        <a href="<%= buildCoursePath(course) %>" style="color:var(--primary); font-weight:600; text-decoration:none;">
-                            Vào học <i class="fas fa-arrow-right"></i>
-                        </a>
+    <!-- RIGHT COLUMN: STICKY SIDEBAR -->
+    <div class="sidebar-col">
+        <div class="sticky-sidebar">
+            <div class="sidebar-widget">
+                <h3 class="widget-title">Tổng quan lộ trình</h3>
+                <div class="widget-stats">
+                    <div class="w-stat-row">
+                        <span class="w-stat-label"><i class="fas fa-book"></i> Khóa học</span>
+                        <span class="w-stat-val"><%= courses.length %></span>
+                    </div>
+                    <div class="w-stat-row">
+                        <span class="w-stat-label"><i class="fas fa-file-video"></i> Bài học</span>
+                        <span class="w-stat-val"><%= typeof totalLessons !== 'undefined' ? totalLessons : 0 %></span>
+                    </div>
+                    <div class="w-stat-row">
+                        <span class="w-stat-label"><i class="fas fa-eye"></i> Lượt xem</span>
+                        <span class="w-stat-val"><%= typeof totalViews !== 'undefined' ? totalViews : 0 %></span>
+                    </div>
+                    <div class="w-stat-row">
+                        <span class="w-stat-label"><i class="fas fa-heart"></i> Yêu thích</span>
+                        <span class="w-stat-val"><%= typeof totalLikes !== 'undefined' ? totalLikes : 0 %></span>
                     </div>
                 </div>
-            <% }) %>
+            </div>
+
+            <% if (user) { %>
+                <div class="sidebar-widget">
+                    <h3 class="widget-title">Tiến độ của bạn</h3>
+                    <% 
+                        let totalCompleted = 0;
+                        let totalSubjectLessons = typeof totalLessons !== 'undefined' ? totalLessons : 0;
+                        if (courses && courses.length > 0) {
+                            courses.forEach(c => totalCompleted += (c.completedCount || 0));
+                        }
+                        let overallProgress = totalSubjectLessons > 0 ? Math.round((totalCompleted / totalSubjectLessons) * 100) : 0;
+                    %>
+                    <div class="overall-progress-circle">
+                        <svg viewBox="0 0 36 36" class="circular-chart <%= overallProgress >= 100 ? 'success' : 'blue' %>">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" stroke-dasharray="<%= overallProgress %>, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="20.35" class="percentage"><%= overallProgress %>%</text>
+                        </svg>
+                    </div>
+                    <p class="text-center text-muted small mt-2">Hoàn thành <%= totalCompleted %>/<%= totalSubjectLessons %> bài học</p>
+                </div>
+            <% } %>
+
+            <a href="/subjects" class="sidebar-link">
+                <i class="fas fa-arrow-left"></i> Xem tất cả môn học
+            </a>
         </div>
-    <% } else { %>
-        <div class="empty-state">
-            <i class="fas fa-box-open" style="font-size:3rem; color:#e5e7eb; margin-bottom:15px;"></i>
-            <h3>Chưa có khóa học nào</h3>
-            <p style="color:#9ca3af;">Nội dung cho môn học này đang được xây dựng.</p>
-        </div>
-    <% } %>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Client-side JS for course like toggle
+    const isLoggedIn = <%= !!user %>;
+    
+    document.querySelectorAll('.subject-card-like-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!isLoggedIn) {
+                alert('Vui lòng đăng nhập để thích khóa học.');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const courseId = btn.dataset.courseId;
+            try {
+                const res = await fetch(`/api/course/${courseId}/like`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // Update UI
+                btn.classList.toggle('is-liked', data.liked);
+                btn.dataset.liked = data.liked;
+                
+                const icon = btn.querySelector('i');
+                icon.className = data.liked ? 'fas fa-heart' : 'far fa-heart';
+                
+                btn.querySelector('.like-count').textContent = data.likeCount;
+                
+            } catch (err) {
+                console.error('Like failed:', err);
+                alert('Có lỗi xảy ra khi thả tim.');
+            }
+        });
+    });
+});
+</script>
 
 <%- include('partials/footer') %>

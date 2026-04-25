@@ -308,6 +308,7 @@ router.get("/subjects", async (req, res) => {
 
 router.get("/subjects/:id/:slug?", async (req, res) => {
     try {
+        const mongoose = require('mongoose');
         const subjectId = req.params.id;
         const subject = await Subject.findById(subjectId).lean();
         if (!subject) return res.redirect('/subjects');
@@ -315,21 +316,65 @@ router.get("/subjects/:id/:slug?", async (req, res) => {
         if (req.params.slug !== canonicalPath.split('/').pop()) {
             return res.redirect(301, canonicalPath);
         }
-        const courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
+        
+        let courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
+        
+        const courseIds = courses.map(c => c._id);
+        const courseObjectIds = courseIds.map(id => new mongoose.Types.ObjectId(id));
+
+        // 1. Lesson counts per course & total views from lessons
+        const lessonAgg = await Lesson.aggregate([
+            { $match: { courseId: { $in: courseObjectIds } } },
+            { $group: { _id: '$courseId', count: { $sum: 1 }, totalViews: { $sum: '$views' } } }
+        ]);
+
+        // 2. Total students in this subject (unique users who completed any lesson in this subject)
+        const subjectLessonIds = await Lesson.find({ courseId: { $in: courseIds } }).distinct('_id');
+        const uniqueStudents = await LessonCompletion.distinct('user', { lesson: { $in: subjectLessonIds } });
+        const totalStudents = uniqueStudents.length;
+
+        // 3. User progress
+        let completionMap = {};
+        if (req.user) {
+            const completions = await LessonCompletion.find({ 
+                user: req.user._id, lesson: { $in: subjectLessonIds } 
+            }).populate('lesson', 'courseId').lean();
+            
+            completions.forEach(comp => {
+                if (comp.lesson && comp.lesson.courseId) {
+                    const cid = comp.lesson.courseId.toString();
+                    completionMap[cid] = (completionMap[cid] || 0) + 1;
+                }
+            });
+        }
+
+        // 4. Enrich each course object
+        courses.forEach(course => {
+            const agg = lessonAgg.find(a => a._id.equals(course._id));
+            course.lessonCount = agg?.count || 0;
+            const lessonViews = agg?.totalViews || 0;
+            course.viewCount = (course.views || 0) + lessonViews;
+            course.likeCount = (course.likes || []).length;
+            course.isLikedByUser = req.user ? (course.likes || []).some(id => id.toString() === req.user._id.toString()) : false;
+            course.completedCount = completionMap[course._id.toString()] || 0;
+            course.progressPercent = course.lessonCount > 0 
+                ? Math.round((course.completedCount / course.lessonCount) * 100) : 0;
+        });
+
+        // 5. Subject-level totals
+        const totalViews = courses.reduce((sum, c) => sum + c.viewCount, 0);
+        const totalLikes = courses.reduce((sum, c) => sum + c.likeCount, 0);
+        const totalLessons = courses.reduce((sum, c) => sum + c.lessonCount, 0);
+
         res.render("subjectDetail", {
             title: subject.name,
             user: req.user,
             subject,
             courses,
-            selectedCourse: null,
-            units: [],
-            lessons: [],
-            totalLessons: 0,
-            uniqueTags: [],
-            activeTag: '',
-            currentCategory: '',
-            currentQuery: '',
-            currentSort: 'desc',
+            totalViews,
+            totalLikes,
+            totalStudents,
+            totalLessons,
             metaTitle: `${subject.name} | Học Tập Thủ Đức`,
             metaDescription: subject.description || `Khám phá các khóa học ${subject.name} với lộ trình rõ ràng, bài học tương tác và gamification học tập.`,
             metaImage: subject.image || 'https://i.ibb.co/BVnNtLhp/default-course.png',
