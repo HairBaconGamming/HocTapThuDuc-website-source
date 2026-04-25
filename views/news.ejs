@@ -87,29 +87,44 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        if (typeof gsap === 'undefined') {
+            // Fallback: If GSAP fails to load, force everything visible
+            document.querySelectorAll('.gsap-fade-down, .gsap-fade-up, .gsap-stagger').forEach(el => {
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+            });
+            return;
+        }
+
         gsap.registerPlugin(ScrollTrigger);
 
-        gsap.from(".gsap-fade-down", {
-            y: -30, opacity: 0, duration: 1, ease: 'power3.out'
-        });
+        gsap.fromTo(".gsap-fade-down", 
+            { y: -30, opacity: 0 },
+            { y: 0, opacity: 1, duration: 1, ease: 'power3.out', clearProps: 'all' }
+        );
 
-        gsap.from(".gsap-fade-up", {
-            y: 50, opacity: 0, duration: 1, ease: 'power3.out', delay: 0.2
-        });
+        gsap.fromTo(".gsap-fade-up", 
+            { y: 50, opacity: 0 },
+            { y: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: 0.2, clearProps: 'all' }
+        );
 
         const gridPosts = document.querySelectorAll('.gsap-stagger');
         if (gridPosts.length > 0) {
-            gsap.from(gridPosts, {
-                scrollTrigger: {
-                    trigger: ".news-grid",
-                    start: "top 85%"
-                },
-                y: 50, 
-                opacity: 0, 
-                duration: 0.8, 
-                stagger: 0.15,
-                ease: 'power3.out'
-            });
+            gsap.fromTo(gridPosts, 
+                { y: 50, opacity: 0 },
+                {
+                    scrollTrigger: {
+                        trigger: ".news-grid",
+                        start: "top 85%"
+                    },
+                    y: 0, 
+                    opacity: 1, 
+                    duration: 0.8, 
+                    stagger: 0.15,
+                    ease: 'power3.out',
+                    clearProps: 'all'
+                }
+            );
         }
     });
 </script>

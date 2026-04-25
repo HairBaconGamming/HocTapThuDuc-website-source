@@ -12,16 +12,13 @@
     --nf-radius: 20px;
 }
 
-body.news {
-    background-color: var(--nf-bg);
-    font-family: 'Inter', sans-serif;
-    color: var(--nf-text);
-}
-
 .news-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 60px 20px;
+    background-color: var(--nf-bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--nf-text);
 }
 
 /* HEADER */

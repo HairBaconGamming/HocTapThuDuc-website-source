@@ -60,7 +60,7 @@ router.get("/", async (req, res) => {
 
     const newsItems = await News.find(filter)
       .populate("subject", "name")
-      .populate("postedBy", "username avatar _id") // Include avatar for poster
+      .populate("postedBy", "username avatar _id")
       .sort({ createdAt: sortOrder })
       .limit(10);
 
@@ -80,6 +80,7 @@ router.get("/", async (req, res) => {
 
     res.render("news", {
       user: req.user,
+      activePage: 'news',
       newsItems,
       newsList,
       subjects,
