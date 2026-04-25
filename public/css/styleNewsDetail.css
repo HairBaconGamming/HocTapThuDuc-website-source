@@ -236,6 +236,72 @@
 }
 
 /* =========================================
+   REACTIONS
+   ========================================= */
+.nd-reactions {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--nd-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nd-reactions-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nd-text-muted);
+    margin-bottom: 1.5rem;
+}
+
+.nd-reactions-list {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nd-reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--nd-bg);
+    border: 1px solid var(--nd-border);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.nd-reaction-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--nd-primary);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+}
+
+.nd-reaction-btn.active {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: var(--nd-primary);
+}
+
+.nd-reaction-btn.active .count {
+    color: var(--nd-primary);
+    font-weight: 700;
+}
+
+.nd-reaction-btn .emoji {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.nd-reaction-btn .count {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--nd-text);
+}
+
+/* =========================================
    SHARE BUTTONS
    ========================================= */
 .nd-share {

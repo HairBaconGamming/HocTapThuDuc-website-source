@@ -32,7 +32,8 @@
                  class="nd-author-avatar" alt="Author">
             <div class="nd-author-info">
                 <span class="nd-author-name"><%= newsItem.postedBy ? newsItem.postedBy.username : 'Ban Biên Tập' %></span>
-                <span class="nd-publish-date"><%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                <span class="nd-publish-date"><i class="far fa-calendar-alt"></i> <%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                <span class="nd-views" style="margin-left:10px;"><i class="fas fa-eye"></i> <%= newsItem.views || 0 %> lượt xem</span>
             </div>
         </div>
     </header>
@@ -41,6 +42,31 @@
     <div class="nd-body">
         <div class="nd-content" id="articleContent">
             <%- marked.parse(newsItem.content) %>
+        </div>
+        
+        <!-- REACTIONS -->
+        <div class="nd-reactions" id="reactionsContainer">
+            <% 
+                const reactions = newsItem.reactions || { like: [], heart: [], haha: [], sad: [], angry: [] };
+                const types = [
+                    { id: 'like', icon: '👍', label: 'Thích' },
+                    { id: 'heart', icon: '❤️', label: 'Yêu' },
+                    { id: 'haha', icon: '😆', label: 'Haha' },
+                    { id: 'sad', icon: '😢', label: 'Buồn' },
+                    { id: 'angry', icon: '😡', label: 'Phẫn nộ' }
+                ];
+            %>
+            <div class="nd-reactions-title">Bạn cảm thấy thế nào về bài viết này?</div>
+            <div class="nd-reactions-list">
+                <% types.forEach(t => { 
+                    const hasReacted = user && reactions[t.id] && reactions[t.id].includes(user._id.toString());
+                %>
+                    <button class="nd-reaction-btn <%= hasReacted ? 'active' : '' %>" data-type="<%= t.id %>" onclick="toggleReaction('<%= t.id %>')" title="<%= t.label %>">
+                        <span class="emoji"><%= t.icon %></span>
+                        <span class="count" id="count-<%= t.id %>"><%= reactions[t.id] ? reactions[t.id].length : 0 %></span>
+                    </button>
+                <% }) %>
+            </div>
         </div>
     </div>
 
@@ -140,7 +166,54 @@
                 y: 30, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.7, ease: 'power3.out'
             });
         }
+
     });
+
+    // Toggle Reaction
+    async function toggleReaction(type) {
+        <% if (!user) { %>
+            alert('Vui lòng đăng nhập để thả cảm xúc!');
+            return;
+        <% } else { %>
+            try {
+                const btn = document.querySelector(`.nd-reaction-btn[data-type="${type}"]`);
+                btn.style.opacity = '0.7';
+                
+                const response = await fetch(`/news/<%= newsItem._id %>/react`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Update all counts
+                    Object.keys(data.counts).forEach(t => {
+                        const countEl = document.getElementById(`count-${t}`);
+                        if(countEl) countEl.innerText = data.counts[t];
+                        
+                        const tBtn = document.querySelector(`.nd-reaction-btn[data-type="${t}"]`);
+                        if(tBtn) {
+                            if (t === type && data.reacted) {
+                                tBtn.classList.add('active');
+                            } else {
+                                tBtn.classList.remove('active');
+                            }
+                        }
+                    });
+                } else {
+                    alert(data.error || 'Có lỗi xảy ra!');
+                }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                const btn = document.querySelector(`.nd-reaction-btn[data-type="${type}"]`);
+                btn.style.opacity = '1';
+            }
+        <% } %>
+    }
 </script>
 
 <%- include('partials/footer') %>

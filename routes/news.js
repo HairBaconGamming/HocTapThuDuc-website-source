@@ -263,6 +263,10 @@ router.get("/:id", async (req, res) => {
       .populate("postedBy", "username avatar _id");
     if (!newsItem) return res.send("Tin tức không tồn tại.");
 
+    // Increment views (don't block the render for this)
+    newsItem.views = (newsItem.views || 0) + 1;
+    newsItem.save().catch(err => console.error("Error updating views:", err));
+
     // Nếu tin thuộc "Tài khoản PRO", chỉ hiển thị nếu user là PRO
     if (newsItem.category === "Tài khoản PRO" && !hasProAccess(req.user)) {
       req.flash("error", "Tính năng này chỉ dành cho tài khoản PRO.");
@@ -278,10 +282,62 @@ router.get("/:id", async (req, res) => {
       .limit(3)
       .select('title image createdAt');
 
-    res.render("newsDetail", { user: req.user, newsItem, relatedPosts, marked });
+    res.render("newsDetail", { user: req.user, newsItem, relatedPosts, marked, activePage: 'news' });
   } catch (err) {
     console.error(err);
     res.send("Lỗi khi tải tin chi tiết.");
+  }
+});
+
+// POST /news/:id/react - Handle reactions
+router.post("/:id/react", ensureAuthenticated, async (req, res) => {
+  try {
+    const { type } = req.body;
+    const validTypes = ['like', 'heart', 'haha', 'sad', 'angry'];
+    
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: "Invalid reaction type" });
+    }
+
+    const newsItem = await News.findById(req.params.id);
+    if (!newsItem) return res.status(404).json({ error: "News not found" });
+
+    // Initialize reactions if undefined
+    if (!newsItem.reactions) {
+      newsItem.reactions = { like: [], heart: [], haha: [], sad: [], angry: [] };
+    }
+
+    const userId = req.user._id;
+    let hasReacted = false;
+
+    // Check if user already reacted with THIS type
+    if (newsItem.reactions[type].includes(userId)) {
+      // Remove reaction (toggle off)
+      newsItem.reactions[type].pull(userId);
+    } else {
+      // Add reaction
+      // Optional: remove other reactions from this user if you only want 1 reaction per user
+      validTypes.forEach(t => {
+        if (newsItem.reactions[t] && newsItem.reactions[t].includes(userId)) {
+          newsItem.reactions[t].pull(userId);
+        }
+      });
+      newsItem.reactions[type].push(userId);
+      hasReacted = true;
+    }
+
+    await newsItem.save();
+    
+    // Return updated counts
+    const updatedCounts = {};
+    validTypes.forEach(t => {
+      updatedCounts[t] = newsItem.reactions[t].length;
+    });
+
+    res.json({ success: true, counts: updatedCounts, reacted: hasReacted });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
