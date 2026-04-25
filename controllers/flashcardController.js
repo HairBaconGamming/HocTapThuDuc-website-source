@@ -210,3 +210,43 @@ exports.createInlineCheckpoint = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Không thể tạo flashcard trong bài.' });
     }
 };
+
+exports.updateCard = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const front = sanitizePlainText(req.body.front, { maxLength: 240 });
+        const back = sanitizePlainText(req.body.back, { maxLength: 2000 });
+
+        if (!front || !back) {
+            return res.status(400).json({ success: false, message: 'Flashcard cần đủ mặt trước và mặt sau.' });
+        }
+
+        const card = await Flashcard.findOneAndUpdate(
+            { _id: id, user: req.user._id },
+            { front, back },
+            { new: true }
+        );
+
+        if (!card) {
+            return res.status(404).json({ success: false, message: 'Thẻ không tồn tại hoặc bạn không có quyền sửa.' });
+        }
+
+        res.json({ success: true, card });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+};
+
+exports.deleteCard = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const card = await Flashcard.findOneAndDelete({ _id: id, user: req.user._id });
+        if (!card) {
+            return res.status(404).json({ success: false, message: 'Thẻ không tồn tại hoặc bạn không có quyền xóa.' });
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+};
+

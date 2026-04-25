@@ -8,5 +8,7 @@ router.post('/submit', isLoggedIn, flashcardController.processReview);
 router.post('/create', isLoggedIn, flashcardController.createCard);
 router.get('/lesson/:lessonId/inline', isLoggedIn, flashcardController.getInlineCheckpoints);
 router.post('/lesson/:lessonId/inline', isLoggedIn, flashcardController.createInlineCheckpoint);
+router.put('/:id', isLoggedIn, flashcardController.updateCard);
+router.delete('/:id', isLoggedIn, flashcardController.deleteCard);
 
 module.exports = router;

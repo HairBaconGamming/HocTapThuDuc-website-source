@@ -549,20 +549,32 @@
             cardEl.dataset.cardId = card._id;
             cardEl.dataset.blockKey = card.anchor?.blockKey || '';
 
+            const headerHtml = (title, cardId) => `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <span class="lesson-inline-flashcard-kicker">${title}</span>
+                    <div style="display: flex; gap: 4px; margin-top: -4px; margin-right: -4px;">
+                        <button type="button" data-flashcard-action="edit" data-card-id="${cardId}" title="Sửa" style="background: none; border: none; color: var(--lesson-muted); cursor: pointer; padding: 4px; border-radius: 4px;"><i class="fas fa-pen" style="font-size: 0.8em;"></i></button>
+                        <button type="button" data-flashcard-action="delete" data-card-id="${cardId}" title="Xóa" style="background: none; border: none; color: var(--lesson-danger); cursor: pointer; padding: 4px; border-radius: 4px;"><i class="fas fa-trash" style="font-size: 0.8em;"></i></button>
+                    </div>
+                </div>
+            `;
+
             const front = document.createElement('div');
             front.className = 'lesson-inline-flashcard-face is-front';
-            front.innerHTML = `<span class="lesson-inline-flashcard-kicker">Mặt trước</span><strong>${this.escapeHtml(card.front)}</strong>`;
+            front.innerHTML = `${headerHtml('Mặt trước', card._id)}<strong>${this.escapeHtml(card.front)}</strong>`;
 
             const back = document.createElement('div');
             back.className = 'lesson-inline-flashcard-face is-back hidden';
-            back.innerHTML = `<span class="lesson-inline-flashcard-kicker">Mặt sau</span><strong>${this.escapeHtml(card.back)}</strong>`;
+            back.innerHTML = `${headerHtml('Mặt sau', card._id)}<strong>${this.escapeHtml(card.back)}</strong>`;
 
             const actions = document.createElement('div');
             actions.className = 'lesson-inline-flashcard-actions';
             actions.innerHTML = `
-                <button type="button" class="lesson-inline-flashcard-button" data-flashcard-action="flip" data-card-id="${card._id}">Lật thẻ</button>
-                <button type="button" class="lesson-inline-flashcard-button is-muted hidden" data-flashcard-action="hard" data-card-id="${card._id}">Chưa nhớ</button>
-                <button type="button" class="lesson-inline-flashcard-button is-primary hidden" data-flashcard-action="easy" data-card-id="${card._id}">Nhớ rồi</button>
+                <button type="button" class="lesson-inline-flashcard-button" data-flashcard-action="flip" data-card-id="${card._id}"><i class="fas fa-sync-alt"></i> Lật thẻ</button>
+                <div class="lesson-inline-flashcard-review-actions hidden" style="display: flex; gap: 8px;">
+                    <button type="button" class="lesson-inline-flashcard-button is-muted" data-flashcard-action="hard" data-card-id="${card._id}">Chưa nhớ</button>
+                    <button type="button" class="lesson-inline-flashcard-button is-primary" data-flashcard-action="easy" data-card-id="${card._id}">Nhớ rồi</button>
+                </div>
             `;
 
             cardEl.appendChild(front);
@@ -577,11 +589,32 @@
             const cardEl = button.closest('.lesson-inline-flashcard');
             if (!cardId || !cardEl) return;
 
+            if (action === 'delete') {
+                this.deleteFlashcard(cardId);
+                return;
+            }
+
+            if (action === 'edit') {
+                this.editFlashcard(cardId);
+                return;
+            }
+
             if (action === 'flip') {
-                cardEl.querySelector('.is-front')?.classList.add('hidden');
-                cardEl.querySelector('.is-back')?.classList.remove('hidden');
-                cardEl.querySelectorAll('[data-flashcard-action="hard"], [data-flashcard-action="easy"]').forEach((item) => item.classList.remove('hidden'));
-                button.classList.add('hidden');
+                const front = cardEl.querySelector('.is-front');
+                const back = cardEl.querySelector('.is-back');
+                const isFrontHidden = front.classList.contains('hidden');
+
+                if (isFrontHidden) {
+                    front.classList.remove('hidden');
+                    back.classList.add('hidden');
+                } else {
+                    front.classList.add('hidden');
+                    back.classList.remove('hidden');
+                    if (!cardEl.classList.contains('is-reviewed')) {
+                        const reviewActions = cardEl.querySelector('.lesson-inline-flashcard-review-actions');
+                        if (reviewActions) reviewActions.classList.remove('hidden');
+                    }
+                }
                 return;
             }
 
@@ -620,6 +653,70 @@
                 }
             } catch (error) {
                 window.Swal?.fire('Chưa ghi nhận được', error.message || 'Không thể cập nhật flashcard.', 'error');
+            }
+        }
+
+        async deleteFlashcard(cardId) {
+            const confirm = window.confirm('Bạn có chắc muốn xóa flashcard này?');
+            if (!confirm) return;
+
+            try {
+                const response = await fetch(`/api/flashcards/${cardId}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Không thể xóa flashcard.');
+                await this.loadFlashcards();
+            } catch (error) {
+                window.Swal?.fire('Chưa xóa được', error.message || 'Không thể xóa flashcard.', 'error');
+            }
+        }
+
+        async editFlashcard(cardId) {
+            const card = this.flashcards.find(c => String(c._id) === String(cardId));
+            if (!card || !window.Swal) return;
+
+            const result = await Swal.fire({
+                title: 'Sửa flashcard',
+                html: `
+                    <div class="lesson-smart-modal-shell">
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-edit-flashcard-front">Mặt trước</label>
+                            <input id="lesson-edit-flashcard-front" class="swal2-input" value="${this.escapeHtml(card.front || '')}">
+                        </div>
+                        <div class="lesson-smart-modal-field">
+                            <label for="lesson-edit-flashcard-back">Mặt sau</label>
+                            <textarea id="lesson-edit-flashcard-back" class="swal2-textarea" style="display:block;width:100%;min-height:160px;">${this.escapeHtml(card.back || '')}</textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                buttonsStyling: false,
+                customClass: this.getModalClasses(),
+                confirmButtonText: 'Lưu',
+                cancelButtonText: 'Đóng',
+                preConfirm: () => {
+                    const front = document.getElementById('lesson-edit-flashcard-front')?.value?.trim();
+                    const back = document.getElementById('lesson-edit-flashcard-back')?.value?.trim();
+                    if (!front || !back) {
+                        Swal.showValidationMessage('Vui lòng nhập đủ 2 mặt.');
+                        return false;
+                    }
+                    return { front, back };
+                }
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`/api/flashcards/${cardId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(result.value)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Không thể sửa flashcard.');
+                await this.loadFlashcards();
+            } catch (error) {
+                Swal.fire('Chưa lưu được', error.message || 'Không thể sửa flashcard.', 'error');
             }
         }
 
