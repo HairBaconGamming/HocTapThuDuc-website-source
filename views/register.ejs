@@ -1,64 +1,84 @@
 <%- include('partials/header') %>
-<link rel="stylesheet" href="/css/styleLogin.css">
+<link rel="stylesheet" href="/css/styleAuth.css">
 
-<section class="login-page-section">
-    <div class="login-form-container" style="max-width: 500px;">
-        <div style="font-size: 3rem; margin-bottom: 10px;">✨</div>
-        <h2 class="form-title">Nhập hộ khẩu!</h2>
-        <p class="form-subtitle">Trở thành cư dân ưu tú của HTTD ngay hôm nay.</p>
-
-        <% if (locals.message && message.message) { %>
-            <div style="background: #ffe0e6; color: #d81b60; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem;">
-                <%= message.message %>
-            </div>
-        <% } %>
-
-        <form action="/register" method="POST" id="registerForm">
-            <% if (authRedirect) { %>
-                <input type="hidden" name="redirect" value="<%= authRedirect %>">
-            <% } %>
-            <div class="input-field-group">
-                <label class="form-label-v2">Tên đăng nhập (Username)</label>
-                <input type="text" name="username" class="form-input-v2" placeholder="Đặt tên cho ngầu vào..." required>
-                <small style="color: #999; font-size: 0.8rem;">Viết liền không dấu nha</small>
-            </div>
-
-            <div class="input-field-group">
-                <label class="form-label-v2">Mật khẩu</label>
-                <input type="password" name="password" class="form-input-v2" placeholder="Bí mật đừng nói ai nghe..." required>
-            </div>
-
-            <div class="input-field-group">
-                <label class="form-label-v2">Trường THPT</label>
-                <select name="school" class="form-select-v2">
-                    <option value="" disabled selected>-- Chọn trường của bạn --</option>
-                    <option value="THPT Thủ Đức">THPT Thủ Đức</option>
-                    <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
-                    <option value="THPT Tam Phú">THPT Tam Phú</option>
-                    <option value="Khác">Trường khác...</option>
-                </select>
-            </div>
-
-            <div class="cf-turnstile" data-sitekey="<%= process.env.TURNSTILE_SITE_KEY %>" data-theme="light" style="margin: 20px 0;"></div>
-
-            <button type="submit" class="btn-submit-v2" style="background: var(--accent); color: #333;">✨ Đăng ký ngay</button>
-        </form>
-
-        <% if (googleAuthEnabled) { %>
-            <div class="auth-divider"><span>hoặc</span></div>
-            <a href="/auth/google<%= authRedirect ? ('?redirect=' + encodeURIComponent(authRedirect)) : '' %>" class="btn-social-google">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12S6.8 21.5 12 21.5c6.9 0 9.1-4.8 9.1-7.3 0-.5-.1-.9-.1-1.3H12z"/>
-                </svg>
-                <span>Đăng ký nhanh với Google</span>
-            </a>
-        <% } %>
-
-        <div class="switch-auth-link">
-            Đã là cư dân rồi? <a href="/login<%= authRedirect ? ('?redirect=' + encodeURIComponent(authRedirect)) : '' %>">Về nhà (Đăng nhập)</a>
+<div class="auth-page-wrapper">
+    <div class="auth-hero-panel" style="background: linear-gradient(135deg, #047857, #10b981);">
+        <div class="auth-hero-bg">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="10" width="80" height="80" fill="currentColor" transform="rotate(45 50 50)"/>
+            </svg>
+        </div>
+        <div class="auth-hero-logo">
+            <img src="/assets/images/logo.png" alt="HTTD Logo" onerror="this.src='https://placehold.co/40'">
+            Học Tập Thủ Đức
+        </div>
+        <div class="auth-hero-content">
+            <h1 class="auth-hero-title">Tham gia cùng chúng tôi!</h1>
+            <p class="auth-hero-desc">Mở khóa toàn bộ tính năng, tham gia làm bài tập, trồng vườn và leo rank cùng hàng nghìn học sinh khác.</p>
         </div>
     </div>
-</section>
+
+    <div class="auth-form-panel">
+        <div class="auth-form-container">
+            <div class="auth-form-header">
+                <div style="font-size: 3rem; margin-bottom: 10px;">✨</div>
+                <h2>Nhập hộ khẩu!</h2>
+                <p>Trở thành cư dân ưu tú của HTTD ngay hôm nay.</p>
+            </div>
+
+            <% if (locals.message && message.message) { %>
+                <div class="auth-alert <%= message.type === 'error' ? 'error' : 'success' %>">
+                    <%= message.message %>
+                </div>
+            <% } %>
+
+            <form action="/register" method="POST" id="registerForm">
+                <% if (authRedirect) { %>
+                    <input type="hidden" name="redirect" value="<%= authRedirect %>">
+                <% } %>
+                <div class="auth-input-group">
+                    <label class="auth-label">Tên đăng nhập (Username)</label>
+                    <input type="text" name="username" class="auth-input" placeholder="Đặt tên cho ngầu vào..." required>
+                    <small style="color: var(--auth-text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">Viết liền không dấu nha</small>
+                </div>
+
+                <div class="auth-input-group">
+                    <label class="auth-label">Mật khẩu</label>
+                    <input type="password" name="password" class="auth-input" placeholder="Bí mật đừng nói ai nghe..." required>
+                </div>
+
+                <div class="auth-input-group">
+                    <label class="auth-label">Trường THPT</label>
+                    <select name="school" class="auth-select">
+                        <option value="" disabled selected>-- Chọn trường của bạn --</option>
+                        <option value="THPT Thủ Đức">THPT Thủ Đức</option>
+                        <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
+                        <option value="THPT Tam Phú">THPT Tam Phú</option>
+                        <option value="Khác">Trường khác...</option>
+                    </select>
+                </div>
+
+                <div class="cf-turnstile" data-sitekey="<%= process.env.TURNSTILE_SITE_KEY %>" data-theme="light" style="margin: 1.5rem 0;"></div>
+
+                <button type="submit" class="auth-btn-primary" style="background: #10b981;">✨ Đăng ký ngay</button>
+            </form>
+
+            <% if (googleAuthEnabled) { %>
+                <div class="auth-divider"><span>hoặc</span></div>
+                <a href="/auth/google<%= authRedirect ? ('?redirect=' + encodeURIComponent(authRedirect)) : '' %>" class="auth-btn-google">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12S6.8 21.5 12 21.5c6.9 0 9.1-4.8 9.1-7.3 0-.5-.1-.9-.1-1.3H12z"/>
+                    </svg>
+                    <span>Đăng ký nhanh với Google</span>
+                </a>
+            <% } %>
+
+            <div class="auth-switch">
+                Đã là cư dân rồi? <a href="/login<%= authRedirect ? ('?redirect=' + encodeURIComponent(authRedirect)) : '' %>" style="color: #10b981;">Về nhà (Đăng nhập)</a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <%- include('partials/footer') %>

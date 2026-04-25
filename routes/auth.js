@@ -170,18 +170,22 @@ router.get("/auth/google/callback", (req, res, next) => {
 
         if (err) return next(err);
         if (!user) {
-            req.flash("error", info.message || "ÄÄƒng nháº­p Google tháº¥t báº¡i.");
+            if (info && info.isNewGoogleUser) {
+                req.session.pendingGoogleUser = info.profileData;
+                return res.redirect("/register/google-setup");
+            }
+            req.flash("error", info.message || "Đăng nhập Google thất bại.");
             return res.redirect("/login");
         }
 
         return req.logIn(user, (loginErr) => {
             if (loginErr) return next(loginErr);
 
-            let successMessage = "ÄÄƒng nháº­p Google thÃ nh cÃ´ng!";
+            let successMessage = "Đăng nhập Google thành công!";
             if (info.isNewUser) {
-                successMessage = "Táº¡o tÃ i khoáº£n báº±ng Google thÃ nh cÃ´ng!";
+                successMessage = "Tạo tài khoản bằng Google thành công!";
             } else if (info.linkedGoogle) {
-                successMessage = "ÄÃ£ liÃªn káº¿t Google vÃ  Ä‘Äƒng nháº­p thÃ nh cÃ´ng!";
+                successMessage = "Đã liên kết Google và đăng nhập thành công!";
             }
 
             return finalizeLogin(req, res, user, {
@@ -196,6 +200,74 @@ router.get("/auth/google/callback", (req, res, next) => {
 router.get("/register", (req, res) => {
     captureAuthReturnTo(req);
     return res.render("register", buildAuthViewModel(req, "register"));
+});
+
+// Google Setup Routes
+router.get("/register/google-setup", (req, res) => {
+    if (!req.session.pendingGoogleUser) {
+        return res.redirect("/register");
+    }
+    const viewModel = buildAuthViewModel(req, "register");
+    viewModel.pendingGoogleUser = req.session.pendingGoogleUser;
+    return res.render("googleSetup", viewModel);
+});
+
+router.post("/register/google-setup", async (req, res, next) => {
+    if (!req.session.pendingGoogleUser) {
+        return res.redirect("/register");
+    }
+    const { username, class: userClass, school } = req.body;
+    
+    // Validation
+    if (!/^(?=.{8,})[A-Za-z0-9]+$/.test(username)) {
+        req.flash("error", "Username tối thiểu 8 ký tự, chỉ gồm chữ và số.");
+        return res.redirect("/register/google-setup");
+    }
+
+    try {
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            req.flash("error", "Username đã tồn tại, vui lòng chọn tên khác.");
+            return res.redirect("/register/google-setup");
+        }
+
+        const profileData = req.session.pendingGoogleUser;
+        const crypto = require("crypto");
+
+        const newUser = new User({
+            username,
+            password: crypto.randomBytes(24).toString("hex"),
+            email: profileData.email,
+            googleId: profileData.googleId,
+            avatar: profileData.avatar || undefined,
+            class: userClass,
+            school: school
+        });
+
+        await newUser.save();
+        delete req.session.pendingGoogleUser;
+
+        try {
+            await achievementChecker.onUserRegistered(newUser._id);
+        } catch (err) {
+            console.error(err);
+        }
+
+        req.app.locals.io.emit("liveAccess", { username: newUser.username, time: new Date().toLocaleString("vi-VN"), type: "register" });
+
+        return req.logIn(newUser, (loginErr) => {
+            if (loginErr) return next(loginErr);
+            return finalizeLogin(req, res, newUser, {
+                isNewUser: true,
+                successMessage: "Tạo tài khoản bằng Google thành công!",
+            });
+        });
+
+    } catch (err) {
+        console.error(err);
+        req.flash("error", "Đăng ký thất bại.");
+        res.redirect("/register/google-setup");
+    }
 });
 
 router.post("/register", async (req, res) => {

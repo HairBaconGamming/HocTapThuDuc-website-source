@@ -82,19 +82,18 @@ module.exports = function(passport) {
                     return done(null, existingEmailUser, { isNewUser: false, linkedGoogle: true });
                 }
 
-                const usernameSeed = email.split("@")[0] || profile.displayName || "hoc-vien";
-                const username = await generateUniqueUsername(usernameSeed);
-
-                const newUser = new User({
-                    username,
-                    password: crypto.randomBytes(24).toString("hex"),
-                    email,
-                    googleId,
-                    avatar: avatar || undefined,
+                // Return information to prompt for a custom username instead of auto-creating
+                const usernameSeed = email.split("@")[0] || profile.displayName || "";
+                
+                return done(null, false, {
+                    isNewGoogleUser: true,
+                    profileData: {
+                        email,
+                        googleId,
+                        avatar: avatar || undefined,
+                        suggestedUsername: usernameSeed
+                    }
                 });
-
-                await newUser.save();
-                return done(null, newUser, { isNewUser: true });
             } catch (err) {
                 return done(err);
             }

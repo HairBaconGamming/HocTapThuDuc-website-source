@@ -355,7 +355,9 @@ router.post("/profile/edit", isLoggedIn, async (req, res) => {
         const { email, bio, class: userClass, school, avatar } = req.body; 
         const user = await User.findById(req.user._id);
         user.email = email; user.bio = bio; user.class = userClass; user.school = school;
-        if (avatar && avatar.trim() !== "") user.avatar = avatar.trim();
+        if (avatar && avatar.trim() !== "" && user.isPro) {
+            user.avatar = avatar.trim();
+        }
         await user.save();
         req.flash("success", "Đã cập nhật."); res.redirect("/profile");
     } catch(e) { req.flash("error", "Lỗi."); res.redirect("/profile/edit"); }

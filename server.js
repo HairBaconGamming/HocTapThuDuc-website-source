@@ -208,6 +208,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// [SECURITY] Chống Zalgo text
+const { sanitizeZalgo } = require('./middlewares/sanitizeZalgo');
+app.use(sanitizeZalgo);
+
 app.use(express.static("public"));
 app.use(rateLimit({ windowMs: 1*60000, max: 1000 })); // 1000 req/min
 

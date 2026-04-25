@@ -1,0 +1,68 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleAuth.css">
+
+<div class="auth-page-wrapper">
+    <div class="auth-hero-panel" style="background: linear-gradient(135deg, #f59e0b, #ea580c);">
+        <div class="auth-hero-bg">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,15 90,85 10,85" fill="currentColor"/>
+            </svg>
+        </div>
+        <div class="auth-hero-logo">
+            <img src="/assets/images/logo.png" alt="HTTD Logo" onerror="this.src='https://placehold.co/40'">
+            Học Tập Thủ Đức
+        </div>
+        <div class="auth-hero-content">
+            <h1 class="auth-hero-title">Sắp xong rồi!</h1>
+            <p class="auth-hero-desc">Chỉ còn một bước nhỏ nữa thôi để hoàn tất hồ sơ của bạn và bắt đầu trải nghiệm hệ thống HTTD.</p>
+        </div>
+    </div>
+
+    <div class="auth-form-panel">
+        <div class="auth-form-container">
+            <div class="auth-form-header">
+                <% if (pendingGoogleUser && pendingGoogleUser.avatar) { %>
+                    <img src="<%= pendingGoogleUser.avatar %>" alt="Google Avatar" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #f59e0b; padding: 3px;">
+                <% } else { %>
+                    <div style="font-size: 3rem; margin-bottom: 10px;">🌟</div>
+                <% } %>
+                <h2>Chọn định danh của bạn</h2>
+                <p>Tên này sẽ hiển thị với mọi người trên HTTD.</p>
+            </div>
+
+            <% if (locals.message && message.message) { %>
+                <div class="auth-alert <%= message.type === 'error' ? 'error' : 'success' %>">
+                    <%= message.message %>
+                </div>
+            <% } %>
+
+            <form action="/register/google-setup" method="POST" id="googleSetupForm">
+                
+                <div class="auth-input-group">
+                    <label class="auth-label">Tên đăng nhập mong muốn (Username)</label>
+                    <input type="text" name="username" class="auth-input" value="<%= pendingGoogleUser ? pendingGoogleUser.suggestedUsername : '' %>" required>
+                    <small style="color: var(--auth-text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">Viết liền không dấu nha. Sẽ được dùng để đăng nhập sau này nếu bạn không dùng Google.</small>
+                </div>
+
+                <div class="auth-input-group">
+                    <label class="auth-label">Trường THPT (Tùy chọn)</label>
+                    <select name="school" class="auth-select">
+                        <option value="" selected>-- Chọn trường của bạn --</option>
+                        <option value="THPT Thủ Đức">THPT Thủ Đức</option>
+                        <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
+                        <option value="THPT Tam Phú">THPT Tam Phú</option>
+                        <option value="Khác">Trường khác...</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="auth-btn-primary" style="background: #ea580c;">🚀 Hoàn tất & Vào lớp</button>
+            </form>
+
+            <div class="auth-switch">
+                <a href="/login" style="color: #ea580c;">Hủy bỏ & Quay lại</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
