@@ -5,6 +5,8 @@ const User = require('../models/User'); // Đảm bảo đường dẫn đúng t
 
 // Lấy URI từ .env hoặc dùng fallback localhost
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/studypro';
+const DEFAULT_AVATAR = 'https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg';
+const BROKEN_GLITCH_AVATAR = 'https://cdn.glitch.global/b34fd7c6-dd60-4242-a917-992503c79a1f/7915522.png?v=1745082805191';
 
 async function fixAllUserAvatars() {
     console.log('🚀 Bắt đầu quét và sửa lỗi Avatar...');
@@ -29,9 +31,14 @@ async function fixAllUserAvatars() {
 
             // CASE A: Avatar rỗng hoặc null -> Set mặc định
             if (!newAvatar || newAvatar.trim() === '') {
-                newAvatar = '/img/default-avatar.png';
+                newAvatar = DEFAULT_AVATAR;
                 isChanged = true;
-            } 
+            }
+            // CASE A2: Avatar đang là link glitch lỗi -> Set mặc định
+            else if (newAvatar === BROKEN_GLITCH_AVATAR) {
+                newAvatar = DEFAULT_AVATAR;
+                isChanged = true;
+            }
             // CASE B: Avatar chứa localhost hoặc domain full -> Cắt lấy đường dẫn tương đối
             else if (newAvatar.includes('/api/pro-images/')) {
                 // Logic: Tìm vị trí của "/api/" và cắt từ đó trở đi
