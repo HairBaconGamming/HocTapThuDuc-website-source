@@ -10,7 +10,7 @@
     </div>
 </footer>
 
-<% if (typeof user !== 'undefined' && user) { %>
+<% if (typeof user !== 'undefined' && user && activePage !== 'live') { %>
 <%- include('aiTutor', {
     user,
     aiTutorVariant: typeof aiTutorVariant !== 'undefined' ? aiTutorVariant : undefined,
