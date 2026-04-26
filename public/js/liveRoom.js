@@ -277,8 +277,10 @@ document.addEventListener("DOMContentLoaded", () => {
     attendanceTimer = setInterval(pingAttendance, 60 * 1000);
   }
 
+  let isConnecting = false;
+
   async function ensureRoomConnection() {
-    if (livekitConnected || !session.id) return;
+    if (livekitConnected || !session.id || isConnecting) return;
 
     if (session.status !== "live") {
       setConnectionState("Đang chờ host");
@@ -291,6 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setConnectionState("Đang kết nối");
     startAttendanceLoop();
+    isConnecting = true;
 
     try {
       const tokenPayload = await apiRequest(`/live/sessions/${session.id}/token`, {
@@ -367,6 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof showAlert === "function") {
         showAlert(error.message, "error", 4200);
       }
+    } finally {
+      isConnecting = false;
     }
   }
 
@@ -560,12 +565,13 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on("liveHandUpdate", upsertHand);
     socket.on("liveSessionUpdated", async (payload) => {
       if (!payload) return;
+      const prevStatus = session.status;
       session.status = payload.status;
       setStatusBadge(payload.statusLabel, payload.statusTone);
       if (elements.viewerCount) elements.viewerCount.textContent = payload.viewerCount || 0;
       if (elements.peakCount) elements.peakCount.textContent = payload.viewerPeak || 0;
       updateModeratorButtons(payload.status);
-      if (payload.status === "live") {
+      if (payload.status === "live" && prevStatus !== "live") {
         await ensureRoomConnection();
       }
       if (payload.status === "ended") {

@@ -1,6 +1,10 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleLiveCreate.css">
 
+<style>
+  .ai-tutor-trigger, .ai-tutor-container { display: none !important; }
+</style>
+
 <script>
   window.LIVE_STUDIO_BOOTSTRAP = <%- JSON.stringify({
     suggestedSchedule,
