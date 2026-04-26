@@ -341,7 +341,7 @@
     </button>
 </div>
 
-<div class="lesson-mobile-actions">
+<div class="lesson-mobile-actions" id="lessonMobileActions">
     <button
         type="button"
         class="lesson-mobile-fab lesson-mobile-fab--ai"
@@ -379,6 +379,19 @@
         </button>
     <% } %>
 </div>
+
+<button
+    type="button"
+    class="lesson-mobile-toolbar-toggle"
+    id="lessonMobileToolbarToggle"
+    data-lesson-action="toggle-mobile-toolbar"
+    aria-controls="lessonMobileActions"
+    aria-expanded="true"
+    aria-label="Ẩn thanh công cụ nhanh"
+>
+    <i class="fas fa-chevron-down" aria-hidden="true"></i>
+    <span>Ẩn</span>
+</button>
 
 <div class="lesson-overlay hidden" id="lessonOverlay"></div>
 

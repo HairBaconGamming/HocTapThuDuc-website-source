@@ -62,6 +62,10 @@ const LessonWorkspace = {
         return document.getElementById('lessonToolsDrawer');
     },
 
+    getMobileToolbarToggle() {
+        return document.getElementById('lessonMobileToolbarToggle');
+    },
+
     getAiTutorApi() {
         return window.AITutorUI || null;
     },
@@ -125,6 +129,7 @@ const LessonWorkspace = {
         if (this.isMobileLayout()) {
             this.setMobileRailState('left', false);
             this.setToolsDrawerState(false);
+            this.syncMobileToolbarState();
             return;
         }
 
@@ -132,6 +137,7 @@ const LessonWorkspace = {
         const savedTools = window.localStorage.getItem(this.getLayoutStorageKey('toolsDrawer'));
         document.body.classList.toggle('lesson-left-collapsed', savedLeft === 'collapsed');
         this.setToolsDrawerState(savedTools === 'open', false);
+        this.setMobileToolbarCollapsed(false, false);
     },
 
     bindGlobalEvents() {
@@ -241,6 +247,7 @@ const LessonWorkspace = {
             if (this.isMobileLayout()) {
                 this.setMobileRailState('left', false);
             }
+            this.syncMobileToolbarState();
             this.syncOverlay();
         });
 
@@ -266,6 +273,7 @@ const LessonWorkspace = {
         if (action === 'toggle-tools') this.toggleToolsDrawer();
         if (action === 'toggle-ai-tutor') this.toggleAiTutorSidebar();
         if (action === 'toggle-fab-menu') this.toggleFabMenu();
+        if (action === 'toggle-mobile-toolbar') this.toggleMobileToolbar();
     },
 
     applyLayoutMode(mode, persist = true) {
@@ -351,6 +359,51 @@ const LessonWorkspace = {
         const previewOpen = !!this.activeFullscreenPreview;
         const shouldShow = commentsOpen || previewOpen || toolsOpen || aiOpen || (this.isMobileLayout() && leftOpen);
         overlay.classList.toggle('hidden', !shouldShow);
+    },
+
+    toggleMobileToolbar() {
+        if (!this.isMobileLayout()) return;
+        const isCollapsed = document.body.classList.contains('lesson-mobile-toolbar-collapsed');
+        this.setMobileToolbarCollapsed(!isCollapsed);
+    },
+
+    syncMobileToolbarState() {
+        if (!this.isMobileLayout()) {
+            this.setMobileToolbarCollapsed(false, false);
+            return;
+        }
+
+        const savedState = window.localStorage.getItem(this.getLayoutStorageKey('mobileToolbar'));
+        this.setMobileToolbarCollapsed(savedState === 'collapsed', false);
+    },
+
+    setMobileToolbarCollapsed(isCollapsed, persist = true) {
+        const shouldCollapse = this.isMobileLayout() && !!isCollapsed;
+        document.body.classList.toggle('lesson-mobile-toolbar-collapsed', shouldCollapse);
+
+        const toggle = this.getMobileToolbarToggle();
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', String(!shouldCollapse));
+            toggle.setAttribute('aria-label', shouldCollapse ? 'Hiện thanh công cụ nhanh' : 'Ẩn thanh công cụ nhanh');
+
+            const icon = toggle.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-up', shouldCollapse);
+                icon.classList.toggle('fa-chevron-down', !shouldCollapse);
+            }
+
+            const label = toggle.querySelector('span');
+            if (label) {
+                label.textContent = shouldCollapse ? 'Mở' : 'Ẩn';
+            }
+        }
+
+        if (persist) {
+            window.localStorage.setItem(
+                this.getLayoutStorageKey('mobileToolbar'),
+                shouldCollapse ? 'collapsed' : 'open'
+            );
+        }
     },
 
     toggleFabMenu() {
