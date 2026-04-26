@@ -923,7 +923,7 @@ const LessonWorkspace = {
                     const isActive = tIdx === 0 ? 'is-active' : '';
                     const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
                     const tabId = `tab-${uniqueId}-${tIdx}`;
-                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-target="${tabId}">${this.escapeHtml(tab.title || \`Tab \${tIdx+1}\`)}</button>`;
+                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-target="${tabId}">${this.escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
                     
                     const htmlContent = this.sanitizeHtml(marked.parse(tab.content || ''));
                     tabsContent += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${htmlContent}</div>`;
@@ -944,7 +944,7 @@ const LessonWorkspace = {
                                 p.classList.add('hidden');
                             });
                             btn.classList.add('is-active');
-                            const targetPane = wrapper.querySelector(\`#\${btn.dataset.tabTarget}\`);
+                            const targetPane = wrapper.querySelector(`#${btn.dataset.tabTarget}`);
                             if (targetPane) {
                                 targetPane.classList.remove('hidden');
                                 targetPane.classList.add('is-visible');

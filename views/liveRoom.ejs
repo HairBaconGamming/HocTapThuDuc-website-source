@@ -56,12 +56,18 @@
           <i class="fas fa-fire"></i>
           <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
         </div>
+        <div class="live-toggle-facecam-wrapper" id="liveFacecamToggleWrapper">
+          <button type="button" id="liveToggleFacecamButton" class="live-room-btn live-room-btn--secondary" title="Ẩn/Hiện Camera">
+            <i class="fas fa-video"></i>
+          </button>
+        </div>
         <% if (canModerate) { %>
-          <div class="live-toggle-facecam-wrapper" id="liveFacecamToggleWrapper">
-            <button type="button" id="liveToggleFacecamButton" class="live-room-btn live-room-btn--secondary" title="Ẩn/Hiện Camera">
-              <i class="fas fa-video"></i>
-            </button>
-          </div>
+          <button type="button" id="liveToggleMicButton" class="live-room-btn live-room-btn--secondary" title="Bật/Tắt Micro">
+            <i class="fas fa-microphone"></i>
+          </button>
+          <button type="button" id="liveDeviceSettingsButton" class="live-room-btn live-room-btn--secondary" title="Cài đặt thiết bị">
+            <i class="fas fa-cog"></i>
+          </button>
           <button type="button" id="liveScreenShareButton" class="live-room-btn live-room-btn--secondary" hidden>
             <i class="fas fa-desktop"></i> Chia sẻ màn hình
           </button>
@@ -199,6 +205,27 @@
       </div>
     </div>
   </aside>
+
+  <!-- Device Settings Modal -->
+  <div id="liveDeviceModal" class="live-modal" hidden>
+    <div class="live-modal-content">
+      <div class="live-modal-header">
+        <h3>Cài đặt thiết bị</h3>
+        <button type="button" class="live-modal-close" id="liveCloseDeviceModal">&times;</button>
+      </div>
+      <div class="live-modal-body">
+        <div class="live-setting-item">
+          <label for="liveMicSelect"><i class="fas fa-microphone"></i> Microphone</label>
+          <select id="liveMicSelect" class="live-room-select"></select>
+        </div>
+        <div class="live-setting-item">
+          <label for="liveCamSelect"><i class="fas fa-video"></i> Camera</label>
+          <select id="liveCamSelect" class="live-room-select"></select>
+        </div>
+        <p class="live-setting-note">Lưu ý: Thay đổi sẽ có hiệu lực ngay lập tức.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <script src="/vendor/livekit/livekit-client.umd.js"></script>

@@ -29,6 +29,12 @@ document.addEventListener("DOMContentLoaded", () => {
     pipControls: document.getElementById("livePipControls"),
     pipHideBtn: document.getElementById("livePipHideBtn"),
     facecamToggleBtn: document.getElementById("liveToggleFacecamButton"),
+    micToggleBtn: document.getElementById("liveToggleMicButton"),
+    deviceSettingsBtn: document.getElementById("liveDeviceSettingsButton"),
+    deviceModal: document.getElementById("liveDeviceModal"),
+    closeDeviceModalBtn: document.getElementById("liveCloseDeviceModal"),
+    micSelect: document.getElementById("liveMicSelect"),
+    camSelect: document.getElementById("liveCamSelect"),
   };
 
   let socket = null;
@@ -38,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let livekitConnected = false;
   let isScreenSharing = false;
   let isFacecamVisible = true;
+  let isMicEnabled = true;
+  let isCamEnabled = true;
   let facecamPos = { x: 0, y: 0 };
   const seenChatIds = new Set((boot.chatMessages || []).map((entry) => entry.id));
 
@@ -349,7 +357,9 @@ document.addEventListener("DOMContentLoaded", () => {
       room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
         const wasScreenShare = track.source === LivekitClient?.Track?.Source?.ScreenShare
           || track.source === 'screen_share';
+        
         track.detach().forEach((element) => element.remove());
+        
         if (wasScreenShare) {
           isScreenSharing = false;
           if (elements.mediaArea) elements.mediaArea.classList.remove("is-sharing");
@@ -358,7 +368,13 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.screenShareContainer.hidden = true;
           }
           resetFacecamPosition(true);
+        } else {
+          // If it was a camera track, we might want to check if the participant is still there
+          // but we usually handle cleanup in ParticipantDisconnected.
         }
+      });
+
+      room.on(LivekitClient.RoomEvent.ParticipantDisconnected, (participant) => {
         if (participant?.identity) {
           removeParticipantTracks(participant.identity);
         }
@@ -494,12 +510,29 @@ document.addEventListener("DOMContentLoaded", () => {
           showAlert("Đã tắt chia sẻ màn hình.", "info", 2000);
         }
       } else {
-        await room.localParticipant.setScreenShareEnabled(true);
+        const publication = await room.localParticipant.setScreenShareEnabled(true);
         isScreenSharing = true;
+        
         if (elements.screenShareButton) {
           elements.screenShareButton.innerHTML = '<i class="fas fa-stop"></i> Dừng chia sẻ';
           elements.screenShareButton.classList.add("live-room-btn--active");
         }
+
+        if (elements.mediaArea) elements.mediaArea.classList.add("is-sharing");
+
+        // Manually attach local screen share for host preview
+        if (publication && publication.track && elements.screenShareContainer) {
+          elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
+          const videoNode = publication.track.attach();
+          videoNode.style.width = "100%";
+          videoNode.style.height = "100%";
+          videoNode.style.objectFit = "contain";
+          elements.screenShareContainer.prepend(videoNode);
+          elements.screenShareContainer.hidden = false;
+        }
+
+        resetFacecamPosition();
+
         if (typeof showAlert === "function") {
           showAlert("Đang chia sẻ màn hình của bạn.", "success", 2000);
         }
@@ -629,6 +662,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function toggleMic() {
+    if (!room?.localParticipant) return;
+    isMicEnabled = !isMicEnabled;
+    try {
+      await room.localParticipant.setMicrophoneEnabled(isMicEnabled);
+      if (elements.micToggleBtn) {
+        const icon = elements.micToggleBtn.querySelector("i");
+        if (icon) icon.className = isMicEnabled ? "fas fa-microphone" : "fas fa-microphone-slash";
+        elements.micToggleBtn.classList.toggle("live-room-btn--danger", !isMicEnabled);
+      }
+      if (typeof showAlert === "function") {
+        showAlert(isMicEnabled ? "Đã bật micro." : "Đã tắt micro.", "info", 2000);
+      }
+    } catch (error) {
+      console.error("Toggle mic error:", error);
+    }
+  }
+
+  async function toggleCam() {
+    // If not host or not connected yet, treat as UI-only toggle
+    if (!room?.localParticipant || !livekitConnected) {
+      toggleFacecamVisibility();
+      return;
+    }
+
+    isCamEnabled = !isCamEnabled;
+    try {
+      await room.localParticipant.setCameraEnabled(isCamEnabled);
+      
+      // Update UI visibility state to match
+      isFacecamVisible = isCamEnabled;
+      if (elements.stagePrimary) {
+        if (isFacecamVisible) elements.stagePrimary.classList.remove("is-hidden");
+        else elements.stagePrimary.classList.add("is-hidden");
+      }
+
+      if (elements.facecamToggleBtn) {
+        const icon = elements.facecamToggleBtn.querySelector("i");
+        if (icon) icon.className = isCamEnabled ? "fas fa-video" : "fas fa-video-slash";
+        elements.facecamToggleBtn.classList.toggle("live-room-btn--danger", !isCamEnabled);
+      }
+      
+      if (typeof showAlert === "function") {
+        showAlert(isCamEnabled ? "Đã bật camera." : "Đã tắt camera.", "info", 2000);
+      }
+    } catch (error) {
+      console.error("Toggle cam error:", error);
+    }
+  }
+
   function toggleFacecamVisibility() {
     isFacecamVisible = !isFacecamVisible;
     if (elements.stagePrimary) {
@@ -643,6 +726,48 @@ document.addEventListener("DOMContentLoaded", () => {
       const icon = elements.facecamToggleBtn.querySelector("i");
       if (icon) {
         icon.className = isFacecamVisible ? "fas fa-video" : "fas fa-video-slash";
+      }
+    }
+  }
+
+  async function openDeviceModal() {
+    if (!elements.deviceModal) return;
+    elements.deviceModal.hidden = false;
+    await loadDevices();
+  }
+
+  async function loadDevices() {
+    if (typeof LivekitClient === "undefined") return;
+    try {
+      const devices = await LivekitClient.Room.getLocalDevices("audioinput");
+      const videoDevices = await LivekitClient.Room.getLocalDevices("videoinput");
+
+      if (elements.micSelect) {
+        elements.micSelect.innerHTML = devices
+          .map((d) => `<option value="${d.deviceId}">${escapeHtml(d.label || "Microphone")}</option>`)
+          .join("");
+      }
+      if (elements.camSelect) {
+        elements.camSelect.innerHTML = videoDevices
+          .map((d) => `<option value="${d.deviceId}">${escapeHtml(d.label || "Camera")}</option>`)
+          .join("");
+      }
+    } catch (error) {
+      console.warn("Load devices error:", error);
+    }
+  }
+
+  async function switchDevice(kind, deviceId) {
+    if (!room) return;
+    try {
+      await room.switchActiveDevice(kind, deviceId);
+      if (typeof showAlert === "function") {
+        showAlert("Đã chuyển thiết bị thành công.", "success", 2000);
+      }
+    } catch (error) {
+      console.error("Switch device error:", error);
+      if (typeof showAlert === "function") {
+        showAlert("Lỗi khi chuyển thiết bị: " + error.message, "error", 3000);
       }
     }
   }
@@ -734,7 +859,12 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.screenShareButton?.addEventListener("click", toggleScreenShare);
 
   elements.pipHideBtn?.addEventListener("click", toggleFacecamVisibility);
-  elements.facecamToggleBtn?.addEventListener("click", toggleFacecamVisibility);
+  elements.facecamToggleBtn?.addEventListener("click", toggleCam);
+  elements.micToggleBtn?.addEventListener("click", toggleMic);
+  elements.deviceSettingsBtn?.addEventListener("click", openDeviceModal);
+  elements.closeDeviceModalBtn?.addEventListener("click", () => elements.deviceModal.hidden = true);
+  elements.micSelect?.addEventListener("change", (e) => switchDevice("audioinput", e.target.value));
+  elements.camSelect?.addEventListener("change", (e) => switchDevice("videoinput", e.target.value));
 
   initTabs();
   initFacecamDraggable();
