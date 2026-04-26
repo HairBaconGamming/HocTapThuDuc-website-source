@@ -430,28 +430,54 @@ async function ensureProviderRoom(session) {
   }
 
   const roomClient = getRoomServiceClient();
+  if (!roomClient) {
+    // Fallback to mock if client creation failed
+    session.providerKind = "mock";
+    session.providerRoomName = providerRoomName;
+    await session.save();
+    return {
+      providerKind: "mock",
+      roomName: providerRoomName,
+      roomSid: "",
+    };
+  }
+
   let room = null;
 
   try {
     const existingRooms = await roomClient.listRooms([providerRoomName]);
     room = Array.isArray(existingRooms) && existingRooms.length > 0 ? existingRooms[0] : null;
   } catch (error) {
+    console.error("[LiveService] Error listing rooms:", error.message);
     room = null;
   }
 
   if (!room) {
-    room = await roomClient.createRoom({
-      name: providerRoomName,
-      emptyTimeout: 15 * 60,
-      departureTimeout: 120,
-      maxParticipants: 150,
-      metadata: JSON.stringify({
-        sessionId: toIdString(session._id),
-        slug: session.slug,
-        title: session.title,
-        hostUser: toIdString(session.hostUser),
-      }),
-    });
+    try {
+      room = await roomClient.createRoom({
+        name: providerRoomName,
+        emptyTimeout: 15 * 60,
+        departureTimeout: 120,
+        maxParticipants: 150,
+        metadata: JSON.stringify({
+          sessionId: toIdString(session._id),
+          slug: session.slug,
+          title: session.title,
+          hostUser: toIdString(session.hostUser),
+        }),
+      });
+    } catch (error) {
+      console.error("[LiveService] Error creating room:", error.message);
+      // Fallback to mock on creation failure
+      session.providerKind = "mock";
+      session.providerRoomName = providerRoomName;
+      await session.save();
+      return {
+        providerKind: "mock",
+        roomName: providerRoomName,
+        roomSid: "",
+      };
+    }
   }
 
   session.providerKind = "livekit";
@@ -505,17 +531,22 @@ async function maybeStartRecording(session) {
     },
   });
 
-  const result = await egress.startRoomCompositeEgress(session.providerRoomName, output);
+  try {
+    const result = await egress.startRoomCompositeEgress(session.providerRoomName, output);
 
-  session.providerEgressId = result?.egressId || session.providerEgressId || "";
-  session.replayStatus = "pending";
-  session.replayNote = "Đang chờ LiveKit xử lý replay sau khi buổi live kết thúc.";
-  await session.save();
+    session.providerEgressId = result?.egressId || session.providerEgressId || "";
+    session.replayStatus = "pending";
+    session.replayNote = "Đang chờ LiveKit xử lý replay sau khi buổi live kết thúc.";
+    await session.save();
 
-  return {
-    started: true,
-    egressId: result?.egressId || "",
-  };
+    return {
+      started: true,
+      egressId: result?.egressId || "",
+    };
+  } catch (error) {
+    console.error("[LiveService] Error starting recording:", error.message);
+    return { started: false, reason: "egress_api_error", error: error.message };
+  }
 }
 
 function buildActivityDateKey(date = new Date()) {
@@ -674,7 +705,17 @@ async function createLiveSession({
   await session.save();
 
   if (mode === "instant") {
-    await ensureProviderRoom(session);
+    try {
+      await ensureProviderRoom(session);
+    } catch (error) {
+      session.providerError = normalizeText(error.message, "", 900);
+      session.providerKind = "mock";
+      session.providerRoomName = buildProviderRoomName(session);
+      session.replayStatus = "ready";
+      session.replayNote = "Không thể kết nối LiveKit, chuyển sang chế độ mock.";
+      await session.save();
+    }
+
     if (session.providerKind === "livekit") {
       try {
         await maybeStartRecording(session);

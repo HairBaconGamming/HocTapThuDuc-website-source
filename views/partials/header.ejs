@@ -44,6 +44,9 @@
 </head>
 <body class="<%= typeof activePage !== 'undefined' ? activePage : '' %>" data-user-id="<%= user ? user._id : '' %>" data-disable-activity-heartbeat="<%= typeof disableActivityHeartbeat !== 'undefined' && disableActivityHeartbeat ? 'true' : 'false' %>">
 
+<!-- Alert container for toast notifications -->
+<div id="alert-container" class="alert-container"></div>
+
 <header class="header" id="mainHeader">
     <nav class="navbar">
         <div class="nav-brand-group">
