@@ -230,7 +230,7 @@
   50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
 }
 
-/* Screen Share Container */
+.live-screen-share-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -309,7 +309,8 @@
   cursor: grabbing;
 }
 
-.live-room-media-area.is-sharing .live-stage-primary.is-hidden {
+.live-room-media-area.is-sharing .live-stage-primary.is-hidden,
+.live-stage-primary.is-hidden {
   opacity: 0;
   pointer-events: none;
   transform: scale(0.8);
@@ -735,10 +736,6 @@
 }
 
 .live-toggle-facecam-wrapper {
-  display: none;
-}
-
-.live-room-media-area.is-sharing .live-toggle-facecam-wrapper {
   display: block;
 }
 

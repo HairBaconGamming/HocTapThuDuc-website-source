@@ -62,7 +62,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setStageState(headline, subtitle) {
     if (elements.stagePlaceholder) {
-      elements.stagePlaceholder.hidden = false;
+      // If there is already a video tile in primary stage, don't show placeholder
+      const hasVideo = elements.stagePrimary?.querySelector(".live-video-tile");
+      if (!hasVideo) {
+        elements.stagePlaceholder.hidden = false;
+        elements.stagePlaceholder.style.display = "";
+      } else {
+        elements.stagePlaceholder.hidden = true;
+        elements.stagePlaceholder.style.display = "none";
+      }
     }
     if (elements.stageHeadline) elements.stageHeadline.textContent = headline;
     if (elements.stageSubtitle) elements.stageSubtitle.textContent = subtitle;
@@ -216,6 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
         videoNode.style.height = "100%";
         videoNode.style.objectFit = "contain";
         container.prepend(videoNode);
+        container.hidden = false;
         
         isScreenSharing = true;
         if (elements.mediaArea) elements.mediaArea.classList.add("is-sharing");
@@ -225,8 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const identity = participant?.identity || (isLocal ? "local" : `remote-${Date.now()}`);
-    const hostId = session.host?.id || boot.session?.host?.id || "";
-    const isHost = isLocal || identity === hostId;
+    const hostId = String(session.host?.id || boot.session?.host?.id || "");
+    const isHost = isLocal || String(identity) === hostId;
 
     const label = isLocal ? "Bạn" : participant?.name || participant?.identity || "Participant";
     const tile = createVideoTile(identity, label);
@@ -237,7 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isHost) {
       elements.stagePrimary.querySelectorAll(".live-video-tile").forEach((node) => node.remove());
       elements.stagePrimary.appendChild(tile);
-      if (elements.stagePlaceholder) elements.stagePlaceholder.hidden = true;
+      if (elements.stagePlaceholder) {
+        elements.stagePlaceholder.hidden = true;
+        // Also ensure any display styles are overridden
+        elements.stagePlaceholder.style.display = "none";
+      }
     } else {
       elements.stageGrid.appendChild(tile);
     }
@@ -342,6 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (elements.mediaArea) elements.mediaArea.classList.remove("is-sharing");
           if (elements.screenShareContainer) {
             elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
+            elements.screenShareContainer.hidden = true;
           }
           resetFacecamPosition(true);
         }
@@ -607,6 +621,11 @@ document.addEventListener("DOMContentLoaded", () => {
       stage.style.right = "";
       stage.classList.remove("is-hidden");
       isFacecamVisible = true;
+      
+      if (elements.facecamToggleBtn) {
+        const icon = elements.facecamToggleBtn.querySelector("i");
+        if (icon) icon.className = "fas fa-video";
+      }
     }
   }
 
