@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styleStudio.css">
     <link rel="stylesheet" href="/css/styleStudioV4.css">
+    <link rel="stylesheet" href="/css/styleStudioEdu.css">
     <link rel="stylesheet" href="/css/styleAiTutor.css">
     <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -855,7 +856,10 @@ NHIỆM VỤ CỦA BẠN:
     <script src="/js/lessonEditorBlockRenderers.js"></script>
     <script src="/js/lessonEditorCanvasEngine.js"></script>
     <script src="/js/lessonEditorV3.js"></script>
-    <script src="/js/lessonEditorV4.js"></script>
+    <script src="/js/studio/studioStore.js"></script>
+    <script src="/js/studio/studioLayoutModule.js"></script>
+    <script src="/js/studio/studioInsightModule.js"></script>
+    <script src="/js/studio/lessonStudioApp.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const rawServerData = `<%- (lesson && lesson.content) ? lesson.content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') : '' %>`;

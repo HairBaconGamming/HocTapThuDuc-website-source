@@ -566,7 +566,7 @@ exports.updateCourseFull = async (req, res) => {
         const courseId = req.params.id;
         const { 
             title, description, thumbnail, isPro, isPublished, 
-            curriculumSnapshot 
+            curriculumSnapshot, allowDestructiveSync
         } = req.body;
 
         const ownedCourse = await ensureOwnedCourse(courseId, req.user, res, {
@@ -591,6 +591,9 @@ exports.updateCourseFull = async (req, res) => {
         // 2. Xử lý đồng bộ Cấu trúc (Nếu có gửi lên)
         if (curriculumSnapshot) {
             const tree = JSON.parse(curriculumSnapshot);
+            if (!Array.isArray(tree)) {
+                return res.status(400).json({ success: false, error: 'curriculumSnapshot không hợp lệ.' });
+            }
 
             // A. Lọc danh sách Unit ID đang tồn tại trên UI (loại bỏ ID tạm)
             const activeUnitIds = tree
@@ -604,6 +607,14 @@ exports.updateCourseFull = async (req, res) => {
             });
 
             if (unitsToDelete.length > 0) {
+                if (!toBoolean(allowDestructiveSync)) {
+                    return res.status(409).json({
+                        success: false,
+                        error: 'Cây nội dung có thao tác xóa. Vui lòng xác nhận đồng bộ hủy để tiếp tục.',
+                        requiresDestructiveSyncConfirmation: true,
+                        unitsToDelete: unitsToDelete.map((u) => ({ id: String(u._id), title: u.title }))
+                    });
+                }
                 const deleteIds = unitsToDelete.map(u => u._id);
                 console.log(`CourseSync: Deleting ${deleteIds.length} orphan units...`);
                 

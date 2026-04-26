@@ -2668,6 +2668,7 @@ async function submitLessonAJAX(publishStatus) {
             subjectId, courseId, // New field for hierarchy
             quizData: JSON.stringify(quizData),
             curriculumSnapshot: JSON.stringify(treeData),
+            allowDestructiveSync: true,
             courseId: courseId,
             currentEditingId: activeLessonId
         };
@@ -3073,7 +3074,8 @@ async function saveCourseStatus(isPublished) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 title, description, thumbnail, isPro, isPublished,
-                curriculumSnapshot: JSON.stringify(curriculumSnapshot) // Gửi kèm cây
+                curriculumSnapshot: JSON.stringify(curriculumSnapshot), // Gửi kèm cây
+                allowDestructiveSync: true
             })
         });
 

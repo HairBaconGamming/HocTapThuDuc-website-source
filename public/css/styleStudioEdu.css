@@ -1,0 +1,125 @@
+:root {
+  --studio-edu-bg: #f3f7ff;
+  --studio-edu-card: #ffffff;
+  --studio-edu-soft: #eef4ff;
+  --studio-edu-border: #dbe7ff;
+  --studio-edu-text: #1e293b;
+  --studio-edu-muted: #54657d;
+  --studio-edu-primary: #2563eb;
+  --studio-edu-primary-soft: #dbeafe;
+  --studio-edu-success: #16a34a;
+  --studio-edu-warning: #f59e0b;
+}
+
+.studio-v4-page {
+  background: linear-gradient(180deg, #f7faff 0%, #f1f5ff 100%);
+  color: var(--studio-edu-text);
+}
+
+.studio-v4-toolbar,
+.studio-dock-shell,
+.studio-main-shell .center-panel,
+.studio-v4-sidecard,
+.studio-inspector-command,
+.studio-smart-item,
+.studio-overview-card,
+.editor-insight-card {
+  border-color: var(--studio-edu-border) !important;
+}
+
+.studio-v4-toolbar,
+.studio-dock-shell,
+.studio-main-shell .center-panel,
+.studio-v4-sidecard,
+.studio-inspector-command,
+.studio-smart-item,
+.studio-overview-card {
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+}
+
+.studio-v4-kicker,
+.studio-dock-kicker,
+.studio-v4-sidekicker,
+.workspace-kicker,
+.studio-empty-kicker {
+  letter-spacing: 0.08em;
+  color: var(--studio-edu-primary);
+}
+
+.studio-v4-brand p,
+.studio-v4-sidecard p,
+.studio-inspector-intro p,
+.studio-empty-actions span,
+.studio-empty-panel p,
+.studio-help-card p {
+  color: var(--studio-edu-muted);
+}
+
+.studio-v4-primary-button,
+.workspace-quick-action,
+.btn-primary,
+.btn-studio.btn-publish {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  border: 0;
+  color: #fff;
+}
+
+.studio-v4-secondary-button,
+.studio-v4-ghost-button,
+.btn-secondary,
+.btn-studio.btn-draft {
+  background: #fff;
+  border: 1px solid var(--studio-edu-border);
+  color: var(--studio-edu-text);
+}
+
+.studio-v4-meta-card,
+.studio-dock-chip,
+.studio-pill {
+  background: var(--studio-edu-soft);
+  border: 1px solid var(--studio-edu-border);
+}
+
+.studio-v4-meta-card strong,
+.studio-dock-chip strong,
+.studio-pill {
+  color: var(--studio-edu-text);
+}
+
+.studio-smart-item.is-success {
+  background: #ecfdf3;
+  border-color: #bbf7d0 !important;
+}
+
+.studio-smart-item.is-warning {
+  background: #fffbeb;
+  border-color: #fde68a !important;
+}
+
+.studio-smart-item.is-danger {
+  background: #fef2f2;
+  border-color: #fecaca !important;
+}
+
+.editor-insight-card {
+  background: #fff;
+}
+
+.editor-title-input {
+  border: 1px solid var(--studio-edu-border);
+  border-radius: 14px;
+}
+
+.studio-select,
+.studio-input {
+  border: 1px solid var(--studio-edu-border);
+  border-radius: 10px;
+}
+
+.studio-select:focus,
+.studio-input:focus,
+.editor-title-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}

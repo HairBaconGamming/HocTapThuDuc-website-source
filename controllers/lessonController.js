@@ -35,8 +35,8 @@ exports.saveLessonAjax = async (req, res) => {
     try {
         const { 
             title, content, type, subjectId, isPro, quizData, isPublished,
-            curriculumSnapshot, currentEditingId, 
-            courseId, allowSaveProgress // <--- Bắt buộc phải có courseId gửi lên
+            curriculumSnapshot, currentEditingId,
+            courseId, allowSaveProgress, allowDestructiveSync // <--- Bắt buộc phải có courseId gửi lên
         } = req.body;
 
         const normalizedIsPro = toBoolean(isPro);
@@ -109,7 +109,10 @@ exports.saveLessonAjax = async (req, res) => {
         let lessonMapping = {}; // { "new_lesson_456": "65bd..." }
 
         if (curriculumSnapshot && courseId) {
-            let tree = JSON.parse(curriculumSnapshot);
+            const tree = JSON.parse(curriculumSnapshot);
+            if (!Array.isArray(tree)) {
+                return res.status(400).json({ success: false, error: 'curriculumSnapshot không hợp lệ.' });
+            }
 
             // 1. Lấy danh sách các Unit ID hợp lệ đang tồn tại trên cây (UI)
             // Lọc bỏ các ID tạm (new_unit_...) vì chúng chưa có trong DB
@@ -125,6 +128,14 @@ exports.saveLessonAjax = async (req, res) => {
             });
 
             if (unitsToDelete.length > 0) {
+                if (!toBoolean(allowDestructiveSync)) {
+                    return res.status(409).json({
+                        success: false,
+                        error: 'Cây nội dung có thao tác xóa. Vui lòng xác nhận đồng bộ hủy để tiếp tục.',
+                        requiresDestructiveSyncConfirmation: true,
+                        unitsToDelete: unitsToDelete.map((u) => ({ id: String(u._id), title: u.title }))
+                    });
+                }
                 const deleteIds = unitsToDelete.map(u => u._id);
                 console.log(`🧹 Cleanup: Deleting ${deleteIds.length} orphan units...`);
 
@@ -167,10 +178,14 @@ exports.saveLessonAjax = async (req, res) => {
                         
                         // [FIX] Kiểm tra xem node này có phải là bài vừa mới tạo không
                         // Map cả 'current_new_lesson' HOẶC ID tạm đang edit (currentEditingId) sang ID thật (savedLessonId)
-                        const isCurrentCreatedLesson = (lNode.id === 'current_new_lesson') || 
+                        const isCurrentCreatedLesson = (lNode.id === 'current_new_lesson') ||
                                                     (currentEditingId && lNode.id === currentEditingId);
 
                         const lId = isCurrentCreatedLesson ? savedLessonId : lNode.id;
+
+                        if (isCurrentCreatedLesson && typeof lNode.id === 'string' && lNode.id.startsWith('new_lesson_')) {
+                            lessonMapping[lNode.id] = savedLessonId;
+                        }
                         
                         // Chỉ update những bài có ID thật (bỏ qua các ID new_lesson_ rác nếu có)
                         if (lId && !lId.startsWith('new_lesson_')) {
