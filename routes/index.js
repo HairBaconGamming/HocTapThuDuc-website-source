@@ -19,6 +19,7 @@ const LessonRevision = require('../models/LessonRevision');
 const UserActivityLog = require('../models/UserActivityLog');
 const { getCourseAccessState, buildCourseVisibilityFilter } = require('../utils/contentAccess');
 const { buildAbsoluteUrl, buildCoursePath, buildSubjectPath } = require('../utils/urlHelpers');
+const { getUpcomingDashboardSessions } = require('../services/liveService');
 
 // --- IMPORT CONTROLLERS ---
 const courseController = require('../controllers/courseController');
@@ -230,6 +231,7 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             .sort({ unlockedAt: -1 })
             .limit(4)
             .lean();
+        const liveSessions = await getUpcomingDashboardSessions(req.user);
             
         const completedLessonsCount = completions.length;
 
@@ -247,6 +249,7 @@ router.get("/dashboard", isLoggedIn, async (req, res) => {
             completedLessonsCount,
             gardenData,
             userAchievements,
+            liveSessions,
             levelInfo,  // ← NEW: Sync with garden/profile
             activePage: "dashboard",
             

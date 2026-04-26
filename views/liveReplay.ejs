@@ -1,0 +1,117 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styleLiveRoom.css">
+
+<%
+  const session = liveRoomData?.session || {};
+  const messages = liveRoomData?.chatMessages || [];
+  const questions = liveRoomData?.questions || [];
+%>
+
+<section class="live-room-shell live-room-shell--replay">
+  <header class="live-room-hero">
+    <div class="live-room-hero__copy">
+      <div class="live-room-hero__eyebrow">
+        <span class="live-room-pill"><%= session.replayLabel || 'Replay' %></span>
+        <span class="live-room-pill"><%= session.scheduledLabel || '' %></span>
+        <span class="live-room-pill"><%= session.category || 'Học tập' %></span>
+      </div>
+      <h1><%= session.title %></h1>
+      <p><%= session.replayNote || session.description || 'Replay nội bộ của buổi live này.' %></p>
+    </div>
+
+    <div class="live-room-hero__actions">
+      <div class="live-room-stat">
+        <span>Peak viewers</span>
+        <strong><%= session.viewerPeak || 0 %></strong>
+      </div>
+      <div class="live-room-stat">
+        <span>Đủ attendance</span>
+        <strong><%= session.attendanceQualifiedCount || 0 %></strong>
+      </div>
+      <a href="/live/<%= session.slug %>" class="live-room-btn live-room-btn--ghost">Quay về phòng</a>
+    </div>
+  </header>
+
+  <div class="live-room-grid">
+    <section class="live-stage-card">
+      <div class="live-stage-card__head">
+        <div>
+          <p class="live-stage-card__eyebrow">Replay Surface</p>
+          <h2>Xem lại buổi live</h2>
+        </div>
+      </div>
+
+      <div class="live-stage-card__surface live-stage-card__surface--replay">
+        <% if (session.replayUrl) { %>
+          <video controls preload="metadata" class="live-replay-video">
+            <source src="<%= session.replayUrl %>">
+          </video>
+        <% } else { %>
+          <div class="live-stage-placeholder">
+            <i class="fas fa-film"></i>
+            <strong>Replay media chưa sẵn sàng</strong>
+            <span><%= session.replayNote || 'Hiện trang replay vẫn lưu được metadata, chat và Q&A snapshot.' %></span>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (session.linkedMaterial) { %>
+        <aside class="live-linked-card">
+          <div>
+            <span class="live-linked-card__label">Học tiếp sau replay</span>
+            <strong><%= session.linkedMaterial.title %></strong>
+            <% if (session.linkedMaterial.secondaryTitle) { %>
+              <span><%= session.linkedMaterial.secondaryTitle %></span>
+            <% } %>
+          </div>
+          <div class="live-linked-card__actions">
+            <a href="<%= session.linkedMaterial.href %>" class="live-room-btn live-room-btn--primary">Mở liên kết học tập</a>
+          </div>
+        </aside>
+      <% } %>
+    </section>
+
+    <aside class="live-side-card">
+      <div class="live-side-tabs live-side-tabs--static">
+        <span class="live-side-tab is-active">Snapshot tương tác</span>
+      </div>
+
+      <div class="live-side-panel is-active">
+        <div class="live-feed">
+          <% if (messages.length > 0) { %>
+            <% messages.slice(-12).forEach((message) => { %>
+              <article class="live-feed-item">
+                <img src="<%= message.avatar %>" alt="<%= message.username %>" class="live-feed-item__avatar">
+                <div>
+                  <strong><%= message.username %></strong>
+                  <p><%= message.content %></p>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="live-empty-inline">Chưa có tin nhắn snapshot.</div>
+          <% } %>
+        </div>
+
+        <div class="live-feed live-feed--stacked">
+          <% if (questions.length > 0) { %>
+            <% questions.forEach((question) => { %>
+              <article class="live-feed-item live-feed-item--question">
+                <img src="<%= question.avatar %>" alt="<%= question.username %>" class="live-feed-item__avatar">
+                <div>
+                  <strong><%= question.username %></strong>
+                  <p><%= question.content %></p>
+                  <span class="live-room-pill"><%= question.status %></span>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="live-empty-inline">Chưa có Q&A snapshot.</div>
+          <% } %>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

@@ -42,7 +42,7 @@
         <link rel="stylesheet" href="/css/styleLogin.css">
     <% } %>
 </head>
-<body class="<%= typeof activePage !== 'undefined' ? activePage : '' %>" data-user-id="<%= user ? user._id : '' %>">
+<body class="<%= typeof activePage !== 'undefined' ? activePage : '' %>" data-user-id="<%= user ? user._id : '' %>" data-disable-activity-heartbeat="<%= typeof disableActivityHeartbeat !== 'undefined' && disableActivityHeartbeat ? 'true' : 'false' %>">
 
 <header class="header" id="mainHeader">
     <nav class="navbar">
@@ -102,6 +102,7 @@
                         </a>
                     <% } %>
                     
+                    <a href="/live" class="tool-dropdown-link <%= activePage === 'live' ? 'active' : '' %>"><i class="fas fa-broadcast-tower"></i> <span>Live Hub</span></a>
                     <a href="/leaderboard" class="tool-dropdown-link"><i class="fas fa-trophy"></i> <span>Đua Top Server</span></a>
                     <a href="/qa" class="tool-dropdown-link"><i class="fas fa-life-ring"></i> <span>Bảng Cầu Cứu</span></a>
                     <% if (user && (user.isPro || user.isTeacher || user.isAdmin)) { %>

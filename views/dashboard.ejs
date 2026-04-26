@@ -60,6 +60,17 @@
         })
         : [];
 
+    const safeLiveSessions = Array.isArray(liveSessions)
+        ? liveSessions.map((session) => ({
+            id: session?.id || '',
+            title: String(session?.title || 'Livestream'),
+            href: String(session?.urls?.room || '/live'),
+            scheduledLabel: String(session?.scheduledLabel || ''),
+            statusLabel: String(session?.statusLabel || 'Sắp diễn ra'),
+            statusTone: String(session?.statusTone || 'scheduled')
+        }))
+        : [];
+
     const hasGardenData = !!gardenData;
     const safeGardenData = {
         water: Math.max(0, toNumber(gardenData?.water, 0)),
@@ -255,6 +266,39 @@
                 <a href="/my-garden" class="dashboard-btn dashboard-btn--success">Vao cham soc vuon</a>
             </section>
 
+            <section class="dashboard-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <p class="dashboard-card__eyebrow">Live Schedule</p>
+                        <h2 class="dashboard-card__title">Lich live cua ban</h2>
+                    </div>
+                    <span class="dashboard-chip"><%= safeLiveSessions.length %> phien</span>
+                </div>
+
+                <% if (safeLiveSessions.length > 0) { %>
+                    <div class="course-list">
+                        <% safeLiveSessions.forEach((session) => { %>
+                            <a href="<%= session.href %>" class="course-list__item">
+                                <div class="course-list__body">
+                                    <h3 class="dashboard-truncate-multiline" title="<%= session.title %>"><%= session.title %></h3>
+                                    <div class="course-list__meta">
+                                        <span><%= session.scheduledLabel %></span>
+                                        <span><%= session.statusLabel %></span>
+                                    </div>
+                                </div>
+                                <span class="course-list__arrow">→</span>
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div class="dashboard-empty dashboard-empty--compact">
+                        <div class="dashboard-empty__icon">📡</div>
+                        <p>Chua co lich live nao gan day. Vao hub live de theo doi lich sap toi hoac mo phong moi.</p>
+                        <a href="/live" class="dashboard-btn dashboard-btn--primary">Mo hub live</a>
+                    </div>
+                <% } %>
+            </section>
+
             <section class="dashboard-card dashboard-card--wide">
                 <div class="dashboard-card__head">
                     <div>
@@ -343,6 +387,10 @@
                     <a href="/courses" class="shortcut-item">
                         <span class="shortcut-item__icon">🔎</span>
                         <span>Khoa hoc</span>
+                    </a>
+                    <a href="/live" class="shortcut-item">
+                        <span class="shortcut-item__icon">📡</span>
+                        <span>Live hub</span>
                     </a>
                     <a href="/leaderboard" class="shortcut-item">
                         <span class="shortcut-item__icon">📈</span>

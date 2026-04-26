@@ -564,6 +564,14 @@ const loggedInUserId = document.body.dataset.userId; // Assuming you add data-us
           console.log("Received achievement via socket:", achievement);
           showAchievementNotification(achievement); // Call the display function
         });
+        socket.on("liveReminder", (payload) => {
+          if (!payload) return;
+          const title = payload.thresholdLabel
+            ? `Live ${payload.thresholdLabel}`
+            : "Nhắc lịch livestream";
+          const message = `${payload.title || "Một buổi live"} • ${payload.scheduledLabel || ""}`;
+          showAlert(message, "info", 6500, title);
+        });
         // Throttled handler for frequent updates
         socket.on("treePointsUpdate", (data) => {
           const now = Date.now();

@@ -1,89 +1,151 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleLiveCreate.css">
 
-<div class="setup-wrapper">
-    
-    <div class="text-center mb-4" data-animate="fade-down">
-        <h1 style="font-size: 2.5rem; font-weight: 900; color: var(--dark-ink);">🎙️ Thiết Lập Phòng Live</h1>
-        <p style="color: #666;">Kiểm tra đầu tóc, âm thanh, ánh sáng trước khi lên sóng nhé!</p>
+<script>
+  window.LIVE_STUDIO_BOOTSTRAP = <%- JSON.stringify({
+    suggestedSchedule,
+    courses: liveStudioCourses || [],
+    lessons: liveStudioLessons || [],
+  }) %>;
+</script>
+
+<section class="live-studio-shell">
+  <div class="live-studio-hero">
+    <div>
+      <span class="live-studio-badge">Studio host • PRO / Teacher / Admin</span>
+      <h1>Thiết kế buổi livestream ngay trong app</h1>
+      <p>
+        Chọn kiểu lên sóng, gắn khóa học hoặc bài học liên quan, thử nhanh camera
+        rồi chuyển thẳng vào phòng live nội bộ.
+      </p>
     </div>
+    <a href="/live" class="live-studio-back">Quay về hub live</a>
+  </div>
 
-    <form id="setupForm" class="setup-grid">
-        
-        <div class="setup-card">
-            <div class="card-header">
-                <h2>Thông Tin</h2>
-                <p style="color:#888; font-size:0.9rem;">Những gì người xem sẽ thấy bên ngoài.</p>
-            </div>
-            
-            <div class="input-group-setup" style="margin-top: 20px;">
-                <label class="setup-label">Tiêu đề buổi Live</label>
-                <input type="text" id="liveTitle" name="title" class="setup-input" placeholder="VD: Học Toán cùng tớ 📚..." required minlength="3" autocomplete="off">
-            </div>
-
-            <div class="input-group-setup">
-                <label class="setup-label">Chuyên mục</label>
-                <div class="tags-container">
-                    <label class="tag-option">
-                        <input type="radio" name="category" value="Học tập" checked>
-                        <div class="tag-chip"><i class="fas fa-book"></i> Học tập</div>
-                    </label>
-                    <label class="tag-option">
-                        <input type="radio" name="category" value="Tâm sự">
-                        <div class="tag-chip"><i class="fas fa-coffee"></i> Tâm sự</div>
-                    </label>
-                    <label class="tag-option">
-                        <input type="radio" name="category" value="Gaming">
-                        <div class="tag-chip"><i class="fas fa-gamepad"></i> Gaming</div>
-                    </label>
-                    <label class="tag-option">
-                        <input type="radio" name="category" value="Nhạc">
-                        <div class="tag-chip"><i class="fas fa-music"></i> Nhạc</div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="input-group-setup">
-                <label class="setup-label">Ảnh bìa (Thumbnail) - <small>Optional</small></label>
-                <div class="thumb-upload-box" id="thumbUploadBox">
-                    <input type="file" id="thumbInput" accept="image/*" style="display:none">
-                    <img id="thumbPreview" class="thumb-preview">
-                    <i class="fas fa-image" style="font-size: 2rem; color: #ccc;"></i>
-                    <p style="margin: 5px 0 0; font-size: 0.85rem; color: #999;">Click để tải ảnh lên</p>
-                </div>
-            </div>
+  <form id="liveStudioForm" class="live-studio-grid">
+    <section class="live-studio-card">
+      <div class="live-studio-card__head">
+        <div>
+          <p class="live-studio-eyebrow">1. Nội dung</p>
+          <h2>Thông tin buổi live</h2>
         </div>
+        <span class="live-studio-chip">Host mode</span>
+      </div>
 
-        <div class="setup-card" style="background: #2d3436; border-color: #000; color: white;">
-            <div class="card-header">
-                <h2 style="color: white;">Soi Gương 🪞</h2>
-                <p style="color: #aaa; font-size: 0.9rem;">Xem trước Camera & Micro.</p>
-            </div>
+      <label class="live-field">
+        <span>Tiêu đề</span>
+        <input type="text" id="liveTitle" name="title" minlength="3" maxlength="160" required placeholder="Ví dụ: Giải đề xác suất và chữa nhanh">
+      </label>
 
-            <div class="cam-preview-wrapper" style="margin-top: 20px;">
-                <video id="localVideoPreview" autoplay muted playsinline></video>
-                
-                <div class="cam-overlay">
-                    <div id="deviceStatus" class="device-status">Check...</div>
-                    <div class="mic-meter-bar" title="Độ nhạy Mic">
-                        <div id="micLevel" class="mic-level"></div>
-                    </div>
-                </div>
-            </div>
+      <label class="live-field">
+        <span>Mô tả</span>
+        <textarea id="liveDescription" name="description" rows="4" maxlength="2400" placeholder="Buổi live này sẽ cover gì, dành cho ai, cần chuẩn bị gì trước khi vào phòng?"></textarea>
+      </label>
 
-            <p style="margin-top: 15px; font-size: 0.85rem; color: #aaa; text-align: center;">
-                <i class="fas fa-info-circle"></i> Hãy đảm bảo bạn ở nơi đủ ánh sáng và không có tiếng ồn.
-            </p>
+      <div class="live-inline-grid">
+        <label class="live-field">
+          <span>Chuyên mục</span>
+          <select id="liveCategory" name="category">
+            <option value="Học tập">Học tập</option>
+            <option value="Giải đề">Giải đề</option>
+            <option value="Ôn tập">Ôn tập</option>
+            <option value="Workshop">Workshop</option>
+            <option value="Q&A">Q&A</option>
+          </select>
+        </label>
 
-            <button type="submit" class="btn-go-live" id="btnSubmit">
-                <i class="fas fa-rocket"></i> BẮT ĐẦU LIVE
-            </button>
+        <label class="live-field">
+          <span>Thumbnail URL</span>
+          <input type="url" id="liveThumbnail" name="thumbnail" placeholder="https://...">
+        </label>
+      </div>
+
+      <div class="live-mode-switch">
+        <label class="live-mode-option">
+          <input type="radio" name="sessionMode" value="instant" checked>
+          <span>Lên sóng ngay</span>
+        </label>
+        <label class="live-mode-option">
+          <input type="radio" name="sessionMode" value="scheduled">
+          <span>Lên lịch trước</span>
+        </label>
+      </div>
+
+      <label class="live-field" id="scheduleField" hidden>
+        <span>Thời gian bắt đầu</span>
+        <input type="datetime-local" id="scheduledFor" name="scheduledFor" value="<%= suggestedSchedule %>">
+      </label>
+    </section>
+
+    <section class="live-studio-card">
+      <div class="live-studio-card__head">
+        <div>
+          <p class="live-studio-eyebrow">2. Liên kết học tập</p>
+          <h2>Gắn bài học hoặc khóa học</h2>
         </div>
+      </div>
 
-    </form>
-</div>
+      <div class="live-binding-switch">
+        <label class="live-mode-option">
+          <input type="radio" name="bindingType" value="" checked>
+          <span>Không gắn</span>
+        </label>
+        <label class="live-mode-option">
+          <input type="radio" name="bindingType" value="course">
+          <span>Khóa học</span>
+        </label>
+        <label class="live-mode-option">
+          <input type="radio" name="bindingType" value="lesson">
+          <span>Bài học</span>
+        </label>
+      </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="/js/liveSetup.js"></script>
+      <label class="live-field" id="courseField" hidden>
+        <span>Chọn khóa học</span>
+        <select id="courseId" name="courseId">
+          <option value="">-- Chọn khóa học --</option>
+          <% (liveStudioCourses || []).forEach((course) => { %>
+            <option value="<%= course._id %>"><%= course.title %></option>
+          <% }) %>
+        </select>
+      </label>
 
+      <label class="live-field" id="lessonField" hidden>
+        <span>Chọn bài học</span>
+        <select id="lessonId" name="lessonId">
+          <option value="">-- Chọn bài học --</option>
+          <% (liveStudioLessons || []).forEach((lesson) => { %>
+            <option value="<%= lesson._id %>"><%= lesson.title %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <div class="live-preview-card">
+        <div class="live-preview-card__media">
+          <video id="localVideoPreview" autoplay playsinline muted></video>
+          <div class="live-preview-card__fallback" id="previewFallback">
+            <i class="fas fa-camera"></i>
+            <span>Bật camera để xem trước khung hình</span>
+          </div>
+        </div>
+        <div class="live-preview-card__meta">
+          <div>
+            <strong id="previewTitle">Tên buổi live sẽ hiện ở đây</strong>
+            <span id="deviceStatus">Đang kiểm tra thiết bị...</span>
+          </div>
+          <div class="live-mic-meter">
+            <div id="micLevel" class="live-mic-meter__fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" id="liveStudioSubmit" class="live-studio-submit">
+        <i class="fas fa-broadcast-tower"></i>
+        <span>Tạo phiên live</span>
+      </button>
+    </section>
+  </form>
+</section>
+
+<script src="/js/liveStudio.js"></script>
 <%- include('partials/footer') %>

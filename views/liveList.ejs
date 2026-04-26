@@ -1,57 +1,289 @@
 <%- include('partials/header') %>
 <link rel="stylesheet" href="/css/styleLiveList.css">
 
-<div class="container">
-    
-    <div class="live-hero">
-        <span class="live-badge-large">LIVE • ĐANG PHÁT</span>
-        <h1 style="font-size: 2.5rem; margin: 10px 0;">Sóng Học Tập 📡</h1>
-        <p style="color: #666; max-width: 600px; margin: 0 auto;">
-            Tham gia các lớp học trực tuyến, giao lưu cùng bạn bè và thầy cô ngay bây giờ!
-        </p>
+<%
+  const canHostLive = !!(user && (user.isPro || user.isTeacher || user.isAdmin));
+  const safeLiveNow = Array.isArray(liveNow) ? liveNow : [];
+  const safeUpcoming = Array.isArray(upcoming) ? upcoming : [];
+  const safeReplays = Array.isArray(replays) ? replays : [];
+  const safeSubjects = Array.isArray(liveSubjects) ? liveSubjects : [];
+  const safeCourses = Array.isArray(liveCourses) ? liveCourses : [];
+  const filters = liveFilters || {};
+%>
 
-        <div style="margin-top: 30px;">
-            <% if (user) { %>
-                <a href="/live/create" class="btn btn-primary" style="box-shadow: 4px 4px 0px var(--dark-ink);">
-                    <i class="fas fa-video"></i> Mở phòng Live mới
-                </a>
-            <% } else { %>
-                <a href="/login" class="btn btn-primary">Đăng nhập để Live</a>
-            <% } %>
-        </div>
-    </div>
+<script>
+  window.LIVE_HUB_FILTERS = <%- JSON.stringify(filters) %>;
+</script>
 
-    <div class="live-grid">
-        <% if (rooms && rooms.length > 0) { %>
-            <% rooms.forEach(room => { %>
-                <div class="live-card">
-                    <div class="live-thumb-wrapper">
-                        <img src="https://cdn.dribbble.com/users/1770290/screenshots/6168342/bg_4x.jpg" class="live-thumb-img">
-                        <span class="status-live">TRỰC TIẾP</span>
-                        <div class="viewer-count">
-                            <i class="fas fa-user"></i> <span><%= room.viewers || 0 %></span>
-                        </div>
-                    </div>
-                    
-                    <div class="live-info">
-                        <div class="live-host-row">
-                            <img src="<%= room.host && room.host.avatar ? room.host.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="host-avatar">
-                            <span class="host-name"><%= room.host ? room.host.username : 'Ẩn danh' %></span>
-                        </div>
-                        <h3 class="live-title"><%= room.roomName %></h3>
-                        <a href="/live/joinLive/<%= room.roomId %>" class="btn-join">Tham gia ngay &rarr;</a>
-                    </div>
-                </div>
-            <% }) %>
-        <% } else { %>
-            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
-                <i class="fas fa-satellite-dish" style="font-size: 4rem; margin-bottom: 20px; color: #ddd;"></i>
-                <h3>Hiện không có ai đang live cả.</h3>
-                <p>Bạn hãy là người đầu tiên lên sóng đi!</p>
-            </div>
+<section class="live-hub-shell">
+  <div class="live-hub-hero">
+    <div class="live-hub-hero__copy">
+      <span class="live-hub-badge">Livestream nội bộ • Hub học nhóm</span>
+      <h1>Lớp học trực tiếp nằm ngay trong HTTD</h1>
+      <p>
+        Xem buổi đang phát, lên lịch lớp mới, mở replay và quay lại bài học liên quan
+        mà không phải nhảy sang domain livestream riêng nữa.
+      </p>
+      <div class="live-hub-hero__actions">
+        <% if (canHostLive) { %>
+          <a href="/live/create" class="live-btn live-btn--primary">
+            <i class="fas fa-video"></i>
+            <span>Tạo studio live</span>
+          </a>
         <% } %>
+        <a href="#live-sections" class="live-btn live-btn--ghost">
+          <i class="fas fa-broadcast-tower"></i>
+          <span>Xem lịch live</span>
+        </a>
+      </div>
     </div>
 
-</div>
+    <div class="live-hub-hero__stats">
+      <div class="live-stat-card">
+        <strong><%= safeLiveNow.length %></strong>
+        <span>Đang phát</span>
+      </div>
+      <div class="live-stat-card">
+        <strong><%= safeUpcoming.length %></strong>
+        <span>Sắp diễn ra</span>
+      </div>
+      <div class="live-stat-card">
+        <strong><%= safeReplays.length %></strong>
+        <span>Replay</span>
+      </div>
+      <% if (liveAdminSummary) { %>
+        <div class="live-stat-card live-stat-card--admin">
+          <strong><%= liveAdminSummary.pendingReplay %></strong>
+          <span>Replay chờ xử lý</span>
+        </div>
+      <% } %>
+    </div>
+  </div>
 
+  <form id="liveHubFilters" class="live-filter-bar" method="GET" action="/live">
+    <label class="live-filter-field live-filter-field--search">
+      <span>Tìm nhanh</span>
+      <input
+        type="text"
+        name="q"
+        placeholder="Tên lớp, chủ đề, mô tả..."
+        value="<%= filters.q || '' %>"
+      >
+    </label>
+
+    <label class="live-filter-field">
+      <span>Môn học</span>
+      <select name="subjectId">
+        <option value="">Tất cả môn</option>
+        <% safeSubjects.forEach((subject) => { %>
+          <option value="<%= subject._id %>" <%= String(filters.subjectId || '') === String(subject._id) ? 'selected' : '' %>>
+            <%= subject.name %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label class="live-filter-field">
+      <span>Khóa học</span>
+      <select name="courseId">
+        <option value="">Tất cả khóa học</option>
+        <% safeCourses.forEach((course) => { %>
+          <option value="<%= course._id %>" <%= String(filters.courseId || '') === String(course._id) ? 'selected' : '' %>>
+            <%= course.title %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label class="live-filter-field">
+      <span>Host</span>
+      <input
+        type="text"
+        name="host"
+        placeholder="Tên host..."
+        value="<%= filters.host || '' %>"
+      >
+    </label>
+
+    <div class="live-filter-actions">
+      <button type="submit" class="live-btn live-btn--dark">Lọc</button>
+      <a href="/live" class="live-btn live-btn--soft">Đặt lại</a>
+    </div>
+  </form>
+
+  <% if (liveAdminSummary) { %>
+    <section class="live-admin-strip">
+      <div>
+        <span>Tổng phiên</span>
+        <strong><%= liveAdminSummary.total %></strong>
+      </div>
+      <div>
+        <span>Đang live</span>
+        <strong><%= liveAdminSummary.liveNow %></strong>
+      </div>
+      <div>
+        <span>Lỗi room</span>
+        <strong><%= liveAdminSummary.failed %></strong>
+      </div>
+      <div>
+        <span>Replay pending</span>
+        <strong><%= liveAdminSummary.pendingReplay %></strong>
+      </div>
+    </section>
+  <% } %>
+
+  <div class="live-sections" id="live-sections">
+    <section class="live-section">
+      <div class="live-section__head">
+        <div>
+          <p class="live-section__eyebrow">Live Now</p>
+          <h2>Đang phát</h2>
+        </div>
+        <span class="live-section__count"><%= safeLiveNow.length %> phiên</span>
+      </div>
+
+      <div class="live-card-grid">
+        <% if (safeLiveNow.length > 0) { %>
+          <% safeLiveNow.forEach((session) => { %>
+            <article class="live-card live-card--live" data-live-session-id="<%= session.id %>">
+              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__overlay">
+                <span class="live-pill live-pill--live"><%= session.statusLabel %></span>
+                <span class="live-pill"><i class="fas fa-users"></i> <%= session.viewerCount %></span>
+              </div>
+              <div class="live-card__body">
+                <div class="live-card__meta">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <div>
+                    <strong><%= session.host.username %></strong>
+                    <span><%= session.category %></span>
+                  </div>
+                </div>
+                <h3><%= session.title %></h3>
+                <p><%= session.description || 'Buổi live đang phát trong hub nội bộ.' %></p>
+                <% if (session.linkedMaterial) { %>
+                  <a href="<%= session.linkedMaterial.href %>" class="live-link-chip"><%= session.linkedMaterial.title %></a>
+                <% } %>
+                <div class="live-card__footer">
+                  <span><%= session.scheduledLabel %></span>
+                  <a href="<%= session.urls.room %>" class="live-btn live-btn--primary">Vào phòng</a>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        <% } else { %>
+          <div class="live-empty-state">
+            <i class="fas fa-satellite-dish"></i>
+            <h3>Chưa có buổi nào đang phát</h3>
+            <p>Danh sách sẽ tự làm mới khi host bắt đầu phiên live mới.</p>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="live-section">
+      <div class="live-section__head">
+        <div>
+          <p class="live-section__eyebrow">Upcoming</p>
+          <h2>Sắp diễn ra</h2>
+        </div>
+        <span class="live-section__count"><%= safeUpcoming.length %> phiên</span>
+      </div>
+
+      <div class="live-card-grid">
+        <% if (safeUpcoming.length > 0) { %>
+          <% safeUpcoming.forEach((session) => { %>
+            <article class="live-card" data-live-session-id="<%= session.id %>">
+              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__overlay">
+                <span class="live-pill"><%= session.statusLabel %></span>
+                <span class="live-pill"><%= session.scheduledLabel %></span>
+              </div>
+              <div class="live-card__body">
+                <div class="live-card__meta">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <div>
+                    <strong><%= session.host.username %></strong>
+                    <span><%= session.category %></span>
+                  </div>
+                </div>
+                <h3><%= session.title %></h3>
+                <p><%= session.description || 'Buổi live đã lên lịch và sẽ mở ngay trong app.' %></p>
+                <% if (session.linkedMaterial) { %>
+                  <a href="<%= session.linkedMaterial.href %>" class="live-link-chip"><%= session.linkedMaterial.title %></a>
+                <% } %>
+                <div class="live-card__footer">
+                  <button
+                    type="button"
+                    class="live-btn live-btn--soft js-live-reminder"
+                    data-session-id="<%= session.id %>"
+                    data-subscribed="<%= session.permissions.isReminderSubscribed ? 'true' : 'false' %>"
+                  >
+                    <%= session.permissions.isReminderSubscribed ? 'Đã bật nhắc' : 'Nhắc tôi' %>
+                  </button>
+                  <a href="<%= session.urls.room %>" class="live-btn live-btn--ghost">Mở lobby</a>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        <% } else { %>
+          <div class="live-empty-state">
+            <i class="fas fa-calendar-day"></i>
+            <h3>Chưa có lịch live nào khớp bộ lọc</h3>
+            <p>Thử đổi môn học, host hoặc tạo buổi mới nếu bạn có quyền host.</p>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="live-section">
+      <div class="live-section__head">
+        <div>
+          <p class="live-section__eyebrow">Replay</p>
+          <h2>Xem lại</h2>
+        </div>
+        <span class="live-section__count"><%= safeReplays.length %> phiên</span>
+      </div>
+
+      <div class="live-card-grid">
+        <% if (safeReplays.length > 0) { %>
+          <% safeReplays.forEach((session) => { %>
+            <article class="live-card live-card--replay" data-live-session-id="<%= session.id %>">
+              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__overlay">
+                <span class="live-pill"><%= session.replayLabel %></span>
+                <span class="live-pill"><i class="fas fa-chart-line"></i> Peak <%= session.viewerPeak %></span>
+              </div>
+              <div class="live-card__body">
+                <div class="live-card__meta">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <div>
+                    <strong><%= session.host.username %></strong>
+                    <span>Kết thúc <%= session.endedAt ? new Date(session.endedAt).toLocaleDateString('vi-VN') : '' %></span>
+                  </div>
+                </div>
+                <h3><%= session.title %></h3>
+                <p><%= session.replayNote || session.description || 'Replay gồm metadata, chat và câu hỏi sau buổi live.' %></p>
+                <div class="live-card__footer">
+                  <a href="<%= session.urls.replay %>" class="live-btn live-btn--primary">Xem replay</a>
+                  <% if (session.linkedMaterial) { %>
+                    <a href="<%= session.linkedMaterial.href %>" class="live-btn live-btn--ghost">Học tiếp</a>
+                  <% } %>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        <% } else { %>
+          <div class="live-empty-state">
+            <i class="fas fa-compact-disc"></i>
+            <h3>Chưa có replay nào</h3>
+            <p>Replay và snapshot tương tác sẽ xuất hiện sau khi các buổi live đầu tiên kết thúc.</p>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </div>
+</section>
+
+<script src="/js/liveHub.js"></script>
 <%- include('partials/footer') %>

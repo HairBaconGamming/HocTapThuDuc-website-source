@@ -23,6 +23,9 @@
 <% if (typeof user !== 'undefined' && user) { %>
 <script>
     (function() {
+        if (document.body.dataset.disableActivityHeartbeat === 'true') {
+            return;
+        }
         // Hàm gửi nhịp tim
         function sendHeartbeat() {
             // Chỉ gửi khi tab đang mở (tránh tính giờ treo máy)

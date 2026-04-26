@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const http = require("http");
+const path = require("path");
 const express = require("express");
 const mongoose = require("mongoose");
 const passport = require("passport");
@@ -21,6 +22,7 @@ const { getSessionSecret } = require("./utils/secrets");
 const { corsOptionsDelegate } = require("./utils/corsPolicy");
 const { setIo } = require("./utils/realtime");
 const { startGuildJobs } = require("./jobs/guildJobs");
+const { startLiveJobs } = require("./jobs/liveJobs");
 const { migrateLegacyProImages, hasCloudinaryEnv } = require("./services/proImageMigrationService");
 const { buildAbsoluteUrl, buildCoursePath, buildQuestionPath, buildSubjectPath } = require("./utils/urlHelpers");
 require("./config/passport")(passport);
@@ -36,6 +38,7 @@ app.locals.io = io;
 setIo(io);
 
 const lessonRooms = new Map();
+const liveRooms = new Map();
 
 function normalizeLessonPresenceUser(user = {}) {
   const id = String(user.id || user._id || '').trim();
@@ -76,6 +79,48 @@ function leaveLessonRoom(socket) {
   }
 
   emitLessonPresence(lessonId);
+}
+
+function normalizeLivePresenceUser(user = {}) {
+  const id = String(user.id || user._id || '').trim();
+  if (!id) return null;
+
+  const username = String(user.username || user.name || 'Bạn học').trim() || 'Bạn học';
+  const avatar =
+    String(user.avatar || '').trim() ||
+    `https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg`;
+  const role = String(user.role || 'viewer').trim() || 'viewer';
+
+  return { id, username, avatar, role };
+}
+
+function emitLivePresence(sessionId) {
+  const room = liveRooms.get(sessionId);
+  const uniqueUsers = new Map();
+
+  if (room instanceof Map) {
+    room.forEach((user) => {
+      if (user?.id && !uniqueUsers.has(user.id)) {
+        uniqueUsers.set(user.id, user);
+      }
+    });
+  }
+
+  io.to(`live-session:${sessionId}`).emit('livePresenceUpdate', Array.from(uniqueUsers.values()));
+}
+
+function leaveLiveSession(socket) {
+  const sessionId = socket.liveSessionId;
+  if (!sessionId || !liveRooms.has(sessionId)) return;
+
+  const room = liveRooms.get(sessionId);
+  room.delete(socket.id);
+
+  if (room.size === 0) {
+    liveRooms.delete(sessionId);
+  }
+
+  emitLivePresence(sessionId);
 }
 
 io.on("connection", (socket) => {
@@ -120,8 +165,38 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("subscribe_live_hub", () => {
+    socket.join("live-hub");
+  });
+
+  socket.on("join_live_session", ({ sessionId, user } = {}) => {
+    const safeSessionId = String(sessionId || "").trim();
+    const safeUser = normalizeLivePresenceUser(user);
+    if (!safeSessionId || !safeUser) return;
+
+    if (socket.liveSessionId && socket.liveSessionId !== safeSessionId) {
+      leaveLiveSession(socket);
+    }
+
+    socket.join(`live-session:${safeSessionId}`);
+    socket.liveSessionId = safeSessionId;
+    socket.liveSessionUser = safeUser;
+
+    if (!liveRooms.has(safeSessionId)) {
+      liveRooms.set(safeSessionId, new Map());
+    }
+
+    liveRooms.get(safeSessionId).set(socket.id, safeUser);
+    emitLivePresence(safeSessionId);
+  });
+
+  socket.on("leave_live_session", () => {
+    leaveLiveSession(socket);
+  });
+
   socket.on("disconnect", () => {
     leaveLessonRoom(socket);
+    leaveLiveSession(socket);
   });
 });
 
@@ -205,13 +280,20 @@ app.options('*', cors(corsOptionsDelegate));
 app.use(cookieParser());
 
 // [OPTIMIZE] Dùng Express Native thay vì body-parser
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    if (buf?.length) {
+      req.rawBody = buf.toString("utf8");
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // [SECURITY] Chống Zalgo text
 const { sanitizeZalgo } = require('./middlewares/sanitizeZalgo');
 app.use(sanitizeZalgo);
 
+app.use("/vendor/livekit", express.static(path.join(__dirname, "node_modules", "livekit-client", "dist")));
 app.use(express.static("public"));
 app.use(rateLimit({ windowMs: 1*60000, max: 1000 })); // 1000 req/min
 
@@ -314,6 +396,7 @@ app.use((err, req, res, next) => {
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log(`🚀 Server on port ${port}`));
 startGuildJobs();
+startLiveJobs();
 
 // [OPTIMIZE] Slug Fixer - Chạy sau 5s để server khởi động nhanh hơn
 setTimeout(async () => {
