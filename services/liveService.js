@@ -69,8 +69,8 @@ function toIdString(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
   if (typeof value === "object") {
-    if (value._id) return toIdString(value._id);
     if (typeof value.toHexString === "function") return value.toHexString();
+    if (value._id) return toIdString(value._id);
   }
   return String(value);
 }
