@@ -13,7 +13,7 @@
     const courseTitle = course ? course.title : (subject ? subject.name : 'Kho học liệu');
 %>
 
-<div class="lesson-detail-page">
+<div class="lesson-detail-page" data-lesson-type="<%= normalizedType %>" data-lesson-accent="<%= typeConfig.accentColor %>">
     <aside class="lesson-rail lesson-rail-left" id="lessonSidebar" data-rail-state="open">
         <button type="button" class="lesson-sidebar-edge-toggle" data-lesson-action="toggle-left-rail" aria-label="Thu gọn mục lục">
             <i class="fas fa-chevron-left"></i>
@@ -80,6 +80,18 @@
             </div>
 
             <section class="lesson-stage" id="mainScrollArea">
+                <% if (normalizedType === 'masterclass') { %>
+                    <div class="lesson-masterclass-theater" id="lessonMasterclassTheater">
+                        <div class="lesson-masterclass-placeholder">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Video sẽ xuất hiện tại đây khi nội dung được tải</span>
+                        </div>
+                    </div>
+                    <div class="lesson-masterclass-tabs">
+                        <button type="button" class="lesson-mc-tab is-active" data-mc-tab="material">Tài liệu đính kèm</button>
+                        <button type="button" class="lesson-mc-tab" data-mc-tab="discussion">Thảo luận</button>
+                    </div>
+                <% } %>
                 <article class="lesson-reading-surface" id="lessonReadingSurface">
                     <div class="lesson-resume-banner hidden" id="lessonResumeBanner">
                         <div>
@@ -189,6 +201,59 @@
             </section>
         </main>
     </div>
+
+    <% if (normalizedType === 'lab') { %>
+        <div class="lesson-lab-panel" id="lessonLabPanel">
+            <div class="lesson-lab-header">
+                <span class="lesson-lab-kicker"><i class="fas fa-code"></i> Xưởng Thực Hành</span>
+                <div class="lesson-lab-actions">
+                    <button type="button" class="lesson-lab-btn" id="lessonLabRunBtn"><i class="fas fa-play"></i> Run</button>
+                    <button type="button" class="lesson-lab-btn" id="lessonLabResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                </div>
+            </div>
+            <div class="lesson-lab-editor-wrap" id="lessonLabEditorWrap">
+                <div id="lessonLabMonacoEditor" style="width:100%;height:100%;"></div>
+            </div>
+            <div class="lesson-lab-preview-wrap" id="lessonLabPreviewWrap">
+                <div class="lesson-lab-preview-header">Kết quả</div>
+                <iframe id="lessonLabPreviewFrame" sandbox="allow-scripts allow-forms allow-modals allow-popups" style="width:100%;height:100%;border:0;background:#fff;"></iframe>
+            </div>
+        </div>
+    <% } %>
+
+    <% if (normalizedType === 'checkpoint') { %>
+        <aside class="lesson-checkpoint-aside" id="lessonCheckpointAside">
+            <div class="lesson-checkpoint-card">
+                <div class="lesson-checkpoint-header">
+                    <i class="fas fa-shield-halved"></i>
+                    <h3>Vượt Ải</h3>
+                </div>
+                <div class="lesson-checkpoint-info">
+                    <div class="lesson-checkpoint-row">
+                        <span>Điểm sàn</span>
+                        <strong><%= lesson.passingScore || 60 %>%</strong>
+                    </div>
+                    <div class="lesson-checkpoint-row">
+                        <span>Trạng thái</span>
+                        <strong id="checkpointStatusLabel" class="<%= isCompleted ? 'is-passed' : '' %>"><%= isCompleted ? 'Đã vượt ải' : 'Chưa qua' %></strong>
+                    </div>
+                    <div class="lesson-checkpoint-row">
+                        <span>Điểm hiện tại</span>
+                        <strong id="checkpointScoreLabel">—</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="lesson-checkpoint-card">
+                <div class="lesson-checkpoint-header">
+                    <i class="fas fa-ranking-star"></i>
+                    <h3>Vinh Danh</h3>
+                </div>
+                <div class="lesson-leaderboard" id="lessonLeaderboard">
+                    <div class="lesson-empty-inline">Đang tải bảng xếp hạng...</div>
+                </div>
+            </div>
+        </aside>
+    <% } %>
 </div>
 
 <aside class="lesson-tools-drawer hidden" id="lessonToolsDrawer" data-drawer-state="closed">
@@ -442,6 +507,13 @@
         manifestUrl: "/api/lesson/<%= lesson._id %>/tts",
         lessonId: "<%= lesson._id %>"
     };
+    window.LESSON_TYPE_STATE = <%- JSON.stringify({
+        normalizedType: normalizedType,
+        typeConfig: typeConfig,
+        passingScore: lesson.passingScore || 60,
+        labTemplate: lesson.labTemplate || null,
+        videoMilestones: lesson.videoMilestones || []
+    }) %>;
 
     <%
         let rawContent = lesson.content || [];
@@ -459,6 +531,10 @@
 <script src="/js/lessonDetailComments.js"></script>
 <script src="/js/lessonGamification.js"></script>
 <script src="/js/lessonActiveLearning.js"></script>
+
+<% if (normalizedType === 'lab') { %>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<% } %>
 
 <%- include('partials/footer', {
     aiTutorVariant: 'lesson-detail',

@@ -324,7 +324,6 @@
                                         <div class="type-tab active"><i class="fas fa-cubes"></i> Block Editor</div>
                                     </div>
 
-                                    <input type="hidden" name="type" value="theory">
                                     <input type="hidden" name="content" id="finalContentJSON">
                                     <input type="hidden" name="quizData" id="quizDataInput">
 
@@ -515,6 +514,19 @@
                                         <div class="panel-section-title" style="color:#15803d; background:#dcfce7; border:1px solid #86efac;">
                                             <i class="fas fa-file-alt"></i> CẤU HÌNH BÀI HỌC
                                             <span id="publishStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem;">NHÁP</span>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Loại bài học</span>
+                                            <select name="type" id="lessonTypeSelect" class="studio-input">
+                                                <option value="concept" <%= (!lesson || lesson.type === 'theory' || lesson.type === 'concept') ? 'selected' : '' %>>📘 Nền Tảng (Lý thuyết)</option>
+                                                <option value="masterclass" <%= (lesson && (lesson.type === 'video' || lesson.type === 'masterclass')) ? 'selected' : '' %>>▶️ Masterclass (Video)</option>
+                                                <option value="checkpoint" <%= (lesson && (lesson.type === 'quiz' || lesson.type === 'checkpoint')) ? 'selected' : '' %>>⚔️ Thực Chiến (Quiz)</option>
+                                                <option value="lab" <%= (lesson && (lesson.type === 'code' || lesson.type === 'lab')) ? 'selected' : '' %>>💻 Lab (Code IDE)</option>
+                                            </select>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-label">Điểm sàn (chỉ áp dụng Thực Chiến)</span>
+                                            <input type="number" name="passingScore" id="lessonPassingScore" class="studio-input" value="<%= lesson ? (lesson.passingScore || 60) : 60 %>" min="0" max="100">
                                         </div>
                                         <div class="control-item">
                                             <span class="control-label">Quyền truy cập</span>

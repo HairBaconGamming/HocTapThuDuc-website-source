@@ -40,6 +40,7 @@ const LessonWorkspace = {
         });
         safeRun('initLessonContent', () => this.initLessonContent());
         safeRun('initNotes', () => this.initNotes());
+        safeRun('initTypeBehaviors', () => this.initTypeBehaviors());
         safeRun('maybeShowResumeBanner', () => this.maybeShowResumeBanner());
 
         setTimeout(() => {
@@ -104,6 +105,131 @@ const LessonWorkspace = {
         this.syncAiTutorBodyState(this.isAiTutorOpen());
         this.closeFabMenu();
         this.syncOverlay();
+    },
+
+    initTypeBehaviors() {
+        const state = window.LESSON_TYPE_STATE || {};
+        if (!state.normalizedType) return;
+
+        // 1. Checkpoint Behavior
+        if (state.normalizedType === 'checkpoint') {
+            const completeBtn = document.getElementById('btn-finish-lesson');
+            const scoreLabel = document.getElementById('checkpointScoreLabel');
+            const statusLabel = document.getElementById('checkpointStatusLabel');
+            
+            // Listen for quiz completion events
+            document.addEventListener('lesson:quiz-completed', (e) => {
+                const score = e.detail?.score || 0;
+                const passingScore = state.passingScore || 60;
+                
+                if (scoreLabel) scoreLabel.innerText = `${score}%`;
+                
+                if (score >= passingScore) {
+                    if (statusLabel) {
+                        statusLabel.innerText = 'Đủ điểm qua ải';
+                        statusLabel.classList.add('is-passed');
+                    }
+                    if (completeBtn && !completeBtn.classList.contains('is-completed')) {
+                        completeBtn.disabled = false;
+                        completeBtn.classList.add('is-ready');
+                    }
+                } else {
+                    if (statusLabel) {
+                        statusLabel.innerText = 'Chưa đủ điểm';
+                        statusLabel.classList.remove('is-passed');
+                    }
+                    if (completeBtn) {
+                        completeBtn.disabled = true;
+                        completeBtn.classList.remove('is-ready');
+                    }
+                }
+            });
+
+            // Initial lock if not completed
+            if (window.LESSON_VIEW_STATE?.isCompleted === false && completeBtn) {
+                completeBtn.disabled = true;
+            }
+
+            // Load Leaderboard
+            fetch(`/lesson/${this.lessonId}/leaderboard?limit=10`)
+                .then(res => res.json())
+                .then(data => {
+                    const board = document.getElementById('lessonLeaderboard');
+                    if (!board) return;
+                    if (!data.leaderboard || data.leaderboard.length === 0) {
+                        board.innerHTML = '<div class="lesson-empty-inline">Chưa có ai vượt ải này. Hãy là người đầu tiên!</div>';
+                        return;
+                    }
+                    let html = '';
+                    data.leaderboard.forEach(user => {
+                        html += `
+                            <div class="lesson-checkpoint-row" style="justify-content: flex-start; gap: 10px;">
+                                <span style="min-width: 24px; font-weight: bold; color: var(--lesson-primary);">#${user.rank}</span>
+                                <img src="${user.avatar || '/images/default-avatar.png'}" style="width:24px; height:24px; border-radius:50%;">
+                                <strong>${user.username}</strong>
+                                <span style="margin-left: auto; font-size: 0.8rem;">Lv.${user.level}</span>
+                            </div>
+                        `;
+                    });
+                    board.innerHTML = html;
+                })
+                .catch(err => console.error(err));
+        }
+
+        // 2. Lab Behavior
+        if (state.normalizedType === 'lab') {
+            const initMonaco = () => {
+                if (!window.require) return setTimeout(initMonaco, 100);
+                require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
+                require(['vs/editor/editor.main'], () => {
+                    const container = document.getElementById('lessonLabMonacoEditor');
+                    if (!container) return;
+                    const editor = monaco.editor.create(container, {
+                        value: state.labTemplate?.starterCode || '<h1>Xưởng Thực Hành</h1>\n<p>Viết code HTML/JS ở đây...</p>',
+                        language: state.labTemplate?.language || 'html',
+                        theme: 'vs-dark',
+                        automaticLayout: true,
+                        minimap: { enabled: false },
+                        fontSize: 14
+                    });
+                    
+                    const runBtn = document.getElementById('lessonLabRunBtn');
+                    const frame = document.getElementById('lessonLabPreviewFrame');
+                    if (runBtn && frame) {
+                        runBtn.addEventListener('click', () => {
+                            const code = editor.getValue();
+                            frame.srcdoc = this.buildSandboxedPreviewSrcdoc(code, true);
+                        });
+                        // Initial run
+                        runBtn.click();
+                    }
+                    
+                    const resetBtn = document.getElementById('lessonLabResetBtn');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', () => {
+                            editor.setValue(state.labTemplate?.starterCode || '');
+                        });
+                    }
+                });
+            };
+            initMonaco();
+        }
+
+        // 3. Masterclass Tabs
+        if (state.normalizedType === 'masterclass') {
+            const tabs = document.querySelectorAll('.lesson-mc-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    tabs.forEach(t => t.classList.remove('is-active'));
+                    e.currentTarget.classList.add('is-active');
+                    const target = e.currentTarget.dataset.mcTab;
+                    if (target === 'discussion') {
+                        const btn = document.querySelector('[data-comments-toggle]');
+                        if (btn) btn.click();
+                    }
+                });
+            });
+        }
     },
 
     toggleAiTutorSidebar() {

@@ -12,6 +12,7 @@ const {
 const LevelUtils = require('../utils/level');
 const { buildCompletionGardenBundle } = require('../utils/lessonGamificationUtils');
 const { buildAbsoluteUrl, buildCoursePath, buildSubjectPath } = require('../utils/urlHelpers');
+const { resolveLessonType, mapLegacyType } = require('../utils/lessonTypeNormalizer');
 
 const toBoolean = (value) => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
 
@@ -57,20 +58,8 @@ function estimateLessonMinutes(lesson) {
 }
 
 function getLessonTypeMeta(type) {
-    switch (type) {
-        case 'video':
-            return { label: 'Video', icon: 'fa-play-circle' };
-        case 'quiz':
-        case 'question':
-            return { label: 'Luyện tập', icon: 'fa-circle-question' };
-        case 'document':
-        case 'resource':
-            return { label: 'Tài liệu', icon: 'fa-file-lines' };
-        case 'code':
-            return { label: 'Code', icon: 'fa-code' };
-        default:
-            return { label: 'Bài học', icon: 'fa-book-open' };
-    }
+    const { typeConfig } = resolveLessonType(type);
+    return { label: typeConfig.shortLabel, icon: typeConfig.icon };
 }
 
 function stripHtml(value = '') {

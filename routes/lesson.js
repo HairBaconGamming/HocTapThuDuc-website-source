@@ -7,6 +7,7 @@ const upload = multer();
 const { isLoggedIn, isPro, hasProAccess } = require("../middlewares/auth");
 const { getJwtSecret } = require("../utils/secrets");
 const { processLessonContent, getWordDiff, gradeEssaySimple, gradeEssaySmart, gradeEssayAIAll, levenshtein } = require("../utils/essayHelpers");
+const { resolveLessonType } = require("../utils/lessonTypeNormalizer");
 const Lesson = require("../models/Lesson");
 const Subject = require("../models/Subject");
 const Unit = require("../models/Unit");
@@ -204,6 +205,8 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         ];
 
         // Pass course to view so Back button can target course page
+        const { normalizedType, typeConfig } = resolveLessonType(lesson.type);
+
         res.render("lessonDetail", {
             user: req.user,
             lesson: lessonData,
@@ -217,6 +220,8 @@ router.get("/:id", isLoggedIn, async (req, res) => {
             courseProgress,
             isCompleted,
             recommendedNextLesson,
+            normalizedType,
+            typeConfig,
             marked: req.app.locals.marked,
             breadcrumbs,
             activePage: "subjects",
@@ -356,6 +361,21 @@ router.post("/:id/complete", isLoggedIn, completeLimiter, async (req, res) => {
                 return res.status(403).json({ error: "Ban can PRO de hoan thanh bai hoc nay.", message: "Ban can PRO de hoan thanh bai hoc nay." });
             }
             return res.status(403).json({ error: "Bai hoc nay hien khong san sang de nhan thuong.", message: "Bai hoc nay hien khong san sang de nhan thuong." });
+        }
+
+        // Checkpoint gate: require passing score
+        const { normalizedType: completeNormalizedType } = resolveLessonType(lesson.type);
+        if (completeNormalizedType === 'checkpoint') {
+            const quizScore = Number(req.body.quizScore || 0);
+            const passingScore = Number(lesson.passingScore || 60);
+            if (quizScore < passingScore) {
+                return res.status(403).json({
+                    error: `Bạn cần đạt tối thiểu ${passingScore}% để vượt ải này. Điểm hiện tại: ${quizScore}%.`,
+                    message: `Cần đạt ${passingScore}% để hoàn thành.`,
+                    requiredScore: passingScore,
+                    currentScore: quizScore
+                });
+            }
         }
 
         const user = await User.findById(userId);
@@ -515,6 +535,32 @@ router.post("/essay/grade/:lessonId", isLoggedIn, async (req, res) => {
         res.json({ scores, averageScore: avg, diffs, comments });
 
     } catch (e) { res.status(500).json({ error: "Lỗi chấm bài." }); }
+});
+
+// Leaderboard: top completions for a lesson
+router.get("/:id/leaderboard", async (req, res) => {
+    try {
+        const lessonId = req.params.id;
+        const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+        const entries = await LessonCompletion.find({ lesson: lessonId })
+            .sort({ createdAt: 1 })
+            .limit(limit)
+            .populate('user', 'username avatar level')
+            .lean();
+
+        const leaderboard = entries.map((entry, index) => ({
+            rank: index + 1,
+            username: entry.user?.username || 'Ẩn danh',
+            avatar: entry.user?.avatar || '',
+            level: entry.user?.level || 1,
+            completedAt: entry.createdAt
+        }));
+
+        res.json({ leaderboard });
+    } catch (error) {
+        res.status(500).json({ error: 'Lỗi tải bảng xếp hạng.' });
+    }
 });
 
 module.exports = router;

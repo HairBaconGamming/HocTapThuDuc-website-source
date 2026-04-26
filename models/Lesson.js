@@ -39,7 +39,16 @@ const lessonSchema = new mongoose.Schema({
     allowSaveProgress: { type: Boolean, default: true },
     tags: [String],
     views: { type: Number, default: 0 },
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // --- 4-TYPE LESSON SYSTEM ---
+    passingScore: { type: Number, default: 60, min: 0, max: 100 },  // Checkpoint: điểm sàn để qua ải
+    labTemplate: { type: Object, default: null },                     // Lab: starter code { language, starterCode, expectedOutput }
+    videoMilestones: [{                                               // Masterclass: mốc thời gian rớt vàng
+        percent: { type: Number, required: true },
+        rewardType: { type: String, default: 'gold' },
+        rewardAmount: { type: Number, default: 5 }
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Lesson', lessonSchema);
