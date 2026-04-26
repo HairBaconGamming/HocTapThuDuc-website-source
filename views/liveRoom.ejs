@@ -57,6 +57,11 @@
           <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
         </div>
         <% if (canModerate) { %>
+          <div class="live-toggle-facecam-wrapper" id="liveFacecamToggleWrapper">
+            <button type="button" id="liveToggleFacecamButton" class="live-room-btn live-room-btn--secondary" title="Ẩn/Hiện Camera">
+              <i class="fas fa-video"></i>
+            </button>
+          </div>
           <button type="button" id="liveScreenShareButton" class="live-room-btn live-room-btn--secondary" hidden>
             <i class="fas fa-desktop"></i> Chia sẻ màn hình
           </button>
@@ -71,6 +76,11 @@
     </div>
 
     <div class="live-stage-primary" id="liveStagePrimary">
+      <div class="live-pip-controls" id="livePipControls">
+        <button type="button" class="live-pip-btn" id="livePipHideBtn" title="Ẩn camera">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
       <div class="live-stage-placeholder" id="liveStagePlaceholder">
         <i class="fas fa-broadcast-tower"></i>
         <strong id="liveStageHeadline">Phòng đang ở chế độ chờ</strong>

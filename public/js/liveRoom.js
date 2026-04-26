@@ -25,6 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
     raiseHandButton: document.getElementById("liveRaiseHandButton"),
     screenShareButton: document.getElementById("liveScreenShareButton"),
     screenShareContainer: document.getElementById("liveScreenShareContainer"),
+    mediaArea: document.querySelector(".live-room-media-area"),
+    pipControls: document.getElementById("livePipControls"),
+    pipHideBtn: document.getElementById("livePipHideBtn"),
+    facecamToggleBtn: document.getElementById("liveToggleFacecamButton"),
   };
 
   let socket = null;
@@ -33,6 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let attendanceTimer = null;
   let livekitConnected = false;
   let isScreenSharing = false;
+  let isFacecamVisible = true;
+  let facecamPos = { x: 0, y: 0 };
   const seenChatIds = new Set((boot.chatMessages || []).map((entry) => entry.id));
 
   function escapeHtml(value) {
@@ -209,28 +215,32 @@ document.addEventListener("DOMContentLoaded", () => {
         videoNode.style.width = "100%";
         videoNode.style.height = "100%";
         videoNode.style.objectFit = "contain";
-        videoNode.style.borderRadius = "12px";
         container.prepend(videoNode);
-        container.hidden = false;
-        if (elements.stagePrimary) elements.stagePrimary.hidden = true;
+        
+        isScreenSharing = true;
+        if (elements.mediaArea) elements.mediaArea.classList.add("is-sharing");
+        resetFacecamPosition();
       }
       return;
     }
 
     const identity = participant?.identity || (isLocal ? "local" : `remote-${Date.now()}`);
+    const hostId = session.host?.id || boot.session?.host?.id || "";
+    const isHost = isLocal || identity === hostId;
+
     const label = isLocal ? "Bạn" : participant?.name || participant?.identity || "Participant";
     const tile = createVideoTile(identity, label);
     const node = track.attach();
     tile.querySelectorAll("video").forEach((element) => element.remove());
     tile.prepend(node);
 
-    if (isLocal) {
+    if (isHost) {
       elements.stagePrimary.querySelectorAll(".live-video-tile").forEach((node) => node.remove());
       elements.stagePrimary.appendChild(tile);
+      if (elements.stagePlaceholder) elements.stagePlaceholder.hidden = true;
     } else {
       elements.stageGrid.appendChild(tile);
     }
-    if (elements.stagePlaceholder) elements.stagePlaceholder.hidden = true;
   }
 
   function removeParticipantTracks(identity) {
@@ -327,10 +337,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const wasScreenShare = track.source === LivekitClient?.Track?.Source?.ScreenShare
           || track.source === 'screen_share';
         track.detach().forEach((element) => element.remove());
-        if (wasScreenShare && elements.screenShareContainer) {
-          elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
-          elements.screenShareContainer.hidden = true;
-          if (elements.stagePrimary) elements.stagePrimary.hidden = false;
+        if (wasScreenShare) {
+          isScreenSharing = false;
+          if (elements.mediaArea) elements.mediaArea.classList.remove("is-sharing");
+          if (elements.screenShareContainer) {
+            elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
+          }
+          resetFacecamPosition(true);
         }
         if (participant?.identity) {
           removeParticipantTracks(participant.identity);
@@ -460,8 +473,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (elements.screenShareContainer) {
           elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
-          elements.screenShareContainer.hidden = true;
         }
+        if (elements.mediaArea) elements.mediaArea.classList.remove("is-sharing");
+        resetFacecamPosition(true);
         if (typeof showAlert === "function") {
           showAlert("Đã tắt chia sẻ màn hình.", "info", 2000);
         }
@@ -530,6 +544,87 @@ document.addEventListener("DOMContentLoaded", () => {
       upsertHand(payload.hand);
     } catch (error) {
       if (typeof showAlert === "function") showAlert(error.message, "error", 3600);
+    }
+  }
+
+  function initFacecamDraggable() {
+    const stage = elements.stagePrimary;
+    if (!stage) return;
+
+    let isDragging = false;
+    let startX, startY;
+    let initialX, initialY;
+
+    stage.addEventListener("mousedown", (e) => {
+      if (!isScreenSharing) return;
+      if (e.target.closest(".live-pip-btn")) return;
+      
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const rect = stage.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+      
+      stage.style.transition = "none";
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+
+    function onMouseMove(e) {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      
+      // Calculate position relative to viewport but keep it within bounds
+      let newX = initialX + dx;
+      let newY = initialY + dy;
+      
+      // Convert to bottom/right style or just use fixed/absolute
+      stage.style.left = `${newX}px`;
+      stage.style.top = `${newY}px`;
+      stage.style.bottom = "auto";
+      stage.style.right = "auto";
+    }
+
+    function onMouseUp() {
+      isDragging = false;
+      stage.style.transition = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+  }
+
+  function resetFacecamPosition(forceReset = false) {
+    const stage = elements.stagePrimary;
+    if (!stage) return;
+    
+    if (forceReset || !isScreenSharing) {
+      stage.style.left = "";
+      stage.style.top = "";
+      stage.style.bottom = "";
+      stage.style.right = "";
+      stage.classList.remove("is-hidden");
+      isFacecamVisible = true;
+    }
+  }
+
+  function toggleFacecamVisibility() {
+    isFacecamVisible = !isFacecamVisible;
+    if (elements.stagePrimary) {
+      if (isFacecamVisible) {
+        elements.stagePrimary.classList.remove("is-hidden");
+      } else {
+        elements.stagePrimary.classList.add("is-hidden");
+      }
+    }
+    
+    if (elements.facecamToggleBtn) {
+      const icon = elements.facecamToggleBtn.querySelector("i");
+      if (icon) {
+        icon.className = isFacecamVisible ? "fas fa-video" : "fas fa-video-slash";
+      }
     }
   }
 
@@ -619,7 +714,11 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.raiseHandButton?.addEventListener("click", toggleHand);
   elements.screenShareButton?.addEventListener("click", toggleScreenShare);
 
+  elements.pipHideBtn?.addEventListener("click", toggleFacecamVisibility);
+  elements.facecamToggleBtn?.addEventListener("click", toggleFacecamVisibility);
+
   initTabs();
+  initFacecamDraggable();
   initSocket();
   updateModeratorButtons(session.status);
   ensureRoomConnection();
