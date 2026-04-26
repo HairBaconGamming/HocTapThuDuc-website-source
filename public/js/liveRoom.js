@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     closeDeviceModalBtn: document.getElementById("liveCloseDeviceModal"),
     micSelect: document.getElementById("liveMicSelect"),
     camSelect: document.getElementById("liveCamSelect"),
+    screenAudioToggle: document.getElementById("liveScreenAudioToggle"),
   };
 
   let socket = null;
@@ -46,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let isFacecamVisible = true;
   let isMicEnabled = true;
   let isCamEnabled = true;
+  let isSystemAudioEnabled = false;
   let facecamPos = { x: 0, y: 0 };
   const seenChatIds = new Set((boot.chatMessages || []).map((entry) => entry.id));
 
@@ -352,6 +354,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
         attachTrack(track, participant, false);
+        
+        const hostId = String(session.host?.id || boot.session?.host?.id || "");
+        if (participant.identity === hostId && track.kind === "video" && track.source !== "screen_share") {
+          updateHostCamState(!publication.isMuted);
+        }
+      });
+
+      room.on(LivekitClient.RoomEvent.TrackMuted, (publication, participant) => {
+        const hostId = String(session.host?.id || boot.session?.host?.id || "");
+        if (participant.identity === hostId && publication.kind === "video" && publication.source !== "screen_share") {
+          updateHostCamState(false);
+        }
+      });
+
+      room.on(LivekitClient.RoomEvent.TrackUnmuted, (publication, participant) => {
+        const hostId = String(session.host?.id || boot.session?.host?.id || "");
+        if (participant.identity === hostId && publication.kind === "video" && publication.source !== "screen_share") {
+          updateHostCamState(true);
+        }
       });
 
       room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
@@ -369,8 +390,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           resetFacecamPosition(true);
         } else {
-          // If it was a camera track, we might want to check if the participant is still there
-          // but we usually handle cleanup in ParticipantDisconnected.
+          const hostId = String(session.host?.id || boot.session?.host?.id || "");
+          if (participant.identity === hostId && track.kind === "video") {
+            updateHostCamState(false);
+          }
         }
       });
 
@@ -393,6 +416,10 @@ document.addEventListener("DOMContentLoaded", () => {
         participant.trackPublications.forEach((publication) => {
           if (publication.track) {
             attachTrack(publication.track, participant, false);
+            const hostId = String(session.host?.id || boot.session?.host?.id || "");
+            if (participant.identity === hostId && publication.kind === "video" && publication.source !== "screen_share") {
+              updateHostCamState(!publication.isMuted);
+            }
           }
         });
       });
@@ -510,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
           showAlert("Đã tắt chia sẻ màn hình.", "info", 2000);
         }
       } else {
-        const publication = await room.localParticipant.setScreenShareEnabled(true);
+        const publication = await room.localParticipant.setScreenShareEnabled(true, { audio: isSystemAudioEnabled });
         isScreenSharing = true;
         
         if (elements.screenShareButton) {
@@ -772,6 +799,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function updateHostCamState(isEnabled) {
+    // Only apply to viewers. Hosts manage their own state.
+    if (canModerate) return;
+
+    if (elements.facecamToggleBtn) {
+      elements.facecamToggleBtn.disabled = !isEnabled;
+      elements.facecamToggleBtn.style.opacity = isEnabled ? "1" : "0.5";
+      elements.facecamToggleBtn.style.pointerEvents = isEnabled ? "auto" : "none";
+      elements.facecamToggleBtn.title = isEnabled ? "Ẩn/Hiện Camera" : "Host đã tắt camera";
+    }
+
+    if (elements.stagePrimary) {
+      if (!isEnabled) {
+        elements.stagePrimary.classList.add("is-hidden");
+      } else if (isFacecamVisible) {
+        elements.stagePrimary.classList.remove("is-hidden");
+      }
+    }
+  }
+
   function initTabs() {
     document.querySelectorAll(".live-side-tab").forEach((button) => {
       button.addEventListener("click", () => {
@@ -865,6 +912,14 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.closeDeviceModalBtn?.addEventListener("click", () => elements.deviceModal.hidden = true);
   elements.micSelect?.addEventListener("change", (e) => switchDevice("audioinput", e.target.value));
   elements.camSelect?.addEventListener("change", (e) => switchDevice("videoinput", e.target.value));
+  elements.screenAudioToggle?.addEventListener("change", (e) => {
+    isSystemAudioEnabled = e.target.checked;
+    if (isScreenSharing) {
+      if (typeof showAlert === "function") {
+        showAlert("Cài đặt âm thanh sẽ áp dụng cho lần chia sẻ tiếp theo hoặc sau khi khởi động lại.", "info", 3000);
+      }
+    }
+  });
 
   initTabs();
   initFacecamDraggable();

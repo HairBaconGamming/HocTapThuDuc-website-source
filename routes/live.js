@@ -104,6 +104,8 @@ router.get("/", isLoggedIn, async (req, res) => {
     const data = await buildLiveHubData(req.user, req.query);
     res.render("liveList", {
       title: "Live Hub",
+      metaTitle: "Live Hub | Livestream Học Tập Thủ Đức",
+      metaDescription: "Khám phá các buổi livestream học tập sôi động, xem lại replay chất lượng và tham gia cộng đồng học tập tương tác tại Học Tập Thủ Đức.",
       user: req.user,
       activePage: "live",
       liveNow: data.liveNow,
@@ -340,6 +342,9 @@ router.get("/:slug/replay", isLoggedIn, async (req, res) => {
     const data = await buildLiveReplayData(req.params.slug, req.user);
     res.render("liveReplay", {
       title: `Replay | ${data.session.title}`,
+      metaTitle: `Xem lại: ${data.session.title} | Học Tập Thủ Đức`,
+      metaDescription: data.session.description || `Xem lại buổi livestream "${data.session.title}" đã diễn ra tại Học Tập Thủ Đức.`,
+      metaImage: data.session.thumbnail,
       user: req.user,
       activePage: "live",
       liveRoomData: data,
@@ -354,6 +359,9 @@ router.get("/:slug", isLoggedIn, async (req, res) => {
     const data = await buildLiveRoomData(req.params.slug, req.user);
     res.render("liveRoom", {
       title: data.session.title,
+      metaTitle: `${data.session.title} | Livestream Học Tập Thủ Đức`,
+      metaDescription: data.session.description || `Tham gia buổi livestream "${data.session.title}" của ${data.session.host?.username || "giảng viên"} tại Học Tập Thủ Đức.`,
+      metaImage: data.session.thumbnail,
       user: req.user,
       activePage: "live",
       disableActivityHeartbeat: true,

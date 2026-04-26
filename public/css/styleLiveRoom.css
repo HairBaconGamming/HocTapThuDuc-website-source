@@ -855,6 +855,32 @@
   font-style: italic;
 }
 
+.live-setting-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 0;
+  transition: var(--lr-transition);
+}
+
+.live-setting-checkbox:hover {
+  color: #fff;
+}
+
+.live-setting-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--lr-primary);
+  cursor: pointer;
+}
+
+.live-setting-checkbox span {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
 .live-room-btn--danger {
   background: var(--lr-danger) !important;
   color: #fff !important;
