@@ -1,0 +1,113 @@
+<section class="admin-card">
+    <form method="GET" action="<%= path %>" class="filter-bar filter-bar-extended">
+        <input type="text" name="q" value="<%= filters.q %>" placeholder="Tìm phòng live theo tiêu đề, slug...">
+        <select name="status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="live" <%= filters.status === 'live' ? 'selected' : '' %>>🔴 Đang live</option>
+            <option value="scheduled" <%= filters.status === 'scheduled' ? 'selected' : '' %>>📅 Đã lên lịch</option>
+            <option value="ended" <%= filters.status === 'ended' ? 'selected' : '' %>>✅ Đã kết thúc</option>
+            <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>❌ Lỗi</option>
+            <option value="cancelled" <%= filters.status === 'cancelled' ? 'selected' : '' %>>🚫 Đã hủy</option>
+            <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>📝 Bản nháp</option>
+        </select>
+        <select name="sort">
+            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Cũ nhất</option>
+            <option value="viewers_desc" <%= filters.sort === 'viewers_desc' ? 'selected' : '' %>>Peak viewers</option>
+        </select>
+        <button class="admin-btn admin-btn-primary" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Phòng live</th>
+                    <th>Host</th>
+                    <th>Trạng thái</th>
+                    <th>Viewers</th>
+                    <th>Thời gian</th>
+                    <th>Tác vụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% sessions.forEach((session) => { %>
+                    <tr>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= session.title %></strong>
+                                <span><%= session.category || 'Học tập' %> · <%= session.providerKind || 'mock' %></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= session.hostUser?.username || 'Ẩn danh' %></strong>
+                                <span><%= session.subjectId?.name || 'Chưa gắn môn' %></span>
+                            </div>
+                        </td>
+                        <td>
+                            <% const statusMap = {
+                                live: { label: 'Đang live', tone: 'success' },
+                                scheduled: { label: 'Đã lên lịch', tone: 'info' },
+                                ended: { label: 'Kết thúc', tone: 'neutral' },
+                                failed: { label: 'Lỗi', tone: 'danger' },
+                                cancelled: { label: 'Đã hủy', tone: 'warning' },
+                                draft: { label: 'Nháp', tone: 'warning' }
+                            }; %>
+                            <% const st = statusMap[session.status] || { label: session.status, tone: 'neutral' }; %>
+                            <span class="admin-badge <%= st.tone %>"><%= st.label %></span>
+                        </td>
+                        <td>
+                            <div class="entity-stack">
+                                <strong><%= formatNumber(session.viewerPeak) %> peak</strong>
+                                <span><%= formatNumber(session.chatMessagesCount) %> chat · <%= formatNumber(session.questionsCount) %> Q&A</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="entity-stack">
+                                <% if (session.scheduledFor) { %>
+                                    <strong><%= formatDateTime(session.scheduledFor) %></strong>
+                                <% } else { %>
+                                    <strong><%= formatDateTime(session.createdAt) %></strong>
+                                <% } %>
+                                <% if (session.endedAt) { %>
+                                    <span>Kết thúc: <%= formatDateTime(session.endedAt) %></span>
+                                <% } %>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a class="admin-btn admin-btn-ghost" href="<%= buildAdminUrl(path, filters, { detailId: session._id, page: pagination.page }) %>">Chi tiết</a>
+                                <% if (session.status === 'live' || session.status === 'scheduled') { %>
+                                    <form method="POST" action="/admin/content/lives/<%= session._id %>/end" data-confirm="Buộc kết thúc phòng live '<%= session.title %>'?">
+                                        <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                                        <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                                        <button class="admin-btn admin-btn-warning" type="submit">
+                                            <i class="fas fa-stop"></i> Kết thúc
+                                        </button>
+                                    </form>
+                                <% } %>
+                                <form method="POST" action="/admin/content/lives/<%= session._id %>/delete" data-confirm="Xóa hoàn toàn phòng live '<%= session.title %>'? Hành động này không thể hoàn tác.">
+                                    <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                                    <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                                    <button class="admin-btn admin-btn-danger" type="submit">Xóa</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+
+                <% if (!sessions || sessions.length === 0) { %>
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-muted);">
+                            <i class="fas fa-tower-broadcast" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>
+                            Không tìm thấy phòng live nào khớp bộ lọc.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('../pagination') %>
+</section>

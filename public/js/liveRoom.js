@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
     startButton: document.getElementById("liveStartButton"),
     endButton: document.getElementById("liveEndButton"),
     raiseHandButton: document.getElementById("liveRaiseHandButton"),
+    screenShareButton: document.getElementById("liveScreenShareButton"),
+    screenShareContainer: document.getElementById("liveScreenShareContainer"),
   };
 
   let socket = null;
@@ -30,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let localTracks = [];
   let attendanceTimer = null;
   let livekitConnected = false;
+  let isScreenSharing = false;
   const seenChatIds = new Set((boot.chatMessages || []).map((entry) => entry.id));
 
   function escapeHtml(value) {
@@ -69,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!canModerate) return;
     if (elements.startButton) elements.startButton.hidden = status === "live";
     if (elements.endButton) elements.endButton.hidden = status !== "live";
+    if (elements.screenShareButton) elements.screenShareButton.hidden = status !== "live";
   }
 
   function createFeedItem(avatar, username, content, extraHtml = "") {
@@ -185,11 +189,30 @@ document.addEventListener("DOMContentLoaded", () => {
   function attachTrack(track, participant, isLocal = false) {
     if (!track) return;
 
+    const isScreenShare = track.source === LivekitClient?.Track?.Source?.ScreenShare
+      || track.source === 'screen_share';
+
     if (track.kind === "audio") {
       const audioElement = track.attach();
       audioElement.autoplay = true;
       audioElement.style.display = "none";
       document.body.appendChild(audioElement);
+      return;
+    }
+
+    // Screen share track — render in dedicated container
+    if (isScreenShare) {
+      const container = elements.screenShareContainer;
+      if (container) {
+        container.querySelectorAll("video").forEach((v) => v.remove());
+        const videoNode = track.attach();
+        videoNode.style.width = "100%";
+        videoNode.style.height = "100%";
+        videoNode.style.objectFit = "contain";
+        videoNode.style.borderRadius = "12px";
+        container.prepend(videoNode);
+        container.hidden = false;
+      }
       return;
     }
 
@@ -297,7 +320,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        const wasScreenShare = track.source === LivekitClient?.Track?.Source?.ScreenShare
+          || track.source === 'screen_share';
         track.detach().forEach((element) => element.remove());
+        if (wasScreenShare && elements.screenShareContainer) {
+          elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
+          elements.screenShareContainer.hidden = true;
+        }
         if (participant?.identity) {
           removeParticipantTracks(participant.identity);
         }
@@ -402,6 +431,53 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       if (typeof showAlert === "function") {
         showAlert(error.message, "error", 3600);
+      }
+    }
+  }
+
+  async function toggleScreenShare() {
+    if (!room || !room.localParticipant) {
+      if (typeof showAlert === "function") {
+        showAlert("Chưa kết nối vào phòng media.", "error", 3000);
+      }
+      return;
+    }
+
+    try {
+      if (isScreenSharing) {
+        await room.localParticipant.setScreenShareEnabled(false);
+        isScreenSharing = false;
+        if (elements.screenShareButton) {
+          elements.screenShareButton.innerHTML = '<i class="fas fa-desktop"></i> Chia sẻ màn hình';
+          elements.screenShareButton.classList.remove("live-room-btn--active");
+        }
+        if (elements.screenShareContainer) {
+          elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
+          elements.screenShareContainer.hidden = true;
+        }
+        if (typeof showAlert === "function") {
+          showAlert("Đã tắt chia sẻ màn hình.", "info", 2000);
+        }
+      } else {
+        await room.localParticipant.setScreenShareEnabled(true);
+        isScreenSharing = true;
+        if (elements.screenShareButton) {
+          elements.screenShareButton.innerHTML = '<i class="fas fa-stop"></i> Dừng chia sẻ';
+          elements.screenShareButton.classList.add("live-room-btn--active");
+        }
+        if (typeof showAlert === "function") {
+          showAlert("Đang chia sẻ màn hình của bạn.", "success", 2000);
+        }
+      }
+    } catch (error) {
+      isScreenSharing = false;
+      if (elements.screenShareButton) {
+        elements.screenShareButton.innerHTML = '<i class="fas fa-desktop"></i> Chia sẻ màn hình';
+        elements.screenShareButton.classList.remove("live-room-btn--active");
+      }
+      console.warn("Screen share error:", error);
+      if (typeof showAlert === "function") {
+        showAlert("Không thể chia sẻ màn hình: " + (error.message || "User đã hủy."), "error", 3600);
       }
     }
   }
@@ -533,6 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.startButton?.addEventListener("click", startLive);
   elements.endButton?.addEventListener("click", endLive);
   elements.raiseHandButton?.addEventListener("click", toggleHand);
+  elements.screenShareButton?.addEventListener("click", toggleScreenShare);
 
   initTabs();
   initSocket();

@@ -1,0 +1,143 @@
+<div class="context-stack">
+    <% if (selectedSession) { %>
+        <section class="context-card">
+            <span class="context-kicker">Chi tiết phòng live</span>
+            <h3><%= selectedSession.title %></h3>
+
+            <div class="context-rows">
+                <div class="context-row">
+                    <span>Host</span>
+                    <strong><%= selectedSession.hostUser?.username || 'Ẩn danh' %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Trạng thái</span>
+                    <strong><%= selectedSession.status %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Slug</span>
+                    <strong><%= selectedSession.slug %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Môn học</span>
+                    <strong><%= selectedSession.subjectId?.name || 'Chưa gắn' %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Khóa học</span>
+                    <strong><%= selectedSession.courseId?.title || 'Không' %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Bài học</span>
+                    <strong><%= selectedSession.lessonId?.title || 'Không' %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Peak viewers</span>
+                    <strong><%= formatNumber(selectedSession.viewerPeak) %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Unique viewers</span>
+                    <strong><%= formatNumber(selectedSession.uniqueViewerCount) %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Tin nhắn chat</span>
+                    <strong><%= formatNumber(selectedSession.chatMessagesCount) %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Câu hỏi Q&A</span>
+                    <strong><%= formatNumber(selectedSession.questionsCount) %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Giơ tay</span>
+                    <strong><%= formatNumber(selectedSession.raisedHandsCount) %></strong>
+                </div>
+                <div class="context-row">
+                    <span>Provider</span>
+                    <strong><%= selectedSession.providerKind || 'mock' %></strong>
+                </div>
+                <% if (selectedSession.providerRoomName) { %>
+                    <div class="context-row">
+                        <span>Room name</span>
+                        <strong style="word-break: break-all;"><%= selectedSession.providerRoomName %></strong>
+                    </div>
+                <% } %>
+                <% if (selectedSession.providerError) { %>
+                    <div class="context-row">
+                        <span>Provider error</span>
+                        <strong style="color: var(--admin-danger); word-break: break-all;"><%= selectedSession.providerError %></strong>
+                    </div>
+                <% } %>
+                <div class="context-row">
+                    <span>Tạo lúc</span>
+                    <strong><%= formatDateTime(selectedSession.createdAt) %></strong>
+                </div>
+                <% if (selectedSession.actualStartedAt) { %>
+                    <div class="context-row">
+                        <span>Bắt đầu</span>
+                        <strong><%= formatDateTime(selectedSession.actualStartedAt) %></strong>
+                    </div>
+                <% } %>
+                <% if (selectedSession.endedAt) { %>
+                    <div class="context-row">
+                        <span>Kết thúc</span>
+                        <strong><%= formatDateTime(selectedSession.endedAt) %></strong>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="context-actions">
+                <a href="/live/<%= selectedSession.slug %>" class="context-action context-action-accent" target="_blank">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Mở phòng</span>
+                </a>
+                <% if (selectedSession.status === 'live' || selectedSession.status === 'scheduled') { %>
+                    <form method="POST" action="/admin/content/lives/<%= selectedSession._id %>/end" data-confirm="Buộc kết thúc phòng '<%= selectedSession.title %>'?" style="display:inline;">
+                        <input type="hidden" name="_csrf" value="<%= adminCsrfToken %>">
+                        <input type="hidden" name="returnTo" value="<%= currentUrl %>">
+                        <button type="submit" class="context-action context-action-warning" style="border:none; cursor:pointer; background:none;">
+                            <i class="fas fa-stop-circle"></i>
+                            <span>Buộc kết thúc</span>
+                        </button>
+                    </form>
+                <% } %>
+            </div>
+        </section>
+    <% } %>
+
+    <% if (contextPanels && contextPanels.length > 0) { %>
+        <% contextPanels.forEach((panel) => { %>
+            <section class="context-card">
+                <span class="context-kicker"><%= panel.kicker %></span>
+                <h3><%= panel.title %></h3>
+
+                <% if (panel.rows && panel.rows.length > 0) { %>
+                    <div class="context-rows">
+                        <% panel.rows.forEach((row) => { %>
+                            <div class="context-row">
+                                <span><%= row.label %></span>
+                                <strong><%= row.value %></strong>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+
+                <% if (panel.actions && panel.actions.length > 0) { %>
+                    <div class="context-actions">
+                        <% panel.actions.forEach((action) => { %>
+                            <a href="<%= action.href %>" class="context-action context-action-<%= action.tone || 'neutral' %>">
+                                <i class="fas <%= action.icon %>"></i>
+                                <span><%= action.label %></span>
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </section>
+        <% }) %>
+    <% } %>
+
+    <% if (!selectedSession && (!contextPanels || contextPanels.length === 0)) { %>
+        <section class="context-card">
+            <span class="context-kicker">Live Sessions</span>
+            <h3>Chọn phòng để xem chi tiết</h3>
+            <p>Bấm "Chi tiết" trên bảng bên trái để xem thông tin đầy đủ và thực hiện tác vụ quản trị.</p>
+        </section>
+    <% } %>
+</div>

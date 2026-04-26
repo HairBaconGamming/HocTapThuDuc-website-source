@@ -16,6 +16,7 @@ const LessonRewardEvent = require('../models/LessonRewardEvent');
 const GuildWeeklyStanding = require('../models/GuildWeeklyStanding');
 const BanEntry = require('../models/BanEntry');
 const AdminActionLog = require('../models/AdminActionLog');
+const { LiveSession, LIVE_SESSION_STATUSES } = require('../models/LiveSession');
 const { AchievementType, UserAchievement } = require('../models/Achievement');
 const {
     escapeRegex,
@@ -31,6 +32,7 @@ const PAGE_CONFIG = {
     courses: { key: 'courses', label: 'Khóa học', path: '/admin/content/courses', mainPartial: 'admin/partials/pages/courses', asidePartial: 'admin/partials/asides/cards' },
     subjects: { key: 'subjects', label: 'Môn học', path: '/admin/content/subjects', mainPartial: 'admin/partials/pages/subjects', asidePartial: 'admin/partials/asides/subjects' },
     lessons: { key: 'lessons', label: 'Bài học', path: '/admin/content/lessons', mainPartial: 'admin/partials/pages/lessons', asidePartial: 'admin/partials/asides/cards' },
+    liveSessions: { key: 'liveSessions', label: 'Phòng live', path: '/admin/content/lives', mainPartial: 'admin/partials/pages/live-sessions', asidePartial: 'admin/partials/asides/live-sessions' },
     news: { key: 'news', label: 'Tin tức', path: '/admin/content/news', mainPartial: 'admin/partials/pages/news', asidePartial: 'admin/partials/asides/news' },
     proImages: { key: 'proImages', label: 'Kho PRO Images', path: '/admin/content/pro-images', mainPartial: 'admin/partials/pages/pro-images', asidePartial: 'admin/partials/asides/cards' },
     questions: { key: 'questions', label: 'Q&A', path: '/admin/community/questions', mainPartial: 'admin/partials/pages/questions', asidePartial: 'admin/partials/asides/questions' },
@@ -56,7 +58,7 @@ const LEGACY_TAB_MAP = {
 function buildAdminNav(activeKey) {
     const groups = [
         { label: 'Operations', items: [{ key: 'overview', href: PAGE_CONFIG.overview.path, icon: 'fa-chart-line', label: PAGE_CONFIG.overview.label }, { key: 'users', href: PAGE_CONFIG.users.path, icon: 'fa-users', label: PAGE_CONFIG.users.label }] },
-        { label: 'Content', items: [{ key: 'courses', href: PAGE_CONFIG.courses.path, icon: 'fa-layer-group', label: PAGE_CONFIG.courses.label }, { key: 'subjects', href: PAGE_CONFIG.subjects.path, icon: 'fa-book', label: PAGE_CONFIG.subjects.label }, { key: 'lessons', href: PAGE_CONFIG.lessons.path, icon: 'fa-graduation-cap', label: PAGE_CONFIG.lessons.label }, { key: 'news', href: PAGE_CONFIG.news.path, icon: 'fa-newspaper', label: PAGE_CONFIG.news.label }, { key: 'proImages', href: PAGE_CONFIG.proImages.path, icon: 'fa-images', label: PAGE_CONFIG.proImages.label }] },
+        { label: 'Content', items: [{ key: 'courses', href: PAGE_CONFIG.courses.path, icon: 'fa-layer-group', label: PAGE_CONFIG.courses.label }, { key: 'subjects', href: PAGE_CONFIG.subjects.path, icon: 'fa-book', label: PAGE_CONFIG.subjects.label }, { key: 'lessons', href: PAGE_CONFIG.lessons.path, icon: 'fa-graduation-cap', label: PAGE_CONFIG.lessons.label }, { key: 'liveSessions', href: PAGE_CONFIG.liveSessions.path, icon: 'fa-tower-broadcast', label: PAGE_CONFIG.liveSessions.label }, { key: 'news', href: PAGE_CONFIG.news.path, icon: 'fa-newspaper', label: PAGE_CONFIG.news.label }, { key: 'proImages', href: PAGE_CONFIG.proImages.path, icon: 'fa-images', label: PAGE_CONFIG.proImages.label }] },
         { label: 'Community', items: [{ key: 'questions', href: PAGE_CONFIG.questions.path, icon: 'fa-circle-question', label: PAGE_CONFIG.questions.label }, { key: 'comments', href: PAGE_CONFIG.comments.path, icon: 'fa-comments', label: PAGE_CONFIG.comments.label }, { key: 'guilds', href: PAGE_CONFIG.guilds.path, icon: 'fa-shield-halved', label: PAGE_CONFIG.guilds.label }, { key: 'guildApplications', href: PAGE_CONFIG.guildApplications.path, icon: 'fa-inbox', label: PAGE_CONFIG.guildApplications.label }] },
         { label: 'Gamification', items: [{ key: 'achievements', href: PAGE_CONFIG.achievements.path, icon: 'fa-trophy', label: PAGE_CONFIG.achievements.label }, { key: 'rewards', href: PAGE_CONFIG.rewards.path, icon: 'fa-gift', label: PAGE_CONFIG.rewards.label }, { key: 'standings', href: PAGE_CONFIG.standings.path, icon: 'fa-ranking-star', label: PAGE_CONFIG.standings.label }] },
         { label: 'System', items: [{ key: 'traffic', href: PAGE_CONFIG.traffic.path, icon: 'fa-chart-area', label: PAGE_CONFIG.traffic.label }, { key: 'bans', href: PAGE_CONFIG.bans.path, icon: 'fa-user-lock', label: PAGE_CONFIG.bans.label }, { key: 'audit', href: PAGE_CONFIG.audit.path, icon: 'fa-clipboard-list', label: PAGE_CONFIG.audit.label }] }
@@ -892,6 +894,77 @@ async function getAuditPageData(reqQuery = {}) {
     };
 }
 
+async function getLiveSessionsPageData(reqQuery = {}) {
+    const filters = parseListQuery(reqQuery, { allowedSorts: ['newest', 'oldest', 'viewers_desc'], defaultSort: 'newest' });
+    const query = { ...buildTextSearch(['title', 'slug', 'category'], filters.q) };
+
+    if (filters.status && LIVE_SESSION_STATUSES.includes(filters.status)) {
+        query.status = filters.status;
+    }
+    applyDateFilter(query, 'createdAt', filters.dateFrom, filters.dateTo);
+
+    const sortMap = {
+        newest: { createdAt: -1 },
+        oldest: { createdAt: 1 },
+        viewers_desc: { viewerPeak: -1, createdAt: -1 }
+    };
+
+    const totalItems = await LiveSession.countDocuments(query);
+    const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
+
+    const [sessions, totalLive, totalScheduled, totalEnded, totalFailed] = await Promise.all([
+        LiveSession.find(query)
+            .populate('hostUser', 'username avatar')
+            .populate('subjectId', 'name')
+            .sort(sortMap[filters.sort] || sortMap.newest)
+            .skip(pagination.skip)
+            .limit(pagination.pageSize)
+            .lean(),
+        LiveSession.countDocuments({ status: 'live' }),
+        LiveSession.countDocuments({ status: 'scheduled' }),
+        LiveSession.countDocuments({ status: 'ended' }),
+        LiveSession.countDocuments({ status: 'failed' })
+    ]);
+
+    const selectedSession = reqQuery.detailId
+        ? await LiveSession.findById(reqQuery.detailId)
+            .populate('hostUser', 'username avatar')
+            .populate('subjectId', 'name')
+            .populate('courseId', 'title')
+            .populate('lessonId', 'title')
+            .lean()
+        : null;
+
+    const contextPanels = [];
+    if (selectedSession) {
+        contextPanels.push(buildContextPanel('Phòng live đang chọn', 'Detail', [
+            { label: 'Tiêu đề', value: selectedSession.title },
+            { label: 'Host', value: selectedSession.hostUser?.username || 'Ẩn danh' },
+            { label: 'Trạng thái', value: selectedSession.status },
+            { label: 'Peak viewer', value: formatNumber(selectedSession.viewerPeak) },
+            { label: 'Chat', value: formatNumber(selectedSession.chatMessagesCount) },
+            { label: 'Câu hỏi', value: formatNumber(selectedSession.questionsCount) },
+            { label: 'Provider', value: selectedSession.providerKind || 'mock' }
+        ]));
+    }
+
+    return {
+        pageTitle: 'Content ops · Phòng live',
+        pageDescription: 'Quản lý phiên live, buộc kết thúc phòng đang hoạt động và xóa các phiên lỗi / hết hạn.',
+        filters,
+        sessions,
+        pagination,
+        selectedSession,
+        summaryCards: [
+            makeSummaryCard('Tổng phòng', formatNumber(totalItems), 'fa-tower-broadcast', 'accent', 'Theo bộ lọc'),
+            makeSummaryCard('Đang live', formatNumber(totalLive), 'fa-circle-play', 'success', 'Hiện đang phát'),
+            makeSummaryCard('Đã lên lịch', formatNumber(totalScheduled), 'fa-calendar-check', 'info', 'Chưa bắt đầu'),
+            makeSummaryCard('Kết thúc / Lỗi', `${formatNumber(totalEnded)} / ${formatNumber(totalFailed)}`, 'fa-flag-checkered', 'warning', 'Đã xong hoặc gặp sự cố')
+        ],
+        contextPanels
+    };
+}
+
 async function getPageViewModel(pageKey, reqQuery = {}) {
     const pageConfig = PAGE_CONFIG[pageKey];
     if (!pageConfig) {
@@ -915,7 +988,8 @@ async function getPageViewModel(pageKey, reqQuery = {}) {
         standings: getStandingsPageData,
         traffic: getTrafficPageData,
         bans: getBansPageData,
-        audit: getAuditPageData
+        audit: getAuditPageData,
+        liveSessions: getLiveSessionsPageData
     };
 
     const data = await loaders[pageKey](reqQuery);

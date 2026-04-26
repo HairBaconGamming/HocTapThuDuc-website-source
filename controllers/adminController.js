@@ -20,7 +20,9 @@ const {
     updateQuestionStatus,
     moderateComment,
     reviewGuildApplicationFromAdmin,
-    saveAchievementType
+    saveAchievementType,
+    forceEndLiveSession,
+    deleteLiveSessionRecord
 } = require('../services/adminMutationService');
 const { safeAdminReturnTo, getReturnTo } = require('../utils/adminHelpers');
 
@@ -80,6 +82,7 @@ exports.getUsers = renderPage('users');
 exports.getCourses = renderPage('courses');
 exports.getSubjects = renderPage('subjects');
 exports.getLessons = renderPage('lessons');
+exports.getLiveSessions = renderPage('liveSessions');
 exports.getNews = renderPage('news');
 exports.getProImages = renderPage('proImages');
 exports.getQuestions = renderPage('questions');
@@ -92,6 +95,26 @@ exports.getStandings = renderPage('standings');
 exports.getTraffic = renderPage('traffic');
 exports.getBans = renderPage('bans');
 exports.getAudit = renderPage('audit');
+
+exports.endLiveSession = async (req, res) => handleMutation(req, res, async () => {
+    await forceEndLiveSession({
+        actor: req.user,
+        sessionId: req.params.id
+    });
+}, {
+    successMessage: 'Đã buộc kết thúc phòng live.',
+    fallbackPath: PAGE_CONFIG.liveSessions.path
+});
+
+exports.deleteLiveSession = async (req, res) => handleMutation(req, res, async () => {
+    await deleteLiveSessionRecord({
+        actor: req.user,
+        sessionId: req.params.id
+    });
+}, {
+    successMessage: 'Đã xóa phòng live.',
+    fallbackPath: PAGE_CONFIG.liveSessions.path
+});
 
 exports.getAdminLessonEditor = async (req, res) => {
     try {

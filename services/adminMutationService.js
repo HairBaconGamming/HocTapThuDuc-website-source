@@ -590,6 +590,67 @@ async function saveAchievementType(payload, overrides = {}) {
     return achievement;
 }
 
+async function forceEndLiveSession(payload, overrides = {}) {
+    const deps = createDeps(overrides);
+    const { actor, sessionId } = payload;
+    assertAdminActor(actor);
+
+    const { LiveSession } = require('../models/LiveSession');
+    const session = await LiveSession.findById(sessionId);
+    if (!session) {
+        const error = new Error('Không tìm thấy phòng live.');
+        error.status = 404;
+        throw error;
+    }
+
+    if (session.status === 'ended') {
+        const error = new Error('Phòng live này đã kết thúc trước đó.');
+        error.status = 400;
+        throw error;
+    }
+
+    session.status = 'ended';
+    session.endedAt = new Date();
+    await session.save();
+
+    await deps.recordAdminAction({
+        actorId: actor._id,
+        domain: 'content',
+        action: 'force_end_live',
+        targetType: 'LiveSession',
+        targetId: session._id,
+        summary: `Buộc kết thúc phòng live "${session.title}"`
+    });
+
+    return session;
+}
+
+async function deleteLiveSessionRecord(payload, overrides = {}) {
+    const deps = createDeps(overrides);
+    const { actor, sessionId } = payload;
+    assertAdminActor(actor);
+
+    const { LiveSession } = require('../models/LiveSession');
+    const session = await LiveSession.findById(sessionId);
+    if (!session) {
+        const error = new Error('Không tìm thấy phòng live cần xóa.');
+        error.status = 404;
+        throw error;
+    }
+
+    const title = session.title;
+    await LiveSession.deleteOne({ _id: session._id });
+
+    await deps.recordAdminAction({
+        actorId: actor._id,
+        domain: 'content',
+        action: 'delete_live_session',
+        targetType: 'LiveSession',
+        targetId: session._id,
+        summary: `Xóa phòng live "${title}"`
+    });
+}
+
 module.exports = {
     checkboxToBoolean,
     updateUserRoles,
@@ -606,5 +667,7 @@ module.exports = {
     updateQuestionStatus,
     moderateComment,
     reviewGuildApplicationFromAdmin,
-    saveAchievementType
+    saveAchievementType,
+    forceEndLiveSession,
+    deleteLiveSessionRecord
 };

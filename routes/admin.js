@@ -15,6 +15,7 @@ router.get('/content/courses', adminController.getCourses);
 router.get('/content/subjects', adminController.getSubjects);
 router.get('/content/lessons', adminController.getLessons);
 router.get('/content/lessons/:id/edit', adminController.getAdminLessonEditor);
+router.get('/content/lives', adminController.getLiveSessions);
 router.get('/content/news', adminController.getNews);
 router.get('/content/pro-images', adminController.getProImages);
 router.get('/community/questions', adminController.getQuestions);
@@ -39,6 +40,8 @@ router.post('/content/subjects/save', adminController.saveSubject);
 router.post('/content/subjects/:id/delete', adminController.deleteSubject);
 router.post('/content/lessons/:id/edit', adminController.saveAdminLessonEditor);
 router.post('/content/lessons/:id/publish', adminController.toggleLessonPublish);
+router.post('/content/lives/:id/end', adminController.endLiveSession);
+router.post('/content/lives/:id/delete', adminController.deleteLiveSession);
 router.post('/content/news/save', adminController.saveNews);
 router.post('/content/news/:id/delete', adminController.deleteNews);
 

@@ -208,6 +208,64 @@
   background: var(--lr-danger-hover);
 }
 
+.live-room-btn--secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  gap: 6px;
+}
+
+.live-room-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.live-room-btn--active,
+.live-room-btn--secondary.live-room-btn--active {
+  background: #22c55e;
+  color: #fff;
+  animation: screen-share-pulse 2s ease-in-out infinite;
+}
+
+@keyframes screen-share-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+
+/* Screen Share Container */
+.live-screen-share-container {
+  position: relative;
+  width: 100%;
+  max-height: 60vh;
+  background: #000;
+  border-top: 1px solid var(--lr-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.live-screen-share-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.live-screen-share-label {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  z-index: 10;
+  padding: 4px 12px;
+  background: rgba(34, 197, 94, 0.85);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
 /* Video Stage */
 .live-stage-primary,
 .live-stage-card__surface--replay {

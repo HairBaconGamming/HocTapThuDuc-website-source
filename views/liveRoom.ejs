@@ -57,6 +57,9 @@
           <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
         </div>
         <% if (canModerate) { %>
+          <button type="button" id="liveScreenShareButton" class="live-room-btn live-room-btn--secondary" hidden>
+            <i class="fas fa-desktop"></i> Chia sẻ màn hình
+          </button>
           <button type="button" id="liveStartButton" class="live-room-btn live-room-btn--primary" <%= session.permissions?.canStart ? '' : 'hidden' %>>
             Bắt đầu live
           </button>
@@ -76,6 +79,9 @@
     </div>
 
     <div class="live-stage-grid" id="liveStageRemoteGrid"></div>
+    <div class="live-screen-share-container" id="liveScreenShareContainer" hidden>
+      <div class="live-screen-share-label"><i class="fas fa-desktop"></i> Màn hình đang được chia sẻ</div>
+    </div>
 
     <% if (session.linkedMaterial) { %>
       <div class="live-linked-card">
