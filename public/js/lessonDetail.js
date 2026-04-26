@@ -898,6 +898,74 @@ const LessonWorkspace = {
                 }, 20);
                 break;
             }
+            case 'accordion': {
+                const title = block.data?.title || 'Xem thêm';
+                const content = this.sanitizeHtml(marked.parse(block.data?.content || ''));
+                wrapper.innerHTML = `
+                    <details class="lesson-accordion">
+                        <summary>${this.escapeHtml(title)}</summary>
+                        <div class="lesson-accordion-content">${content}</div>
+                    </details>
+                `;
+                break;
+            }
+            case 'tabs': {
+                const tabs = block.data?.tabs || [];
+                if (tabs.length === 0) break;
+                const uniqueId = `tabs-${index}`;
+                
+                let tabsNav = '<div class="lesson-tabs-nav">';
+                let tabsContent = '<div class="lesson-tabs-content">';
+                
+                tabs.forEach((tab, tIdx) => {
+                    const isActive = tIdx === 0 ? 'is-active' : '';
+                    const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
+                    const tabId = `tab-${uniqueId}-${tIdx}`;
+                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-target="${tabId}">${this.escapeHtml(tab.title || \`Tab \${tIdx+1}\`)}</button>`;
+                    
+                    const htmlContent = this.sanitizeHtml(marked.parse(tab.content || ''));
+                    tabsContent += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${htmlContent}</div>`;
+                });
+                
+                tabsNav += '</div>';
+                tabsContent += '</div>';
+                
+                wrapper.innerHTML = `<div class="lesson-tabs-container">${tabsNav}${tabsContent}</div>`;
+                
+                window.setTimeout(() => {
+                    const navBtns = wrapper.querySelectorAll('.lesson-tab-btn');
+                    navBtns.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            navBtns.forEach(b => b.classList.remove('is-active'));
+                            wrapper.querySelectorAll('.lesson-tab-pane').forEach(p => {
+                                p.classList.remove('is-visible');
+                                p.classList.add('hidden');
+                            });
+                            btn.classList.add('is-active');
+                            const targetPane = wrapper.querySelector(\`#\${btn.dataset.tabTarget}\`);
+                            if (targetPane) {
+                                targetPane.classList.remove('hidden');
+                                targetPane.classList.add('is-visible');
+                            }
+                        });
+                    });
+                }, 10);
+                break;
+            }
+            case 'mermaid': {
+                const code = block.data?.code || '';
+                wrapper.innerHTML = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(code)}</div></div>`;
+                window.setTimeout(() => {
+                    if (window.mermaid) {
+                        try {
+                            window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
+                        } catch (e) {
+                            console.error('Mermaid render error:', e);
+                        }
+                    }
+                }, 50);
+                break;
+            }
             case 'code': {
                 const lang = block.data?.language || 'javascript';
                 const rawCode = block.data?.code || '';

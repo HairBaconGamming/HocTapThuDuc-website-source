@@ -99,7 +99,10 @@ const lessonBlockTemplates = {
     resource: { type: 'resource', data: { title: '', url: '', iconType: 'drive' } },
     code: { type: 'code', data: { language: 'javascript', code: '' } },
     callout: { type: 'callout', data: { text: '' } },
-    question: { type: 'question', data: { questions: [] } }
+    question: { type: 'question', data: { questions: [] } },
+    accordion: { type: 'accordion', data: { title: '', content: '' } },
+    tabs: { type: 'tabs', data: { tabs: [{ title: 'Tab 1', content: '' }] } },
+    mermaid: { type: 'mermaid', data: { code: 'graph TD;\n    A-->B;' } }
 };
 
 function ensureCanvasEngine() {
@@ -306,9 +309,19 @@ function getLessonMetrics() {
             words += getTextWordCount(block.data?.code || '');
         } else if (block.type === 'html_preview') {
             words += getTextWordCount(block.data?.html || '');
+        } else if (block.type === 'accordion') {
+            words += getTextWordCount(block.data?.title || '');
+            words += getTextWordCount(block.data?.content || '');
+        } else if (block.type === 'tabs') {
+            (block.data?.tabs || []).forEach(t => {
+                words += getTextWordCount(t.title || '');
+                words += getTextWordCount(t.content || '');
+            });
+        } else if (block.type === 'mermaid') {
+            words += getTextWordCount(block.data?.code || '');
         }
 
-        if (['image', 'video', 'resource', 'html_preview'].includes(block.type)) {
+        if (['image', 'video', 'resource', 'html_preview', 'mermaid'].includes(block.type)) {
             media += 1;
         }
     });
@@ -2021,6 +2034,17 @@ function renderBlocks() {
                 markStudioDirty: () => markStudioDirty('lesson'),
                 refreshStudioUI
             });
+        // --- RENDER TYPE: ACCORDION ---
+        } else if (b.type === 'accordion') {
+            blockRenderers.renderAccordionBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
+            
+        // --- RENDER TYPE: TABS ---
+        } else if (b.type === 'tabs') {
+            blockRenderers.renderTabsBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
+            
+        // --- RENDER TYPE: MERMAID ---
+        } else if (b.type === 'mermaid') {
+            blockRenderers.renderMermaidBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
         }
 
         el.appendChild(body);

@@ -928,3 +928,42 @@ body.studio-v4-page {
         padding: 10px;
     }
 }
+
+/* ==========================================================================
+   BLOCK MỚI TRONG EDITOR: ACCORDION, TABS, MERMAID
+   ========================================================================== */
+
+/* Accordion */
+.accordion-block-wrapper input.studio-select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    width: 100%;
+}
+
+/* Tabs */
+.studio-tabs-list > div {
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.studio-tabs-list > div:hover {
+    filter: brightness(0.95);
+}
+
+.tabs-block-wrapper input.studio-select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* Mermaid */
+.mermaid-block-wrapper textarea.studio-select {
+    font-size: 14px;
+    color: #e2e8f0;
+}
+
+.mermaid-block-wrapper iframe {
+    border-radius: 6px;
+    background: transparent;
+}
