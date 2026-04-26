@@ -212,6 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
         videoNode.style.borderRadius = "12px";
         container.prepend(videoNode);
         container.hidden = false;
+        if (elements.stagePrimary) elements.stagePrimary.hidden = true;
       }
       return;
     }
@@ -326,6 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (wasScreenShare && elements.screenShareContainer) {
           elements.screenShareContainer.querySelectorAll("video").forEach((v) => v.remove());
           elements.screenShareContainer.hidden = true;
+          if (elements.stagePrimary) elements.stagePrimary.hidden = false;
         }
         if (participant?.identity) {
           removeParticipantTracks(participant.identity);

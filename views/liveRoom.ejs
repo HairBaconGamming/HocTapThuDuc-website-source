@@ -1,4 +1,4 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { disableHeaderOffset: true }) %>
 <link rel="stylesheet" href="/css/styleLiveRoom.css">
 
 <%
@@ -22,7 +22,7 @@
 </script>
 
 <style>
-  header, nav, footer, .footer, .site-header { display: none !important; }
+  header, nav, footer, .footer, .site-header, .ai-tutor-trigger, .ai-tutor-container { display: none !important; }
   body { margin: 0 !important; overflow: hidden !important; background: #09090b; }
 </style>
 

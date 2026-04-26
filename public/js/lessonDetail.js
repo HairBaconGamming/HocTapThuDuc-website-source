@@ -42,6 +42,8 @@ const LessonWorkspace = {
         safeRun('initNotes', () => this.initNotes());
         safeRun('initTypeBehaviors', () => this.initTypeBehaviors());
         safeRun('maybeShowResumeBanner', () => this.maybeShowResumeBanner());
+        safeRun('initReaderSettings', () => this.initReaderSettings());
+        safeRun('initReadingProgress', () => this.initReadingProgress());
 
         setTimeout(() => {
             try { if (typeof LessonProgressManager !== 'undefined') LessonProgressManager.init(); }
@@ -2177,6 +2179,123 @@ const LessonPresenceManager = {
         window.setTimeout(() => {
             element.remove();
         }, 2000);
+    },
+
+    initReaderSettings() {
+        const btn = document.getElementById('btnReadingSettings');
+        const dropdown = document.getElementById('readerSettingsDropdown');
+        if (!btn || !dropdown) return;
+
+        // Toggle menu
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            btn.classList.toggle('is-active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                btn.classList.remove('is-active');
+            }
+        });
+
+        // Load settings
+        const settings = JSON.parse(localStorage.getItem('httd_reading_settings') || '{}');
+        const applySettings = () => {
+            const page = document.querySelector('.lesson-detail-page');
+            const root = document.documentElement;
+
+            if (settings.theme) page.dataset.readerTheme = settings.theme;
+            
+            if (settings.fontsize === 'small') root.style.setProperty('--reader-font-size', '0.95rem');
+            else if (settings.fontsize === 'large') root.style.setProperty('--reader-font-size', '1.15rem');
+            else root.style.setProperty('--reader-font-size', '1.05rem');
+
+            if (settings.font === 'serif') root.style.setProperty('--reader-font-family', 'Georgia, serif');
+            else if (settings.font === 'dyslexic') root.style.setProperty('--reader-font-family', '"OpenDyslexic", sans-serif');
+            else root.style.setProperty('--reader-font-family', 'var(--lesson-font-body, system-ui)');
+            
+            // Sync UI
+            dropdown.querySelectorAll('button[data-rs-action]').forEach(b => {
+                const action = b.dataset.rsAction;
+                const val = b.dataset.rsVal;
+                b.classList.toggle('is-active', val === (settings[action] || 'normal'));
+            });
+        };
+
+        // Defaults
+        if (!settings.fontsize) settings.fontsize = 'normal';
+        if (!settings.theme) settings.theme = 'light';
+        if (!settings.font) settings.font = 'sans';
+        applySettings();
+
+        // Handle clicks
+        dropdown.addEventListener('click', (e) => {
+            const target = e.target.closest('button[data-rs-action]');
+            if (!target) return;
+            const action = target.dataset.rsAction;
+            const val = target.dataset.rsVal;
+
+            settings[action] = val;
+            localStorage.setItem('httd_reading_settings', JSON.stringify(settings));
+            applySettings();
+        });
+    },
+
+    initReadingProgress() {
+        const scrollArea = this.getScrollContainer();
+        const progressBar = document.getElementById('readerProgressBar');
+        const ticksContainer = document.getElementById('readerProgressTicks');
+        if (!scrollArea || !progressBar || !ticksContainer) return;
+
+        let tickElements = [];
+
+        const updateProgress = () => {
+            const scrollTop = scrollArea.scrollTop;
+            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+            const percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+
+            // Highlight passed ticks
+            tickElements.forEach(tick => {
+                if (percent >= tick.percent) tick.el.classList.add('is-passed');
+                else tick.el.classList.remove('is-passed');
+            });
+        };
+
+        const generateTicks = () => {
+            ticksContainer.innerHTML = '';
+            tickElements = [];
+            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+            if (scrollHeight <= 0) return;
+
+            const headings = scrollArea.querySelectorAll('.lesson-reading-surface h2, .lesson-reading-surface h3');
+            headings.forEach(h => {
+                const offset = h.offsetTop;
+                const percent = (offset / scrollArea.scrollHeight) * 100;
+                
+                const tick = document.createElement('div');
+                tick.className = 'reader-progress-tick';
+                tick.style.left = `${percent}%`;
+                ticksContainer.appendChild(tick);
+                
+                tickElements.push({ el: tick, percent: (offset / scrollHeight) * 100 });
+            });
+        };
+
+        scrollArea.addEventListener('scroll', updateProgress);
+        
+        // Wait for content render
+        setTimeout(() => {
+            generateTicks();
+            updateProgress();
+        }, 1000);
+        
+        window.addEventListener('resize', () => {
+            generateTicks();
+            updateProgress();
+        });
     }
 };
 

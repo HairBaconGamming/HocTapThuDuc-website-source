@@ -71,11 +71,52 @@
                 </div>
 
                 <div class="lesson-topbar-actions">
+                    <div class="lesson-reader-settings">
+                        <button type="button" class="lesson-rs-btn" id="btnReadingSettings" aria-label="Cài đặt giao diện đọc" title="Cá nhân hóa">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <div class="reader-settings-dropdown hidden" id="readerSettingsDropdown">
+                            <div class="reader-settings-header">Cá nhân hóa</div>
+                            
+                            <div class="reader-settings-group">
+                                <label>Cỡ chữ</label>
+                                <div class="reader-controls">
+                                    <button type="button" data-rs-action="fontsize" data-rs-val="small">A-</button>
+                                    <button type="button" class="is-active" data-rs-action="fontsize" data-rs-val="normal">Aa</button>
+                                    <button type="button" data-rs-action="fontsize" data-rs-val="large">A+</button>
+                                </div>
+                            </div>
+
+                            <div class="reader-settings-group">
+                                <label>Màu nền</label>
+                                <div class="reader-controls">
+                                    <button type="button" class="is-active" data-rs-action="theme" data-rs-val="light" title="Sáng"><span class="rs-color-swatch" style="background: #fff; border: 1px solid #ddd;"></span></button>
+                                    <button type="button" data-rs-action="theme" data-rs-val="sepia" title="Vàng nhạt (Chống cận)"><span class="rs-color-swatch" style="background: #fdf6e3; border: 1px solid #ebdcb5;"></span></button>
+                                    <button type="button" data-rs-action="theme" data-rs-val="dark" title="Tối"><span class="rs-color-swatch" style="background: #0f172a; border: 1px solid #334155;"></span></button>
+                                </div>
+                            </div>
+
+                            <div class="reader-settings-group">
+                                <label>Font chữ</label>
+                                <div class="reader-controls rs-col-flex">
+                                    <button type="button" class="is-active" data-rs-action="font" data-rs-val="sans">Mặc định</button>
+                                    <button type="button" data-rs-action="font" data-rs-val="serif" style="font-family: Georgia, serif;">Sách (Serif)</button>
+                                    <button type="button" data-rs-action="font" data-rs-val="dyslexic" style="font-family: 'OpenDyslexic', sans-serif;" title="Dành cho người mắc chứng khó đọc">OpenDyslexic</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="lesson-mode-switch" id="lessonModeSwitch">
                         <button type="button" class="is-active" data-layout-mode="standard">Chuẩn</button>
                         <button type="button" data-layout-mode="focus">Tập trung</button>
                         <button type="button" data-layout-mode="wide">Rộng</button>
                     </div>
+                </div>
+                
+                <div class="reader-progress-container" id="readerProgressContainer">
+                    <div class="reader-progress-bar" id="readerProgressBar"></div>
+                    <div class="reader-progress-ticks" id="readerProgressTicks"></div>
                 </div>
             </div>
 
