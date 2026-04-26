@@ -10,6 +10,8 @@ const session = require("express-session");
 const flash = require("express-flash");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize"); // [NEW] NoSQL Injection Protection
+const { RateLimiterMemory } = require('rate-limiter-flexible'); // [NEW] Socket Rate Limiting
 const cors = require('cors');
 const compression = require('compression');
 const helmet = require("helmet"); // [NEW] Security Headers
@@ -33,6 +35,11 @@ const searchRouter = require('./routes/search');
 // App Setup
 const app = express();
 const server = http.createServer(app);
+
+// [SECURITY] Slowloris Protection
+server.setTimeout(15000); // Ngắt kết nối nếu ngâm quá 15s
+server.keepAliveTimeout = 10000;
+
 const io = socketio(server);
 app.locals.io = io;
 setIo(io);
@@ -123,14 +130,31 @@ function leaveLiveSession(socket) {
   emitLivePresence(sessionId);
 }
 
+const socketRateLimiter = new RateLimiterMemory({
+  points: 5, // Tối đa 5 request
+  duration: 1, // Trên 1 giây trên mỗi IP
+});
+
 io.on("connection", (socket) => {
-  socket.on("userConnect", (userId) => {
+  const clientIp = socket.handshake.address;
+
+  // Wrapper để ngắt (drop) các event vượt quá rate limit (Giữ UX mượt mà, không ngắt hẳn socket)
+  const withRateLimit = (fn) => async (...args) => {
+    try {
+      await socketRateLimiter.consume(clientIp);
+      fn(...args);
+    } catch (rejRes) {
+      // Bị chặn rate limit, âm thầm drop
+    }
+  };
+
+  socket.on("userConnect", withRateLimit((userId) => {
     if (userId) {
       socket.join(`user:${userId}`);
     }
-  });
+  }));
 
-  socket.on("join_lesson", ({ lessonId, user } = {}) => {
+  socket.on("join_lesson", withRateLimit(({ lessonId, user } = {}) => {
     const safeLessonId = String(lessonId || "").trim();
     const safeUser = normalizeLessonPresenceUser(user);
     if (!safeLessonId || !safeUser) return;
@@ -149,9 +173,9 @@ io.on("connection", (socket) => {
 
     lessonRooms.get(safeLessonId).set(socket.id, safeUser);
     emitLessonPresence(safeLessonId);
-  });
+  }));
 
-  socket.on("send_interaction", (payload = {}) => {
+  socket.on("send_interaction", withRateLimit((payload = {}) => {
     const safeLessonId = String(payload.lessonId || socket.lessonPresenceId || "").trim();
     if (!safeLessonId) return;
 
@@ -163,13 +187,13 @@ io.on("connection", (socket) => {
       senderId: socket.lessonPresenceUser?.id || "",
       senderName: socket.lessonPresenceUser?.username || "Bạn học"
     });
-  });
+  }));
 
-  socket.on("subscribe_live_hub", () => {
+  socket.on("subscribe_live_hub", withRateLimit(() => {
     socket.join("live-hub");
-  });
+  }));
 
-  socket.on("join_live_session", ({ sessionId, user } = {}) => {
+  socket.on("join_live_session", withRateLimit(({ sessionId, user } = {}) => {
     const safeSessionId = String(sessionId || "").trim();
     const safeUser = normalizeLivePresenceUser(user);
     if (!safeSessionId || !safeUser) return;
@@ -188,11 +212,11 @@ io.on("connection", (socket) => {
 
     liveRooms.get(safeSessionId).set(socket.id, safeUser);
     emitLivePresence(safeSessionId);
-  });
+  }));
 
-  socket.on("leave_live_session", () => {
+  socket.on("leave_live_session", withRateLimit(() => {
     leaveLiveSession(socket);
-  });
+  }));
 
   socket.on("disconnect", () => {
     leaveLessonRoom(socket);
@@ -279,15 +303,17 @@ app.use(cors(corsOptionsDelegate));
 app.options('*', cors(corsOptionsDelegate));
 app.use(cookieParser());
 
-// [OPTIMIZE] Dùng Express Native thay vì body-parser
+// [OPTIMIZE] Giới hạn Payload Size để chống Memory Exhaustion
 app.use(express.json({
+  limit: '50kb', // Max 50KB cho JSON
   verify: (req, res, buf) => {
     if (buf?.length) {
       req.rawBody = buf.toString("utf8");
     }
   }
 }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use(mongoSanitize()); // [SECURITY] Ngăn chặn NoSQL Injection
 
 // [SECURITY] Chống Zalgo text
 const { sanitizeZalgo } = require('./middlewares/sanitizeZalgo');
@@ -295,7 +321,16 @@ app.use(sanitizeZalgo);
 
 app.use("/vendor/livekit", express.static(path.join(__dirname, "node_modules", "livekit-client", "dist")));
 app.use(express.static("public"));
-app.use(rateLimit({ windowMs: 1*60000, max: 1000 })); // 1000 req/min
+
+// [SECURITY] HTTP Rate Limiting Toàn Cầu
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 phút
+  max: 200, // Max 200 req / phút / IP
+  message: { type: 'error', message: 'Bạn đang thao tác quá nhanh, vui lòng thử lại sau giây lát.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use(globalLimiter);
 
 app.use(session({
     secret: getSessionSecret(),

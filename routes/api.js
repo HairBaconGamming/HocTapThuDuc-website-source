@@ -29,6 +29,20 @@ const lessonTtsManifestLimiter = rateLimit({
     }
 });
 
+// [SECURITY] Chống DDoS API chung
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 phút
+    max: 100, // Tối đa 100 requests mỗi phút
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi 1 phút.'
+    }
+});
+
+router.use(apiLimiter);
+
 // --- 1. API Đăng nhập (JWT) ---
 router.post('/auth/login', (req, res, next) => {
     passport.authenticate('local', { session: false }, (err, user, info) => {

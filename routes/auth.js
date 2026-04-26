@@ -4,6 +4,7 @@ const passport = require("passport");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const rateLimit = require("express-rate-limit"); // [SECURITY] Auth Rate Limiting
 
 // Models & Middlewares
 const User = require("../models/User");
@@ -184,13 +185,26 @@ const finalizeLogin = async (req, res, user, options = {}) => {
  * ======================= ROUTES ========================
  * ======================================================= */
 
+// [SECURITY] Chống Brute-force & Credential Stuffing
+const authLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 lần thử mỗi 5 phút
+  message: "Bạn đã thử quá nhiều lần. Vui lòng chờ 5 phút để thử lại.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.flash("error", "Bạn đã thử quá nhiều lần. Vui lòng chờ 5 phút để thử lại.");
+    res.redirect(req.path); // Redirect lại trang login/register
+  }
+});
+
 // --- LOGIN ---
 router.get("/login", (req, res) => {
   captureAuthReturnTo(req);
   return res.render("login", buildAuthViewModel(req, "login"));
 });
 
-router.post("/login", (req, res, next) => {
+router.post("/login", authLimiter, (req, res, next) => {
   captureAuthReturnTo(req);
   passport.authenticate("local", (err, user, info) => {
     if (err) return next(err);
@@ -275,7 +289,7 @@ router.get("/register", (req, res) => {
   return res.render("register", buildAuthViewModel(req, "register"));
 });
 
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   captureAuthReturnTo(req);
   const { username, password, class: userClass, school } = req.body;
 
