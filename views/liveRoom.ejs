@@ -21,169 +21,168 @@
   }) %>;
 </script>
 
+<style>
+  header, nav, footer, .footer, .site-header { display: none !important; }
+  body { margin: 0 !important; overflow: hidden !important; background: #09090b; }
+</style>
+
 <section class="live-room-shell">
-  <header class="live-room-hero">
-    <div class="live-room-hero__copy">
-      <div class="live-room-hero__eyebrow">
-        <span class="live-room-pill live-room-pill--<%= session.statusTone || 'scheduled' %>" id="liveStatusBadge"><%= session.statusLabel || 'Sắp diễn ra' %></span>
-        <span class="live-room-pill"><%= session.category || 'Học tập' %></span>
-        <span class="live-room-pill"><%= session.scheduledLabel || '' %></span>
-      </div>
-      <h1 id="liveSessionTitle"><%= session.title %></h1>
-      <p id="liveSessionDescription"><%= session.description || 'Phòng học trực tiếp nội bộ với chat, Q&A và raise hand ngay trên HTTD.' %></p>
-
-      <div class="live-room-host">
-        <img src="<%= session.host?.avatar %>" alt="<%= session.host?.username %>" class="live-room-host__avatar">
-        <div>
-          <strong><%= session.host?.username %></strong>
-          <span>Vai trò của bạn: <b id="liveRoleLabel"><%= role %></b></span>
+  <!-- LEFT: Media Area -->
+  <div class="live-room-media-area">
+    <div class="live-room-topbar">
+      <div class="live-room-topbar__left">
+        <a href="/live" class="live-room-btn-back" title="Quay về Hub">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <div class="live-room-info">
+          <h1 id="liveSessionTitle"><%= session.title %></h1>
+          <div class="live-room-badges">
+            <span class="live-room-pill live-room-pill--<%= session.statusTone || 'scheduled' %>" id="liveStatusBadge">
+              <%= session.statusLabel || 'Sắp diễn ra' %>
+            </span>
+            <span class="live-room-pill"><i class="fas fa-tag"></i> <%= session.category || 'Học tập' %></span>
+            <span class="live-room-pill"><i class="far fa-clock"></i> <%= session.scheduledLabel || '' %></span>
+            <span class="live-room-pill">Vai trò: <b id="liveRoleLabel"><%= role %></b></span>
+          </div>
         </div>
+      </div>
+
+      <div class="live-room-topbar__right">
+        <div class="live-room-stat" title="Đang xem">
+          <i class="fas fa-eye"></i>
+          <strong id="liveViewerCount"><%= session.viewerCount || 0 %></strong>
+        </div>
+        <div class="live-room-stat" title="Peak Viewers">
+          <i class="fas fa-fire"></i>
+          <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
+        </div>
+        <% if (canModerate) { %>
+          <button type="button" id="liveStartButton" class="live-room-btn live-room-btn--primary" <%= session.permissions?.canStart ? '' : 'hidden' %>>
+            Bắt đầu live
+          </button>
+          <button type="button" id="liveEndButton" class="live-room-btn live-room-btn--danger" <%= session.permissions?.canEnd ? '' : 'hidden' %>>
+            Kết thúc
+          </button>
+        <% } %>
       </div>
     </div>
 
-    <div class="live-room-hero__actions">
-      <div class="live-room-stat">
-        <span>Đang xem</span>
-        <strong id="liveViewerCount"><%= session.viewerCount || 0 %></strong>
+    <div class="live-stage-primary" id="liveStagePrimary">
+      <div class="live-stage-placeholder" id="liveStagePlaceholder">
+        <i class="fas fa-broadcast-tower"></i>
+        <strong id="liveStageHeadline">Phòng đang ở chế độ chờ</strong>
+        <span id="liveStageSubtitle">Khi host lên sóng, video và audio sẽ xuất hiện ngay tại đây.</span>
       </div>
-      <div class="live-room-stat">
-        <span>Peak</span>
-        <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
-      </div>
-      <% if (canModerate) { %>
-        <button type="button" id="liveStartButton" class="live-room-btn live-room-btn--primary" <%= session.permissions?.canStart ? '' : 'hidden' %>>
-          Bắt đầu live
-        </button>
-        <button type="button" id="liveEndButton" class="live-room-btn live-room-btn--danger" <%= session.permissions?.canEnd ? '' : 'hidden' %>>
-          Kết thúc
-        </button>
-      <% } %>
-      <a href="/live/<%= session.slug %>/replay" class="live-room-btn live-room-btn--ghost">Replay</a>
     </div>
-  </header>
 
-  <div class="live-room-grid">
-    <section class="live-stage-card">
-      <div class="live-stage-card__head">
-        <div>
-          <p class="live-stage-card__eyebrow">Media Room</p>
-          <h2>Phòng phát trực tiếp</h2>
+    <div class="live-stage-grid" id="liveStageRemoteGrid"></div>
+
+    <% if (session.linkedMaterial) { %>
+      <div class="live-linked-card">
+        <div class="live-linked-card-icon">
+          <i class="fas fa-book-open"></i>
         </div>
-        <span id="liveConnectionState" class="live-room-pill">Đang chuẩn bị</span>
-      </div>
-
-      <div class="live-stage-card__surface" id="liveStageSurface">
-        <div class="live-stage-primary" id="liveStagePrimary">
-          <div class="live-stage-placeholder" id="liveStagePlaceholder">
-            <i class="fas fa-broadcast-tower"></i>
-            <strong id="liveStageHeadline">Phòng đang ở chế độ chờ</strong>
-            <span id="liveStageSubtitle">Khi host lên sóng, video và audio sẽ xuất hiện ngay tại đây.</span>
-          </div>
+        <div class="live-linked-card-info">
+          <strong><%= session.linkedMaterial.title %></strong>
+          <% if (session.linkedMaterial.secondaryTitle) { %>
+            <span><%= session.linkedMaterial.secondaryTitle %></span>
+          <% } else { %>
+            <span>Tài liệu tham khảo đính kèm</span>
+          <% } %>
         </div>
-        <div class="live-stage-grid" id="liveStageRemoteGrid"></div>
+        <a href="<%= session.linkedMaterial.href %>" target="_blank" class="live-room-btn live-room-btn--primary">
+          Mở <i class="fas fa-external-link-alt" style="margin-left:6px; font-size:0.8em"></i>
+        </a>
       </div>
+    <% } %>
+  </div>
 
-      <% if (session.linkedMaterial) { %>
-        <aside class="live-linked-card">
-          <div>
-            <span class="live-linked-card__label">Tài liệu liên quan</span>
-            <strong><%= session.linkedMaterial.title %></strong>
-            <% if (session.linkedMaterial.secondaryTitle) { %>
-              <span><%= session.linkedMaterial.secondaryTitle %></span>
-            <% } %>
-          </div>
-          <div class="live-linked-card__actions">
-            <a href="<%= session.linkedMaterial.href %>" class="live-room-btn live-room-btn--primary"><%= session.linkedMaterial.ctaLabel %></a>
-            <% if (session.linkedMaterial.secondaryHref) { %>
-              <a href="<%= session.linkedMaterial.secondaryHref %>" class="live-room-btn live-room-btn--ghost">Mở liên kết phụ</a>
-            <% } %>
-          </div>
-        </aside>
-      <% } %>
-    </section>
+  <!-- RIGHT: Sidebar Area -->
+  <aside class="live-side-card">
+    <div class="live-side-tabs">
+      <button type="button" class="live-side-tab is-active" data-live-panel="chat">Chat</button>
+      <button type="button" class="live-side-tab" data-live-panel="questions">Q&A</button>
+      <button type="button" class="live-side-tab" data-live-panel="hands"><i class="fas fa-hand-paper"></i> Giơ tay</button>
+      <button type="button" class="live-side-tab" data-live-panel="people"><i class="fas fa-users"></i></button>
+    </div>
 
-    <aside class="live-side-card">
-      <div class="live-side-tabs">
-        <button type="button" class="live-side-tab is-active" data-live-panel="chat">Chat</button>
-        <button type="button" class="live-side-tab" data-live-panel="questions">Q&A</button>
-        <button type="button" class="live-side-tab" data-live-panel="hands">Giơ tay</button>
-        <button type="button" class="live-side-tab" data-live-panel="people">Người xem</button>
+    <div class="live-side-panel is-active" data-live-panel-view="chat">
+      <div class="live-feed" id="liveChatFeed">
+        <% (liveRoomData.chatMessages || []).forEach((message) => { %>
+          <div class="live-feed-item">
+            <img src="<%= message.avatar %>" alt="<%= message.username %>" class="live-feed-item__avatar">
+            <div class="live-feed-item-content">
+              <strong><%= message.username %></strong>
+              <p><%= message.content %></p>
+            </div>
+          </div>
+        <% }) %>
       </div>
-
-      <div class="live-side-panel is-active" data-live-panel-view="chat">
-        <div class="live-feed" id="liveChatFeed">
-          <% (liveRoomData.chatMessages || []).forEach((message) => { %>
-            <article class="live-feed-item">
-              <img src="<%= message.avatar %>" alt="<%= message.username %>" class="live-feed-item__avatar">
-              <div>
-                <strong><%= message.username %></strong>
-                <p><%= message.content %></p>
-              </div>
-            </article>
-          <% }) %>
-        </div>
+      <div class="live-panel-footer">
         <form id="liveChatForm" class="live-inline-form">
-          <input type="text" id="liveChatInput" name="content" maxlength="1200" placeholder="Nhắn vào chat...">
-          <button type="submit">Gửi</button>
+          <input type="text" id="liveChatInput" name="content" maxlength="1200" placeholder="Nhắn vào chat..." autocomplete="off">
+          <button type="submit"><i class="fas fa-paper-plane"></i></button>
         </form>
       </div>
+    </div>
 
-      <div class="live-side-panel" data-live-panel-view="questions">
-        <div class="live-feed" id="liveQuestionFeed">
-          <% (liveRoomData.questions || []).forEach((question) => { %>
-            <article class="live-feed-item live-feed-item--question" data-question-id="<%= question.id %>">
-              <img src="<%= question.avatar %>" alt="<%= question.username %>" class="live-feed-item__avatar">
-              <div>
-                <strong><%= question.username %></strong>
-                <p><%= question.content %></p>
-                <div class="live-feed-item__actions">
-                  <span class="live-room-pill"><%= question.status %></span>
-                  <% if (canModerate) { %>
-                    <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="pinned">Ghim</button>
-                    <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="answered">Đã trả lời</button>
-                    <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="dismissed">Ẩn</button>
-                  <% } %>
-                </div>
-              </div>
-            </article>
-          <% }) %>
-        </div>
-        <form id="liveQuestionForm" class="live-inline-form">
-          <input type="text" id="liveQuestionInput" name="content" maxlength="1000" placeholder="Gửi câu hỏi cho host...">
-          <button type="submit">Hỏi</button>
-        </form>
-      </div>
-
-      <div class="live-side-panel" data-live-panel-view="hands">
-        <div class="live-hand-cta">
-          <button type="button" id="liveRaiseHandButton" class="live-room-btn live-room-btn--primary">Giơ tay / Hạ tay</button>
-        </div>
-        <div class="live-feed" id="liveHandFeed">
-          <% (liveRoomData.hands || []).forEach((hand) => { %>
-            <article class="live-feed-item" data-hand-id="<%= hand.id %>">
-              <img src="<%= hand.avatar %>" alt="<%= hand.username %>" class="live-feed-item__avatar">
-              <div>
-                <strong><%= hand.username %></strong>
-                <p>Trạng thái: <%= hand.status %></p>
+    <div class="live-side-panel" data-live-panel-view="questions">
+      <div class="live-feed" id="liveQuestionFeed">
+        <% (liveRoomData.questions || []).forEach((question) => { %>
+          <div class="live-feed-item" data-question-id="<%= question.id %>">
+            <img src="<%= question.avatar %>" alt="<%= question.username %>" class="live-feed-item__avatar">
+            <div class="live-feed-item-content">
+              <strong><%= question.username %></strong>
+              <p><%= question.content %></p>
+              <div class="live-feed-item__actions">
+                <span class="live-mini-btn" style="cursor:default; border:none;"><i class="fas fa-info-circle"></i> <%= question.status %></span>
                 <% if (canModerate) { %>
-                  <div class="live-feed-item__actions">
-                    <button type="button" class="live-mini-btn js-hand-status" data-hand-id="<%= hand.id %>" data-status="accepted">Mời phát biểu</button>
-                    <button type="button" class="live-mini-btn js-hand-status" data-hand-id="<%= hand.id %>" data-status="lowered">Hạ tay</button>
-                  </div>
+                  <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="pinned">Ghim</button>
+                  <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="answered">Xong</button>
+                  <button type="button" class="live-mini-btn js-question-status" data-question-id="<%= question.id %>" data-status="dismissed">Ẩn</button>
                 <% } %>
               </div>
-            </article>
-          <% }) %>
-        </div>
+            </div>
+          </div>
+        <% }) %>
       </div>
+      <div class="live-panel-footer">
+        <form id="liveQuestionForm" class="live-inline-form">
+          <input type="text" id="liveQuestionInput" name="content" maxlength="1000" placeholder="Đặt câu hỏi cho host..." autocomplete="off">
+          <button type="submit"><i class="fas fa-question"></i></button>
+        </form>
+      </div>
+    </div>
 
-      <div class="live-side-panel" data-live-panel-view="people">
-        <div class="live-feed" id="livePeopleFeed">
-          <div class="live-empty-inline">Danh sách người tham gia sẽ hiện theo thời gian thực.</div>
-        </div>
+    <div class="live-side-panel" data-live-panel-view="hands">
+      <div class="live-hand-cta">
+        <button type="button" id="liveRaiseHandButton" class="live-room-btn live-room-btn--primary">Giơ tay phát biểu</button>
       </div>
-    </aside>
-  </div>
+      <div class="live-feed" id="liveHandFeed">
+        <% (liveRoomData.hands || []).forEach((hand) => { %>
+          <div class="live-feed-item" data-hand-id="<%= hand.id %>">
+            <img src="<%= hand.avatar %>" alt="<%= hand.username %>" class="live-feed-item__avatar">
+            <div class="live-feed-item-content">
+              <strong><%= hand.username %></strong>
+              <p>Trạng thái: <%= hand.status %></p>
+              <% if (canModerate) { %>
+                <div class="live-feed-item__actions">
+                  <button type="button" class="live-mini-btn js-hand-status" data-hand-id="<%= hand.id %>" data-status="accepted">Mời phát biểu</button>
+                  <button type="button" class="live-mini-btn js-hand-status" data-hand-id="<%= hand.id %>" data-status="lowered">Hạ tay</button>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="live-side-panel" data-live-panel-view="people">
+      <div class="live-feed" id="livePeopleFeed">
+        <div class="live-empty-inline">Danh sách người tham gia sẽ hiện theo thời gian thực.</div>
+      </div>
+    </div>
+  </aside>
 </section>
 
 <script src="/vendor/livekit/livekit-client.umd.js"></script>
