@@ -96,6 +96,7 @@ const buildAuthViewModel = (req, activePage) => ({
   activePage,
   googleAuthEnabled: googleOAuthConfig.enabled,
   authRedirect: getRememberedReturnTo(req) || '',
+  validSchools,
 });
 
 const captureAuthReturnTo = (req) => {

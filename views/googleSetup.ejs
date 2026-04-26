@@ -54,10 +54,11 @@
                     <label class="auth-label">Trường THPT (Tùy chọn)</label>
                     <select name="school" class="auth-select">
                         <option value="" selected>-- Chọn trường của bạn --</option>
-                        <option value="THPT Thủ Đức">THPT Thủ Đức</option>
-                        <option value="THPT Nguyễn Hữu Huân">THPT Nguyễn Hữu Huân</option>
-                        <option value="THPT Tam Phú">THPT Tam Phú</option>
-                        <option value="Khác">Trường khác...</option>
+                        <% if (Array.isArray(validSchools)) { %>
+                            <% validSchools.forEach(function(school) { %>
+                                <option value="<%= school %>"><%= school %></option>
+                            <% }) %>
+                        <% } %>
                     </select>
                 </div>
 
