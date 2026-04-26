@@ -146,7 +146,9 @@
         <% if (safeLiveNow.length > 0) { %>
           <% safeLiveNow.forEach((session) => { %>
             <article class="live-card live-card--live" data-live-session-id="<%= session.id %>">
-              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__thumb-wrapper">
+                <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              </div>
               <div class="live-card__overlay">
                 <span class="live-pill live-pill--live"><%= session.statusLabel %></span>
                 <span class="live-pill"><i class="fas fa-users"></i> <%= session.viewerCount %></span>
@@ -154,7 +156,7 @@
               <div class="live-card__body">
                 <div class="live-card__meta">
                   <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
-                  <div>
+                  <div class="live-card__meta-info">
                     <strong><%= session.host.username %></strong>
                     <span><%= session.category %></span>
                   </div>
@@ -173,7 +175,7 @@
           <% }) %>
         <% } else { %>
           <div class="live-empty-state">
-            <i class="fas fa-satellite-dish"></i>
+            <div class="live-empty-state__icon"><i class="fas fa-satellite-dish"></i></div>
             <h3>Chưa có buổi nào đang phát</h3>
             <p>Danh sách sẽ tự làm mới khi host bắt đầu phiên live mới.</p>
           </div>
@@ -194,7 +196,9 @@
         <% if (safeUpcoming.length > 0) { %>
           <% safeUpcoming.forEach((session) => { %>
             <article class="live-card" data-live-session-id="<%= session.id %>">
-              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__thumb-wrapper">
+                <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              </div>
               <div class="live-card__overlay">
                 <span class="live-pill"><%= session.statusLabel %></span>
                 <span class="live-pill"><%= session.scheduledLabel %></span>
@@ -228,7 +232,7 @@
           <% }) %>
         <% } else { %>
           <div class="live-empty-state">
-            <i class="fas fa-calendar-day"></i>
+            <div class="live-empty-state__icon"><i class="fas fa-calendar-day"></i></div>
             <h3>Chưa có lịch live nào khớp bộ lọc</h3>
             <p>Thử đổi môn học, host hoặc tạo buổi mới nếu bạn có quyền host.</p>
           </div>
@@ -249,7 +253,9 @@
         <% if (safeReplays.length > 0) { %>
           <% safeReplays.forEach((session) => { %>
             <article class="live-card live-card--replay" data-live-session-id="<%= session.id %>">
-              <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              <div class="live-card__thumb-wrapper">
+                <img src="<%= session.thumbnail %>" alt="<%= session.title %>" class="live-card__thumb">
+              </div>
               <div class="live-card__overlay">
                 <span class="live-pill"><%= session.replayLabel %></span>
                 <span class="live-pill"><i class="fas fa-chart-line"></i> Peak <%= session.viewerPeak %></span>
@@ -257,7 +263,7 @@
               <div class="live-card__body">
                 <div class="live-card__meta">
                   <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
-                  <div>
+                  <div class="live-card__meta-info">
                     <strong><%= session.host.username %></strong>
                     <span>Kết thúc <%= session.endedAt ? new Date(session.endedAt).toLocaleDateString('vi-VN') : '' %></span>
                   </div>
@@ -275,7 +281,7 @@
           <% }) %>
         <% } else { %>
           <div class="live-empty-state">
-            <i class="fas fa-compact-disc"></i>
+            <div class="live-empty-state__icon"><i class="fas fa-compact-disc"></i></div>
             <h3>Chưa có replay nào</h3>
             <p>Replay và snapshot tương tác sẽ xuất hiện sau khi các buổi live đầu tiên kết thúc.</p>
           </div>
