@@ -36,6 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
     micSelect: document.getElementById("liveMicSelect"),
     camSelect: document.getElementById("liveCamSelect"),
     screenAudioToggle: document.getElementById("liveScreenAudioToggle"),
+    toggleSidebarBtn: document.getElementById("liveToggleSidebarBtn"),
+    shell: document.querySelector(".live-room-shell"),
+    mobileMenu: document.getElementById("liveMobileMenu"),
+    closeMobileMenuBtn: document.getElementById("liveCloseMobileMenu"),
   };
 
   let socket = null;
@@ -819,6 +823,83 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function toggleSidebar() {
+    if (!elements.shell) return;
+    elements.shell.classList.toggle("sidebar-hidden");
+    const isHidden = elements.shell.classList.contains("sidebar-hidden");
+    if (elements.toggleSidebarBtn) {
+      elements.toggleSidebarBtn.innerHTML = isHidden ? '<i class="fas fa-comment-slash"></i>' : '<i class="fas fa-comments"></i>';
+      elements.toggleSidebarBtn.classList.toggle("live-room-btn--danger", isHidden);
+    }
+  }
+
+  function initLongPressMenu() {
+    const target = elements.mediaArea;
+    if (!target) return;
+
+    let pressTimer;
+    const LONG_PRESS_DURATION = 600;
+
+    const start = (e) => {
+      if (e.type === "mousedown" && e.button !== 0) return;
+      pressTimer = setTimeout(() => {
+        showMobileMenu();
+      }, LONG_PRESS_DURATION);
+    };
+
+    const cancel = () => {
+      clearTimeout(pressTimer);
+    };
+
+    target.addEventListener("touchstart", start, { passive: true });
+    target.addEventListener("touchend", cancel, { passive: true });
+    target.addEventListener("touchmove", cancel, { passive: true });
+    target.addEventListener("mousedown", start);
+    target.addEventListener("mouseup", cancel);
+    target.addEventListener("mouseleave", cancel);
+  }
+
+  function showMobileMenu() {
+    if (!elements.mobileMenu) return;
+    elements.mobileMenu.hidden = false;
+    // Vibrate if supported
+    if ("vibrate" in navigator) navigator.vibrate(50);
+  }
+
+  function initMobileMenuActions() {
+    if (!elements.mobileMenu) return;
+
+    elements.mobileMenu.addEventListener("click", (e) => {
+      const item = e.target.closest(".live-mobile-menu__item");
+      if (!item) {
+        if (e.target.closest(".live-mobile-menu__overlay") || e.target.closest("#liveCloseMobileMenu")) {
+          elements.mobileMenu.hidden = true;
+        }
+        return;
+      }
+
+      const action = item.dataset.action;
+      elements.mobileMenu.hidden = true;
+
+      switch (action) {
+        case "focus":
+          document.body.classList.toggle("is-focus-mode");
+          if (typeof showAlert === "function") {
+            showAlert(document.body.classList.contains("is-focus-mode") ? "Đã bật chế độ Focus." : "Đã tắt chế độ Focus.", "info", 2000);
+          }
+          break;
+        case "report":
+          if (typeof showAlert === "function") {
+            showAlert("Tính năng báo cáo đang được điều hướng tới bộ phận hỗ trợ.", "info", 3000);
+          }
+          break;
+        case "leave":
+          window.location.href = "/live";
+          break;
+      }
+    });
+  }
+
   function initTabs() {
     document.querySelectorAll(".live-side-tab").forEach((button) => {
       button.addEventListener("click", () => {
@@ -920,9 +1001,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+  elements.toggleSidebarBtn?.addEventListener("click", toggleSidebar);
 
   initTabs();
   initFacecamDraggable();
+  initLongPressMenu();
+  initMobileMenuActions();
   initSocket();
   updateModeratorButtons(session.status);
   ensureRoomConnection();

@@ -61,6 +61,9 @@
             <i class="fas fa-video"></i>
           </button>
         </div>
+        <button type="button" id="liveToggleSidebarBtn" class="live-room-btn live-room-btn--secondary live-mobile-only" title="Hiện/Ẩn Chat">
+          <i class="fas fa-comments"></i>
+        </button>
         <% if (canModerate) { %>
           <button type="button" id="liveToggleMicButton" class="live-room-btn live-room-btn--secondary" title="Bật/Tắt Micro">
             <i class="fas fa-microphone"></i>
@@ -229,6 +232,25 @@
           </label>
         </div>
         <p class="live-setting-note">Lưu ý: Thay đổi sẽ có hiệu lực ngay lập tức.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Context Menu -->
+  <div id="liveMobileMenu" class="live-mobile-menu" hidden>
+    <div class="live-mobile-menu__overlay"></div>
+    <div class="live-mobile-menu__content">
+      <div class="live-mobile-menu__item" data-action="focus">
+        <i class="fas fa-expand"></i> <span>Chế độ Focus</span>
+      </div>
+      <div class="live-mobile-menu__item" data-action="report">
+        <i class="fas fa-flag"></i> <span>Báo cáo vi phạm</span>
+      </div>
+      <div class="live-mobile-menu__item live-mobile-menu__item--danger" data-action="leave">
+        <i class="fas fa-sign-out-alt"></i> <span>Rời phòng</span>
+      </div>
+      <div class="live-mobile-menu__close" id="liveCloseMobileMenu">
+        Đóng
       </div>
     </div>
   </div>
