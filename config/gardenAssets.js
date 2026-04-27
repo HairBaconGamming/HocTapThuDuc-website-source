@@ -12,7 +12,7 @@ module.exports = {
             size: { w: 1, h: 1 },
             growthTime: '5 phút/cấp',
             totalTime: '20 phút',
-            witherTime: '120 giờ', 
+            witherTime: '120 giờ',
             stages: [
                 '/api/pro-images/1767282830562-cb26a4.png',
                 '/api/pro-images/1767283026974-wmnw2v.png',
@@ -92,13 +92,13 @@ module.exports = {
             type: 'plant',
             price: 10000,
             maxStage: 5, // Có 6 trạng thái (0, 1, 2, 3, 4, 5)
-            afterharvestStage: 4, 
-            isMultiHarvest: true, 
+            afterharvestStage: 4,
+            isMultiHarvest: true,
             harvestIcon: 'https://i.ibb.co/CdjJ36Y/image-removebg-preview-26.png',
             rewardGold: { min: 3500, max: 5000 },
             unlockLevel: 21,
             rewardXP: 30000,
-            size: { w: 1, h: 1 }, 
+            size: { w: 1, h: 1 },
             growthTime: '72 phút/cấp', // 72 x 5 = 360 phút (6 tiếng)
             totalTime: '360 phút',
             witherTime: '72 giờ', // Héo sau 3 ngày nếu không thu hoạch
@@ -116,23 +116,23 @@ module.exports = {
             type: 'plant',
             price: 15000,           // Giá hạt giống khá cao để tạo rủi ro
             maxStage: 4,            // 5 trạng thái (0 đến 4)
-            afterharvestStage: 2, 
+            afterharvestStage: 2,
             isMultiHarvest: true,  // Chỉ thu hoạch 1 lần
             harvestIcon: 'https://i.ibb.co/Sw9HLkwf/image-removebg-preview-32.png',
-            
+
             // Phần thưởng cực khủng so với thời gian bỏ ra
-            rewardGold: { min: 900, max: 1800 }, 
+            rewardGold: { min: 900, max: 1800 },
             rewardXP: 15000,
-            
+
             unlockLevel: 23,        // Yêu cầu Level 25
-            size: { w: 1, h: 1 }, 
-            
+            size: { w: 1, h: 1 },
+
             growthTime: '5 phút/cấp', // 5 x 4 = 20 phút (Lớn cực nhanh)
             totalTime: '20 phút',
-            
+
             // ĐIỂM NHẤN: Thời gian héo siêu ngắn
             witherTime: '48 giờ', // 48 giờ để thu hoạch
-            
+
             stages: [
                 'https://i.ibb.co/FqqQtwdB/image-removebg-preview-27.png', // Hạt giống
                 'https://i.ibb.co/FqyxJwd8/image-removebg-preview-29.png', // Nảy mầm
@@ -142,23 +142,23 @@ module.exports = {
             ]
         }
     },
-    PLOT: { 
-        grass: { 
-            name: 'Nông Trại Xanh', 
+    PLOT: {
+        grass: {
+            name: 'Nông Trại Xanh',
             textureUrl: '/api/pro-images/1767377708115-b1zfji.png',
             size: { w: 1, h: 1 } // [FIX] Size 1:1
-        } 
+        }
     },
     FARMING: {
         soil_dry: '/api/pro-images/1767375643675-ez178t.png',
         soil_wet: '/api/pro-images/1767375726624-st3zyo.png',
         tools: {
             cursor: { name: 'Tay', icon: '/api/pro-images/1767279404345-i1iil1.png' },
-            hoe:    { name: 'Cuốc', icon: '/api/pro-images/1767279674003-ce1uok.png' },
+            hoe: { name: 'Cuốc', icon: '/api/pro-images/1767279674003-ce1uok.png' },
             shovel: { name: 'Xẻng', icon: '/api/pro-images/1767282498111-ptuhwu.png' },
-            water:  { name: 'Tưới', icon: 'https://hoctapthuduc.onrender.com/api/pro-images/1767290687212-2rlhp4.png' },
-            basket: { name: 'Thu',  icon: '/api/pro-images/1767284874328-507gk3.png' },
-            move:   { name: 'Di chuyển',  icon: '/api/pro-images/1767370869321-kpc8y0.png' }
+            water: { name: 'Tưới', icon: 'https://hoctapthuduc.onrender.com/api/pro-images/1767290687212-2rlhp4.png' },
+            basket: { name: 'Thu', icon: '/api/pro-images/1767284874328-507gk3.png' },
+            move: { name: 'Di chuyển', icon: '/api/pro-images/1767370869321-kpc8y0.png' }
         }
     },
     UI: {

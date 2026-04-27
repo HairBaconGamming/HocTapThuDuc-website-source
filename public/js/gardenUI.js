@@ -5,8 +5,8 @@
     const formatTime = helpers.formatTime || ((value) => `${value}`);
     const parseDuration = helpers.parseDuration || (() => 5 * 60 * 1000);
     const apiCall = helpers.apiCall || (async () => ({ success: false, msg: 'Mất kết nối server!' }));
-    const updateHUD = helpers.updateHUD || (() => {});
-    const addGardenItem = helpers.addGardenItem || (() => {});
+    const updateHUD = helpers.updateHUD || (() => { });
+    const addGardenItem = helpers.addGardenItem || (() => { });
     const showToast = helpers.showToast || ((msg) => console.log(msg));
 
     let selectedShopItem = null;
@@ -691,18 +691,28 @@
                 document.getElementById('statStageTime').innerText = formattedRemaining;
             }
 
-            const witherTime = parseDuration(config.witherTime || '30 phút');
-            const lastWaterTime = plot?.lastWatered
-                ? new Date(plot.lastWatered).getTime()
-                : new Date(itemData.plantedAt).getTime();
-            const timeSinceWater = now - lastWaterTime;
-            const witherProgress = Math.max(0, timeSinceWater - (24 * 3600000));
-            const healthPct = Math.max(0, 100 - ((witherProgress / witherTime) * 100));
+            const witherMultiplier = gardenData.witherTimeMultiplier || 1;
+            const witherTime = parseDuration(config.witherTime || '30 phút') * witherMultiplier;
+            
+            // Predict current wither progress based on server-side baseline
+            const lastWatered = plot?.lastWatered ? new Date(plot.lastWatered).getTime() : 0;
+            const wetUntil = lastWatered > 0 ? lastWatered + 24 * 3600000 : 0;
+            
+            const wetDelta = lastWatered > 0 
+                ? Math.max(0, Math.min(now, wetUntil) - Math.max(lastUpdate, lastWatered))
+                : 0;
+            const dryDelta = Math.max(0, elapsed - wetDelta);
+            
+            let currentWitherProgress = (itemData.witherProgress || 0);
+            if (wetDelta > 0) currentWitherProgress = Math.max(0, currentWitherProgress - wetDelta);
+            if (dryDelta > 0 && itemData.stage > 0) currentWitherProgress += dryDelta;
+
+            const healthPct = Math.max(0, 100 - ((currentWitherProgress / witherTime) * 100));
 
             document.getElementById('statWitherBar').style.width = `${healthPct}%`;
             document.getElementById('statWitherVal').innerText = `${Math.floor(healthPct)}%`;
 
-            const remainingWaterTime = witherTime - witherProgress;
+            const remainingWaterTime = witherTime - currentWitherProgress;
             document.getElementById('statWateringTime').innerText = formatTime(Math.max(0, remainingWaterTime));
             document.getElementById('statWateringTime').style.color = healthPct > 50 ? '#29b6f6' : (healthPct > 20 ? '#ffa726' : '#ef5350');
 
@@ -721,12 +731,19 @@
                 disabledReason
             });
 
-            if (healthPct > 0 && !isWet && remainingWaterTime > 0) {
+            if (itemData.isDead) {
+                document.getElementById('statSoilStatus').innerText = '☠️ Cây đã chết khô!';
+                document.getElementById('statSoilStatus').style.color = '#ef5350';
+            } else if (healthPct > 0 && !isWet && remainingWaterTime > 0) {
                 document.getElementById('statSoilStatus').innerText = `🌵 Đất khô - Tưới trong ${formatTime(remainingWaterTime)}`;
+                document.getElementById('statSoilStatus').style.color = '#ef5350';
             } else if (isWet) {
-                document.getElementById('statSoilStatus').innerText = `💧 Đất ẩm - Còn ${formatTime((24 * 3600000) - timeSinceWater)}`;
+                const wetRemaining = (24 * 3600000) - (now - lastWatered);
+                document.getElementById('statSoilStatus').innerText = `💧 Đất ẩm - Còn ${formatTime(Math.max(0, wetRemaining))}`;
+                document.getElementById('statSoilStatus').style.color = '#29b6f6';
             } else {
                 document.getElementById('statSoilStatus').innerText = '☠️ Đất quá khô - Cây sắp chết!';
+                document.getElementById('statSoilStatus').style.color = '#ef5350';
             }
         };
 
@@ -1330,17 +1347,17 @@
         if (!list) return;
 
         let keys = getInventoryKeys();
-        
+
         // Lọc vật phẩm đang sở hữu trước
         const ownedKeys = keys.filter(key => Number(inventory[key] || 0) > 0);
-        
+
         // Áp dụng bộ lọc (Filter & Search)
         let filteredKeys = ownedKeys.filter(key => {
             const config = gardenAssets.PLANTS?.[key] || {};
             const name = (config.name || '').toLowerCase();
-            
+
             if (inventorySearchText && !name.includes(inventorySearchText)) return false;
-            
+
             if (inventoryFilterTab !== 'all') {
                 if (inventoryFilterTab === 'seed') return false; // Túi đồ chỉ chứa nông sản đã thu hoạch
                 if (inventoryFilterTab === 'harvest') return true;

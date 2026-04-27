@@ -54,7 +54,7 @@ function getLevelViewData(user) {
     };
 }
 
-function buildGardenViewData(garden, ownerUser) {
+function buildGardenViewData(garden, ownerUser, options = {}) {
     const levelData = getLevelViewData(ownerUser);
 
     return {
@@ -64,6 +64,7 @@ function buildGardenViewData(garden, ownerUser) {
         nextLevelXP: levelData.nextLevelXP,
         levelName: levelData.levelName,
         ownerName: ownerUser?.username || 'Nguoi choi',
+        witherTimeMultiplier: options.witherTimeMultiplier || 1,
         dailyQuests: buildDailyQuests(garden, { userLevel: levelData.level })
     };
 }
@@ -78,12 +79,17 @@ function applyGardenState(garden, now = new Date(), options = {}) {
         ? Number(options.witherTimeMultiplier || 1)
         : 1;
 
+    // 1. First pass: map plots and their moisture state
     garden.items.forEach((item) => {
         if (item.type === 'plot') {
-            plotMap.set(`${item.x},${item.y}`, item);
+            plotMap.set(`${item.x},${item.y}`, {
+                item,
+                wateredTime: item.lastWatered ? new Date(item.lastWatered).getTime() : 0
+            });
         }
     });
 
+    // 2. Second pass: update state for all items
     garden.items.forEach((item) => {
         if (item.isDead) return;
 
@@ -101,13 +107,20 @@ function applyGardenState(garden, now = new Date(), options = {}) {
         } else if (item.type === 'plant') {
             const config = ASSETS.PLANTS[item.itemId];
             if (config) {
-                const plot = plotMap.get(`${item.x},${item.y}`);
-                const wateredTime = plot?.lastWatered ? new Date(plot.lastWatered).getTime() : 0;
-                const isWet = Boolean(plot?.lastWatered) && currentTime - wateredTime <= MOISTURE_DURATION;
+                const plotData = plotMap.get(`${item.x},${item.y}`);
+                const wateredTime = plotData?.wateredTime || 0;
+                const wetUntil = wateredTime > 0 ? wateredTime + MOISTURE_DURATION : 0;
 
-                if (isWet) {
-                    if (item.stage < config.maxStage && deltaTime > 0) {
-                        item.growthProgress = (item.growthProgress || 0) + deltaTime;
+                // Calculate accurate wet/dry deltas during the offline period
+                const wetDelta = (wateredTime > 0)
+                    ? Math.max(0, Math.min(currentTime, wetUntil) - Math.max(lastTime, wateredTime))
+                    : 0;
+                const dryDelta = Math.max(0, deltaTime - wetDelta);
+
+                // 1. Apply effects for the "Wet" portion of the delta
+                if (wetDelta > 0) {
+                    if (item.stage < config.maxStage) {
+                        item.growthProgress = (item.growthProgress || 0) + wetDelta;
                         const timePerStage = parseDuration(config.growthTime);
                         const calculatedStage = Math.floor(item.growthProgress / timePerStage);
                         const nextStage = Math.min(calculatedStage, config.maxStage);
@@ -115,13 +128,16 @@ function applyGardenState(garden, now = new Date(), options = {}) {
                         item.stage = nextStage;
                     }
 
-                    if ((item.witherProgress || 0) > 0 && deltaTime > 0) {
-                        const nextWitherProgress = Math.max(0, item.witherProgress - deltaTime);
+                    if ((item.witherProgress || 0) > 0) {
+                        const nextWitherProgress = Math.max(0, item.witherProgress - wetDelta);
                         if (nextWitherProgress !== item.witherProgress) changed = true;
                         item.witherProgress = nextWitherProgress;
                     }
-                } else if (item.stage > 0 && deltaTime > 0) {
-                    item.witherProgress = (item.witherProgress || 0) + deltaTime;
+                }
+
+                // 2. Apply effects for the "Dry" portion of the delta
+                if (dryDelta > 0 && item.stage > 0) {
+                    item.witherProgress = (item.witherProgress || 0) + dryDelta;
                     changed = true;
 
                     const maxWither = parseDuration(config.witherTime || '30 phut') * witherTimeMultiplier;

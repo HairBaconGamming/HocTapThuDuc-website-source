@@ -42,15 +42,16 @@ exports.getGarden = async (req, res) => {
         const garden = await ensureGarden(req.user._id);
         const guildBuffs = await getGuildBuffSnapshotForUser(req.user._id);
         const guildContext = await getUserGuildContext(req.user._id);
+        const witherTimeMultiplier = getWitherTimeMultiplier(guildBuffs);
         await syncGardenState(garden, {
             persist: false,
-            witherTimeMultiplier: getWitherTimeMultiplier(guildBuffs)
+            witherTimeMultiplier
         });
 
         res.render('garden', {
             title: 'Nông Trại Vui Vẻ',
             user: req.user,
-            garden: buildGardenViewData(garden, req.user),
+            garden: buildGardenViewData(garden, req.user, { witherTimeMultiplier }),
             isOwner: true,
             assets: ASSETS,
             guildContext
@@ -148,15 +149,16 @@ exports.visitGarden = async (req, res) => {
 
         const guildBuffs = await getGuildBuffSnapshotForUser(targetUserId);
         const guildContext = await getUserGuildContext(targetUserId);
+        const witherTimeMultiplier = getWitherTimeMultiplier(guildBuffs);
         await syncGardenState(garden, {
             persist: false,
-            witherTimeMultiplier: getWitherTimeMultiplier(guildBuffs)
+            witherTimeMultiplier
         });
 
         res.render('garden', {
             title: `Vườn của ${garden.user.username}`,
             user: req.user,
-            garden: buildGardenViewData(garden, garden.user),
+            garden: buildGardenViewData(garden, garden.user, { witherTimeMultiplier }),
             isOwner: false,
             assets: ASSETS,
             guildContext
