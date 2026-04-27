@@ -28,6 +28,11 @@
     const safeRoleLabel = safeProfileUser.isAdmin ? 'Admin' : (safeProfileUser.isTeacher ? 'Giáo viên' : 'Học sinh');
     const safeRoleIcon = safeProfileUser.isAdmin ? 'fa-user-shield' : (safeProfileUser.isTeacher ? 'fa-chalkboard-teacher' : 'fa-user-graduate');
     const safeGardenLink = isOwner ? '/my-garden' : `/my-garden/visit/${safeProfileUser._id || ''}`;
+    
+    // Identity & Cultivation logic
+    const safeRealmInfo = realmInfo || {};
+    const safeDisplayName = safeProfileUser.displayName || safeProfileUser.username || 'Đạo hữu bí ẩn';
+    const showCultivation = safeProfileUser.showCultivation !== false;
 %>
 
 <style>
@@ -649,7 +654,12 @@
                 <img src="<%= safeAvatar %>" class="cv-avatar" alt="Avatar">
                 <div class="cv-level-badge"><%= safeLevel %></div>
             </div>
-            <h1 class="cv-name"><%= safeUsername %></h1>
+            <h1 class="cv-name user-name-glow <%= (showCultivation && safeRealmInfo) ? safeRealmInfo.effectClass : '' %>"><%= safeDisplayName %></h1>
+            <% if(showCultivation && safeRealmInfo) { %>
+                <div class="cultivation-badge <%= safeRealmInfo.effectClass %>" style="margin: 0 0 15px;">
+                    <i class="<%= safeRealmInfo.icon %>"></i> <%= safeRealmInfo.realmName %>
+                </div>
+            <% } %>
             <div class="cv-role"><%= safeRoleLabel %></div>
             <div class="cv-tags">
                 <% if (safeProfileUser.isPro) { %>

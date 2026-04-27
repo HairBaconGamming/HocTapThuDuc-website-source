@@ -29,6 +29,9 @@ const UserSchema = new mongoose.Schema(
     lastStudyRewardAt: { type: Date, default: null },
     currentStreak: { type: Number, default: 0 }, // Chuỗi học liên tiếp (ngày)
     lastStudyDate: { type: Date, default: null }, // Ngày học cuối cùng
+    // --- NEW FIELDS FOR IDENTITY & CULTIVATION ---
+    displayName: { type: String, default: "" },
+    showCultivation: { type: Boolean, default: true },
   },
   {
     timestamps: true,

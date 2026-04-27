@@ -40,6 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
     shell: document.querySelector(".live-room-shell"),
     mobileMenu: document.getElementById("liveMobileMenu"),
     closeMobileMenuBtn: document.getElementById("liveCloseMobileMenu"),
+    // Mobile host controls
+    hostControlsBtn: document.getElementById("liveHostControlsBtn"),
+    hostControlsModal: document.getElementById("liveHostControlsModal"),
+    hcCloseBtn: document.getElementById("liveHcCloseBtn"),
+    hcMicBtn: document.getElementById("liveHcMicBtn"),
+    hcCamBtn: document.getElementById("liveHcCamBtn"),
+    hcScreenBtn: document.getElementById("liveHcScreenBtn"),
+    hcDeviceBtn: document.getElementById("liveHcDeviceBtn"),
+    hcStartBtn: document.getElementById("liveHcStartBtn"),
+    hcEndBtn: document.getElementById("liveHcEndBtn"),
   };
 
   let socket = null;
@@ -101,6 +111,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (elements.startButton) elements.startButton.hidden = status === "live";
     if (elements.endButton) elements.endButton.hidden = status !== "live";
     if (elements.screenShareButton) elements.screenShareButton.hidden = status !== "live";
+    // Sync mobile host controls modal
+    if (elements.hcStartBtn) elements.hcStartBtn.hidden = status === "live";
+    if (elements.hcEndBtn) elements.hcEndBtn.hidden = status !== "live";
   }
 
   function createFeedItem(avatar, username, content, extraHtml = "") {
@@ -1005,10 +1018,63 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   elements.toggleSidebarBtn?.addEventListener("click", toggleSidebar);
 
+  function initHostControls() {
+    const modal = elements.hostControlsModal;
+    if (!modal) return;
+
+    function openHC() { modal.hidden = false; }
+    function closeHC() { modal.hidden = true; }
+
+    elements.hostControlsBtn?.addEventListener("click", openHC);
+    elements.hcCloseBtn?.addEventListener("click", closeHC);
+
+    // Close on overlay click
+    modal.querySelector(".live-host-controls__overlay")?.addEventListener("click", closeHC);
+
+    // Mic toggle
+    elements.hcMicBtn?.addEventListener("click", () => {
+      toggleMic();
+      elements.hcMicBtn.classList.toggle("is-off", !isMicEnabled);
+      const icon = elements.hcMicBtn.querySelector("i");
+      if (icon) icon.className = isMicEnabled ? "fas fa-microphone" : "fas fa-microphone-slash";
+    });
+
+    // Cam toggle
+    elements.hcCamBtn?.addEventListener("click", () => {
+      toggleCam();
+      elements.hcCamBtn.classList.toggle("is-off", !isCamEnabled);
+      const icon = elements.hcCamBtn.querySelector("i");
+      if (icon) icon.className = isCamEnabled ? "fas fa-video" : "fas fa-video-slash";
+    });
+
+    // Screen share
+    elements.hcScreenBtn?.addEventListener("click", () => {
+      closeHC();
+      toggleScreenShare();
+    });
+
+    // Device settings
+    elements.hcDeviceBtn?.addEventListener("click", () => {
+      closeHC();
+      openDeviceModal();
+    });
+
+    // Start / End live
+    elements.hcStartBtn?.addEventListener("click", () => {
+      closeHC();
+      startLive();
+    });
+    elements.hcEndBtn?.addEventListener("click", () => {
+      closeHC();
+      endLive();
+    });
+  }
+
   initTabs();
   initFacecamDraggable();
   initLongPressMenu();
   initMobileMenuActions();
+  initHostControls();
   initSocket();
   updateModeratorButtons(session.status);
   ensureRoomConnection();

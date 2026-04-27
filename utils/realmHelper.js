@@ -36,16 +36,16 @@ const REALM_NAMES = [
 
 // Cấu hình Visual cho 10 Kỷ Nguyên (Mỗi kỷ nguyên gồm 10 Đại Cảnh Giới)
 const SAGAS = [
-    { id: 0, name: "Tu Chân Giới", color: "#38bdf8", icon: "fas fa-wind", desc: "Nghịch thiên cải mệnh, cầu trường sinh." }, // Blue
-    { id: 1, name: "Tiên Giới", color: "#facc15", icon: "fas fa-cloud", desc: "Tiên khí phiêu miểu, tiêu dao tự tại." },   // Gold
-    { id: 2, name: "Thần Giới", color: "#ef4444", icon: "fas fa-sun", desc: "Thần uy như ngục, chúng sinh quỳ lạy." },     // Red
-    { id: 3, name: "Thánh Vực", color: "#c084fc", icon: "fas fa-crown", desc: "Siêu phàm nhập thánh, vạn kiếp bất diệt." }, // Purple
-    { id: 4, name: "Đạo Nguyên", color: "#10b981", icon: "fas fa-yin-yang", desc: "Ngộ đạo trường tồn, chưởng khống quy tắc." }, // Green
-    { id: 5, name: "Hỗn Độn", color: "#64748b", icon: "fas fa-dragon", desc: "Hỗn độn sơ khai, vạn vật quy nhất." },       // Grey/Slate
-    { id: 6, name: "Hư Không", color: "#1e3a8a", icon: "fas fa-meteor", desc: "Hư không tịch diệt, vạn pháp giai không." },  // Dark Blue
-    { id: 7, name: "Khởi Nguyên", color: "#ec4899", icon: "fas fa-atom", desc: "Nguồn gốc vạn vật, khởi điểm nhân quả." },   // Pink
-    { id: 8, name: "Chí Cao", color: "#f59e0b", icon: "fas fa-eye", desc: "Toàn tri toàn năng, quan sát thế gian." },        // Amber
-    { id: 9, name: "Siêu Thoát", color: "#00ff00", icon: "fas fa-code", desc: "Phá vỡ bức tường thứ 4, thao túng thực tại." } // Matrix Green
+    { id: 0, name: "Tu Chân Giới", color: "#38bdf8", icon: "fas fa-wind", effectClass: "saga-tu-chan", desc: "Nghịch thiên cải mệnh, cầu trường sinh." }, // Blue
+    { id: 1, name: "Tiên Giới", color: "#facc15", icon: "fas fa-cloud", effectClass: "saga-tien-gioi", desc: "Tiên khí phiêu miểu, tiêu dao tự tại." },   // Gold
+    { id: 2, name: "Thần Giới", color: "#ef4444", icon: "fas fa-sun", effectClass: "saga-than-gioi", desc: "Thần uy như ngục, chúng sinh quỳ lạy." },     // Red
+    { id: 3, name: "Thánh Vực", color: "#c084fc", icon: "fas fa-crown", effectClass: "saga-thanh-vuc", desc: "Siêu phàm nhập thánh, vạn kiếp bất diệt." }, // Purple
+    { id: 4, name: "Đạo Nguyên", color: "#10b981", icon: "fas fa-yin-yang", effectClass: "saga-dao-nguyen", desc: "Ngộ đạo trường tồn, chưởng khống quy tắc." }, // Green
+    { id: 5, name: "Hỗn Độn", color: "#64748b", icon: "fas fa-dragon", effectClass: "saga-hon-don", desc: "Hỗn độn sơ khai, vạn vật quy nhất." },       // Grey/Slate
+    { id: 6, name: "Hư Không", color: "#1e3a8a", icon: "fas fa-meteor", effectClass: "saga-hu-khong", desc: "Hư không tịch diệt, vạn pháp giai không." },  // Dark Blue
+    { id: 7, name: "Khởi Nguyên", color: "#ec4899", icon: "fas fa-atom", effectClass: "saga-khoi-nguyen", desc: "Nguồn gốc vạn vật, khởi điểm nhân quả." },   // Pink
+    { id: 8, name: "Chí Cao", color: "#f59e0b", icon: "fas fa-eye", effectClass: "saga-chi-cao", desc: "Toàn tri toàn năng, quan sát thế gian." },        // Amber
+    { id: 9, name: "Siêu Thoát", color: "#00ff00", icon: "fas fa-code", effectClass: "saga-sieu-thoat", desc: "Phá vỡ bức tường thứ 4, thao túng thực tại." } // Matrix Green
 ];
 
 exports.getRealmData = (level) => {
@@ -91,6 +91,7 @@ exports.getRealmData = (level) => {
         currentLayer: currentLayer,
         fullName: `${name} - Tầng ${currentLayer}`,
         sagaId: saga.id,
-        sagaName: saga.name
+        sagaName: saga.name,
+        effectClass: saga.effectClass
     };
 };

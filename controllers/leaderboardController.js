@@ -4,10 +4,20 @@ const { getGuildCompetitionSnapshot } = require('../services/guildCompetitionSer
 
 exports.getLeaderboard = async (req, res) => {
     try {
-        const users = await User.find({ points: { $gt: 0 } })
+        const realmHelper = require('../utils/realmHelper');
+        let users = await User.find({ points: { $gt: 0 } })
             .sort({ points: -1 })
             .limit(50)
             .lean();
+
+        // Attach Identity & Cultivation Data
+        users = users.map(u => {
+            return {
+                ...u,
+                displayName: u.displayName || u.username,
+                realmData: (u.showCultivation !== false) ? realmHelper.getRealmData(u.level || 1) : null
+            };
+        });
 
         const top3 = users.slice(0, 3);
         const restOfList = users.slice(3);

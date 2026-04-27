@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/styleHeader.css">
     <link rel="stylesheet" href="/css/styleAiTutor.css">
+    <link rel="stylesheet" href="/css/styleCultivation.css">
     
     <% if (typeof activePage !== 'undefined' && (activePage === 'login' || activePage === 'register')) { %>
         <link rel="stylesheet" href="/css/styleLogin.css">
@@ -120,7 +121,12 @@
                 <li class="nav-item has-dropdown user-dropdown <%= activePage === 'profile' ? 'active' : '' %>">
                     <a href="/profile" class="nav-link user-link" style="padding-right: 10px;">
                         <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="user-avatar-img">
-                        <span><%= user.username %></span>
+                        <span class="user-name-glow <%= (user.showCultivation !== false && realmData) ? realmData.effectClass : '' %>"><%= displayName %></span>
+                        <% if(user.showCultivation !== false && realmData) { %>
+                            <span class="cultivation-badge <%= realmData.effectClass %>" title="<%= realmData.fullName %>">
+                                <%= realmData.realmName %>
+                            </span>
+                        <% } %>
                         <% if(user.isPro) { %> <i class="fas fa-check-circle" style="color: #a2d2ff; font-size: 0.8rem; margin-left: 3px;" title="Tài khoản xịn"></i> <% } %>
                     </a>
                     <div class="dropdown-menu">

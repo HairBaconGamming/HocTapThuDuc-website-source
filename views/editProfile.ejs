@@ -281,8 +281,18 @@
                 <h3 class="ep-card-title"><i class="fas fa-address-card"></i> Thông Tin Cá Nhân</h3>
                 
                 <div class="ep-form-group">
+                    <label class="ep-label">Tên hiển thị (Display Name)</label>
+                    <input type="text" name="displayName" class="ep-input" value="<%= user.displayName || '' %>" placeholder="Để trống nếu muốn dùng Username">
+                </div>
+
+                <div class="ep-form-group">
                     <label class="ep-label">Email liên hệ</label>
                     <input type="email" name="email" class="ep-input" value="<%= user.email || '' %>" placeholder="email.cua.ban@example.com">
+                </div>
+
+                <div class="ep-form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="checkbox" name="showCultivation" id="showCultivation" style="width: 20px; height: 20px; cursor: pointer;" <%= user.showCultivation !== false ? 'checked' : '' %>>
+                    <label for="showCultivation" class="ep-label" style="margin-bottom: 0; cursor: pointer;">Công khai Tu Vi (Cảnh giới)</label>
                 </div>
 
                 <div class="ep-form-group">

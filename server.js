@@ -347,12 +347,22 @@ app.use(flash());
    ====================================================== */
 
 // [FIX] Đưa Globals lên TRƯỚC banCheck để tránh lỗi 'activePage is not defined'
+const realmHelper = require('./utils/realmHelper');
 app.use(async (req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.siteOrigin = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
     res.locals.currentPath = req.originalUrl || req.url || '/';
     res.locals.activePage = ''; // Default value an toàn
     
+    // Identity & Cultivation logic
+    if (req.user) {
+        res.locals.realmData = realmHelper.getRealmData(req.user.level || 1);
+        res.locals.displayName = req.user.displayName || req.user.username;
+    } else {
+        res.locals.realmData = null;
+        res.locals.displayName = 'Khách';
+    }
+
     res.locals.pendingAchievements = req.session?.newAchievements || [];
     if (req.session?.newAchievements?.length) {
         delete req.session.newAchievements;
@@ -371,7 +381,6 @@ app.use(async (req, res, next) => {
 // Kiểm tra Ban user (sau khi đã có res.locals đầy đủ)
 app.use(banCheck);
 
-
 app.use(trackVisits);
 
 /* ======================================================
@@ -382,7 +391,6 @@ app.use("/", require("./routes/auth"));
 app.use("/my-garden", require('./routes/garden'));
 app.use("/guilds", require('./routes/guild'));
 app.use("/qa", require('./routes/qaRoutes'));
-
 app.use("/lesson", require("./routes/lesson"));
 app.use("/api", require("./routes/api"));
 app.use("/api", require("./routes/course"));

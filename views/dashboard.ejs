@@ -111,8 +111,13 @@
 
                     <div class="dashboard-hero__copy">
                         <p class="dashboard-eyebrow">Bang dieu khien hoc tap</p>
-                        <h1 class="dashboard-title dashboard-truncate-single" title="<%= safeUsername %>">Chao, <%= safeUsername %>!</h1>
-                        <p class="dashboard-subtitle">Theo doi tien do hoc tap, vuon cua ban va quay lai nhung khoa hoc dang hoc ma khong bi roi boi giao dien.</p>
+                        <h1 class="dashboard-title dashboard-truncate-single" title="<%= displayName %>">Chào, <%= displayName %>!</h1>
+                        <% if(user.showCultivation !== false && realmData) { %>
+                            <div class="cultivation-badge <%= realmData.effectClass %>" style="margin-top: 5px; font-size: 0.75rem; padding: 2px 10px;">
+                                <i class="<%= realmData.icon %>"></i> <%= realmData.realmName %>
+                            </div>
+                        <% } %>
+                        <p class="dashboard-subtitle">Theo dõi tiến độ học tập, vườn của bạn và quay lại những khóa học đang học mà không bị rối bởi giao diện.</p>
 
                         <div class="dashboard-xp">
                             <div class="dashboard-xp__header">

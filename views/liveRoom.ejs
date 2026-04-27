@@ -35,12 +35,7 @@
           <i class="fas fa-chevron-left"></i>
         </a>
         <div class="live-room-info">
-          <h1 id="liveSessionTitle">
-            <span class="live-room-mobile-status live-mobile-only" id="liveStatusBadgeMobile">
-              <span class="live-room-pill live-room-pill--<%= session.statusTone || 'scheduled' %>"><%= session.statusLabel || 'Chờ' %></span>
-            </span>
-            <%= session.title %>
-          </h1>
+          <h1 id="liveSessionTitle"><%= session.title %></h1>
           <div class="live-room-badges">
             <span class="live-room-pill live-room-pill--<%= session.statusTone || 'scheduled' %>" id="liveStatusBadge">
               <%= session.statusLabel || 'Sắp diễn ra' %>
@@ -57,11 +52,11 @@
           <i class="fas fa-eye"></i>
           <strong id="liveViewerCount"><%= session.viewerCount || 0 %></strong>
         </div>
-        <div class="live-room-stat" title="Peak Viewers">
+        <div class="live-room-stat live-desktop-only" title="Peak Viewers">
           <i class="fas fa-fire"></i>
           <strong id="livePeakCount"><%= session.viewerPeak || 0 %></strong>
         </div>
-        <div class="live-toggle-facecam-wrapper" id="liveFacecamToggleWrapper">
+        <div class="live-toggle-facecam-wrapper live-desktop-only" id="liveFacecamToggleWrapper">
           <button type="button" id="liveToggleFacecamButton" class="live-room-btn live-room-btn--secondary" title="Ẩn/Hiện Camera">
             <i class="fas fa-video"></i>
           </button>
@@ -70,20 +65,25 @@
           <i class="fas fa-chevron-down"></i>
         </button>
         <% if (canModerate) { %>
-          <button type="button" id="liveToggleMicButton" class="live-room-btn live-room-btn--secondary" title="Bật/Tắt Micro">
+          <!-- Desktop: inline buttons -->
+          <button type="button" id="liveToggleMicButton" class="live-room-btn live-room-btn--secondary live-desktop-only" title="Bật/Tắt Micro">
             <i class="fas fa-microphone"></i>
           </button>
-          <button type="button" id="liveDeviceSettingsButton" class="live-room-btn live-room-btn--secondary" title="Cài đặt thiết bị">
+          <button type="button" id="liveDeviceSettingsButton" class="live-room-btn live-room-btn--secondary live-desktop-only" title="Cài đặt thiết bị">
             <i class="fas fa-cog"></i>
           </button>
-          <button type="button" id="liveScreenShareButton" class="live-room-btn live-room-btn--secondary" hidden>
+          <button type="button" id="liveScreenShareButton" class="live-room-btn live-room-btn--secondary live-desktop-only" hidden>
             <i class="fas fa-desktop"></i> Chia sẻ màn hình
           </button>
-          <button type="button" id="liveStartButton" class="live-room-btn live-room-btn--primary" <%= session.permissions?.canStart ? '' : 'hidden' %>>
+          <button type="button" id="liveStartButton" class="live-room-btn live-room-btn--primary live-desktop-only" <%= session.permissions?.canStart ? '' : 'hidden' %>>
             Bắt đầu live
           </button>
-          <button type="button" id="liveEndButton" class="live-room-btn live-room-btn--danger" <%= session.permissions?.canEnd ? '' : 'hidden' %>>
+          <button type="button" id="liveEndButton" class="live-room-btn live-room-btn--danger live-desktop-only" <%= session.permissions?.canEnd ? '' : 'hidden' %>>
             Kết thúc
+          </button>
+          <!-- Mobile: single button to open host controls -->
+          <button type="button" id="liveHostControlsBtn" class="live-room-btn live-room-btn--secondary live-mobile-only" title="Điều khiển">
+            <i class="fas fa-ellipsis-v"></i>
           </button>
         <% } %>
       </div>
@@ -259,6 +259,44 @@
       </div>
     </div>
   </div>
+
+  <% if (canModerate) { %>
+  <!-- Mobile Host Controls Bottom Sheet -->
+  <div id="liveHostControlsModal" class="live-host-controls" hidden>
+    <div class="live-host-controls__overlay"></div>
+    <div class="live-host-controls__sheet">
+      <div class="live-host-controls__handle"></div>
+      <h3 class="live-host-controls__title">Điều khiển phòng</h3>
+      <div class="live-host-controls__grid">
+        <button type="button" class="live-hc-btn" id="liveHcMicBtn">
+          <div class="live-hc-btn__icon"><i class="fas fa-microphone"></i></div>
+          <span>Micro</span>
+        </button>
+        <button type="button" class="live-hc-btn" id="liveHcCamBtn">
+          <div class="live-hc-btn__icon"><i class="fas fa-video"></i></div>
+          <span>Camera</span>
+        </button>
+        <button type="button" class="live-hc-btn" id="liveHcScreenBtn">
+          <div class="live-hc-btn__icon"><i class="fas fa-desktop"></i></div>
+          <span>Màn hình</span>
+        </button>
+        <button type="button" class="live-hc-btn" id="liveHcDeviceBtn">
+          <div class="live-hc-btn__icon"><i class="fas fa-cog"></i></div>
+          <span>Thiết bị</span>
+        </button>
+      </div>
+      <div class="live-host-controls__actions">
+        <button type="button" class="live-hc-action live-hc-action--start" id="liveHcStartBtn" <%= session.permissions?.canStart ? '' : 'hidden' %>>
+          <i class="fas fa-play"></i> Bắt đầu Live
+        </button>
+        <button type="button" class="live-hc-action live-hc-action--end" id="liveHcEndBtn" <%= session.permissions?.canEnd ? '' : 'hidden' %>>
+          <i class="fas fa-stop"></i> Kết thúc Live
+        </button>
+      </div>
+      <button type="button" class="live-host-controls__close" id="liveHcCloseBtn">Đóng</button>
+    </div>
+  </div>
+  <% } %>
 </section>
 
 <script src="/vendor/livekit/livekit-client.umd.js"></script>
