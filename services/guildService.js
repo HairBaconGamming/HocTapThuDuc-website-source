@@ -141,7 +141,7 @@ async function getGuildContributionPreview(guildId) {
     const entries = await GuildContribution.find({ guild: guildId })
         .sort({ createdAt: -1 })
         .limit(16)
-        .populate('user', 'username avatar')
+        .populate('user', 'username displayName avatar')
         .lean();
 
     return entries.map((entry) => {
@@ -213,13 +213,13 @@ async function hydrateGuildDetail(guild, viewerUserId = null) {
         GuildApplication.find({ guild: guild._id, status: 'pending' })
             .sort({ createdAt: 1 })
             .limit(12)
-            .populate('applicant', 'username avatar level currentStreak totalPoints')
+            .populate('applicant', 'username displayName avatar level currentStreak totalPoints')
             .lean(),
         GuildAuditLog.find({ guild: guild._id })
             .sort({ createdAt: -1 })
             .limit(18)
-            .populate('actor', 'username avatar')
-            .populate('targetUser', 'username avatar')
+            .populate('actor', 'username displayName avatar')
+            .populate('targetUser', 'username displayName avatar')
             .lean(),
         guild.weeklyGoalSnapshot?.goalId
             ? GuildWeeklyGoal.findById(guild.weeklyGoalSnapshot.goalId).lean()
@@ -255,7 +255,7 @@ async function getUserGuildContext(userId) {
         };
     }
 
-    const guild = await Guild.findById(user.guild).populate('leader', 'username avatar level').lean();
+    const guild = await Guild.findById(user.guild).populate('leader', 'username displayName avatar level').lean();
     if (!guild) {
         return {
             user,
@@ -293,7 +293,7 @@ function getWitherTimeMultiplier(buffs = {}) {
 async function listGuilds() {
     const guilds = await Guild.find({})
         .sort({ treeStage: -1, totalContributionValue: -1, memberCount: -1, createdAt: 1 })
-        .populate('leader', 'username avatar level')
+        .populate('leader', 'username displayName avatar level')
         .lean();
 
     return guilds.map((guild) => ({
@@ -471,7 +471,7 @@ async function leaveGuild({ userId }) {
 }
 
 async function getGuildBySlug(slug, viewerUserId = null) {
-    const guild = await Guild.findOne({ slug }).populate('leader', 'username avatar level');
+    const guild = await Guild.findOne({ slug }).populate('leader', 'username displayName avatar level');
     if (!guild) return null;
     return hydrateGuildDetail(guild, viewerUserId);
 }

@@ -654,12 +654,7 @@
                 <img src="<%= safeAvatar %>" class="cv-avatar" alt="Avatar">
                 <div class="cv-level-badge"><%= safeLevel %></div>
             </div>
-            <h1 class="cv-name user-name-glow <%= (showCultivation && safeRealmInfo) ? safeRealmInfo.effectClass : '' %>"><%= safeDisplayName %></h1>
-            <% if(showCultivation && safeRealmInfo) { %>
-                <div class="cultivation-badge <%= safeRealmInfo.effectClass %>" style="margin: 0 0 15px;">
-                    <i class="<%= safeRealmInfo.icon %>"></i> <%= safeRealmInfo.realmName %>
-                </div>
-            <% } %>
+            <h1 class="cv-name"><%= safeDisplayName %></h1>
             <div class="cv-role"><%= safeRoleLabel %></div>
             <div class="cv-tags">
                 <% if (safeProfileUser.isPro) { %>

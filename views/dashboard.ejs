@@ -12,7 +12,7 @@
     const encodeAvatarName = (value) => encodeURIComponent(String(value || 'Hoc vien'));
 
     const safeUser = user || {};
-    const safeUsername = String(safeUser.username || 'Hoc vien').trim() || 'Hoc vien';
+    const safeUsername = String(safeUser.displayName || safeUser.username || 'Hoc vien').trim() || 'Hoc vien';
     const safeAvatar = safeUser.avatar || `https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg`;
     
     const safeLevel = levelInfo ? levelInfo.level : Math.max(1, toNumber(safeUser.level, 1));
@@ -111,12 +111,8 @@
 
                     <div class="dashboard-hero__copy">
                         <p class="dashboard-eyebrow">Bang dieu khien hoc tap</p>
-                        <h1 class="dashboard-title dashboard-truncate-single" title="<%= displayName %>">Chào, <%= displayName %>!</h1>
-                        <% if(user.showCultivation !== false && realmData) { %>
-                            <div class="cultivation-badge <%= realmData.effectClass %>" style="margin-top: 5px; font-size: 0.75rem; padding: 2px 10px;">
-                                <i class="<%= realmData.icon %>"></i> <%= realmData.realmName %>
-                            </div>
-                        <% } %>
+                        <h1 class="dashboard-title dashboard-truncate-single" title="<%= safeUsername %>">Chào, <%= safeUsername %>!</h1>
+
                         <p class="dashboard-subtitle">Theo dõi tiến độ học tập, vườn của bạn và quay lại những khóa học đang học mà không bị rối bởi giao diện.</p>
 
                         <div class="dashboard-xp">

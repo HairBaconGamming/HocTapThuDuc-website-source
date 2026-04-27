@@ -318,7 +318,7 @@ function serializeSession(session, user, extra = {}) {
 
 function applySessionPopulate(query) {
   return query
-    .populate("hostUser", "username avatar isPro isTeacher isAdmin")
+    .populate("hostUser", "username displayName avatar isPro isTeacher isAdmin")
     .populate("subjectId", "name slug")
     .populate("courseId", "title thumbnail slug subjectId")
     .populate("lessonId", "title courseId subjectId");

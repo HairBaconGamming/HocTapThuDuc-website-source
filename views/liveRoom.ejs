@@ -13,7 +13,7 @@
     currentUser: user
       ? {
           id: String(user._id || ''),
-          username: user.username || 'Bạn học',
+          username: user.displayName || user.username || 'Bạn học',
           avatar: user.avatar || '',
           role,
         }
@@ -140,9 +140,9 @@
       <div class="live-feed" id="liveChatFeed">
         <% (liveRoomData.chatMessages || []).forEach((message) => { %>
           <div class="live-feed-item">
-            <img src="<%= message.avatar %>" alt="<%= message.username %>" class="live-feed-item__avatar">
+            <img src="<%= message.avatar %>" alt="<%= message.displayName || message.username %>" class="live-feed-item__avatar">
             <div class="live-feed-item-content">
-              <strong><%= message.username %></strong>
+              <strong><%= message.displayName || message.username %></strong>
               <p><%= message.content %></p>
             </div>
           </div>
@@ -160,9 +160,9 @@
       <div class="live-feed" id="liveQuestionFeed">
         <% (liveRoomData.questions || []).forEach((question) => { %>
           <div class="live-feed-item" data-question-id="<%= question.id %>">
-            <img src="<%= question.avatar %>" alt="<%= question.username %>" class="live-feed-item__avatar">
+            <img src="<%= question.avatar %>" alt="<%= question.displayName || question.username %>" class="live-feed-item__avatar">
             <div class="live-feed-item-content">
-              <strong><%= question.username %></strong>
+              <strong><%= question.displayName || question.username %></strong>
               <p><%= question.content %></p>
               <div class="live-feed-item__actions">
                 <span class="live-mini-btn" style="cursor:default; border:none;"><i class="fas fa-info-circle"></i> <%= question.status %></span>
@@ -191,9 +191,9 @@
       <div class="live-feed" id="liveHandFeed">
         <% (liveRoomData.hands || []).forEach((hand) => { %>
           <div class="live-feed-item" data-hand-id="<%= hand.id %>">
-            <img src="<%= hand.avatar %>" alt="<%= hand.username %>" class="live-feed-item__avatar">
+            <img src="<%= hand.avatar %>" alt="<%= hand.displayName || hand.username %>" class="live-feed-item__avatar">
             <div class="live-feed-item-content">
-              <strong><%= hand.username %></strong>
+              <strong><%= hand.displayName || hand.username %></strong>
               <p>Trạng thái: <%= hand.status %></p>
               <% if (canModerate) { %>
                 <div class="live-feed-item__actions">

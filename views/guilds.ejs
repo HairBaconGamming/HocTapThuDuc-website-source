@@ -205,7 +205,7 @@
                                 <h3 class="gc-name" title="<%= entry.name %>"><%= entry.name %></h3>
                                 <div class="gc-leader">
                                     <img src="<%= entry.leader?.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="">
-                                    Tông chủ: <b><%= entry.leader?.username || 'Ẩn danh' %></b>
+                                    Tông chủ: <b><%= entry.leader?.displayName || entry.leader?.username || 'Ẩn danh' %></b>
                                 </div>
                             </div>
                         </div>

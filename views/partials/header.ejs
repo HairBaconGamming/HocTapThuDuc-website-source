@@ -121,12 +121,7 @@
                 <li class="nav-item has-dropdown user-dropdown <%= activePage === 'profile' ? 'active' : '' %>">
                     <a href="/profile" class="nav-link user-link" style="padding-right: 10px;">
                         <img src="<%= user.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" class="user-avatar-img">
-                        <span class="user-name-glow <%= (user.showCultivation !== false && realmData) ? realmData.effectClass : '' %>"><%= displayName %></span>
-                        <% if(user.showCultivation !== false && realmData) { %>
-                            <span class="cultivation-badge <%= realmData.effectClass %>" title="<%= realmData.fullName %>">
-                                <%= realmData.realmName %>
-                            </span>
-                        <% } %>
+                        <span><%= user.displayName || user.username %></span>
                         <% if(user.isPro) { %> <i class="fas fa-check-circle" style="color: #a2d2ff; font-size: 0.8rem; margin-left: 3px;" title="Tài khoản xịn"></i> <% } %>
                     </a>
                     <div class="dropdown-menu">

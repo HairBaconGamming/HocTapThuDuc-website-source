@@ -31,12 +31,7 @@
                             <img src="<%= safeTop3[1].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
                         </div>
                         <div class="podium-info">
-                            <div class="podium-name user-name-glow <%= safeTop3[1].realmData ? safeTop3[1].realmData.effectClass : '' %>"><%= safeTop3[1].displayName %></div>
-                            <% if(safeTop3[1].realmData) { %>
-                                <div class="cultivation-badge <%= safeTop3[1].realmData.effectClass %>" style="margin-bottom: 5px;">
-                                    <%= safeTop3[1].realmData.realmName %>
-                                </div>
-                            <% } %>
+                            <div class="podium-name"><%= safeTop3[1].displayName || safeTop3[1].username %></div>
                             <div class="podium-score"><%= safeTop3[1].points || 0 %> pts</div>
                         </div>
                     </div>
@@ -52,15 +47,10 @@
                             <img src="<%= safeTop3[0].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
                         </div>
                         <div class="podium-info">
-                            <div class="podium-name user-name-glow <%= safeTop3[0].realmData ? safeTop3[0].realmData.effectClass : '' %>">
-                                <%= safeTop3[0].displayName %>
+                            <div class="podium-name">
+                                <%= safeTop3[0].displayName || safeTop3[0].username %>
                                 <% if (safeTop3[0].isPro) { %><span class="pro-badge">PRO</span><% } %>
                             </div>
-                            <% if(safeTop3[0].realmData) { %>
-                                <div class="cultivation-badge <%= safeTop3[0].realmData.effectClass %>" style="margin-bottom: 10px; padding: 4px 12px; font-size: 0.8rem;">
-                                    <%= safeTop3[0].realmData.realmName %>
-                                </div>
-                            <% } %>
                             <div class="podium-score" style="font-size: 2rem;"><%= safeTop3[0].points || 0 %> pts</div>
                             <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔥 Out Trình 🔥</div>
                         </div>
@@ -76,12 +66,7 @@
                             <img src="<%= safeTop3[2].avatar || '/default.png' %>" class="podium-avatar" alt="Avatar">
                         </div>
                         <div class="podium-info">
-                            <div class="podium-name user-name-glow <%= safeTop3[2].realmData ? safeTop3[2].realmData.effectClass : '' %>"><%= safeTop3[2].displayName %></div>
-                            <% if(safeTop3[2].realmData) { %>
-                                <div class="cultivation-badge <%= safeTop3[2].realmData.effectClass %>" style="margin-bottom: 5px;">
-                                    <%= safeTop3[2].realmData.realmName %>
-                                </div>
-                            <% } %>
+                            <div class="podium-name"><%= safeTop3[2].displayName || safeTop3[2].username %></div>
                             <div class="podium-score"><%= safeTop3[2].points || 0 %> pts</div>
                         </div>
                     </div>
@@ -97,14 +82,9 @@
                             <div class="rank-num">#<%= idx + 4 %></div>
                             <img src="<%= u.avatar || '/default.png' %>" class="rank-avatar-sm" alt="Avatar">
                             <div class="rank-details">
-                                <div class="rank-name-txt user-name-glow <%= u.realmData ? u.realmData.effectClass : '' %>">
-                                    <%= u.displayName %>
+                                <div class="rank-name-txt">
+                                    <%= u.displayName || u.username %>
                                     <% if (u.isPro) { %><span class="pro-badge">PRO</span><% } %>
-                                    <% if(u.realmData) { %>
-                                        <span class="cultivation-badge <%= u.realmData.effectClass %>" style="font-size: 0.6rem; padding: 1px 6px;">
-                                            <%= u.realmData.realmName %>
-                                        </span>
-                                    <% } %>
                                 </div>
                                 <div class="rank-meta"><%= u.class || 'Lớp ?' %> • <%= u.school || 'THPT Thủ Đức' %></div>
                             </div>
@@ -215,7 +195,7 @@
                 <img src="<%= user.avatar || '/default.png' %>" class="hud-avatar" alt="Avatar">
                 <div class="hud-info">
                     <div class="hud-label">Thứ hạng của bạn</div>
-                    <div class="hud-name"><%= user.username %></div>
+                    <div class="hud-name"><%= user.displayName || user.username %></div>
                 </div>
             </div>
             <div class="hud-right">

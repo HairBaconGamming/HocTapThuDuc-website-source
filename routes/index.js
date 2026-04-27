@@ -36,7 +36,7 @@ router.get("/", async (req, res) => {
         const courses = await Course.find(buildCourseVisibilityFilter(req.user))
             .sort({ createdAt: -1 })
             .limit(6)
-            .populate('author', 'username avatar')
+            .populate('author', 'username displayName avatar')
             .populate('subjectId', 'name')
             .lean();
 
@@ -224,7 +224,7 @@ router.get("/subjects/:id/:slug?", async (req, res) => {
         const canonicalPath = buildSubjectPath(subject);
         if (req.params.slug !== canonicalPath.split('/').pop()) return res.redirect(301, canonicalPath);
         
-        let courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username avatar').sort({ createdAt: -1 }).lean();
+        let courses = await Course.find(buildCourseVisibilityFilter(req.user, { subjectId: subject._id })).populate('author', 'username displayName avatar').sort({ createdAt: -1 }).lean();
         const courseIds = courses.map(c => c._id);
         const courseObjectIds = courseIds.map(id => new mongoose.Types.ObjectId(id));
 
@@ -317,7 +317,7 @@ router.get('/course/:id/:slug?', async (req, res, next) => {
 
 router.get("/courses", async (req, res) => {
     try {
-        const courses = await Course.find(buildCourseVisibilityFilter(req.user)).populate('author', 'username avatar').populate('subjectId', 'name icon').sort({ createdAt: -1 }).lean();
+        const courses = await Course.find(buildCourseVisibilityFilter(req.user)).populate('author', 'username displayName avatar').populate('subjectId', 'name icon').sort({ createdAt: -1 }).lean();
         res.render("courses", { user: req.user, courses, activePage: "courses", title: "Thư viện khóa học" });
     } catch (e) { res.redirect('/'); }
 });

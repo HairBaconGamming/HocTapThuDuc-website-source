@@ -60,7 +60,7 @@ router.get("/", async (req, res) => {
 
     const newsItems = await News.find(filter)
       .populate("subject", "name")
-      .populate("postedBy", "username avatar _id")
+      .populate("postedBy", "username displayName avatar _id")
       .sort({ createdAt: sortOrder })
       .limit(10);
 
@@ -260,7 +260,7 @@ router.get("/:id", async (req, res) => {
   try {
     const newsItem = await News.findById(req.params.id)
       .populate("subject", "name")
-      .populate("postedBy", "username avatar _id");
+      .populate("postedBy", "username displayName avatar _id");
     if (!newsItem) return res.send("Tin tức không tồn tại.");
 
     // Increment views (don't block the render for this)

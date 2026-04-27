@@ -31,7 +31,7 @@
             <img src="<%= newsItem.postedBy && newsItem.postedBy.avatar ? newsItem.postedBy.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>"
                  class="nd-author-avatar" alt="Author">
             <div class="nd-author-info">
-                <span class="nd-author-name"><%= newsItem.postedBy ? newsItem.postedBy.username : 'Ban Biên Tập' %></span>
+                <span class="nd-author-name"><%= newsItem.postedBy ? (newsItem.postedBy.displayName || newsItem.postedBy.username) : 'Ban Biên Tập' %></span>
                 <span class="nd-publish-date"><i class="far fa-calendar-alt"></i> <%= new Date(newsItem.createdAt).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                 <span class="nd-views" style="margin-left:10px;"><i class="fas fa-eye"></i> <%= newsItem.views || 0 %> lượt xem</span>
             </div>

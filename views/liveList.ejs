@@ -155,9 +155,9 @@
               </div>
               <div class="live-card__body">
                 <div class="live-card__meta">
-                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.displayName || session.host.username %>" class="live-card__avatar">
                   <div class="live-card__meta-info">
-                    <strong><%= session.host.username %></strong>
+                    <strong><%= session.host.displayName || session.host.username %></strong>
                     <span><%= session.category %></span>
                   </div>
                 </div>
@@ -205,9 +205,9 @@
               </div>
               <div class="live-card__body">
                 <div class="live-card__meta">
-                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.displayName || session.host.username %>" class="live-card__avatar">
                   <div>
-                    <strong><%= session.host.username %></strong>
+                    <strong><%= session.host.displayName || session.host.username %></strong>
                     <span><%= session.category %></span>
                   </div>
                 </div>
@@ -263,9 +263,9 @@
               </div>
               <div class="live-card__body">
                 <div class="live-card__meta">
-                  <img src="<%= session.host.avatar %>" alt="<%= session.host.username %>" class="live-card__avatar">
+                  <img src="<%= session.host.avatar %>" alt="<%= session.host.displayName || session.host.username %>" class="live-card__avatar">
                   <div class="live-card__meta-info">
-                    <strong><%= session.host.username %></strong>
+                    <strong><%= session.host.displayName || session.host.username %></strong>
                     <span>Kết thúc <%= session.endedAt ? new Date(session.endedAt).toLocaleDateString('vi-VN') : '' %></span>
                   </div>
                 </div>

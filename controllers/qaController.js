@@ -243,6 +243,7 @@ async function buildContributorBoard(rangeBuilder) {
                 _id: 0,
                 userId: '$user._id',
                 username: '$user.username',
+                displayName: '$user.displayName',
                 avatar: '$user.avatar',
                 points: '$user.points',
                 isPro: '$user.isPro',
@@ -363,7 +364,7 @@ async function loadQaFeedState(req) {
         Question.find(query)
             .sort(sort)
             .limit(30)
-            .populate('author', 'username avatar isPro points')
+            .populate('author', 'username displayName avatar isPro points')
             .lean(),
         buildSidebarPayload()
     ]);
@@ -395,7 +396,7 @@ exports.getQaHub = async (req, res) => {
             Question.find(query)
                 .sort(sort)
                 .limit(30)
-                .populate('author', 'username avatar isPro points')
+                .populate('author', 'username displayName avatar isPro points')
                 .lean(),
             buildSidebarPayload()
         ]);
@@ -515,7 +516,7 @@ exports.getQuestionDetail = async (req, res) => {
         }
 
         const question = await Question.findById(questionId)
-            .populate('author', 'username avatar isPro points guildRole')
+            .populate('author', 'username displayName avatar isPro points guildRole')
             .lean();
 
         if (!question) {
@@ -531,8 +532,8 @@ exports.getQuestionDetail = async (req, res) => {
 
         const [answers, sidebar, relatedQuestions] = await Promise.all([
             Answer.find({ question: questionId })
-                .populate('author', 'username avatar isPro points guildRole')
-                .populate('comments.author', 'username avatar isPro points')
+                .populate('author', 'username displayName avatar isPro points guildRole')
+                .populate('comments.author', 'username displayName avatar isPro points')
                 .sort({ isAccepted: -1, createdAt: 1 })
                 .lean(),
             buildSidebarPayload(),
@@ -543,7 +544,7 @@ exports.getQuestionDetail = async (req, res) => {
             })
                 .sort({ createdAt: -1 })
                 .limit(4)
-                .populate('author', 'username avatar isPro points')
+                .populate('author', 'username displayName avatar isPro points')
                 .lean()
         ]);
 

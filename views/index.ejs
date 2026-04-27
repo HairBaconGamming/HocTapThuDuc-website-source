@@ -37,7 +37,7 @@
             %>
             <h1 class="idx-title">
                 <%= greeting %>,<br>
-                <span class="idx-title-gradient"><%= user.username %>!</span>
+                <span class="idx-title-gradient"><%= user.displayName || user.username %>!</span>
             </h1>
             <p class="idx-desc">
                 Sẵn sàng cho một phiên học mới chưa? Đừng quên kiểm tra khu vườn và các nhiệm vụ hôm nay của bạn.
@@ -130,7 +130,7 @@
                             <div class="idx-course-author">
                                 <% const author = course.author || {}; %>
                                 <img src="<%= author.avatar || 'https://static.vecteezy.com/system/resources/previews/013/360/247/non_2x/default-avatar-photo-icon-social-media-profile-sign-symbol-vector.jpg' %>">
-                                <span class="idx-course-author-name"><%= author.username || 'Ban Biên Tập' %></span>
+                                <span class="idx-course-author-name"><%= author.displayName || author.username || 'Ban Biên Tập' %></span>
                             </div>
                             <i class="fas fa-chevron-right" style="color: var(--idx-primary);"></i>
                         </div>

@@ -55,7 +55,7 @@ const canAnswer = !!user && questionStatus !== 'closed';
                         <div class="qa-post-author-row">
                             <img src="<%= detailQuestion.author?.avatar || '/default.png' %>" class="qa-avatar-sm" alt="Ava">
                             <div class="qa-author-details">
-                                <span class="qa-username"><%= detailQuestion.author?.username || 'Ẩn danh' %></span>
+                                <span class="qa-username"><%= detailQuestion.author?.displayName || detailQuestion.author?.username || 'Ẩn danh' %></span>
                                 <span class="qa-time-stamp">
                                     đã hỏi <time data-relative-time datetime="<%= detailQuestion.createdAt %>"><%= new Date(detailQuestion.createdAt).toLocaleString('vi-VN') %></time>
                                 </span>
@@ -145,7 +145,7 @@ const canAnswer = !!user && questionStatus !== 'closed';
                                                 <span class="qa-time-stamp">Trả lời <time data-relative-time datetime="<%= answer.createdAt %>"></time></span>
                                                 <div class="qa-user-mini mt-1">
                                                     <img src="<%= answer.author?.avatar || '/default.png' %>" class="qa-avatar-xs" alt="Ava">
-                                                    <span class="qa-username text-primary"><%= answer.author?.username || 'Thành viên' %></span>
+                                                    <span class="qa-username text-primary"><%= answer.author?.displayName || answer.author?.username || 'Thành viên' %></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -165,7 +165,7 @@ const canAnswer = !!user && questionStatus !== 'closed';
                                                             <div class="qa-comment-body">
                                                                 <div class="qa-comment-meta">
                                                                     <a href="/profile/view/<%= comment.author?.userId || comment.author?._id %>" class="qa-comment-author">
-                                                                        <%= comment.author?.username || 'Thành viên' %>
+                                                                        <%= comment.author?.displayName || comment.author?.username || 'Thành viên' %>
                                                                     </a>
                                                                     <span class="qa-comment-time">
                                                                         <time data-relative-time datetime="<%= comment.createdAt %>"><%= new Date(comment.createdAt).toLocaleString('vi-VN') %></time>

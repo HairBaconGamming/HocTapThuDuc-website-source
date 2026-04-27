@@ -27,7 +27,7 @@ const safeMemberCount = Math.max(0, Number(guild.memberCount || 0));
 const safeMemberLimit = Math.max(safeMemberCount, Number(guild.memberLimit || 0));
 const guildMemberCount = safeMemberCount;
 const guildMemberLimit = safeMemberLimit;
-const safeLeaderName = String(guild.leader?.username || 'Unknown leader');
+const safeLeaderName = String(guild.leader?.displayName || guild.leader?.username || 'Unknown leader');
 const safeJoinMode = String(guild.settings?.joinMode || 'open');
 const safeInviteCode = String(guild.settings?.inviteCode || '');
 const showAdminTab = Boolean(ui.showAdminTab && viewerRole === 'leader');
@@ -240,9 +240,9 @@ guildDetail.recentContributions = rightRailActivity;
                     <span class="guild-mini-kicker">Người kéo nhịp</span>
                     <% if (heroSpotlight) { %>
                         <div class="guild-citadel-spotlight">
-                            <img src="<%= heroSpotlight.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= heroSpotlight.username %>">
+                            <img src="<%= heroSpotlight.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= heroSpotlight.displayName || heroSpotlight.username %>">
                             <div>
-                                <strong><%= heroSpotlight.username %></strong>
+                                <strong><%= heroSpotlight.displayName || heroSpotlight.username %></strong>
                                 <p>#<%= heroSpotlight.rank || 1 %> với <%= Number(heroSpotlight.totalContributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %> linh lực.</p>
                             </div>
                         </div>
@@ -481,9 +481,9 @@ guildDetail.recentContributions = rightRailActivity;
                                 <article class="guild-v2-leaderboard-row guild-v2-leaderboard-row--rank-<%= entry.rank <= 3 ? entry.rank : 4 %>">
                                     <div class="guild-v2-leaderboard-row__identity">
                                         <span class="guild-v2-rank">#<%= entry.rank %></span>
-                                        <img src="<%= entry.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.username %>">
+                                        <img src="<%= entry.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.displayName || entry.username %>">
                                         <div>
-                                            <strong><%= entry.username %></strong>
+                                            <strong><%= entry.displayName || entry.username %></strong>
                                             <small><%= entry.totalAmount %> lượt cống hiến</small>
                                         </div>
                                     </div>
@@ -504,7 +504,7 @@ guildDetail.recentContributions = rightRailActivity;
                                     <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
                                     <div class="guild-v2-timeline-row__copy">
                                         <p>
-                                            <strong><%= entry.user?.username || 'Đồng môn ẩn danh' %></strong>
+                                            <strong><%= entry.user?.displayName || entry.user?.username || 'Đồng môn ẩn danh' %></strong>
                                             vừa hiến <strong><%= entry.amount %> <%= entry.resourceLabel %></strong>
                                             <span>(+<%= Number(entry.contributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %> Linh Lực)</span>
                                         </p>
@@ -583,9 +583,9 @@ guildDetail.recentContributions = rightRailActivity;
                             <article class="guild-v2-leaderboard-row guild-v2-leaderboard-row--rank-<%= entry.rank %>">
                                 <div class="guild-v2-leaderboard-row__identity">
                                     <span class="guild-v2-rank">#<%= entry.rank %></span>
-                                    <img src="<%= entry.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.username %>">
+                                    <img src="<%= entry.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= entry.displayName || entry.username %>">
                                     <div>
-                                        <strong><%= entry.username %></strong>
+                                        <strong><%= entry.displayName || entry.username %></strong>
                                         <small><%= entry.totalAmount %> lượt cống hiến</small>
                                     </div>
                                 </div>
@@ -610,7 +610,7 @@ guildDetail.recentContributions = rightRailActivity;
                             <article class="guild-v2-timeline-row guild-v2-timeline-row--<%= entry.dramaTone %>">
                                 <span class="guild-v2-timeline-row__dot guild-v2-timeline-row__dot--<%= entry.resourceTone %>"></span>
                                 <div class="guild-v2-timeline-row__copy">
-                                    <p><strong><%= entry.user?.username || 'Đồng môn ẩn danh' %></strong> đã góp <strong><%= entry.amount %> <%= entry.resourceLabel %></strong>.</p>
+                                    <p><strong><%= entry.user?.displayName || entry.user?.username || 'Đồng môn ẩn danh' %></strong> đã góp <strong><%= entry.amount %> <%= entry.resourceLabel %></strong>.</p>
                                     <small>+<%= Number(entry.contributionValue || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) %> Linh Lực · <%= new Date(entry.createdAt).toLocaleString('vi-VN') %></small>
                                 </div>
                             </article>
@@ -636,12 +636,12 @@ guildDetail.recentContributions = rightRailActivity;
                     <article class="guild-v3-member-row">
                         <div class="guild-v3-member-row__identity">
                             <div class="guild-member-avatar-wrap">
-                                <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.username || 'Member' %>">
+                                <img src="<%= member.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="<%= member.displayName || member.username || 'Member' %>">
                                 <span class="guild-online-dot <%= member.isOnline ? 'is-online' : '' %>"></span>
                             </div>
                             <div class="guild-v3-member-copy">
                                 <div class="guild-v3-member-copy__head">
-                                    <strong class="guild-ellipsis" title="<%= member.username || 'Unknown member' %>"><%= member.username || 'Unknown member' %></strong>
+                                    <strong class="guild-ellipsis" title="<%= member.displayName || member.username || 'Unknown member' %>"><%= member.displayName || member.username || 'Unknown member' %></strong>
                                     <span class="guild-v3-role-pill"><%= member.roleText %></span>
                                 </div>
                                 <small>Level <%= member.level || 0 %> · Hoạt động cuối: <%= member.lastActiveText %></small>
@@ -725,7 +725,7 @@ guildDetail.recentContributions = rightRailActivity;
                                 <article class="guild-application-card">
                                     <div class="guild-application-head">
                                         <div>
-                                            <strong><%= application.applicant?.username || 'Đệ tử ẩn danh' %></strong>
+                                            <strong><%= application.applicant?.displayName || application.applicant?.username || 'Đệ tử ẩn danh' %></strong>
                                             <small>Level <%= application.applicant?.level || 0 %> · Streak <%= application.applicant?.currentStreak || 0 %> ngày</small>
                                         </div>
                                         <span class="guild-card-meta"><%= new Date(application.createdAt).toLocaleString('vi-VN') %></span>

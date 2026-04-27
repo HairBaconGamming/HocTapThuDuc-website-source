@@ -155,8 +155,8 @@ async function getOverviewPageData() {
         News.find().select('title createdAt category').sort({ createdAt: -1 }).limit(4).lean(),
         Question.find().select('title status answerCount createdAt').sort({ createdAt: -1 }).limit(4).lean(),
         Comment.find().select('content isDeleted createdAt').sort({ createdAt: -1 }).limit(4).lean(),
-        GuildApplication.find().populate('guild', 'name').populate('applicant', 'username').sort({ createdAt: -1 }).limit(4).lean(),
-        AdminActionLog.find().populate('actor', 'username').sort({ createdAt: -1 }).limit(6).lean()
+        GuildApplication.find().populate('guild', 'name').populate('applicant', 'username displayName').sort({ createdAt: -1 }).limit(4).lean(),
+        AdminActionLog.find().populate('actor', 'username displayName').sort({ createdAt: -1 }).limit(6).lean()
     ]);
 
     const [totalUsers, totalCourses, totalLessons, totalNews, totalQuestions, totalGuilds, pendingGuildApplications, bannedUsers] = totals;
@@ -263,7 +263,7 @@ async function getUsersPageData(reqQuery = {}) {
     if (selectedUser) {
         const [activityTotals, actionLogs] = await Promise.all([
             UserActivityLog.aggregate([{ $match: { user: selectedUser._id } }, { $group: { _id: '$user', minutes: { $sum: '$minutes' }, lastActive: { $max: '$lastActive' } } }]),
-            AdminActionLog.find({ targetType: 'User', targetId: String(selectedUser._id) }).populate('actor', 'username').sort({ createdAt: -1 }).limit(6).lean()
+            AdminActionLog.find({ targetType: 'User', targetId: String(selectedUser._id) }).populate('actor', 'username displayName').sort({ createdAt: -1 }).limit(6).lean()
         ]);
         selectedUserMetrics = activityTotals[0] || { minutes: 0, lastActive: null };
         selectedUserLogs = actionLogs;
@@ -308,7 +308,7 @@ async function getCoursesPageData(reqQuery = {}) {
     const totalItems = await Course.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [courses, subjectOptions, authorOptions, totalPublished, totalDraft, totalPro] = await Promise.all([
-        Course.find(query).populate('author', 'username').populate('subjectId', 'name').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        Course.find(query).populate('author', 'username displayName').populate('subjectId', 'name').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getSubjectsOptions(),
         getContentAuthorOptions(),
         Course.countDocuments({ isPublished: true }),
@@ -320,7 +320,7 @@ async function getCoursesPageData(reqQuery = {}) {
     const [lessonCounts, unitCounts, selectedCourse] = await Promise.all([
         courseIds.length ? Lesson.aggregate([{ $match: { courseId: { $in: courseIds } } }, { $group: { _id: '$courseId', count: { $sum: 1 } } }]) : [],
         courseIds.length ? Unit.aggregate([{ $match: { courseId: { $in: courseIds } } }, { $group: { _id: '$courseId', count: { $sum: 1 } } }]) : [],
-        reqQuery.detailId ? Course.findById(reqQuery.detailId).populate('author', 'username').populate('subjectId', 'name').lean() : null
+        reqQuery.detailId ? Course.findById(reqQuery.detailId).populate('author', 'username displayName').populate('subjectId', 'name').lean() : null
     ]);
 
     const lessonMap = new Map(lessonCounts.map((row) => [String(row._id), row.count]));
@@ -412,7 +412,7 @@ async function getLessonsPageData(reqQuery = {}) {
     const totalItems = await Lesson.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [lessons, subjectOptions, authorOptions, totalPublished, totalDraft, totalPro] = await Promise.all([
-        Lesson.find(query).populate('subjectId', 'name').populate('courseId', 'title').populate('unitId', 'title').populate('createdBy', 'username').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        Lesson.find(query).populate('subjectId', 'name').populate('courseId', 'title').populate('unitId', 'title').populate('createdBy', 'username displayName').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getSubjectsOptions(),
         getContentAuthorOptions(),
         Lesson.countDocuments({ isPublished: true }),
@@ -420,7 +420,7 @@ async function getLessonsPageData(reqQuery = {}) {
         Lesson.countDocuments({ $or: [{ isPro: true }, { isProOnly: true }] })
     ]);
 
-    const selectedLesson = reqQuery.detailId ? await Lesson.findById(reqQuery.detailId).populate('subjectId', 'name').populate('courseId', 'title').populate('unitId', 'title').populate('createdBy', 'username').lean() : null;
+    const selectedLesson = reqQuery.detailId ? await Lesson.findById(reqQuery.detailId).populate('subjectId', 'name').populate('courseId', 'title').populate('unitId', 'title').populate('createdBy', 'username displayName').lean() : null;
     const contextPanels = [];
     if (selectedLesson) {
         contextPanels.push(buildContextPanel('Bài học đang chọn', 'Detail', [
@@ -466,11 +466,11 @@ async function getNewsPageData(reqQuery = {}) {
     const totalItems = await News.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [newsItems, subjectOptions, authorOptions, totalWithImage, selectedNews] = await Promise.all([
-        News.find(query).populate('postedBy', 'username').populate('subject', 'name').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        News.find(query).populate('postedBy', 'username displayName').populate('subject', 'name').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getSubjectsOptions(),
         getContentAuthorOptions(),
         News.countDocuments({ image: { $exists: true, $nin: ['', null] } }),
-        reqQuery.detailId ? News.findById(reqQuery.detailId).populate('subject', 'name').populate('postedBy', 'username').lean() : null
+        reqQuery.detailId ? News.findById(reqQuery.detailId).populate('subject', 'name').populate('postedBy', 'username displayName').lean() : null
     ]);
 
     return {
@@ -501,13 +501,13 @@ async function getProImagesPageData(reqQuery = {}) {
     const totalItems = await ProImage.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [images, authorOptions, totalSize, totalCloudinary] = await Promise.all([
-        ProImage.find(query).populate('user', 'username').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        ProImage.find(query).populate('user', 'username displayName').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getUserOptions(),
         ProImage.aggregate([{ $match: query }, { $group: { _id: null, totalSize: { $sum: '$size' } } }]),
         ProImage.countDocuments({ source: 'cloudinary' })
     ]);
 
-    const selectedImage = reqQuery.detailId ? await ProImage.findById(reqQuery.detailId).populate('user', 'username').lean() : null;
+    const selectedImage = reqQuery.detailId ? await ProImage.findById(reqQuery.detailId).populate('user', 'username displayName').lean() : null;
 
     return {
         pageTitle: 'Content ops · PRO Images',
@@ -539,12 +539,12 @@ async function getQuestionsPageData(reqQuery = {}) {
     const totalItems = await Question.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [questions, authorOptions, totalOpen, totalResolved, totalUnanswered, selectedQuestion] = await Promise.all([
-        Question.find(query).populate('author', 'username').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        Question.find(query).populate('author', 'username displayName').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getUserOptions(),
         Question.countDocuments({ status: 'open' }),
         Question.countDocuments({ status: 'resolved' }),
         Question.countDocuments({ answerCount: { $lt: 1 } }),
-        reqQuery.detailId ? Question.findById(reqQuery.detailId).populate('author', 'username').lean() : null
+        reqQuery.detailId ? Question.findById(reqQuery.detailId).populate('author', 'username displayName').lean() : null
     ]);
 
     return {
@@ -577,10 +577,10 @@ async function getCommentsPageData(reqQuery = {}) {
     const totalItems = await Comment.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [comments, authorOptions, totalDeleted, selectedComment] = await Promise.all([
-        Comment.find(query).populate('user', 'username').populate('lesson', 'title').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        Comment.find(query).populate('user', 'username displayName').populate('lesson', 'title').sort(sortMap[filters.sort] || sortMap.newest).skip(pagination.skip).limit(pagination.pageSize).lean(),
         getUserOptions(),
         Comment.countDocuments({ isDeleted: true }),
-        reqQuery.detailId ? Comment.findById(reqQuery.detailId).populate('user', 'username').populate('lesson', 'title').lean() : null
+        reqQuery.detailId ? Comment.findById(reqQuery.detailId).populate('user', 'username displayName').populate('lesson', 'title').lean() : null
     ]);
 
     return {
@@ -611,15 +611,15 @@ async function getGuildsPageData(reqQuery = {}) {
     const totalItems = await Guild.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [guilds, totalPublic, totalOpen, totalAutoMod, selectedGuild] = await Promise.all([
-        Guild.find(query).populate('leader', 'username').sort(sortMap[filters.sort] || sortMap.members_desc).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        Guild.find(query).populate('leader', 'username displayName').sort(sortMap[filters.sort] || sortMap.members_desc).skip(pagination.skip).limit(pagination.pageSize).lean(),
         Guild.countDocuments({ 'settings.isPublic': true }),
         Guild.countDocuments({ 'settings.joinMode': 'open' }),
         Guild.countDocuments({ 'settings.autoModeration.enabled': true }),
-        reqQuery.detailId ? Guild.findById(reqQuery.detailId).populate('leader', 'username').lean() : null
+        reqQuery.detailId ? Guild.findById(reqQuery.detailId).populate('leader', 'username displayName').lean() : null
     ]);
 
     const guildAuditRows = selectedGuild
-        ? await GuildAuditLog.find({ guild: selectedGuild._id }).populate('actor', 'username').populate('targetUser', 'username').sort({ createdAt: -1 }).limit(8).lean()
+        ? await GuildAuditLog.find({ guild: selectedGuild._id }).populate('actor', 'username displayName').populate('targetUser', 'username displayName').sort({ createdAt: -1 }).limit(8).lean()
         : [];
 
     return {
@@ -648,14 +648,14 @@ async function getGuildApplicationsPageData(reqQuery = {}) {
     const totalItems = await GuildApplication.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [applications, totalPending, totalApproved, totalRejected] = await Promise.all([
-        GuildApplication.find(query).populate('guild', 'name slug').populate('applicant', 'username level').populate('reviewedBy', 'username').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        GuildApplication.find(query).populate('guild', 'name slug').populate('applicant', 'username displayName level').populate('reviewedBy', 'username displayName').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).skip(pagination.skip).limit(pagination.pageSize).lean(),
         GuildApplication.countDocuments({ status: 'pending' }),
         GuildApplication.countDocuments({ status: 'approved' }),
         GuildApplication.countDocuments({ status: 'rejected' })
     ]);
 
     const selectedApplication = reqQuery.detailId
-        ? await GuildApplication.findById(reqQuery.detailId).populate('guild', 'name slug').populate('applicant', 'username level').populate('reviewedBy', 'username').lean()
+        ? await GuildApplication.findById(reqQuery.detailId).populate('guild', 'name slug').populate('applicant', 'username displayName level').populate('reviewedBy', 'username displayName').lean()
         : null;
 
     return {
@@ -720,13 +720,13 @@ async function getRewardsPageData(reqQuery = {}) {
     const totalItems = await LessonRewardEvent.countDocuments(query);
     const pagination = buildPagination(filters.page, totalItems, filters.pageSize);
     const [rewardEvents, totalClaimed, totalPending, totalIgnored] = await Promise.all([
-        LessonRewardEvent.find(query).populate('user', 'username').populate('lesson', 'title').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).skip(pagination.skip).limit(pagination.pageSize).lean(),
+        LessonRewardEvent.find(query).populate('user', 'username displayName').populate('lesson', 'title').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).skip(pagination.skip).limit(pagination.pageSize).lean(),
         LessonRewardEvent.countDocuments({ status: 'claimed' }),
         LessonRewardEvent.countDocuments({ status: { $in: ['revealed', 'claiming'] } }),
         LessonRewardEvent.countDocuments({ status: 'ignored' })
     ]);
 
-    const selectedReward = reqQuery.detailId ? await LessonRewardEvent.findById(reqQuery.detailId).populate('user', 'username').populate('lesson', 'title').lean() : null;
+    const selectedReward = reqQuery.detailId ? await LessonRewardEvent.findById(reqQuery.detailId).populate('user', 'username displayName').populate('lesson', 'title').lean() : null;
 
     return {
         pageTitle: 'Gamification ops · Lesson rewards',
@@ -867,8 +867,8 @@ async function getAuditPageData(reqQuery = {}) {
     applyDateFilter(adminLogQuery, 'createdAt', filters.dateFrom, filters.dateTo);
 
     const [adminLogs, guildLogs] = await Promise.all([
-        AdminActionLog.find(adminLogQuery).populate('actor', 'username').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).limit(80).lean(),
-        GuildAuditLog.find(filters.q ? { message: { $regex: escapeRegex(filters.q), $options: 'i' } } : {}).populate('actor', 'username').populate('guild', 'name').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).limit(40).lean()
+        AdminActionLog.find(adminLogQuery).populate('actor', 'username displayName').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).limit(80).lean(),
+        GuildAuditLog.find(filters.q ? { message: { $regex: escapeRegex(filters.q), $options: 'i' } } : {}).populate('actor', 'username displayName').populate('guild', 'name').sort(filters.sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 }).limit(40).lean()
     ]);
 
     const mergedLogs = [
@@ -914,7 +914,7 @@ async function getLiveSessionsPageData(reqQuery = {}) {
 
     const [sessions, totalLive, totalScheduled, totalEnded, totalFailed] = await Promise.all([
         LiveSession.find(query)
-            .populate('hostUser', 'username avatar')
+            .populate('hostUser', 'username displayName avatar')
             .populate('subjectId', 'name')
             .sort(sortMap[filters.sort] || sortMap.newest)
             .skip(pagination.skip)
@@ -928,7 +928,7 @@ async function getLiveSessionsPageData(reqQuery = {}) {
 
     const selectedSession = reqQuery.detailId
         ? await LiveSession.findById(reqQuery.detailId)
-            .populate('hostUser', 'username avatar')
+            .populate('hostUser', 'username displayName avatar')
             .populate('subjectId', 'name')
             .populate('courseId', 'title')
             .populate('lessonId', 'title')

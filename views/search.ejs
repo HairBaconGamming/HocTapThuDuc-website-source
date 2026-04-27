@@ -179,7 +179,7 @@
                             <a href="/profile/view/<%= u._id %>" class="result-item" style="background: #f1f5f9; border-radius: 50px;">
                                 <img src="<%= u.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" style="width: 30px; height: 30px; border-radius: 50%;">
                                 <div class="item-info">
-                                    <h4 style="font-size: 0.9rem;"><%= u.username %> 
+                                    <h4 style="font-size: 0.9rem;"><%= u.displayName || u.username %> 
                                         <% if(u.isPro) { %><i class="fas fa-check-circle" style="color:#3b82f6;"></i><% } %>
                                     </h4>
                                 </div>

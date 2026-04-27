@@ -62,7 +62,7 @@
             <div class="nf-featured-meta">
                 <img src="<%= featured.author && featured.author.avatar ? featured.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Author">
                 <div class="nf-featured-meta-info">
-                    <span class="nf-featured-meta-name"><%= featured.author ? featured.author.username : 'Ban Biên Tập' %></span>
+                    <span class="nf-featured-meta-name"><%= featured.author ? (featured.author.displayName || featured.author.username) : 'Ban Biên Tập' %></span>
                     <span class="nf-featured-meta-date"><%= new Date(featured.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                 </div>
                 <div class="nf-featured-stats">
@@ -115,7 +115,7 @@
                         <div class="nf-card-author">
                             <img src="<%= news.author && news.author.avatar ? news.author.avatar : 'https://cdn-icons-png.flaticon.com/512/847/847969.png' %>" alt="Author">
                             <div class="nf-card-author-info">
-                                <span class="nf-card-author-name"><%= news.author ? news.author.username : 'Ban Biên Tập' %></span>
+                                <span class="nf-card-author-name"><%= news.author ? (news.author.displayName || news.author.username) : 'Ban Biên Tập' %></span>
                                 <span class="nf-card-author-date"><%= new Date(news.createdAt).toLocaleDateString('vi-VN') %></span>
                             </div>
                         </div>
