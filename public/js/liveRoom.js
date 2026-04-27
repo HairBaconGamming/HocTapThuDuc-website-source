@@ -63,6 +63,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let isCamEnabled = true;
   let isSystemAudioEnabled = false;
   let facecamPos = { x: 0, y: 0 };
+  
+  // Microphone Testing Variables
+  let micTestStream = null;
+  let micTestAudioContext = null;
+  let micTestAnalyser = null;
+  let micTestAnimation = null;
   const seenChatIds = new Set((boot.chatMessages || []).map((entry) => entry.id));
 
   function escapeHtml(value) {
@@ -778,6 +784,76 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!elements.deviceModal) return;
     elements.deviceModal.hidden = false;
     await loadDevices();
+    
+    // Start testing with currently selected mic
+    if (elements.micSelect && elements.micSelect.value) {
+      startMicTesting(elements.micSelect.value);
+    }
+  }
+
+  async function startMicTesting(deviceId) {
+    stopMicTesting();
+
+    try {
+      micTestStream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: deviceId ? { exact: deviceId } : undefined }
+      });
+
+      micTestAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = micTestAudioContext.createMediaStreamSource(micTestStream);
+      micTestAnalyser = micTestAudioContext.createAnalyser();
+      micTestAnalyser.fftSize = 256;
+      source.connect(micTestAnalyser);
+
+      const bufferLength = micTestAnalyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const bar = document.getElementById("liveMicVisualizerBar");
+
+      function updateVisualizer() {
+        if (!micTestAnalyser) return;
+        micTestAnalyser.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        const volume = Math.min(100, Math.pow(average / 128, 0.5) * 100);
+
+        if (bar) {
+          bar.style.width = volume + "%";
+        }
+
+        micTestAnimation = requestAnimationFrame(updateVisualizer);
+      }
+
+      updateVisualizer();
+    } catch (error) {
+      console.warn("Mic testing error:", error);
+    }
+  }
+
+  function stopMicTesting() {
+    if (micTestAnimation) {
+      cancelAnimationFrame(micTestAnimation);
+      micTestAnimation = null;
+    }
+    if (micTestStream) {
+      micTestStream.getTracks().forEach(track => track.stop());
+      micTestStream = null;
+    }
+    if (micTestAudioContext) {
+      if (micTestAudioContext.state !== 'closed') {
+        micTestAudioContext.close();
+      }
+      micTestAudioContext = null;
+    }
+    micTestAnalyser = null;
+    
+    const bar = document.getElementById("liveMicVisualizerBar");
+    if (bar) {
+      bar.style.width = "0%";
+    }
   }
 
   async function loadDevices() {
@@ -1005,8 +1081,15 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.facecamToggleBtn?.addEventListener("click", toggleCam);
   elements.micToggleBtn?.addEventListener("click", toggleMic);
   elements.deviceSettingsBtn?.addEventListener("click", openDeviceModal);
-  elements.closeDeviceModalBtn?.addEventListener("click", () => elements.deviceModal.hidden = true);
-  elements.micSelect?.addEventListener("change", (e) => switchDevice("audioinput", e.target.value));
+  elements.closeDeviceModalBtn?.addEventListener("click", () => {
+    elements.deviceModal.hidden = true;
+    stopMicTesting();
+  });
+  elements.micSelect?.addEventListener("change", (e) => {
+    const deviceId = e.target.value;
+    switchDevice("audioinput", deviceId);
+    startMicTesting(deviceId);
+  });
   elements.camSelect?.addEventListener("change", (e) => switchDevice("videoinput", e.target.value));
   elements.screenAudioToggle?.addEventListener("change", (e) => {
     isSystemAudioEnabled = e.target.checked;

@@ -1423,3 +1423,23 @@ body.is-focus-mode .live-stage-primary {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Microphone Visualizer */
+.live-mic-visualizer {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid var(--lr-border);
+}
+
+.live-mic-visualizer-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  transition: width 0.1s ease-out;
+}
+
+
