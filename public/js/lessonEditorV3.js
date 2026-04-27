@@ -1881,9 +1881,12 @@ function renderBlocks() {
     if (!canvas) return;
     canvas.innerHTML = '';
     const blockRenderers = window.LessonBlockRenderers;
+    if (!blockRenderers) {
+        console.warn('LessonBlockRenderers is not defined. Some UI elements may not render correctly.');
+    }
 
     blocks.forEach((b, idx) => {
-        const frame = blockRenderers && typeof blockRenderers.createBlockFrame === 'function'
+        const frame = (blockRenderers && typeof blockRenderers.createBlockFrame === 'function')
             ? blockRenderers.createBlockFrame(idx)
             : { el: document.createElement('div'), body: document.createElement('div') };
         const el = frame.el;
@@ -1928,11 +1931,11 @@ function renderBlocks() {
             }
 
         // --- RENDER TYPE: VIDEO (FIXED) ---
-        } else if (b.type === 'video') {
+        } else if (b.type === 'video' && blockRenderers?.renderVideoBlock) {
             blockRenderers.renderVideoBlock(body, b, idx, { getEmbedUrl });
 
         // --- RENDER TYPE: RESOURCE ---
-        } else if (b.type === 'resource') {
+        } else if (b.type === 'resource' && blockRenderers?.renderResourceBlock) {
             blockRenderers.renderResourceBlock(body, b, idx);
 
         // --- RENDER TYPE: CODE SNIPPET ---
@@ -2009,7 +2012,7 @@ function renderBlocks() {
             body.appendChild(wrapper);
 
         // --- RENDER TYPE: QUIZ ---
-        } else if (b.type === 'question' || b.type === 'quiz') {
+        } else if ((b.type === 'question' || b.type === 'quiz') && blockRenderers?.renderQuestionBlock) {
              blockRenderers.renderQuestionBlock(el, body, b, idx);
         
         // --- RENDER TYPE: CALLOUT ---
@@ -2028,29 +2031,31 @@ function renderBlocks() {
              });
              body.appendChild(ta);
         // --- RENDER TYPE: HTML PREVIEW (FULL FEATURES) ---
-        } else if (b.type === 'html_preview') {
+        } else if (b.type === 'html_preview' && blockRenderers?.renderHtmlPreviewBlock) {
             blockRenderers.renderHtmlPreviewBlock(body, b, idx, {
                 buildSandboxedPreviewSrcdoc,
                 markStudioDirty: () => markStudioDirty('lesson'),
                 refreshStudioUI
             });
         // --- RENDER TYPE: ACCORDION ---
-        } else if (b.type === 'accordion') {
+        } else if (b.type === 'accordion' && blockRenderers?.renderAccordionBlock) {
             blockRenderers.renderAccordionBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
             
         // --- RENDER TYPE: TABS ---
-        } else if (b.type === 'tabs') {
+        } else if (b.type === 'tabs' && blockRenderers?.renderTabsBlock) {
             blockRenderers.renderTabsBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
             
         // --- RENDER TYPE: MERMAID ---
-        } else if (b.type === 'mermaid') {
+        } else if (b.type === 'mermaid' && blockRenderers?.renderMermaidBlock) {
             blockRenderers.renderMermaidBlock(body, b, idx, { markStudioDirty: () => markStudioDirty('lesson'), refreshStudioUI });
         }
 
         el.appendChild(body);
         canvas.appendChild(el);
 
-        blockRenderers.appendInserter(canvas, idx);
+        if (blockRenderers?.appendInserter) {
+            blockRenderers.appendInserter(canvas, idx);
+        }
     });
 
     // Init EasyMDE for all text blocks

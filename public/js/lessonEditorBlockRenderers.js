@@ -389,7 +389,7 @@
                 btn.style.cssText = `padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid ${isAct ? '#db2777' : '#e2e8f0'}; background: ${isAct ? '#fce7f3' : '#f8fafc'}; color: ${isAct ? '#be185d' : '#64748b'};`;
                 
                 const titleSpan = document.createElement('span');
-                titleSpan.textContent = tab.title || \`Tab \${tIdx + 1}\`;
+                titleSpan.textContent = tab.title || `Tab ${tIdx + 1}`;
                 
                 const delBtn = document.createElement('i');
                 delBtn.className = 'fas fa-times';
@@ -421,7 +421,7 @@
             addBtn.innerHTML = '<i class="fas fa-plus"></i> Thêm Tab';
             addBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #db2777; border: 1px dashed #db2777; display: flex; align-items: center; gap: 5px;';
             addBtn.onclick = () => {
-                tabsData.push({ title: \`Tab \${tabsData.length + 1}\`, content: '' });
+                tabsData.push({ title: `Tab ${tabsData.length + 1}`, content: '' });
                 block._activeTab = tabsData.length - 1;
                 helpers.markStudioDirty();
                 helpers.refreshStudioUI('lesson');
@@ -438,15 +438,15 @@
             const contentDiv = document.createElement('div');
             contentDiv.style.cssText = 'display: flex; flex-direction: column; gap: 10px;';
             
-            contentDiv.innerHTML = \`
+            contentDiv.innerHTML = `
                 <div>
                     <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Tên Tab</label>
-                    <input type="text" class="studio-select" value="\${(currentTab.title || '').replace(/"/g, '&quot;')}" style="margin-top: 5px; max-width: 300px;">
+                    <input type="text" class="studio-select" value="${(currentTab.title || '').replace(/"/g, '&quot;')}" style="margin-top: 5px; max-width: 300px;">
                 </div>
                 <div>
                     <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Nội dung (Hỗ trợ Markdown)</label>
                 </div>
-            \`;
+            `;
 
             const titleInput = contentDiv.querySelector('input');
             titleInput.addEventListener('input', (e) => {
@@ -511,7 +511,7 @@
         previewFrame.style.cssText = 'width: 100%; height: 100%; border: none;';
         
         const updatePreview = (code) => {
-            const srcdoc = \`
+            const srcdoc = `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -519,11 +519,11 @@
                     <style>body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }</style>
                 </head>
                 <body>
-                    <div class="mermaid">\${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    <div class="mermaid">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                     <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });<\\/script>
                 </body>
                 </html>
-            \`;
+            `;
             previewFrame.srcdoc = srcdoc;
         };
 
