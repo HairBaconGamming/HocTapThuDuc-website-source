@@ -12,27 +12,53 @@ document.addEventListener("DOMContentLoaded", () => {
   const micLevel = document.getElementById("micLevel");
   let previewStream = null;
 
-  function getSelectedValue(name) {
-    return form.querySelector(`input[name="${name}"]:checked`)?.value || "";
-  }
+  const subjectSelect = document.getElementById("subjectId");
+  const courseSelect = document.getElementById("courseId");
+  const lessonSelect = document.getElementById("lessonId");
 
   function syncLayout() {
     const sessionMode = getSelectedValue("sessionMode");
-    const bindingType = getSelectedValue("bindingType");
-
     scheduleField.hidden = sessionMode !== "scheduled";
-    courseField.hidden = bindingType !== "course";
-    lessonField.hidden = bindingType !== "lesson";
+  }
 
-    if (bindingType !== "course") {
-      const courseSelect = document.getElementById("courseId");
-      if (courseSelect) courseSelect.value = "";
+  function handleSubjectChange() {
+    const subjectId = subjectSelect.value;
+    
+    // Reset and filter courses
+    courseSelect.value = "";
+    lessonSelect.value = "";
+    lessonField.hidden = true;
+
+    if (!subjectId) {
+      courseField.hidden = true;
+      return;
     }
 
-    if (bindingType !== "lesson") {
-      const lessonSelect = document.getElementById("lessonId");
-      if (lessonSelect) lessonSelect.value = "";
+    courseField.hidden = false;
+    Array.from(courseSelect.options).forEach(option => {
+      if (!option.value) return; // Skip placeholder
+      const isMatch = option.dataset.subject === subjectId;
+      option.hidden = !isMatch;
+    });
+  }
+
+  function handleCourseChange() {
+    const courseId = courseSelect.value;
+    
+    // Reset and filter lessons
+    lessonSelect.value = "";
+
+    if (!courseId) {
+      lessonField.hidden = true;
+      return;
     }
+
+    lessonField.hidden = false;
+    Array.from(lessonSelect.options).forEach(option => {
+      if (!option.value) return; // Skip placeholder
+      const isMatch = option.dataset.course === courseId;
+      option.hidden = !isMatch;
+    });
   }
 
   function syncPreviewTitle() {
@@ -85,15 +111,23 @@ document.addEventListener("DOMContentLoaded", () => {
     submitButton.innerHTML = "<span>Đang tạo phiên...</span>";
 
     try {
+      const cId = courseSelect.value;
+      const lId = lessonSelect.value;
+      
+      // Calculate bindingType
+      let bType = "";
+      if (lId) bType = "lesson";
+      else if (cId) bType = "course";
+
       const payload = {
         title: titleInput.value.trim(),
         description: document.getElementById("liveDescription").value.trim(),
         category: document.getElementById("liveCategory").value,
         thumbnail: document.getElementById("liveThumbnail").value.trim(),
         sessionMode: getSelectedValue("sessionMode"),
-        bindingType: getSelectedValue("bindingType"),
-        courseId: document.getElementById("courseId").value,
-        lessonId: document.getElementById("lessonId").value,
+        bindingType: bType,
+        courseId: cId,
+        lessonId: lId,
         scheduledFor: document.getElementById("scheduledFor").value,
       };
 
@@ -123,9 +157,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  form.querySelectorAll('input[name="sessionMode"], input[name="bindingType"]').forEach((input) => {
+  form.querySelectorAll('input[name="sessionMode"]').forEach((input) => {
     input.addEventListener("change", syncLayout);
   });
+  
+  subjectSelect.addEventListener("change", handleSubjectChange);
+  courseSelect.addEventListener("change", handleCourseChange);
+
   titleInput.addEventListener("input", syncPreviewTitle);
   form.addEventListener("submit", submitStudio);
 

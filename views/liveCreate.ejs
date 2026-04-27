@@ -8,6 +8,7 @@
 <script>
   window.LIVE_STUDIO_BOOTSTRAP = <%- JSON.stringify({
     suggestedSchedule,
+    subjects: liveStudioSubjects || [],
     courses: liveStudioCourses || [],
     lessons: liveStudioLessons || [],
   }) %>;
@@ -89,40 +90,37 @@
         </div>
       </div>
 
-      <div class="live-binding-switch">
-        <label class="live-mode-option">
-          <input type="radio" name="bindingType" value="" checked>
-          <span>Không gắn</span>
+      <div class="live-selection-flow">
+        <label class="live-field" id="subjectField">
+          <span>1. Chọn môn học</span>
+          <select id="subjectId" name="subjectId">
+            <option value="">-- Chọn môn học --</option>
+            <% (liveStudioSubjects || []).forEach((subject) => { %>
+              <option value="<%= subject._id %>"><%= subject.name %></option>
+            <% }) %>
+          </select>
         </label>
-        <label class="live-mode-option">
-          <input type="radio" name="bindingType" value="course">
-          <span>Khóa học</span>
+  
+        <label class="live-field" id="courseField" hidden>
+          <span>2. Chọn khóa học</span>
+          <select id="courseId" name="courseId">
+            <option value="">-- Chọn khóa học --</option>
+            <% (liveStudioCourses || []).forEach((course) => { %>
+              <option value="<%= course._id %>" data-subject="<%= course.subjectId %>"><%= course.title %></option>
+            <% }) %>
+          </select>
         </label>
-        <label class="live-mode-option">
-          <input type="radio" name="bindingType" value="lesson">
-          <span>Bài học</span>
+  
+        <label class="live-field" id="lessonField" hidden>
+          <span>3. Chọn bài học (Tùy chọn)</span>
+          <select id="lessonId" name="lessonId">
+            <option value="">-- Không gắn bài học cụ thể --</option>
+            <% (liveStudioLessons || []).forEach((lesson) => { %>
+              <option value="<%= lesson._id %>" data-course="<%= lesson.courseId %>"><%= lesson.title %></option>
+            <% }) %>
+          </select>
         </label>
       </div>
-
-      <label class="live-field" id="courseField" hidden>
-        <span>Chọn khóa học</span>
-        <select id="courseId" name="courseId">
-          <option value="">-- Chọn khóa học --</option>
-          <% (liveStudioCourses || []).forEach((course) => { %>
-            <option value="<%= course._id %>"><%= course.title %></option>
-          <% }) %>
-        </select>
-      </label>
-
-      <label class="live-field" id="lessonField" hidden>
-        <span>Chọn bài học</span>
-        <select id="lessonId" name="lessonId">
-          <option value="">-- Chọn bài học --</option>
-          <% (liveStudioLessons || []).forEach((lesson) => { %>
-            <option value="<%= lesson._id %>"><%= lesson.title %></option>
-          <% }) %>
-        </select>
-      </label>
 
       <div class="live-preview-card">
         <div class="live-preview-card__media">

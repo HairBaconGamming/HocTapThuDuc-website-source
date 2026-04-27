@@ -128,6 +128,7 @@ router.get("/create", isPro, async (req, res) => {
       title: "Studio Livestream",
       user: req.user,
       activePage: "live",
+      liveStudioSubjects: data.subjects,
       liveStudioCourses: data.courses,
       liveStudioLessons: data.lessons,
       suggestedSchedule: data.suggestedSchedule,

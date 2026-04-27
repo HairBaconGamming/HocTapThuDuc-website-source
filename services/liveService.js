@@ -665,12 +665,24 @@ async function createLiveSession({
   }
 
   const mode = sessionMode === "instant" ? "instant" : "scheduled";
-  const binding = await resolveBindingSelection(user, bindingType, courseId, lessonId);
+  
+  // Logic xử lý bindingType mới: Ưu tiên lesson -> course
+  let effectiveBindingType = bindingType;
+  if (lessonId) {
+    effectiveBindingType = "lesson";
+  } else if (courseId) {
+    effectiveBindingType = "course";
+  } else {
+    effectiveBindingType = null;
+  }
+
+  const binding = await resolveBindingSelection(user, effectiveBindingType, courseId, lessonId);
   await ensureNoConflictingLive(user._id);
 
   let scheduledDate = null;
   if (mode === "scheduled") {
-    scheduledDate = scheduledFor ? new Date(scheduledFor) : null;
+    // Đảm bảo parse datetime-local đúng múi giờ Việt Nam
+    scheduledDate = scheduledFor ? moment.tz(scheduledFor, APP_TIMEZONE).toDate() : null;
     if (!scheduledDate || Number.isNaN(scheduledDate.getTime())) {
       throw createLiveError(400, "Bạn cần chọn thời gian phát hợp lệ.");
     }
@@ -948,21 +960,23 @@ async function buildLiveHubData(user, filters = {}) {
 }
 
 async function buildLiveStudioData(user) {
-  const [courses, lessons] = await Promise.all([
+  const [subjects, courses, lessons] = await Promise.all([
+    Subject.find({}).select("_id name slug").sort({ name: 1 }).lean(),
     Course.find(buildCourseVisibilityFilter(user))
       .select("_id title slug subjectId thumbnail")
       .sort({ createdAt: -1 })
-      .limit(80)
+      .limit(200)
       .lean(),
     Lesson.find(buildLessonVisibilityFilter(user))
       .select("_id title courseId subject subjectId")
       .sort({ createdAt: -1 })
-      .limit(120)
+      .limit(400)
       .lean(),
   ]);
 
   return {
     suggestedSchedule: moment().tz(APP_TIMEZONE).add(1, "hour").startOf("hour").format("YYYY-MM-DDTHH:mm"),
+    subjects,
     courses,
     lessons,
   };
