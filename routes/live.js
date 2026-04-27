@@ -23,6 +23,7 @@ const {
   updateRaiseHandStatus,
   updateSessionQuestionStatus,
 } = require("../services/liveService");
+const { buildAbsoluteUrl } = require("../utils/urlHelpers");
 
 const router = express.Router();
 
@@ -341,11 +342,15 @@ router.get("/getToken", isLoggedIn, async (req, res) => {
 router.get("/:slug/replay", isLoggedIn, async (req, res) => {
   try {
     const data = await buildLiveReplayData(req.params.slug, req.user);
+    const hostName = data.session.host?.username || "Giảng viên";
+    const title = data.session.title;
+
     res.render("liveReplay", {
-      title: `Replay | ${data.session.title}`,
-      metaTitle: `Xem lại: ${data.session.title} | Học Tập Thủ Đức`,
-      metaDescription: data.session.description || `Xem lại buổi livestream "${data.session.title}" đã diễn ra tại Học Tập Thủ Đức.`,
-      metaImage: data.session.thumbnail,
+      title: `Replay | ${title}`,
+      metaTitle: `[REPLAY] ${title} | Học Tập Thủ Đức`,
+      metaDescription: `Xem lại buổi livestream "${title}" của ${hostName}. Cùng ôn lại kiến thức và tham khảo các thảo luận Q&A hữu ích tại Học Tập Thủ Đức! 📚`,
+      metaImage: buildAbsoluteUrl(res.locals.siteOrigin, data.session.thumbnail),
+      metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, `/live/${req.params.slug}/replay`),
       user: req.user,
       activePage: "live",
       liveRoomData: data,
@@ -358,11 +363,18 @@ router.get("/:slug/replay", isLoggedIn, async (req, res) => {
 router.get("/:slug", isLoggedIn, async (req, res) => {
   try {
     const data = await buildLiveRoomData(req.params.slug, req.user);
+    const isLive = data.session.status === "live";
+    const hostName = data.session.host?.username || "Giảng viên";
+    const title = data.session.title;
+
     res.render("liveRoom", {
-      title: data.session.title,
-      metaTitle: `${data.session.title} | Livestream Học Tập Thủ Đức`,
-      metaDescription: data.session.description || `Tham gia buổi livestream "${data.session.title}" của ${data.session.host?.username || "giảng viên"} tại Học Tập Thủ Đức.`,
-      metaImage: data.session.thumbnail,
+      title: title,
+      metaTitle: isLive
+        ? `🔴 ĐANG LIVE: ${title} | Học Tập Thủ Đức`
+        : `${title} | Phòng Chờ Livestream`,
+      metaDescription: `🔥 Tham gia ngay buổi livestream "${title}" của ${hostName}. Cùng học tập, thảo luận Q&A trực tiếp và nhận tài liệu cực chất tại Học Tập Thủ Đức! 🚀`,
+      metaImage: buildAbsoluteUrl(res.locals.siteOrigin, data.session.thumbnail),
+      metaUrl: buildAbsoluteUrl(res.locals.siteOrigin, `/live/${req.params.slug}`),
       user: req.user,
       activePage: "live",
       disableActivityHeartbeat: true,
