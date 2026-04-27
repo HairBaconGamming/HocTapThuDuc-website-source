@@ -305,14 +305,14 @@ app.use(cookieParser());
 
 // [OPTIMIZE] Giới hạn Payload Size để chống Memory Exhaustion
 app.use(express.json({
-  limit: '50kb', // Max 50KB cho JSON
+  limit: '1mb', // Tăng lên 1MB cho thoải mái
   verify: (req, res, buf) => {
     if (buf?.length) {
       req.rawBody = buf.toString("utf8");
     }
   }
 }));
-app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(mongoSanitize()); // [SECURITY] Ngăn chặn NoSQL Injection
 
 // [SECURITY] Chống Zalgo text
@@ -424,12 +424,17 @@ app.use((err, req, res, next) => {
         return next(err);
     }
 
+    // Đảm bảo siteOrigin luôn tồn tại cho template (phòng lỗi sớm)
+    const siteOrigin = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+
     res.status(500).render("error", { 
         title: "Lỗi Server", 
         message: "Đã có lỗi xảy ra", 
-        user: req.user || null, // Phòng trường hợp req.user chưa kịp có
-        activePage: 'error',    // <--- QUAN TRỌNG: Cứu tinh của bạn đây
-        error: process.env.NODE_ENV === 'development' ? err : {} // Chỉ hiện chi tiết lỗi khi dev
+        user: req.user || null, 
+        siteOrigin,             // <--- Cần thiết cho partials/header
+        currentPath: req.originalUrl || '/',
+        activePage: 'error',    
+        error: process.env.NODE_ENV === 'development' ? err : {} 
     });
 });
 

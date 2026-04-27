@@ -11,7 +11,7 @@
             : 'https://i.ibb.co/QBLckWj/Gemini-Generated-Image-wt3dr4wt3dr4wt3d-removebg-preview.png';
         const canonicalUrl = typeof metaUrl !== 'undefined' && metaUrl
             ? metaUrl
-            : (typeof buildAbsoluteUrl === 'function' ? buildAbsoluteUrl(siteOrigin, currentPath) : currentPath);
+            : (typeof buildAbsoluteUrl === 'function' ? buildAbsoluteUrl(typeof siteOrigin !== 'undefined' ? siteOrigin : '', currentPath) : currentPath);
         const socialTitle = typeof metaTitle !== 'undefined' && metaTitle
             ? metaTitle
             : (typeof title !== 'undefined' ? `${title} ✨` : 'Học Tập Thủ Đức ✨');
