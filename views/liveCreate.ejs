@@ -5,6 +5,11 @@
   .ai-tutor-trigger, .ai-tutor-container { display: none !important; }
 </style>
 
+<!-- Flatpickr for 24h time picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
   window.LIVE_STUDIO_BOOTSTRAP = <%- JSON.stringify({
     suggestedSchedule,
@@ -77,8 +82,8 @@
       </div>
 
       <label class="live-field" id="scheduleField" hidden>
-        <span>Thời gian bắt đầu</span>
-        <input type="datetime-local" id="scheduledFor" name="scheduledFor" value="<%= suggestedSchedule %>">
+        <span>Thời gian bắt đầu (24h)</span>
+        <input type="text" id="scheduledFor" name="scheduledFor" value="<%= suggestedSchedule %>" placeholder="Chọn thời gian...">
       </label>
     </section>
 
@@ -150,4 +155,16 @@
 </section>
 
 <script src="/js/liveStudio.js"></script>
+<script>
+  // Initialize Flatpickr for 24h format
+  document.addEventListener("DOMContentLoaded", () => {
+    flatpickr("#scheduledFor", {
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i",
+      minDate: "today",
+      locale: "vn", // We can add Vietnamese locale if needed, but 24h is the main goal
+    });
+  });
+</script>
 <%- include('partials/footer') %>

@@ -16,6 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const courseSelect = document.getElementById("courseId");
   const lessonSelect = document.getElementById("lessonId");
 
+  function getSelectedValue(name) {
+    const element = document.querySelector(`input[name="${name}"]:checked`);
+    return element ? element.value : null;
+  }
+
   function syncLayout() {
     const sessionMode = getSelectedValue("sessionMode");
     scheduleField.hidden = sessionMode !== "scheduled";
