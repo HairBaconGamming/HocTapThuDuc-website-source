@@ -652,16 +652,12 @@ body {
     font-size: 2rem;
   }
 
-  .live-filter-field {
-    min-width: 100%;
+  .live-filter-bar {
+    position: static;
   }
 
-  .live-filter-actions {
-    justify-content: stretch;
-  }
-  
-  .live-filter-actions .live-btn {
-    flex: 1;
+  .live-filter-field {
+    min-width: 100%;
   }
 
   .live-admin-strip {

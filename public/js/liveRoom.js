@@ -828,7 +828,9 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.shell.classList.toggle("sidebar-hidden");
     const isHidden = elements.shell.classList.contains("sidebar-hidden");
     if (elements.toggleSidebarBtn) {
-      elements.toggleSidebarBtn.innerHTML = isHidden ? '<i class="fas fa-comment-slash"></i>' : '<i class="fas fa-comments"></i>';
+      elements.toggleSidebarBtn.innerHTML = isHidden
+        ? '<i class="fas fa-chevron-up"></i>'
+        : '<i class="fas fa-chevron-down"></i>';
       elements.toggleSidebarBtn.classList.toggle("live-room-btn--danger", isHidden);
     }
   }
