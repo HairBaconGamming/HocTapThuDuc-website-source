@@ -626,6 +626,24 @@ async function emitSessionUpdated(sessionId) {
   return payload;
 }
 
+async function refreshAllActiveSessions() {
+  const activeSessions = await LiveSession.find({ status: "live" }).select("_id").lean();
+  if (activeSessions.length === 0) return;
+
+  // Sử dụng for...of hoặc Promise.all có giới hạn nếu số lượng phòng quá lớn
+  // Ở quy mô hiện tại, Promise.all là ổn.
+  await Promise.all(
+    activeSessions.map(async (s) => {
+      try {
+        await refreshSessionMetrics(s._id);
+        await emitSessionUpdated(s._id);
+      } catch (err) {
+        console.error(`[LiveService] Failed to auto-refresh session ${s._id}:`, err.message);
+      }
+    })
+  );
+}
+
 function emitLiveReminder(userIds, payload) {
   const io = getIo();
   if (!io || !Array.isArray(userIds) || userIds.length === 0) return;
@@ -1609,6 +1627,7 @@ module.exports = {
   listSessionChat,
   processProviderWebhook,
   recordLiveAttendancePing,
+  refreshAllActiveSessions,
   refreshSessionMetrics,
   serializeSession,
   startLiveSession,

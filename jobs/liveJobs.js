@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const mongoose = require("mongoose");
-const { dispatchScheduledLiveReminders } = require("../services/liveService");
+const { dispatchScheduledLiveReminders, refreshAllActiveSessions } = require("../services/liveService");
 
 let jobsStarted = false;
 
@@ -24,6 +24,11 @@ function startLiveJobs() {
     },
     { timezone: process.env.APP_TIMEZONE || "Asia/Bangkok" }
   );
+
+  // Cập nhật viewers mỗi 5 giây cho toàn bộ phòng live đang phát
+  setInterval(() => {
+    safeRun("refresh-viewers", () => refreshAllActiveSessions());
+  }, 5000);
 }
 
 module.exports = {
