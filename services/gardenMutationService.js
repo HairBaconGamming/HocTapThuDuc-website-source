@@ -440,7 +440,79 @@ async function processBatchActions(userId, actions = []) {
     for (const entry of safeActions) {
         const { action, payload } = entry || {};
         try {
-            if (action === 'water') {
+            if (action === 'water_bulk') {
+                const { targetIds } = payload || {};
+                if (!Array.isArray(targetIds)) { results.push({ action, success: false, msg: 'Thiếu danh sách ID.' }); continue; }
+                
+                let wateredCount = 0;
+                for (const uniqueId of targetIds) {
+                    if (garden.water <= 0) break;
+                    
+                    const item = garden.items.id(uniqueId);
+                    if (!item) continue;
+                    
+                    const plot = item.type === 'plot' ? item : findPlot(garden, item.x, item.y);
+                    if (!plot) continue;
+                    
+                    const plant = item.type === 'plant' ? item : findNonPlotOccupant(garden, plot.x, plot.y);
+                    
+                    garden.water -= 1;
+                    plot.lastWatered = new Date();
+                    if (plant?.type === 'plant') {
+                        plant.witherProgress = 0;
+                    }
+                    wateredCount++;
+                    results.push({ action: 'water', success: true, uniqueId });
+                }
+                
+                if (wateredCount > 0) {
+                    garden.waterCount = (garden.waterCount || 0) + wateredCount;
+                    needSave = true;
+                }
+                
+            } else if (action === 'harvest_bulk') {
+                const { targetIds } = payload || {};
+                if (!Array.isArray(targetIds)) { results.push({ action, success: false, msg: 'Thiếu danh sách ID.' }); continue; }
+                
+                let harvestedCount = 0;
+                const now = new Date();
+                
+                for (const uniqueId of targetIds) {
+                    const item = garden.items.id(uniqueId);
+                    if (!item || item.type !== 'plant') continue;
+                    
+                    const config = ASSETS.PLANTS[item.itemId];
+                    if (!config || item.stage < config.maxStage) continue;
+                    
+                    const rewardGold = Math.floor(Math.random() * ((config.rewardGold.max - config.rewardGold.min) + 1)) + config.rewardGold.min;
+                    const rewardXP = config.rewardXP || 10;
+                    const harvestYield = Math.max(1, Number(config.harvestYield || 1));
+                    
+                    garden.gold += rewardGold;
+                    garden.harvestCount = (garden.harvestCount || 0) + 1;
+                    garden.totalGoldCollected = (garden.totalGoldCollected || 0) + rewardGold;
+                    addInventoryItem(garden, item.itemId, harvestYield);
+                    
+                    cumulativeXP += rewardXP;
+                    harvestedCount++;
+                    
+                    if (config.isMultiHarvest) {
+                        const timePerStage = parseDuration(config.growthTime);
+                        item.stage = Number.isInteger(config.afterharvestStage) ? config.afterharvestStage : 0;
+                        item.growthProgress = item.stage * timePerStage;
+                        item.witherProgress = 0;
+                        item.isDead = false;
+                        item.lastUpdated = now;
+                    } else {
+                        garden.items.pull(item._id);
+                    }
+                    
+                    results.push({ action: 'harvest', success: true, uniqueId, goldReward: rewardGold, xpReward: rewardXP, harvestYield });
+                }
+                
+                if (harvestedCount > 0) needSave = true;
+
+            } else if (action === 'water') {
                 const { uniqueId } = payload || {};
                 const item = garden.items.id(uniqueId);
                 if (!item) { results.push({ action, success: false, msg: 'Vật phẩm không tồn tại.' }); continue; }

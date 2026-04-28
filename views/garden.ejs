@@ -342,12 +342,14 @@
                         <button id="statFertilizeBtn" class="plant-action-btn" type="button">
                             BÓN PHÂN (+1 CẤP)
                         </button>
-                        <button id="statWaterTypeBtn" class="plant-action-btn" type="button" style="display:none; background: #29b6f6; border-bottom-color: #039be5; margin-top: 8px;">
-                            TƯỚI NƯỚC LOẠI NÀY (<span id="statWaterTypeCount">0</span>)
-                        </button>
-                        <button id="statHarvestTypeBtn" class="plant-action-btn" type="button" style="display:none; background: #ef6c00; border-bottom-color: #e65100; margin-top: 8px;">
-                            THU HOẠCH LOẠI NÀY (<span id="statHarvestTypeCount">0</span>)
-                        </button>
+                        <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
+                            <button id="statWaterTypeBtn" class="plant-action-btn" type="button" style="display:none; flex: 1; margin-top: 0; padding: 8px; font-size: 14px; background: #29b6f6; border-bottom-color: #039be5;" title="Tưới nước cùng loại">
+                                <i class="fas fa-tint"></i> TƯỚI (<span id="statWaterTypeCount">0</span>)
+                            </button>
+                            <button id="statHarvestTypeBtn" class="plant-action-btn" type="button" style="display:none; flex: 1; margin-top: 0; padding: 8px; font-size: 14px; background: #ef6c00; border-bottom-color: #e65100;" title="Thu hoạch cùng loại">
+                                <i class="fas fa-sickle"></i> THU HOẠCH (<span id="statHarvestTypeCount">0</span>)
+                            </button>
+                        </div>
                         <div class="plant-action-meta" id="statFertilizerMeta">
                             Còn <span id="statFertilizerCount"><%= garden.fertilizer || 0 %></span> phân bón
                         </div>

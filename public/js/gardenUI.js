@@ -471,10 +471,10 @@
             return;
         }
 
-        const actions = toHarvest.map(item => ({
-            action: 'harvest',
-            payload: { uniqueId: item._id }
-        }));
+        const actions = [{
+            action: 'harvest_bulk',
+            payload: { targetIds: toHarvest.map(item => item._id) }
+        }];
 
         const response = await apiCall('/my-garden/batch', { actions });
         if (!response.success) {
@@ -488,11 +488,12 @@
         if (successes.length > 0) {
             let totalGold = 0;
             let totalXP = 0;
+            const scene = window.sceneContext;
+
             successes.forEach(res => {
                 totalGold += res.goldReward || 0;
                 totalXP += res.xpReward || 0;
                 
-                const scene = window.sceneContext;
                 if (scene) {
                     const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
                     if (sprite) {
@@ -520,10 +521,16 @@
                                 sprite.destroy();
                             }
                         }
-                        scene.showFloatingText?.(sprite.x, sprite.y - 64, `+${res.goldReward}G`, 'gold');
                     }
                 }
             });
+            
+            if (scene && scene.cameras && scene.cameras.main) {
+                const cx = scene.cameras.main.scrollX + scene.cameras.main.width / 2;
+                const cy = scene.cameras.main.scrollY + scene.cameras.main.height / 2;
+                scene.showFloatingText?.(cx, cy, `+${totalGold} Vàng`, 'gold');
+            }
+            
             showToast(`Thu hoạch thành công ${successes.length} cây! +${totalGold} Vàng, +${totalXP} XP`, 'success');
             if (window.gameEvents) window.gameEvents.emit('actionSuccess', { action: 'harvest_batch' });
         } else {
@@ -582,10 +589,10 @@
             return;
         }
 
-        const actions = targetPlants.map(item => ({
-            action: 'water',
-            payload: { uniqueId: item._id }
-        }));
+        const actions = [{
+            action: 'water_bulk',
+            payload: { targetIds: targetPlants.map(item => item._id) }
+        }];
 
         const response = await apiCall('/my-garden/batch', { actions });
         if (!response.success) {
@@ -597,6 +604,8 @@
 
         const successes = response.results.filter(r => r.success);
         if (successes.length > 0) {
+            const scene = window.sceneContext;
+            
             successes.forEach(res => {
                 const itemIndex = gardenData.items.findIndex(i => i._id === res.uniqueId);
                 if (itemIndex > -1) {
@@ -608,13 +617,14 @@
                         gardenData.items[plotIndex].lastWatered = new Date();
                     }
 
-                    const scene = window.sceneContext;
                     if (scene) {
                         const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
                         if (sprite) {
                             scene.updateThirstyIcon?.(sprite, false);
                             scene.updatePlantUI?.(sprite);
-                            scene.waterEmitter?.emitParticleAt(sprite.x, sprite.y - 32, 10);
+                            if (successes.length <= 30) {
+                                scene.waterEmitter?.emitParticleAt(sprite.x, sprite.y - 32, 10);
+                            }
                         }
                         const plotSprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === gardenData.items[plotIndex]?._id);
                         if (plotSprite) {
@@ -623,6 +633,13 @@
                     }
                 }
             });
+            
+            if (scene && scene.cameras && scene.cameras.main && successes.length > 30) {
+                const cx = scene.cameras.main.scrollX + scene.cameras.main.width / 2;
+                const cy = scene.cameras.main.scrollY + scene.cameras.main.height / 2;
+                scene.showFloatingText?.(cx, cy, `Đã tưới ${successes.length} cây!`, 'blue');
+            }
+
             showToast(`Đã tưới thành công ${successes.length} cây!`, 'success');
             if (window.gameEvents) window.gameEvents.emit('actionSuccess', { action: 'water_batch' });
         } else {
