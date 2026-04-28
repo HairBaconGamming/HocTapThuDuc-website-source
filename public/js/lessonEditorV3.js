@@ -2097,34 +2097,35 @@ function parseEditorShortcodes(text, markedParser) {
                     </div>
                     <div style="padding: 15px; color: #475569;">${innerHtml}</div>
                 </div>`;
-            htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+            const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+            const regex2 = new RegExp(id, 'g');
+            htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
         } else if (data.type === 'tabs') {
             let tabsHtml = `<div style="border: 1px solid #e2e8f0; margin: 10px 0; border-radius: 6px; background: #fff;">`;
-            let navHtml = `<div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 8px 0 8px; display: flex; gap: 4px; overflow-x: auto;">`;
-            let bodyHtml = `<div style="padding: 15px; color: #475569;">`;
+            let headerHtml = `<div style="background: #f8fafc; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #334155;"><i class="fas fa-columns" style="margin-right: 8px; color: #94a3b8;"></i> Tabs Preview (Stacked)</div>`;
+            let bodyHtml = `<div style="padding: 0;">`;
             
             const parts = data.content.split(/^==\s*(.*)$/m);
             for (let i = 1; i < parts.length; i += 2) {
                 const title = parts[i].trim();
                 const text = parts[i+1].trim();
                 const innerTextHtml = markedParser ? markedParser(text) : text;
-                const isActive = (i === 1) ? 'background: #fff; border: 1px solid #e2e8f0; border-bottom: 1px solid #fff; color: #2563eb; font-weight: 600;' : 'background: transparent; color: #64748b;';
-                navHtml += `<span style="padding: 8px 16px; border-radius: 6px 6px 0 0; font-size: 0.9rem; cursor: pointer; ${isActive} position: relative; top: 1px; white-space: nowrap;">${title}</span>`;
-                if (i === 1) {
-                    bodyHtml += `<div>${innerTextHtml}</div>`; 
-                }
+                bodyHtml += `<div style="padding: 15px; border-bottom: 1px dashed #e2e8f0;"><div style="font-size: 0.8rem; font-weight: bold; color: #2563eb; margin-bottom: 10px; text-transform: uppercase;">Tab: ${title}</div><div>${innerTextHtml}</div></div>`;
             }
-            navHtml += `</div>`;
             bodyHtml += `</div>`;
-            tabsHtml += navHtml + bodyHtml + `</div>`;
-            htmlContent = htmlContent.replace(`<p>${id}</p>`, tabsHtml).replace(id, tabsHtml);
+            tabsHtml += headerHtml + bodyHtml + `</div>`;
+            const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+            const regex2 = new RegExp(id, 'g');
+            htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
         } else if (data.type === 'mermaid') {
             const html = `
                 <div style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 15px; margin: 10px 0; border-radius: 6px;">
                     <div style="color: #166534; font-weight: bold; margin-bottom: 10px;"><i class="fas fa-project-diagram"></i> Sơ đồ Mermaid (Preview)</div>
                     <pre style="background: #fff; padding: 10px; border: 1px solid #bbf7d0; border-radius: 4px; overflow-x: auto; color: #064e3b; font-size: 0.85rem; font-family: monospace;">${data.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
                 </div>`;
-            htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+            const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+            const regex2 = new RegExp(id, 'g');
+            htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
         }
     }
     return htmlContent;

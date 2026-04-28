@@ -762,7 +762,9 @@ const LessonWorkspace = {
     <summary>${this.escapeHtml(data.title || 'Xem thêm')}</summary>
     <div class="lesson-accordion-content">${innerHtml}</div>
 </details>`;
-                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+                const regex2 = new RegExp(id, 'g');
+                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
             } else if (data.type === 'tabs') {
                 const tabs = [];
                 const parts = data.content.split(/^==\s*(.*)$/m);
@@ -788,10 +790,14 @@ const LessonWorkspace = {
                 tabsNav += '</div>';
                 tabsBody += '</div>';
                 const html = `<div class="lesson-tabs-container" id="${uniqueId}">${tabsNav}${tabsBody}</div>`;
-                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+                const regex2 = new RegExp(id, 'g');
+                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
             } else if (data.type === 'mermaid') {
                 const html = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(data.code)}</div></div>`;
-                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
+                const regex2 = new RegExp(id, 'g');
+                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
                 
                 // Initialize mermaid asynchronously for this block
                 window.setTimeout(() => {
@@ -2363,3 +2369,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+window.switchLessonTab = function(containerId, tabId, btnElement) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Deactivate all buttons
+    container.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.classList.remove('is-active'));
+    // Hide all panes
+    container.querySelectorAll('.lesson-tab-pane').forEach(pane => {
+        pane.classList.remove('is-visible');
+        pane.classList.add('hidden');
+    });
+    
+    // Activate clicked button
+    if (btnElement) btnElement.classList.add('is-active');
+    
+    // Show target pane
+    const targetPane = document.getElementById(tabId);
+    if (targetPane) {
+        targetPane.classList.remove('hidden');
+        targetPane.classList.add('is-visible');
+    }
+};
