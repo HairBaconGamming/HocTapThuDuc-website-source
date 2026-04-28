@@ -735,26 +735,27 @@ const LessonWorkspace = {
         let counter = 0;
 
         let processed = text.replace(/^:::\s*accordion\s*(.*?)$([\s\S]*?)^:::/gm, (match, title, content) => {
-            const id = `__SHORTCODE_${counter++}__`;
+            const id = `SHORTCODE_${counter++}`;
             placeholders[id] = { type: 'accordion', title: title.trim(), content: content.trim() };
-            return `\n\n${id}\n\n`;
+            return `\n\n<!--${id}-->\n\n`;
         });
 
         processed = processed.replace(/^:::\s*tabs\s*$([\s\S]*?)^:::/gm, (match, content) => {
-            const id = `__SHORTCODE_${counter++}__`;
+            const id = `SHORTCODE_${counter++}`;
             placeholders[id] = { type: 'tabs', content: content.trim() };
-            return `\n\n${id}\n\n`;
+            return `\n\n<!--${id}-->\n\n`;
         });
 
         processed = processed.replace(/^:::\s*mermaid\s*$([\s\S]*?)^:::/gm, (match, code) => {
-            const id = `__SHORTCODE_${counter++}__`;
+            const id = `SHORTCODE_${counter++}`;
             placeholders[id] = { type: 'mermaid', code: code.trim() };
-            return `\n\n${id}\n\n`;
+            return `\n\n<!--${id}-->\n\n`;
         });
 
         let htmlContent = typeof marked !== 'undefined' ? marked.parse(processed) : processed;
 
         for (const [id, data] of Object.entries(placeholders)) {
+            const commentTag = `<!--${id}-->`;
             if (data.type === 'accordion') {
                 const innerHtml = typeof marked !== 'undefined' ? marked.parse(data.content) : data.content;
                 const html = `
@@ -762,9 +763,8 @@ const LessonWorkspace = {
     <summary>${this.escapeHtml(data.title || 'Xem thêm')}</summary>
     <div class="lesson-accordion-content">${innerHtml}</div>
 </details>`;
-                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
-                const regex2 = new RegExp(id, 'g');
-                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
+                htmlContent = htmlContent.replace(new RegExp(`<p>\\s*${commentTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/p>`, 'g'), html);
+                htmlContent = htmlContent.split(commentTag).join(html);
             } else if (data.type === 'tabs') {
                 const tabs = [];
                 const parts = data.content.split(/^==\s*(.*)$/m);
@@ -790,16 +790,13 @@ const LessonWorkspace = {
                 tabsNav += '</div>';
                 tabsBody += '</div>';
                 const html = `<div class="lesson-tabs-container" id="${uniqueId}">${tabsNav}${tabsBody}</div>`;
-                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
-                const regex2 = new RegExp(id, 'g');
-                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
+                htmlContent = htmlContent.replace(new RegExp(`<p>\\s*${commentTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/p>`, 'g'), html);
+                htmlContent = htmlContent.split(commentTag).join(html);
             } else if (data.type === 'mermaid') {
                 const html = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(data.code)}</div></div>`;
-                const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
-                const regex2 = new RegExp(id, 'g');
-                htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
+                htmlContent = htmlContent.replace(new RegExp(`<p>\\s*${commentTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/p>`, 'g'), html);
+                htmlContent = htmlContent.split(commentTag).join(html);
                 
-                // Initialize mermaid asynchronously for this block
                 window.setTimeout(() => {
                     if (window.mermaid) {
                         try {
