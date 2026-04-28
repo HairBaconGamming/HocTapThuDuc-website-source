@@ -729,6 +729,86 @@ const LessonWorkspace = {
             .replace(/'/g, '&#39;');
     },
 
+    parseTextWithShortcodes(text) {
+        if (!text) return '';
+        const placeholders = {};
+        let counter = 0;
+
+        let processed = text.replace(/^:::\s*accordion\s*(.*?)$([\s\S]*?)^:::/gm, (match, title, content) => {
+            const id = `__SHORTCODE_${counter++}__`;
+            placeholders[id] = { type: 'accordion', title: title.trim(), content: content.trim() };
+            return `\n\n${id}\n\n`;
+        });
+
+        processed = processed.replace(/^:::\s*tabs\s*$([\s\S]*?)^:::/gm, (match, content) => {
+            const id = `__SHORTCODE_${counter++}__`;
+            placeholders[id] = { type: 'tabs', content: content.trim() };
+            return `\n\n${id}\n\n`;
+        });
+
+        processed = processed.replace(/^:::\s*mermaid\s*$([\s\S]*?)^:::/gm, (match, code) => {
+            const id = `__SHORTCODE_${counter++}__`;
+            placeholders[id] = { type: 'mermaid', code: code.trim() };
+            return `\n\n${id}\n\n`;
+        });
+
+        let htmlContent = typeof marked !== 'undefined' ? marked.parse(processed) : processed;
+
+        for (const [id, data] of Object.entries(placeholders)) {
+            if (data.type === 'accordion') {
+                const innerHtml = typeof marked !== 'undefined' ? marked.parse(data.content) : data.content;
+                const html = `
+<details class="lesson-accordion">
+    <summary>${this.escapeHtml(data.title || 'Xem thêm')}</summary>
+    <div class="lesson-accordion-content">${innerHtml}</div>
+</details>`;
+                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+            } else if (data.type === 'tabs') {
+                const tabs = [];
+                const parts = data.content.split(/^==\s*(.*)$/m);
+                for (let i = 1; i < parts.length; i += 2) {
+                    tabs.push({ title: parts[i].trim(), content: parts[i+1].trim() });
+                }
+                
+                const uniqueId = 'tabs-' + Math.random().toString(36).substr(2, 9);
+                let tabsNav = '<div class="lesson-tabs-nav">';
+                let tabsBody = '<div class="lesson-tabs-content">';
+
+                tabs.forEach((tab, tIdx) => {
+                    const isActive = tIdx === 0 ? 'is-active' : '';
+                    const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
+                    const tabId = `tab-${uniqueId}-${tIdx}`;
+                    
+                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" onclick="window.switchLessonTab('${uniqueId}', '${tabId}', this)">${this.escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
+                    
+                    const parsedContent = typeof marked !== 'undefined' ? marked.parse(tab.content) : tab.content;
+                    tabsBody += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${parsedContent}</div>`;
+                });
+
+                tabsNav += '</div>';
+                tabsBody += '</div>';
+                const html = `<div class="lesson-tabs-container" id="${uniqueId}">${tabsNav}${tabsBody}</div>`;
+                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+            } else if (data.type === 'mermaid') {
+                const html = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(data.code)}</div></div>`;
+                htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+                
+                // Initialize mermaid asynchronously for this block
+                window.setTimeout(() => {
+                    if (window.mermaid) {
+                        try {
+                            window.mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                        } catch (e) {
+                            console.error('Mermaid render error:', e);
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        return htmlContent;
+    },
+
     getSafeHref(rawUrl) {
         if (!rawUrl || typeof rawUrl !== 'string') return '';
         try {
@@ -758,7 +838,7 @@ const LessonWorkspace = {
                 break;
             }
             case 'text': {
-                let htmlContent = marked.parse(block.data?.text || '');
+                let htmlContent = this.parseTextWithShortcodes(block.data?.text || '');
                 htmlContent = this.sanitizeHtml(htmlContent);
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
@@ -900,72 +980,6 @@ const LessonWorkspace = {
                 }, 20);
                 break;
             }
-            case 'accordion': {
-                const title = block.data?.title || 'Xem thêm';
-                const content = this.sanitizeHtml(marked.parse(block.data?.content || ''));
-                wrapper.innerHTML = `
-                    <details class="lesson-accordion">
-                        <summary>${this.escapeHtml(title)}</summary>
-                        <div class="lesson-accordion-content">${content}</div>
-                    </details>
-                `;
-                break;
-            }
-            case 'tabs': {
-                const tabs = block.data?.tabs || [];
-                if (tabs.length === 0) break;
-                const uniqueId = `tabs-${index}`;
-                
-                let tabsNav = '<div class="lesson-tabs-nav">';
-                let tabsContent = '<div class="lesson-tabs-content">';
-                
-                tabs.forEach((tab, tIdx) => {
-                    const isActive = tIdx === 0 ? 'is-active' : '';
-                    const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
-                    const tabId = `tab-${uniqueId}-${tIdx}`;
-                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-target="${tabId}">${this.escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
-                    
-                    const htmlContent = this.sanitizeHtml(marked.parse(tab.content || ''));
-                    tabsContent += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${htmlContent}</div>`;
-                });
-                
-                tabsNav += '</div>';
-                tabsContent += '</div>';
-                
-                wrapper.innerHTML = `<div class="lesson-tabs-container">${tabsNav}${tabsContent}</div>`;
-                
-                window.setTimeout(() => {
-                    const navBtns = wrapper.querySelectorAll('.lesson-tab-btn');
-                    navBtns.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            navBtns.forEach(b => b.classList.remove('is-active'));
-                            wrapper.querySelectorAll('.lesson-tab-pane').forEach(p => {
-                                p.classList.remove('is-visible');
-                                p.classList.add('hidden');
-                            });
-                            btn.classList.add('is-active');
-                            const targetPane = wrapper.querySelector(`#${btn.dataset.tabTarget}`);
-                            if (targetPane) {
-                                targetPane.classList.remove('hidden');
-                                targetPane.classList.add('is-visible');
-                            }
-                        });
-                    });
-                }, 10);
-                break;
-            }
-            case 'mermaid': {
-                const code = block.data?.code || '';
-                wrapper.innerHTML = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(code)}</div></div>`;
-                window.setTimeout(() => {
-                    if (window.mermaid) {
-                        try {
-                            window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
-                        } catch (e) {
-                            console.error('Mermaid render error:', e);
-                        }
-                    }
-                }, 50);
                 break;
             }
             case 'code': {

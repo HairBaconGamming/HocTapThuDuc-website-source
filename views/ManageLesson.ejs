@@ -348,9 +348,6 @@
                                             <div class="menu-item" data-block-type="code"><div class="menu-icon" style="background:#1e293b; color:#38bdf8"><i class="fas fa-code"></i></div><span>Code snippet</span></div>
                                             <div class="menu-item" data-block-type="question"><div class="menu-icon" style="background:#fef3c7; color:#d97706"><i class="fas fa-question-circle"></i></div><span>Câu hỏi &amp; bài tập</span></div>
                                             <div class="menu-item" data-block-type="callout"><div class="menu-icon" style="background:#f3e8ff; color:#9333ea"><i class="fas fa-exclamation"></i></div><span>Ghi chú</span></div>
-                                            <div class="menu-item" data-block-type="accordion"><div class="menu-icon" style="background:#e0e7ff; color:#4f46e5"><i class="fas fa-chevron-down"></i></div><span>Accordion (Ẩn/Hiện)</span></div>
-                                            <div class="menu-item" data-block-type="tabs"><div class="menu-icon" style="background:#fce7f3; color:#db2777"><i class="fas fa-folder-open"></i></div><span>Tabs</span></div>
-                                            <div class="menu-item" data-block-type="mermaid"><div class="menu-icon" style="background:#ccfbf1; color:#0d9488"><i class="fas fa-project-diagram"></i></div><span>Sơ đồ (Mermaid)</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -518,19 +515,8 @@
                                             <i class="fas fa-file-alt"></i> CẤU HÌNH BÀI HỌC
                                             <span id="publishStatusBadge" class="status-badge" style="margin-left:auto; font-size:0.7rem;">NHÁP</span>
                                         </div>
-                                        <div class="control-item">
-                                            <span class="control-label">Loại bài học</span>
-                                            <select name="type" id="lessonTypeSelect" class="studio-input">
-                                                <option value="concept" <%= (!lesson || lesson.type === 'theory' || lesson.type === 'concept') ? 'selected' : '' %>>📘 Nền Tảng (Lý thuyết)</option>
-                                                <option value="masterclass" <%= (lesson && (lesson.type === 'video' || lesson.type === 'masterclass')) ? 'selected' : '' %>>▶️ Masterclass (Video)</option>
-                                                <option value="checkpoint" <%= (lesson && (lesson.type === 'quiz' || lesson.type === 'checkpoint')) ? 'selected' : '' %>>⚔️ Thực Chiến (Quiz)</option>
-                                                <option value="lab" <%= (lesson && (lesson.type === 'code' || lesson.type === 'lab')) ? 'selected' : '' %>>💻 Lab (Code IDE)</option>
-                                            </select>
-                                        </div>
-                                        <div class="control-item">
-                                            <span class="control-label">Điểm sàn (chỉ áp dụng Thực Chiến)</span>
-                                            <input type="number" name="passingScore" id="lessonPassingScore" class="studio-input" value="<%= lesson ? (lesson.passingScore || 60) : 60 %>" min="0" max="100">
-                                        </div>
+                                        
+                                        <!-- Đã bỏ: Dropdown Chọn Loại Bài Học và Điểm sàn (passingScore) -->
                                         <div class="control-item">
                                             <span class="control-label">Quyền truy cập</span>
                                             <div class="switch-wrapper">

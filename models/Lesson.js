@@ -22,8 +22,8 @@ const lessonSchema = new mongoose.Schema({
     order: { type: Number, default: 0 }, // Thứ tự bài học trong chương
 
     // --- PHÂN LOẠI & NỘI DUNG ---
-    category: { type: String },
-    type: { type: String, default: 'theory' }, // theory, video, quiz, essay, document...
+    // category: { type: String },
+    type: { type: String, default: 'concept' }, // Auto-detected: concept, masterclass, checkpoint, lab
     
     // --- DỮ LIỆU EDITOR ---
     editorData: { type: Object }, // Lưu JSON từ Editor mới
@@ -41,14 +41,15 @@ const lessonSchema = new mongoose.Schema({
     views: { type: Number, default: 0 },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
-    // --- 4-TYPE LESSON SYSTEM ---
-    passingScore: { type: Number, default: 60, min: 0, max: 100 },  // Checkpoint: điểm sàn để qua ải
-    labTemplate: { type: Object, default: null },                     // Lab: starter code { language, starterCode, expectedOutput }
-    videoMilestones: [{                                               // Masterclass: mốc thời gian rớt vàng
-        percent: { type: Number, required: true },
-        rewardType: { type: String, default: 'gold' },
-        rewardAmount: { type: Number, default: 5 }
-    }]
+    // --- 4-TYPE LESSON SYSTEM (DEPRECATED) ---
+    // Hệ thống phân loại cũ đã bị loại bỏ. Bài học giờ là một trang Canvas đa năng chứa nhiều Block.
+    // passingScore: { type: Number, default: 60, min: 0, max: 100 },  // Checkpoint: điểm sàn để qua ải
+    // labTemplate: { type: Object, default: null },                     // Lab: starter code { language, starterCode, expectedOutput }
+    // videoMilestones: [{                                               // Masterclass: mốc thời gian rớt vàng
+    //     percent: { type: Number, required: true },
+    //     rewardType: { type: String, default: 'gold' },
+    //     rewardAmount: { type: Number, default: 5 }
+    // }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Lesson', lessonSchema);

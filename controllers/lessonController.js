@@ -52,11 +52,28 @@ exports.saveLessonAjax = async (req, res) => {
         let currentLessonDoc;
         let existingLesson = null;
 
+        // --- [NEW] AUTO-DETECT LESSON TYPE TỪ BLOCKS ---
+        let inferredType = 'concept'; // Default
+        try {
+            const parsedBlocks = JSON.parse(content);
+            if (Array.isArray(parsedBlocks)) {
+                if (parsedBlocks.some(b => b.type === 'code' || b.type === 'lab')) {
+                    inferredType = 'lab';
+                } else if (parsedBlocks.some(b => b.type === 'quiz' || b.type === 'question')) {
+                    inferredType = 'checkpoint';
+                } else if (parsedBlocks.some(b => b.type === 'video')) {
+                    inferredType = 'masterclass';
+                }
+            }
+        } catch(e) {
+            console.error('Không thể parse nội dung bài học để nhận diện icon:', e.message);
+        }
+
         // --- 1. XỬ LÝ BÀI HỌC HIỆN TẠI (Main Lesson) ---
         const lessonPayload = {
             title,
             content,
-            type,
+            type: inferredType, // Tự động gán thay vì dùng cứng req.body.type
             subject: normalizedSubjectId,
             subjectId: normalizedSubjectId,
             courseId: courseId || undefined,
