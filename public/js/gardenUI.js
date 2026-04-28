@@ -533,6 +533,105 @@
         hidePlantStats();
     }
 
+    async function waterMultiplePlants(filterFn) {
+        if (!window.isOwner) return;
+
+        const items = getGardenItems();
+        const now = Date.now();
+        
+        let targetPlants = items.filter(item => {
+            if (item.type !== 'plant' || item.isDead) return false;
+            return filterFn ? filterFn(item) : true;
+        });
+
+        if (targetPlants.length === 0) {
+            showToast('Không có cây nào cần tưới!', 'info');
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Tưới nước',
+            text: 'Bạn có muốn tưới luôn những cây đã được tưới (đất ẩm) không?',
+            icon: 'question',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: 'Chỉ cây khô',
+            denyButtonText: 'Tưới tất cả',
+            cancelButtonText: 'Hủy'
+        });
+
+        if (result.isDismissed) return;
+
+        const waterAll = result.isDenied;
+
+        targetPlants = targetPlants.filter(item => {
+            if (waterAll) return true;
+            const plot = items.find(p => p.type === 'plot' && p.x === item.x && p.y === item.y);
+            const isWet = Boolean(plot?.lastWatered) && (now - new Date(plot.lastWatered).getTime() < 24 * 3600000);
+            return !isWet;
+        });
+
+        if (targetPlants.length === 0) {
+            showToast('Tất cả các cây được chọn đều đã được tưới!', 'info');
+            return;
+        }
+
+        const availableWater = gardenData.water || 0;
+        if (availableWater < targetPlants.length) {
+            showToast(`Bạn chỉ còn ${availableWater} nước, không đủ để tưới ${targetPlants.length} cây!`, 'warning');
+            return;
+        }
+
+        const actions = targetPlants.map(item => ({
+            action: 'water',
+            payload: { uniqueId: item._id }
+        }));
+
+        const response = await apiCall('/my-garden/batch', { actions });
+        if (!response.success) {
+            showToast(response.msg, 'warning');
+            return;
+        }
+
+        updateHUD(response.garden);
+
+        const successes = response.results.filter(r => r.success);
+        if (successes.length > 0) {
+            successes.forEach(res => {
+                const itemIndex = gardenData.items.findIndex(i => i._id === res.uniqueId);
+                if (itemIndex > -1) {
+                    const itemData = gardenData.items[itemIndex];
+                    itemData.witherProgress = 0;
+                    
+                    const plotIndex = gardenData.items.findIndex(p => p.type === 'plot' && p.x === itemData.x && p.y === itemData.y);
+                    if (plotIndex > -1) {
+                        gardenData.items[plotIndex].lastWatered = new Date();
+                    }
+
+                    const scene = window.sceneContext;
+                    if (scene) {
+                        const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
+                        if (sprite) {
+                            scene.updateThirstyIcon?.(sprite, false);
+                            scene.updatePlantUI?.(sprite);
+                            scene.waterEmitter?.emitParticleAt(sprite.x, sprite.y - 32, 10);
+                        }
+                        const plotSprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === gardenData.items[plotIndex]?._id);
+                        if (plotSprite) {
+                            plotSprite.setTexture('soil_wet').setDisplaySize(64, 64);
+                        }
+                    }
+                }
+            });
+            showToast(`Đã tưới thành công ${successes.length} cây!`, 'success');
+            if (window.gameEvents) window.gameEvents.emit('actionSuccess', { action: 'water_batch' });
+        } else {
+            showToast('Không thể tưới nước.', 'warning');
+        }
+        
+        hidePlantStats();
+    }
+
     function formatQuestReward(rewards = {}) {
         const rewardParts = [];
 
@@ -810,34 +909,55 @@
                 disabledReason
             });
 
-            const typeBtn = document.getElementById('statHarvestTypeBtn');
-            const typeCountSpan = document.getElementById('statHarvestTypeCount');
+            const typeHarvestBtn = document.getElementById('statHarvestTypeBtn');
+            const typeHarvestCountSpan = document.getElementById('statHarvestTypeCount');
+            const typeWaterBtn = document.getElementById('statWaterTypeBtn');
+            const typeWaterCountSpan = document.getElementById('statWaterTypeCount');
             const fertilizerMeta = document.getElementById('statFertilizerMeta');
             const fertBtn = document.getElementById('statFertilizeBtn');
             
-            if (window.isOwner && stage >= maxStage && !itemData.isDead) {
+            if (window.isOwner && !itemData.isDead) {
                 const items = getGardenItems();
-                const harvestableCount = items.filter(i => {
-                    if (i.type !== 'plant' || i.isDead || i.itemId !== itemData.itemId) return false;
-                    const cfg = gardenAssets.PLANTS?.[i.itemId];
-                    return cfg && i.stage >= (cfg.maxStage || 3);
-                }).length;
                 
-                if (typeBtn && typeCountSpan) {
+                // Harvest type button logic
+                if (stage >= maxStage && typeHarvestBtn && typeHarvestCountSpan) {
+                    const harvestableCount = items.filter(i => {
+                        if (i.type !== 'plant' || i.isDead || i.itemId !== itemData.itemId) return false;
+                        const cfg = gardenAssets.PLANTS?.[i.itemId];
+                        return cfg && i.stage >= (cfg.maxStage || 3);
+                    }).length;
+                    
                     if (harvestableCount > 1) {
-                        typeBtn.style.display = 'block';
-                        typeCountSpan.innerText = harvestableCount;
-                        typeBtn.setAttribute('data-harvest-item-id', itemData.itemId);
+                        typeHarvestBtn.style.display = 'block';
+                        typeHarvestCountSpan.innerText = harvestableCount;
+                        typeHarvestBtn.setAttribute('data-harvest-item-id', itemData.itemId);
                         if(fertilizerMeta) fertilizerMeta.style.display = 'none';
                         if(fertBtn) fertBtn.style.display = 'none';
                     } else {
-                        typeBtn.style.display = 'none';
+                        typeHarvestBtn.style.display = 'none';
                         if(fertilizerMeta) fertilizerMeta.style.display = 'block';
                         if(fertBtn) fertBtn.style.display = 'block';
                     }
+                } else {
+                    if (typeHarvestBtn) typeHarvestBtn.style.display = 'none';
+                    if (fertilizerMeta) fertilizerMeta.style.display = 'block';
+                    if (fertBtn) fertBtn.style.display = 'block';
+                }
+
+                // Water type button logic
+                if (typeWaterBtn && typeWaterCountSpan) {
+                    const sameTypeCount = items.filter(i => i.type === 'plant' && !i.isDead && i.itemId === itemData.itemId).length;
+                    if (sameTypeCount > 1) {
+                        typeWaterBtn.style.display = 'block';
+                        typeWaterCountSpan.innerText = sameTypeCount;
+                        typeWaterBtn.setAttribute('data-water-item-id', itemData.itemId);
+                    } else {
+                        typeWaterBtn.style.display = 'none';
+                    }
                 }
             } else {
-                if (typeBtn) typeBtn.style.display = 'none';
+                if (typeHarvestBtn) typeHarvestBtn.style.display = 'none';
+                if (typeWaterBtn) typeWaterBtn.style.display = 'none';
                 if (fertilizerMeta) fertilizerMeta.style.display = 'block';
                 if (fertBtn) fertBtn.style.display = 'block';
             }
@@ -1198,6 +1318,17 @@
 
         document.getElementById('harvestAllBtn')?.addEventListener('click', () => {
             harvestMultiplePlants();
+        });
+
+        document.getElementById('statWaterTypeBtn')?.addEventListener('click', (e) => {
+            const itemId = e.target.closest('button').getAttribute('data-water-item-id');
+            if (itemId) {
+                waterMultiplePlants(item => item.itemId === itemId);
+            }
+        });
+
+        document.getElementById('waterAllBtn')?.addEventListener('click', () => {
+            waterMultiplePlants();
         });
 
         document.getElementById('questModalList')?.addEventListener('click', (event) => {

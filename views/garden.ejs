@@ -258,6 +258,9 @@
                         <i class="fas fa-box-open"></i>
                     </button>
                     <% if (isOwner) { %>
+                    <button class="garden-quick-btn water-all-btn" type="button" id="waterAllBtn" title="Tưới nước tất cả" style="background: #29b6f6; border-bottom-color: #039be5; color: white;">
+                        <i class="fas fa-tint"></i>
+                    </button>
                     <button class="garden-quick-btn harvest-all-btn" type="button" id="harvestAllBtn" title="Thu hoạch tất cả nông sản đã chín" style="background: #ef6c00; border-bottom-color: #e65100; color: white;">
                         <i class="fas fa-sickle"></i>
                     </button>
@@ -338,6 +341,9 @@
                     <div class="plant-action-row" id="plantActionRow">
                         <button id="statFertilizeBtn" class="plant-action-btn" type="button">
                             BÓN PHÂN (+1 CẤP)
+                        </button>
+                        <button id="statWaterTypeBtn" class="plant-action-btn" type="button" style="display:none; background: #29b6f6; border-bottom-color: #039be5; margin-top: 8px;">
+                            TƯỚI NƯỚC LOẠI NÀY (<span id="statWaterTypeCount">0</span>)
                         </button>
                         <button id="statHarvestTypeBtn" class="plant-action-btn" type="button" style="display:none; background: #ef6c00; border-bottom-color: #e65100; margin-top: 8px;">
                             THU HOẠCH LOẠI NÀY (<span id="statHarvestTypeCount">0</span>)
