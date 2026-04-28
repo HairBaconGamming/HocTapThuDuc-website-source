@@ -295,6 +295,16 @@ const LessonWorkspace = {
                 return;
             }
 
+            const lessonTabBtn = event.target.closest('.lesson-tab-btn[data-tab-target]');
+            if (lessonTabBtn) {
+                const containerId = lessonTabBtn.dataset.tabContainer;
+                const tabId = lessonTabBtn.dataset.tabTarget;
+                if (containerId && tabId) {
+                    window.switchLessonTab(containerId, tabId, lessonTabBtn);
+                }
+                return;
+            }
+
             const toggleCodeButton = event.target.closest('[data-toggle-code]');
             if (toggleCodeButton) {
                 this.toggleCodeExpansion(toggleCodeButton);
@@ -781,7 +791,7 @@ const LessonWorkspace = {
                     const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
                     const tabId = `tab-${uniqueId}-${tIdx}`;
                     
-                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" onclick="window.switchLessonTab('${uniqueId}', '${tabId}', this)">${this.escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
+                    tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-container="${uniqueId}" data-tab-target="${tabId}">${this.escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
                     
                     const parsedContent = typeof marked !== 'undefined' ? marked.parse(tab.content) : tab.content;
                     tabsBody += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${parsedContent}</div>`;
@@ -793,19 +803,10 @@ const LessonWorkspace = {
                 htmlContent = htmlContent.replace(new RegExp(`<p>\\s*${commentTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/p>`, 'g'), html);
                 htmlContent = htmlContent.split(commentTag).join(html);
             } else if (data.type === 'mermaid') {
-                const html = `<div class="lesson-mermaid-container"><div class="mermaid">${this.escapeHtml(data.code)}</div></div>`;
+                const mermaidId = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                const html = `<div class="lesson-mermaid-container"><pre class="mermaid" id="${mermaidId}">${this.escapeHtml(data.code)}</pre></div>`;
                 htmlContent = htmlContent.replace(new RegExp(`<p>\\s*${commentTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/p>`, 'g'), html);
                 htmlContent = htmlContent.split(commentTag).join(html);
-                
-                window.setTimeout(() => {
-                    if (window.mermaid) {
-                        try {
-                            window.mermaid.init(undefined, document.querySelectorAll('.mermaid'));
-                        } catch (e) {
-                            console.error('Mermaid render error:', e);
-                        }
-                    }
-                }, 100);
             }
         }
 
@@ -842,13 +843,28 @@ const LessonWorkspace = {
             }
             case 'text': {
                 let htmlContent = this.parseTextWithShortcodes(block.data?.text || '');
-                htmlContent = this.sanitizeHtml(htmlContent);
+                htmlContent = this.sanitizeHtml(htmlContent, {
+                    ADD_TAGS: ['details', 'summary', 'pre', 'button'],
+                    ADD_ATTR: ['open', 'data-tab-container', 'data-tab-target', 'id', 'class']
+                });
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
                 tempDiv.querySelectorAll('h1, h2, h3, h4').forEach((heading, headingIndex) => {
                     if (!heading.id) heading.id = `md-heading-${index}-${headingIndex}`;
                 });
                 wrapper.innerHTML = tempDiv.innerHTML;
+
+                // Initialize mermaid diagrams in this block
+                wrapper.querySelectorAll('pre.mermaid').forEach(el => {
+                    if (window.mermaid) {
+                        try {
+                            window.mermaid.run({ nodes: [el] });
+                        } catch (e) {
+                            // Fallback for older mermaid API
+                            try { window.mermaid.init(undefined, el); } catch (e2) { console.error('Mermaid render error:', e2); }
+                        }
+                    }
+                });
                 break;
             }
             case 'image': {
@@ -1529,6 +1545,116 @@ const LessonWorkspace = {
             if (text) text.textContent = 'Hoàn thành bài học';
             Swal.fire('Lỗi', error.message || 'Không thể hoàn thành bài học.', 'error');
         }
+    },
+
+    initReaderSettings() {
+        const btn = document.getElementById('btnReadingSettings');
+        const dropdown = document.getElementById('readerSettingsDropdown');
+        if (!btn || !dropdown) return;
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            btn.classList.toggle('is-active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                btn.classList.remove('is-active');
+            }
+        });
+
+        const settings = JSON.parse(localStorage.getItem('httd_reading_settings') || '{}');
+        const applySettings = () => {
+            const page = document.querySelector('.lesson-detail-page');
+            const root = document.documentElement;
+
+            if (settings.theme) page.dataset.readerTheme = settings.theme;
+
+            if (settings.fontsize === 'small') root.style.setProperty('--reader-font-size', '0.95rem');
+            else if (settings.fontsize === 'large') root.style.setProperty('--reader-font-size', '1.15rem');
+            else root.style.setProperty('--reader-font-size', '1.05rem');
+
+            if (settings.font === 'serif') root.style.setProperty('--reader-font-family', 'Georgia, serif');
+            else if (settings.font === 'dyslexic') root.style.setProperty('--reader-font-family', '"OpenDyslexic", sans-serif');
+            else root.style.setProperty('--reader-font-family', 'var(--lesson-font-body, system-ui)');
+
+            dropdown.querySelectorAll('button[data-rs-action]').forEach(b => {
+                const action = b.dataset.rsAction;
+                const val = b.dataset.rsVal;
+                b.classList.toggle('is-active', val === (settings[action] || 'normal'));
+            });
+        };
+
+        if (!settings.fontsize) settings.fontsize = 'normal';
+        if (!settings.theme) settings.theme = 'light';
+        if (!settings.font) settings.font = 'sans';
+        applySettings();
+
+        dropdown.addEventListener('click', (e) => {
+            const target = e.target.closest('button[data-rs-action]');
+            if (!target) return;
+            const action = target.dataset.rsAction;
+            const val = target.dataset.rsVal;
+
+            settings[action] = val;
+            localStorage.setItem('httd_reading_settings', JSON.stringify(settings));
+            applySettings();
+        });
+    },
+
+    initReadingProgress() {
+        const scrollArea = this.getScrollContainer();
+        const progressBar = document.getElementById('readerProgressBar');
+        const ticksContainer = document.getElementById('readerProgressTicks');
+        if (!scrollArea || !progressBar || !ticksContainer) return;
+
+        let tickElements = [];
+
+        const updateProgress = () => {
+            const scrollTop = scrollArea.scrollTop;
+            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+            const percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+
+            tickElements.forEach(tick => {
+                if (percent >= tick.percent) tick.el.classList.add('is-passed');
+                else tick.el.classList.remove('is-passed');
+            });
+        };
+
+        const generateTicks = () => {
+            ticksContainer.innerHTML = '';
+            tickElements = [];
+            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+            if (scrollHeight <= 0) return;
+
+            const headings = scrollArea.querySelectorAll('.lesson-reading-surface h2, .lesson-reading-surface h3');
+            headings.forEach(h => {
+                const offset = h.offsetTop;
+                const percent = (offset / scrollArea.scrollHeight) * 100;
+
+                const tick = document.createElement('div');
+                tick.className = 'reader-progress-tick';
+                tick.style.left = `${percent}%`;
+                ticksContainer.appendChild(tick);
+
+                tickElements.push({ el: tick, percent: (offset / scrollHeight) * 100 });
+            });
+        };
+
+        scrollArea.addEventListener('scroll', updateProgress);
+
+        setTimeout(() => {
+            generateTicks();
+            updateProgress();
+        }, 1000);
+
+        window.addEventListener('resize', () => {
+            generateTicks();
+            updateProgress();
+        });
     }
 };
 
@@ -2196,122 +2322,6 @@ const LessonPresenceManager = {
         }, 2000);
     },
 
-    initReaderSettings() {
-        const btn = document.getElementById('btnReadingSettings');
-        const dropdown = document.getElementById('readerSettingsDropdown');
-        if (!btn || !dropdown) return;
-
-        // Toggle menu
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('hidden');
-            btn.classList.toggle('is-active');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-                btn.classList.remove('is-active');
-            }
-        });
-
-        // Load settings
-        const settings = JSON.parse(localStorage.getItem('httd_reading_settings') || '{}');
-        const applySettings = () => {
-            const page = document.querySelector('.lesson-detail-page');
-            const root = document.documentElement;
-
-            if (settings.theme) page.dataset.readerTheme = settings.theme;
-            
-            if (settings.fontsize === 'small') root.style.setProperty('--reader-font-size', '0.95rem');
-            else if (settings.fontsize === 'large') root.style.setProperty('--reader-font-size', '1.15rem');
-            else root.style.setProperty('--reader-font-size', '1.05rem');
-
-            if (settings.font === 'serif') root.style.setProperty('--reader-font-family', 'Georgia, serif');
-            else if (settings.font === 'dyslexic') root.style.setProperty('--reader-font-family', '"OpenDyslexic", sans-serif');
-            else root.style.setProperty('--reader-font-family', 'var(--lesson-font-body, system-ui)');
-            
-            // Sync UI
-            dropdown.querySelectorAll('button[data-rs-action]').forEach(b => {
-                const action = b.dataset.rsAction;
-                const val = b.dataset.rsVal;
-                b.classList.toggle('is-active', val === (settings[action] || 'normal'));
-            });
-        };
-
-        // Defaults
-        if (!settings.fontsize) settings.fontsize = 'normal';
-        if (!settings.theme) settings.theme = 'light';
-        if (!settings.font) settings.font = 'sans';
-        applySettings();
-
-        // Handle clicks
-        dropdown.addEventListener('click', (e) => {
-            const target = e.target.closest('button[data-rs-action]');
-            if (!target) return;
-            const action = target.dataset.rsAction;
-            const val = target.dataset.rsVal;
-
-            settings[action] = val;
-            localStorage.setItem('httd_reading_settings', JSON.stringify(settings));
-            applySettings();
-        });
-    },
-
-    initReadingProgress() {
-        const scrollArea = this.getScrollContainer();
-        const progressBar = document.getElementById('readerProgressBar');
-        const ticksContainer = document.getElementById('readerProgressTicks');
-        if (!scrollArea || !progressBar || !ticksContainer) return;
-
-        let tickElements = [];
-
-        const updateProgress = () => {
-            const scrollTop = scrollArea.scrollTop;
-            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
-            const percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-            progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
-
-            // Highlight passed ticks
-            tickElements.forEach(tick => {
-                if (percent >= tick.percent) tick.el.classList.add('is-passed');
-                else tick.el.classList.remove('is-passed');
-            });
-        };
-
-        const generateTicks = () => {
-            ticksContainer.innerHTML = '';
-            tickElements = [];
-            const scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
-            if (scrollHeight <= 0) return;
-
-            const headings = scrollArea.querySelectorAll('.lesson-reading-surface h2, .lesson-reading-surface h3');
-            headings.forEach(h => {
-                const offset = h.offsetTop;
-                const percent = (offset / scrollArea.scrollHeight) * 100;
-                
-                const tick = document.createElement('div');
-                tick.className = 'reader-progress-tick';
-                tick.style.left = `${percent}%`;
-                ticksContainer.appendChild(tick);
-                
-                tickElements.push({ el: tick, percent: (offset / scrollHeight) * 100 });
-            });
-        };
-
-        scrollArea.addEventListener('scroll', updateProgress);
-        
-        // Wait for content render
-        setTimeout(() => {
-            generateTicks();
-            updateProgress();
-        }, 1000);
-        
-        window.addEventListener('resize', () => {
-            generateTicks();
-            updateProgress();
-        });
-    }
 };
 
 window.LessonWorkspace = LessonWorkspace;

@@ -3991,7 +3991,7 @@ body.lesson-detail-mode .swal2-validation-message {
 }
 
 .lesson-accordion summary::after {
-    content: '\\f078';
+    content: '\f078';
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     color: var(--lesson-muted);
