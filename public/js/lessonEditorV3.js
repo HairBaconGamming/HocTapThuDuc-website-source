@@ -2067,6 +2067,13 @@ function parseEditorShortcodes(text, markedParser) {
     const placeholders = {};
     let counter = 0;
 
+    const escapeHtml = (value) => String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
     let processed = text.replace(/^:::\s*accordion\s*(.*?)$([\s\S]*?)^:::/gm, (match, title, content) => {
         const id = `__SHORTCODE_${counter++}__`;
         placeholders[id] = { type: 'accordion', title: title.trim(), content: content.trim() };
@@ -2088,41 +2095,45 @@ function parseEditorShortcodes(text, markedParser) {
     let htmlContent = markedParser ? markedParser(processed) : processed;
 
     for (const [id, data] of Object.entries(placeholders)) {
+        let html = '';
         if (data.type === 'accordion') {
             const innerHtml = markedParser ? markedParser(data.content) : data.content;
-            const html = `
-                <div style="border: 1px solid #e2e8f0; margin: 10px 0; border-radius: 6px; background: #fff;">
-                    <div style="background: #f8fafc; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #334155;">
-                        <i class="fas fa-chevron-right" style="margin-right: 8px; color: #94a3b8;"></i> ${data.title || 'Mở rộng'}
-                    </div>
-                    <div style="padding: 15px; color: #475569;">${innerHtml}</div>
-                </div>`;
-            const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
-            const regex2 = new RegExp(id, 'g');
-            htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
+            html = `
+<details class="lesson-accordion">
+    <summary>${escapeHtml(data.title || 'Xem thêm')}</summary>
+    <div class="lesson-accordion-content">${innerHtml}</div>
+</details>`;
         } else if (data.type === 'tabs') {
-            let tabsHtml = `<div style="border: 1px solid #e2e8f0; margin: 10px 0; border-radius: 6px; background: #fff;">`;
-            let headerHtml = `<div style="background: #f8fafc; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #334155;"><i class="fas fa-columns" style="margin-right: 8px; color: #94a3b8;"></i> Tabs Preview (Stacked)</div>`;
-            let bodyHtml = `<div style="padding: 0;">`;
-            
+            const tabs = [];
             const parts = data.content.split(/^==\s*(.*)$/m);
             for (let i = 1; i < parts.length; i += 2) {
-                const title = parts[i].trim();
-                const text = parts[i+1].trim();
-                const innerTextHtml = markedParser ? markedParser(text) : text;
-                bodyHtml += `<div style="padding: 15px; border-bottom: 1px dashed #e2e8f0;"><div style="font-size: 0.8rem; font-weight: bold; color: #2563eb; margin-bottom: 10px; text-transform: uppercase;">Tab: ${title}</div><div>${innerTextHtml}</div></div>`;
+                tabs.push({ title: parts[i].trim(), content: parts[i+1].trim() });
             }
-            bodyHtml += `</div>`;
-            tabsHtml += headerHtml + bodyHtml + `</div>`;
-            const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
-            const regex2 = new RegExp(id, 'g');
-            htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
+
+            const uniqueId = 'tabs-' + Math.random().toString(36).substr(2, 9);
+            let tabsNav = '<div class="lesson-tabs-nav">';
+            let tabsBody = '<div class="lesson-tabs-content">';
+
+            tabs.forEach((tab, tIdx) => {
+                const isActive = tIdx === 0 ? 'is-active' : '';
+                const isVisible = tIdx === 0 ? 'is-visible' : 'hidden';
+                const tabId = `tab-${uniqueId}-${tIdx}`;
+
+                tabsNav += `<button type="button" class="lesson-tab-btn ${isActive}" data-tab-container="${uniqueId}" data-tab-target="${tabId}">${escapeHtml(tab.title || `Tab ${tIdx+1}`)}</button>`;
+
+                const parsedContent = markedParser ? markedParser(tab.content) : tab.content;
+                tabsBody += `<div class="lesson-tab-pane ${isVisible}" id="${tabId}">${parsedContent}</div>`;
+            });
+
+            tabsNav += '</div>';
+            tabsBody += '</div>';
+            html = `<div class="lesson-tabs-container" id="${uniqueId}">${tabsNav}${tabsBody}</div>`;
         } else if (data.type === 'mermaid') {
-            const html = `
-                <div style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 15px; margin: 10px 0; border-radius: 6px;">
-                    <div style="color: #166534; font-weight: bold; margin-bottom: 10px;"><i class="fas fa-project-diagram"></i> Sơ đồ Mermaid (Preview)</div>
-                    <pre style="background: #fff; padding: 10px; border: 1px solid #bbf7d0; border-radius: 4px; overflow-x: auto; color: #064e3b; font-size: 0.85rem; font-family: monospace;">${data.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                </div>`;
+            const mermaidId = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+            html = `<div class="lesson-mermaid-container"><pre class="mermaid" id="${mermaidId}">${escapeHtml(data.code)}</pre></div>`;
+        }
+
+        if (html) {
             const regex1 = new RegExp(`<p>\\s*${id}\\s*<\\/p>`, 'g');
             const regex2 = new RegExp(id, 'g');
             htmlContent = htmlContent.replace(regex1, html).replace(regex2, html);
@@ -3383,3 +3394,26 @@ function createRevisionItem(rev) {
     wrapper.append(content, button);
     return wrapper;
 }
+
+// Global event delegation for tab switching in EasyMDE preview
+document.addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('.lesson-tab-btn[data-tab-target]');
+    if (!tabBtn) return;
+    const containerId = tabBtn.dataset.tabContainer;
+    const tabId = tabBtn.dataset.tabTarget;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.classList.remove('is-active'));
+    container.querySelectorAll('.lesson-tab-pane').forEach(pane => {
+        pane.classList.remove('is-visible');
+        pane.classList.add('hidden');
+    });
+
+    tabBtn.classList.add('is-active');
+    const targetPane = document.getElementById(tabId);
+    if (targetPane) {
+        targetPane.classList.remove('hidden');
+        targetPane.classList.add('is-visible');
+    }
+});
