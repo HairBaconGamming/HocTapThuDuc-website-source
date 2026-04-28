@@ -489,15 +489,27 @@
             let totalGold = 0;
             let totalXP = 0;
             const scene = window.sceneContext;
+            
+            const itemMap = new Map();
+            gardenData.items.forEach((item, idx) => itemMap.set(item._id.toString(), idx));
+            
+            const spriteMap = new Map();
+            if (scene) {
+                scene.children.list.forEach(s => {
+                    if (s.isGardenItem && s.itemData) {
+                        spriteMap.set(s.itemData._id.toString(), s);
+                    }
+                });
+            }
 
             successes.forEach(res => {
                 totalGold += res.goldReward || 0;
                 totalXP += res.xpReward || 0;
                 
                 if (scene) {
-                    const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
+                    const sprite = spriteMap.get(res.uniqueId);
                     if (sprite) {
-                        const itemIndex = gardenData.items.findIndex(i => i._id === res.uniqueId);
+                        const itemIndex = itemMap.has(res.uniqueId) ? itemMap.get(res.uniqueId) : -1;
                         if (itemIndex > -1) {
                             const itemData = gardenData.items[itemIndex];
                             const config = gardenAssets.PLANTS[itemData.itemId];
@@ -606,19 +618,37 @@
         if (successes.length > 0) {
             const scene = window.sceneContext;
             
+            const itemMap = new Map();
+            const plotMap = new Map();
+            gardenData.items.forEach((item, idx) => {
+                itemMap.set(item._id.toString(), idx);
+                if (item.type === 'plot') plotMap.set(`${item.x}_${item.y}`, idx);
+            });
+            
+            const spriteMap = new Map();
+            const plotSpriteMap = new Map();
+            if (scene) {
+                scene.children.list.forEach(s => {
+                    if (s.isGardenItem && s.itemData) {
+                        spriteMap.set(s.itemData._id.toString(), s);
+                        if (s.itemData.type === 'plot') plotSpriteMap.set(`${s.itemData.x}_${s.itemData.y}`, s);
+                    }
+                });
+            }
+            
             successes.forEach(res => {
-                const itemIndex = gardenData.items.findIndex(i => i._id === res.uniqueId);
+                const itemIndex = itemMap.has(res.uniqueId) ? itemMap.get(res.uniqueId) : -1;
                 if (itemIndex > -1) {
                     const itemData = gardenData.items[itemIndex];
                     itemData.witherProgress = 0;
                     
-                    const plotIndex = gardenData.items.findIndex(p => p.type === 'plot' && p.x === itemData.x && p.y === itemData.y);
+                    const plotIndex = plotMap.has(`${itemData.x}_${itemData.y}`) ? plotMap.get(`${itemData.x}_${itemData.y}`) : -1;
                     if (plotIndex > -1) {
                         gardenData.items[plotIndex].lastWatered = new Date();
                     }
 
                     if (scene) {
-                        const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
+                        const sprite = spriteMap.get(res.uniqueId);
                         if (sprite) {
                             scene.updateThirstyIcon?.(sprite, false);
                             scene.updatePlantUI?.(sprite);
@@ -626,7 +656,7 @@
                                 scene.waterEmitter?.emitParticleAt(sprite.x, sprite.y - 32, 10);
                             }
                         }
-                        const plotSprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === gardenData.items[plotIndex]?._id);
+                        const plotSprite = plotSpriteMap.get(`${itemData.x}_${itemData.y}`);
                         if (plotSprite) {
                             plotSprite.setTexture('soil_wet').setDisplaySize(64, 64);
                         }
