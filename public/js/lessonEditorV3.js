@@ -2062,6 +2062,74 @@ function cleanupEditors() {
 
 let currentMathEditorInstance = null; // Biến lưu editor đang focus để chèn công thức vào đúng chỗ
 
+function parseEditorShortcodes(text, markedParser) {
+    if (!text) return '';
+    const placeholders = {};
+    let counter = 0;
+
+    let processed = text.replace(/^:::\s*accordion\s*(.*?)$([\s\S]*?)^:::/gm, (match, title, content) => {
+        const id = `__SHORTCODE_${counter++}__`;
+        placeholders[id] = { type: 'accordion', title: title.trim(), content: content.trim() };
+        return `\n\n${id}\n\n`;
+    });
+
+    processed = processed.replace(/^:::\s*tabs\s*$([\s\S]*?)^:::/gm, (match, content) => {
+        const id = `__SHORTCODE_${counter++}__`;
+        placeholders[id] = { type: 'tabs', content: content.trim() };
+        return `\n\n${id}\n\n`;
+    });
+
+    processed = processed.replace(/^:::\s*mermaid\s*$([\s\S]*?)^:::/gm, (match, code) => {
+        const id = `__SHORTCODE_${counter++}__`;
+        placeholders[id] = { type: 'mermaid', code: code.trim() };
+        return `\n\n${id}\n\n`;
+    });
+
+    let htmlContent = markedParser ? markedParser(processed) : processed;
+
+    for (const [id, data] of Object.entries(placeholders)) {
+        if (data.type === 'accordion') {
+            const innerHtml = markedParser ? markedParser(data.content) : data.content;
+            const html = `
+                <div style="border: 1px solid #e2e8f0; margin: 10px 0; border-radius: 6px; background: #fff;">
+                    <div style="background: #f8fafc; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #334155;">
+                        <i class="fas fa-chevron-right" style="margin-right: 8px; color: #94a3b8;"></i> ${data.title || 'Mở rộng'}
+                    </div>
+                    <div style="padding: 15px; color: #475569;">${innerHtml}</div>
+                </div>`;
+            htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+        } else if (data.type === 'tabs') {
+            let tabsHtml = `<div style="border: 1px solid #e2e8f0; margin: 10px 0; border-radius: 6px; background: #fff;">`;
+            let navHtml = `<div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 8px 0 8px; display: flex; gap: 4px; overflow-x: auto;">`;
+            let bodyHtml = `<div style="padding: 15px; color: #475569;">`;
+            
+            const parts = data.content.split(/^==\s*(.*)$/m);
+            for (let i = 1; i < parts.length; i += 2) {
+                const title = parts[i].trim();
+                const text = parts[i+1].trim();
+                const innerTextHtml = markedParser ? markedParser(text) : text;
+                const isActive = (i === 1) ? 'background: #fff; border: 1px solid #e2e8f0; border-bottom: 1px solid #fff; color: #2563eb; font-weight: 600;' : 'background: transparent; color: #64748b;';
+                navHtml += `<span style="padding: 8px 16px; border-radius: 6px 6px 0 0; font-size: 0.9rem; cursor: pointer; ${isActive} position: relative; top: 1px; white-space: nowrap;">${title}</span>`;
+                if (i === 1) {
+                    bodyHtml += `<div>${innerTextHtml}</div>`; 
+                }
+            }
+            navHtml += `</div>`;
+            bodyHtml += `</div>`;
+            tabsHtml += navHtml + bodyHtml + `</div>`;
+            htmlContent = htmlContent.replace(`<p>${id}</p>`, tabsHtml).replace(id, tabsHtml);
+        } else if (data.type === 'mermaid') {
+            const html = `
+                <div style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 15px; margin: 10px 0; border-radius: 6px;">
+                    <div style="color: #166534; font-weight: bold; margin-bottom: 10px;"><i class="fas fa-project-diagram"></i> Sơ đồ Mermaid (Preview)</div>
+                    <pre style="background: #fff; padding: 10px; border: 1px solid #bbf7d0; border-radius: 4px; overflow-x: auto; color: #064e3b; font-size: 0.85rem; font-family: monospace;">${data.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                </div>`;
+            htmlContent = htmlContent.replace(`<p>${id}</p>`, html).replace(id, html);
+        }
+    }
+    return htmlContent;
+}
+
 function initMarkdownEditors() {
     const textareas = document.querySelectorAll('.easymde-input');
     textareas.forEach(el => {
@@ -2081,6 +2149,37 @@ function initMarkdownEditors() {
                 "quote", "unordered-list", "ordered-list", "|", 
                 "link", "image", "table", "|", 
                 {
+                    name: "accordion",
+                    action: (editor) => {
+                        const cm = editor.codemirror;
+                        const text = `\n::: accordion Tiêu đề\nNội dung mở rộng tại đây...\n:::\n`;
+                        cm.replaceSelection(text);
+                    },
+                    className: "fas fa-caret-square-down",
+                    title: "Chèn khối Accordion (Mở rộng)",
+                },
+                {
+                    name: "tabs",
+                    action: (editor) => {
+                        const cm = editor.codemirror;
+                        const text = `\n::: tabs\n== Tab 1\nNội dung Tab 1\n== Tab 2\nNội dung Tab 2\n:::\n`;
+                        cm.replaceSelection(text);
+                    },
+                    className: "fas fa-columns",
+                    title: "Chèn khối Tabs (Chia tab)",
+                },
+                {
+                    name: "mermaid",
+                    action: (editor) => {
+                        const cm = editor.codemirror;
+                        const text = `\n::: mermaid\ngraph TD\n  A[Bắt đầu] --> B{Điều kiện}\n  B -->|Đúng| C[Kết quả 1]\n  B -->|Sai| D[Kết quả 2]\n:::\n`;
+                        cm.replaceSelection(text);
+                    },
+                    className: "fas fa-project-diagram",
+                    title: "Chèn biểu đồ Mermaid",
+                },
+                "|",
+                {
                     name: "math",
                     action: (editor) => {
                         currentMathEditorInstance = editor; // Lưu instance hiện tại
@@ -2092,11 +2191,10 @@ function initMarkdownEditors() {
                 "|", "preview", "side-by-side", "fullscreen"
             ],
 
-            // 2. CUSTOM PREVIEW RENDER (Để hiển thị LaTeX)
+            // 2. CUSTOM PREVIEW RENDER (Để hiển thị LaTeX & Shortcodes)
             previewRender: function(plainText) {
-                // Bước A: Render Markdown cơ bản trước
-                // (EasyMDE dùng marked bên trong, ta gọi hàm mặc định của nó)
-                const preview = this.parent.markdown(plainText);
+                // Bước A: Xử lý Markdown & Shortcode kết hợp
+                const preview = parseEditorShortcodes(plainText, (text) => this.parent.markdown(text));
 
                 // Bước B: Tìm và render LaTeX bằng KaTeX
                 // Chúng ta dùng container ảo để xử lý HTML string
