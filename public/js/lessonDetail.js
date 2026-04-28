@@ -980,8 +980,6 @@ const LessonWorkspace = {
                 }, 20);
                 break;
             }
-                break;
-            }
             case 'code': {
                 const lang = block.data?.language || 'javascript';
                 const rawCode = block.data?.code || '';
