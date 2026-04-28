@@ -257,6 +257,11 @@
                     <button class="garden-quick-btn" type="button" data-shell-target="inventory" title="Mở túi vật phẩm">
                         <i class="fas fa-box-open"></i>
                     </button>
+                    <% if (isOwner) { %>
+                    <button class="garden-quick-btn harvest-all-btn" type="button" id="harvestAllBtn" title="Thu hoạch tất cả nông sản đã chín" style="background: #ef6c00; border-bottom-color: #e65100; color: white;">
+                        <i class="fas fa-sickle"></i>
+                    </button>
+                    <% } %>
                 </div>
             </div>
         </div>
@@ -334,7 +339,10 @@
                         <button id="statFertilizeBtn" class="plant-action-btn" type="button">
                             BÓN PHÂN (+1 CẤP)
                         </button>
-                        <div class="plant-action-meta">
+                        <button id="statHarvestTypeBtn" class="plant-action-btn" type="button" style="display:none; background: #ef6c00; border-bottom-color: #e65100; margin-top: 8px;">
+                            THU HOẠCH LOẠI NÀY (<span id="statHarvestTypeCount">0</span>)
+                        </button>
+                        <div class="plant-action-meta" id="statFertilizerMeta">
                             Còn <span id="statFertilizerCount"><%= garden.fertilizer || 0 %></span> phân bón
                         </div>
                     </div>

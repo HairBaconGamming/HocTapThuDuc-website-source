@@ -454,6 +454,85 @@
         showToast(response.msg, 'success');
     }
 
+    async function harvestMultiplePlants(filterFn) {
+        if (!window.isOwner) return;
+        
+        const items = getGardenItems();
+        const toHarvest = items.filter(item => {
+            if (item.type !== 'plant' || item.isDead) return false;
+            const config = gardenAssets.PLANTS?.[item.itemId];
+            if (!config) return false;
+            if (item.stage < config.maxStage) return false;
+            return filterFn ? filterFn(item) : true;
+        });
+
+        if (toHarvest.length === 0) {
+            showToast('Không có cây nào sẵn sàng thu hoạch!', 'info');
+            return;
+        }
+
+        const actions = toHarvest.map(item => ({
+            action: 'harvest',
+            payload: { uniqueId: item._id }
+        }));
+
+        const response = await apiCall('/my-garden/batch', { actions });
+        if (!response.success) {
+            showToast(response.msg, 'warning');
+            return;
+        }
+
+        updateHUD(response.garden);
+
+        const successes = response.results.filter(r => r.success);
+        if (successes.length > 0) {
+            let totalGold = 0;
+            let totalXP = 0;
+            successes.forEach(res => {
+                totalGold += res.goldReward || 0;
+                totalXP += res.xpReward || 0;
+                
+                const scene = window.sceneContext;
+                if (scene) {
+                    const sprite = scene.children.list.find(s => s.isGardenItem && s.itemData?._id === res.uniqueId);
+                    if (sprite) {
+                        const itemIndex = gardenData.items.findIndex(i => i._id === res.uniqueId);
+                        if (itemIndex > -1) {
+                            const itemData = gardenData.items[itemIndex];
+                            const config = gardenAssets.PLANTS[itemData.itemId];
+                            if (config && config.isMultiHarvest) {
+                                const ns = Number.isInteger(config.afterharvestStage) ? config.afterharvestStage : 0;
+                                const tps = parseDuration(config.growthTime);
+                                itemData.stage = ns;
+                                itemData.growthProgress = ns * tps;
+                                itemData.witherProgress = 0;
+                                itemData.isDead = false;
+                                itemData.lastUpdated = new Date();
+                                
+                                syncSceneItemData(sprite, itemData);
+                                sprite.setTexture(`plant_${itemData.itemId}_${ns}`);
+                                sprite.setDisplaySize((config.size?.w || 1) * 64, (config.size?.h || 1) * 64).setOrigin(0.5, 1);
+                                scene.updatePlantUI?.(sprite);
+                            } else {
+                                gardenData.items.splice(itemIndex, 1);
+                                if (sprite.ui) sprite.ui.destroy();
+                                if (sprite.thirstyIcon) sprite.thirstyIcon.destroy();
+                                sprite.destroy();
+                            }
+                        }
+                        scene.showFloatingText?.(sprite.x, sprite.y - 64, `+${res.goldReward}G`, 'gold');
+                    }
+                }
+            });
+            showToast(`Thu hoạch thành công ${successes.length} cây! +${totalGold} Vàng, +${totalXP} XP`, 'success');
+            if (window.gameEvents) window.gameEvents.emit('actionSuccess', { action: 'harvest_batch' });
+        } else {
+            showToast('Không thể thu hoạch.', 'warning');
+        }
+        
+        hidePlantStats();
+    }
+
     function formatQuestReward(rewards = {}) {
         const rewardParts = [];
 
@@ -730,6 +809,38 @@
                 count: gardenData.fertilizer || 0,
                 disabledReason
             });
+
+            const typeBtn = document.getElementById('statHarvestTypeBtn');
+            const typeCountSpan = document.getElementById('statHarvestTypeCount');
+            const fertilizerMeta = document.getElementById('statFertilizerMeta');
+            const fertBtn = document.getElementById('statFertilizeBtn');
+            
+            if (window.isOwner && stage >= maxStage && !itemData.isDead) {
+                const items = getGardenItems();
+                const harvestableCount = items.filter(i => {
+                    if (i.type !== 'plant' || i.isDead || i.itemId !== itemData.itemId) return false;
+                    const cfg = gardenAssets.PLANTS?.[i.itemId];
+                    return cfg && i.stage >= (cfg.maxStage || 3);
+                }).length;
+                
+                if (typeBtn && typeCountSpan) {
+                    if (harvestableCount > 1) {
+                        typeBtn.style.display = 'block';
+                        typeCountSpan.innerText = harvestableCount;
+                        typeBtn.setAttribute('data-harvest-item-id', itemData.itemId);
+                        if(fertilizerMeta) fertilizerMeta.style.display = 'none';
+                        if(fertBtn) fertBtn.style.display = 'none';
+                    } else {
+                        typeBtn.style.display = 'none';
+                        if(fertilizerMeta) fertilizerMeta.style.display = 'block';
+                        if(fertBtn) fertBtn.style.display = 'block';
+                    }
+                }
+            } else {
+                if (typeBtn) typeBtn.style.display = 'none';
+                if (fertilizerMeta) fertilizerMeta.style.display = 'block';
+                if (fertBtn) fertBtn.style.display = 'block';
+            }
 
             if (itemData.isDead) {
                 document.getElementById('statSoilStatus').innerText = '☠️ Cây đã chết khô!';
@@ -1076,6 +1187,17 @@
 
         document.getElementById('statFertilizeBtn')?.addEventListener('click', () => {
             fertilizeSelectedPlant();
+        });
+
+        document.getElementById('statHarvestTypeBtn')?.addEventListener('click', (e) => {
+            const itemId = e.target.closest('button').getAttribute('data-harvest-item-id');
+            if (itemId) {
+                harvestMultiplePlants(item => item.itemId === itemId);
+            }
+        });
+
+        document.getElementById('harvestAllBtn')?.addEventListener('click', () => {
+            harvestMultiplePlants();
         });
 
         document.getElementById('questModalList')?.addEventListener('click', (event) => {
